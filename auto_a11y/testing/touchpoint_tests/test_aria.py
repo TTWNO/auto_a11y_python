@@ -475,11 +475,30 @@ async def test_aria(page: Page) -> dict[str, Any]:
                 const carousels = allElements.filter(el => {
                     const classes = getClassName(el).toLowerCase();
                     const hasCarouselClass = classes.includes('carousel') || classes.includes('slider');
+                    // Exclude carousel sub-parts (inner track, slides, individual items, controls,
+                    // captions, live regions, etc.). These also contain the substring "carousel"/"slider"
+                    // and would otherwise be matched as carousel roots, producing false positives on a
+                    // correctly-marked-up carousel whose inner containers lack their own ARIA.
+                    const carouselSubParts = [
+                        'carousel-inner', 'carousel-item', 'carousel-items', 'carousel-slide',
+                        'carousel-slides', 'carousel-control', 'carousel-controls', 'carousel-button',
+                        'carousel-buttons', 'carousel-indicator', 'carousel-indicators', 'carousel-caption',
+                        'carousel-captions', 'carousel-live', 'carousel-live-region', 'carousel-dots',
+                        'carousel-nav', 'carousel-navigation', 'carousel-track', 'carousel-cell',
+                        'slider-inner', 'slider-item', 'slider-items', 'slider-slide', 'slider-slides',
+                        'slider-control', 'slider-controls', 'slider-button', 'slider-buttons',
+                        'slider-indicator', 'slider-indicators', 'slider-caption', 'slider-track',
+                        'slider-dots', 'slider-nav', 'slider-navigation', 'slider-cell'
+                    ];
+                    const classTokens = classes.split(/\\s+/);
+                    const isCarouselSubPart = classTokens.some(function(token) {
+                        return carouselSubParts.indexOf(token) !== -1;
+                    });
                     const hasSlides = el.querySelectorAll('[class*="slide"]').length > 1 ||
                                      el.querySelectorAll('[class*="carousel-item"]').length > 1;
                     const hasControls = el.querySelectorAll('button[class*="prev"], button[class*="next"]').length > 0 ||
                                        el.querySelector('[class*="carousel-button"]') !== null;
-                    return hasCarouselClass && (hasSlides || hasControls);
+                    return hasCarouselClass && !isCarouselSubPart && (hasSlides || hasControls);
                 });
 
                 checksRun += carousels.length;
@@ -511,9 +530,15 @@ async def test_aria(page: Page) -> dict[str, Any]:
                     const isNonSemantic = (tag === 'div' || tag === 'span' || tag === 'p' || tag === 'img');
                     const hasClickHandler = el.hasAttribute('onclick') || el.hasAttribute('ng-click') || el.hasAttribute('@click');
                     const cursor = window.getComputedStyle(el).cursor;
-                    const hasPointerCursor = cursor === 'pointer';
+                    // Only treat pointer cursor as a clickability signal when it originates on
+                    // this element rather than being inherited from a clickable ancestor. The
+                    // CSS `cursor` property is inherited, so a non-interactive child (e.g. the
+                    // <p> inside a clickable card) would otherwise be flagged as a false positive.
+                    const parent = el.parentElement;
+                    const parentCursor = parent ? window.getComputedStyle(parent).cursor : '';
+                    const hasOwnPointerCursor = cursor === 'pointer' && parentCursor !== 'pointer';
 
-                    return isNonSemantic && (hasClickHandler || hasPointerCursor);
+                    return isNonSemantic && (hasClickHandler || hasOwnPointerCursor);
                 });
 
                 checksRun += clickableWithoutKeyboard.length;

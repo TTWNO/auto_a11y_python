@@ -761,7 +761,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
 
                     // Check if accessible name contains the word "form"
                     // Use word boundary regex to match "form" as a whole word
-                    if (accessibleName && /\\bform\\b/.test(accessibleName)) {
+                    if (accessibleName && /\bform\b/.test(accessibleName)) {
                         results.warnings.push({
                             err: 'WarnFormLandmarkAccessibleNameUsesForm',
                             type: 'warn',
@@ -1381,7 +1381,18 @@ async def test_forms(page: Page) -> dict[str, Any]:
                 )
 
                 normal_border_color: str = field.get('normalBorderColor') or field.get('normalBorderTopColor') or ''
-                focus_border_color: str = field.get('focusBorderColor') or field.get('focusBorderTopColor') or ''
+                # When a :focus rule does not specify a border colour, the border colour is
+                # UNCHANGED on focus. The raw extracted values are None in that case, so fall back
+                # to the normal border colour rather than to '' (which would spuriously read as a
+                # colour change and misclassify "no visible focus" as "colour-change only").
+                raw_focus_border_color = field.get('focusBorderColor')
+                raw_focus_border_top_color = field.get('focusBorderTopColor')
+                if raw_focus_border_color:
+                    focus_border_color: str = raw_focus_border_color
+                elif raw_focus_border_top_color:
+                    focus_border_color = raw_focus_border_top_color
+                else:
+                    focus_border_color = normal_border_color
                 border_color_changed = normal_border_color != focus_border_color
 
                 normal_box_shadow = field['normalBoxShadow']

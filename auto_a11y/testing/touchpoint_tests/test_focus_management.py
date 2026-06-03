@@ -284,34 +284,93 @@ async def test_focus_management(page: Page) -> dict[str, Any]:
                     return path;
                 }
                 
-                // Check if element has custom focus styles
+                // Check whether an element has a visible focus indicator.
+                //
+                // Browsers render a default focus ring on interactive elements unless an author
+                // stylesheet removes it (outline: none / outline: 0). So an element only LACKS a
+                // visible focus indicator when an author :focus (or :focus-visible) rule that matches
+                // it removes the outline AND supplies no visible replacement (a non-trivial
+                // box-shadow, border, outline or background change). If the default outline is left
+                // intact, the element is considered to have a focus indicator.
+                function ruleProvidesVisibleFocus(ruleStyle) {
+                    // A visible replacement: any outline that is not "none"/0, a box-shadow, a
+                    // border declaration, or a background colour change.
+                    const outline = (ruleStyle.outline || '').trim().toLowerCase();
+                    const outlineStyle = (ruleStyle.outlineStyle || '').trim().toLowerCase();
+                    const outlineWidth = (ruleStyle.outlineWidth || '').trim().toLowerCase();
+                    const hasVisibleOutline =
+                        (outline && outline !== 'none' && outline !== '0' && outline !== '0px' && outlineStyle !== 'none') ||
+                        (outlineStyle && outlineStyle !== 'none' && outlineWidth && outlineWidth !== '0px' && outlineWidth !== '0');
+                    const boxShadow = (ruleStyle.boxShadow || '').trim().toLowerCase();
+                    const hasBoxShadow = boxShadow && boxShadow !== 'none';
+                    const hasBorder = !!(ruleStyle.border || ruleStyle.borderColor || ruleStyle.borderWidth ||
+                                         ruleStyle.borderBottom || ruleStyle.borderStyle);
+                    const hasBackground = !!(ruleStyle.backgroundColor || ruleStyle.background);
+                    return hasVisibleOutline || hasBoxShadow || hasBorder || hasBackground;
+                }
+
                 function hasFocusStyles(element) {
                     try {
-                        // Create a temporary clone to test focus styles
-                        const temp = element.cloneNode(true);
-                        temp.style.position = 'absolute';
-                        temp.style.left = '-9999px';
-                        temp.style.visibility = 'hidden';
-                        document.body.appendChild(temp);
-                        
-                        const normalStyle = window.getComputedStyle(temp);
-                        temp.focus();
-                        const focusStyle = window.getComputedStyle(temp);
-                        
-                        // Check if focus styles are different
-                        const hasDifferentOutline = focusStyle.outlineWidth !== normalStyle.outlineWidth ||
-                                                   focusStyle.outlineStyle !== normalStyle.outlineStyle ||
-                                                   focusStyle.outlineColor !== normalStyle.outlineColor;
-                        
-                        const hasDifferentBackground = focusStyle.backgroundColor !== normalStyle.backgroundColor;
-                        const hasDifferentBorder = focusStyle.borderColor !== normalStyle.borderColor;
-                        const hasDifferentBoxShadow = focusStyle.boxShadow !== normalStyle.boxShadow;
-                        
-                        document.body.removeChild(temp);
-                        
-                        return hasDifferentOutline || hasDifferentBackground || hasDifferentBorder || hasDifferentBoxShadow;
+                        let authorRemovesOutline = false;
+                        let authorProvidesReplacement = false;
+                        let matchedFocusRule = false;
+
+                        for (const sheet of Array.from(document.styleSheets)) {
+                            let rules;
+                            try { rules = sheet.cssRules; } catch (e) { continue; }
+                            if (!rules) continue;
+                            for (const rule of Array.from(rules)) {
+                                if (!rule.style || !rule.selectorText) continue;
+                                const selector = rule.selectorText;
+                                if (selector.indexOf(':focus') === -1) continue;
+
+                                // Build a base selector list (strip the :focus / :focus-visible
+                                // pseudo-class) and test whether this element matches any part.
+                                let matches = false;
+                                const parts = selector.split(',');
+                                for (const part of parts) {
+                                    if (part.indexOf(':focus') === -1) continue;
+                                    const base = part
+                                        .replace(':focus-visible', '')
+                                        .replace(':focus-within', '')
+                                        .replace(':focus', '')
+                                        .trim();
+                                    if (!base) { matches = true; break; }
+                                    try {
+                                        if (element.matches(base)) { matches = true; break; }
+                                    } catch (e) { /* invalid selector - skip */ }
+                                }
+                                if (!matches) continue;
+
+                                matchedFocusRule = true;
+                                const outline = (rule.style.outline || '').trim().toLowerCase();
+                                const outlineStyle = (rule.style.outlineStyle || '').trim().toLowerCase();
+                                const outlineWidth = (rule.style.outlineWidth || '').trim().toLowerCase();
+                                const removesOutline =
+                                    outline === 'none' || outline === '0' || outline === '0px' ||
+                                    outlineStyle === 'none' || outlineWidth === '0' || outlineWidth === '0px';
+                                if (removesOutline) {
+                                    authorRemovesOutline = true;
+                                }
+                                if (ruleProvidesVisibleFocus(rule.style)) {
+                                    authorProvidesReplacement = true;
+                                }
+                            }
+                        }
+
+                        // No author :focus rule touches this element -> default browser focus ring
+                        // remains -> has a focus indicator.
+                        if (!matchedFocusRule) {
+                            return true;
+                        }
+                        // An author rule removed the outline and supplied no visible replacement.
+                        if (authorRemovesOutline && !authorProvidesReplacement) {
+                            return false;
+                        }
+                        return true;
                     } catch (e) {
-                        return false;
+                        // On any unexpected error, do not raise a false positive.
+                        return true;
                     }
                 }
                 
@@ -371,19 +430,65 @@ async def test_focus_management(page: Page) -> dict[str, Any]:
                         results.elements_passed++;
                     }
                     
-                    // Check hover styles
+                    // Check cursor: a clickable element should present cursor:pointer so users
+                    // know it is interactive.
+                    //
+                    // Native interactive elements (<button>, <a>) are semantically obvious and many
+                    // browsers render them with the default (arrow) cursor, so a missing pointer
+                    // cursor is NOT a problem on its own. We only flag a native control when an author
+                    // stylesheet has *explicitly* set a non-pointer cursor on it (a deliberate
+                    // override that hides the affordance). Custom clickable elements (div/span/etc.
+                    // carrying an onclick handler or an interactive role) are always flagged when
+                    // they lack a pointer cursor, because nothing else signals their clickability.
                     const style = window.getComputedStyle(element);
-                    if (['a', 'button'].includes(tag) && style.cursor !== 'pointer') {
-                        results.warnings.push({
-                            err: 'WarnNoCursorPointer',
-                            type: 'warn',
-                            cat: 'focus_management',
-                            element: tag,
-                            xpath: getFullXPath(element),
-                            html: element.outerHTML.substring(0, 200),
-                            description: 'Interactive element does not have pointer cursor on hover',
-                            text: text
-                        });
+                    if (style.cursor !== 'pointer') {
+                        const role = element.getAttribute('role');
+                        const interactiveRoles = ['button', 'link', 'menuitem', 'tab', 'checkbox', 'radio', 'switch'];
+                        const hasInteractiveRole = role && interactiveRoles.includes(role);
+                        const hasClickHandler = element.hasAttribute('onclick') ||
+                                                element.hasAttribute('ng-click') ||
+                                                element.hasAttribute('@click');
+                        const isNativeInteractive = (tag === 'a' && element.hasAttribute('href')) || tag === 'button';
+
+                        // Detect whether an author stylesheet rule explicitly sets `cursor` on this element.
+                        let hasExplicitCursor = element.style.cursor !== '';
+                        if (!hasExplicitCursor) {
+                            try {
+                                for (const sheet of Array.from(document.styleSheets)) {
+                                    let rules;
+                                    try { rules = sheet.cssRules; } catch (e) { continue; }
+                                    if (!rules) continue;
+                                    for (const rule of Array.from(rules)) {
+                                        if (rule.style && rule.style.cursor && rule.selectorText) {
+                                            try {
+                                                if (element.matches(rule.selectorText)) {
+                                                    hasExplicitCursor = true;
+                                                    break;
+                                                }
+                                            } catch (e) { /* invalid selector - skip */ }
+                                        }
+                                    }
+                                    if (hasExplicitCursor) break;
+                                }
+                            } catch (e) { /* ignore stylesheet access issues */ }
+                        }
+
+                        const shouldWarn = isNativeInteractive
+                            ? hasExplicitCursor
+                            : (hasInteractiveRole || hasClickHandler);
+
+                        if (shouldWarn) {
+                            results.warnings.push({
+                                err: 'WarnNoCursorPointer',
+                                type: 'warn',
+                                cat: 'focus_management',
+                                element: tag,
+                                xpath: getFullXPath(element),
+                                html: element.outerHTML.substring(0, 200),
+                                description: 'Interactive element does not have pointer cursor on hover',
+                                text: text
+                            });
+                        }
                     }
                 });
                 

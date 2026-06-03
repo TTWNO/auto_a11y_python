@@ -762,7 +762,126 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
 
         # Aggregate across breakpoints (dedups errors/warnings/passes, counts
         # elements once, and reconciles the check total with passed + failed).
-        return aggregate_breakpoint_results(per_breakpoint_results)
+        aggregated = aggregate_breakpoint_results(per_breakpoint_results)
+
+        # Hit-test based content-obscuring detection (run once at the restored
+        # viewport). For each visible interactive control we ask the browser which
+        # element actually sits at the control's centre point via
+        # document.elementFromPoint. If the topmost element there is a different,
+        # non-related element, the control is visually covered and cannot be
+        # clicked/seen - WCAG 2.4.3 / 2.1.2. Using the real hit-test (rather than a
+        # rect-overlap heuristic) means hidden overlays (display:none / visibility
+        # :hidden), pointer-events:none decorations, and an element's own children
+        # are handled correctly, which keeps false positives low.
+        obscured_findings: list[dict[str, Any]] = await page.evaluate(r'''
+            () => {
+                function getFullXPath(element) {
+                    if (!element) return '';
+                    function getElementIdx(el) {
+                        let count = 1;
+                        for (let sib = el.previousSibling; sib; sib = sib.previousSibling) {
+                            if (sib.nodeType === 1 && sib.tagName === el.tagName) count++;
+                        }
+                        return count;
+                    }
+                    let path = '';
+                    while (element && element.nodeType === 1) {
+                        const idx = getElementIdx(element);
+                        path = `/${element.tagName.toLowerCase()}[${idx}]${path}`;
+                        element = element.parentNode;
+                    }
+                    return path;
+                }
+
+                const interactiveSelector = 'a[href], button, input:not([type="hidden"]), select, textarea, [role="button"], [role="link"], [role="checkbox"], [role="menuitem"], [tabindex]:not([tabindex="-1"])';
+                const findings = [];
+                const seen = new Set();
+
+                // When a modal dialog is open it is SUPPOSED to cover the background, so a
+                // background control being obscured is expected behaviour, not a defect. Collect
+                // any visible modal dialogs and suppress obscuring findings for controls that sit
+                // outside them. A bare overlay/banner (no dialog semantics) is NOT treated as a
+                // modal and still produces findings.
+                const visibleModals = Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog'))
+                    .filter(m => {
+                        const ms = window.getComputedStyle(m);
+                        if (ms.display === 'none' || ms.visibility === 'hidden') return false;
+                        if (m.tagName.toLowerCase() === 'dialog' && !m.hasAttribute('open')) return false;
+                        const mr = m.getBoundingClientRect();
+                        return mr.width > 0 && mr.height > 0;
+                    });
+
+                Array.from(document.querySelectorAll(interactiveSelector)).forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) return;
+
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) return;
+
+                    // Centre point, clamped into the viewport so off-screen-but-visible
+                    // controls are still testable.
+                    const cx = Math.min(Math.max(rect.left + rect.width / 2, 1), window.innerWidth - 1);
+                    const cy = Math.min(Math.max(rect.top + rect.height / 2, 1), window.innerHeight - 1);
+
+                    const topEl = document.elementFromPoint(cx, cy);
+                    if (!topEl) return;
+
+                    // Not obscured if the hit element is the control itself, a
+                    // descendant of it (e.g. an icon inside a button), or an ancestor
+                    // that the control sits within.
+                    if (topEl === el || el.contains(topEl) || topEl.contains(el)) return;
+
+                    // A label that is programmatically tied to the control is not an
+                    // obscuring element.
+                    if (topEl.tagName.toLowerCase() === 'label' && topEl.contains(el)) return;
+
+                    // If a modal dialog is open and this control is in the (expectedly
+                    // obscured) background outside that modal, do not flag it.
+                    if (visibleModals.some(m => !m.contains(el))) {
+                        const insideAModal = visibleModals.some(m => m.contains(el));
+                        if (!insideAModal) return;
+                    }
+
+                    const xpath = getFullXPath(el);
+                    if (seen.has(xpath)) return;
+                    seen.add(xpath);
+
+                    findings.push({
+                        err: 'ErrContentObscuring',
+                        type: 'err',
+                        cat: 'floating_content',
+                        element: el.tagName,
+                        xpath: xpath,
+                        html: el.outerHTML.substring(0, 200),
+                        description: `Interactive ${el.tagName.toLowerCase()} element is obscured by another element (<${topEl.tagName.toLowerCase()}>) and cannot be clicked or seen`,
+                        metadata: {
+                            coveredBy: topEl.tagName.toLowerCase() + (topEl.id ? '#' + topEl.id : ''),
+                            coveredByXpath: getFullXPath(topEl)
+                        }
+                    });
+                });
+
+                return findings;
+            }
+        ''')
+
+        if obscured_findings:
+            existing_obscuring_xpaths = {
+                str(issue.get('xpath'))
+                for issue in aggregated.get('errors', [])
+                if issue.get('err') == 'ErrContentObscuring'
+            }
+            new_findings = [
+                f for f in obscured_findings
+                if str(f.get('xpath')) not in existing_obscuring_xpaths
+            ]
+            if new_findings:
+                aggregated['applicable'] = True
+                aggregated.setdefault('errors', []).extend(new_findings)
+                aggregated['elements_failed'] = aggregated.get('elements_failed', 0) + len(new_findings)
+                aggregated['elements_tested'] = aggregated.get('elements_tested', 0) + len(new_findings)
+
+        return aggregated
         
     except Exception as e:
         logger.error(f"Error in test_floating_dialogs: {e}")

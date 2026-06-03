@@ -251,7 +251,12 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     const tabindexValue = tabindex ? parseInt(tabindex) : 0;
                     
                     // Check for negative tabindex
-                    if (tabindexValue < 0) {
+                    // Only warn for interactive elements: removing an interactive control from the
+                    // tab order makes it keyboard-inaccessible. A non-interactive container (e.g. a
+                    // <div> or <section> with tabindex="-1" for programmatic focus, such as a modal
+                    // target or skip-link destination) is a correct, recommended pattern and must
+                    // not be flagged.
+                    if (tabindexValue < 0 && isIntrinsicInteractive(element)) {
                         results.warnings.push({
                             err: 'WarnNegativeTabindex',
                             type: 'warn',
@@ -349,7 +354,50 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     
                     previousRect = rect;
                 });
-                
+
+                // Positive-tabindex tab-order check (WCAG 2.4.3 Focus Order).
+                // A positive tabindex value forces an element to the front of the tab sequence in
+                // ascending tabindex order, ahead of every tabindex=0/implicit element regardless of
+                // where it sits in the document. This almost always makes the keyboard focus order
+                // diverge from the visual reading order. We compare the order produced by the
+                // positive tabindex values against those same elements' document order; if they
+                // disagree, the focus order does not match the visual/DOM order and we flag it.
+                const positiveTabindexElements = focusableElements
+                    .map((el, domIndex) => ({ el, domIndex, ti: parseInt(el.getAttribute('tabindex') || '0') }))
+                    .filter(item => item.ti > 0);
+
+                if (positiveTabindexElements.length > 0) {
+                    // Order the positive-tabindex elements as the browser would visit them:
+                    // ascending tabindex, ties broken by document order.
+                    const tabSequence = positiveTabindexElements.slice().sort((a, b) => {
+                        if (a.ti !== b.ti) return a.ti - b.ti;
+                        return a.domIndex - b.domIndex;
+                    });
+                    // Their document order, for comparison.
+                    const domSequence = positiveTabindexElements.slice().sort((a, b) => a.domIndex - b.domIndex);
+
+                    for (let k = 0; k < tabSequence.length; k++) {
+                        if (tabSequence[k].el !== domSequence[k].el) {
+                            const el = tabSequence[k].el;
+                            const desc = el.tagName.toLowerCase() +
+                                (el.id ? `#${el.id}` : '') +
+                                (el.textContent ? ` ("${el.textContent.trim().substring(0, 30)}")` : '');
+                            tabOrderViolations++;
+                            results.errors.push({
+                                err: 'ErrTabOrderViolation',
+                                type: 'err',
+                                cat: 'event_handling',
+                                element: el.tagName.toLowerCase(),
+                                xpath: getFullXPath(el),
+                                html: el.outerHTML.substring(0, 200),
+                                description: `Tab order diverges from document/visual order: ${desc} has tabindex="${tabSequence[k].ti}", forcing a focus sequence that does not match the order in which elements appear on the page`,
+                                tabindex: tabSequence[k].ti
+                            });
+                            results.elements_failed++;
+                        }
+                    }
+                }
+
                 // Check for modals without escape handlers
                 // Collect inline JS and external script URLs for analysis
                 let inlineJsCode = '';
@@ -613,12 +661,14 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                 }
 
                 // ErrMissingTabindex — preserved logic, sourced from handlerMap.
+                const flaggedMissingTabindex = new Set();
                 Array.from(document.querySelectorAll('*')).forEach(element => {
                     const entry = handlerMap.getEntry(element);
                     if (!entry) return;
                     if (entry.mouseEvents.size === 0 && entry.keyEvents.size === 0) return;
                     if (isIntrinsicInteractive(element) || element.hasAttribute('tabindex')) return;
                     const tagName = element.tagName.toLowerCase();
+                    flaggedMissingTabindex.add(element);
                     out.errors.push({
                         err: 'ErrMissingTabindex',
                         type: 'err',
@@ -632,6 +682,44 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                         hasOtherHandlers: element.hasAttribute('onmousedown') ||
                                           element.hasAttribute('onmouseup') ||
                                           element.hasAttribute('ondblclick'),
+                    });
+                    out.elements_failed++;
+                });
+
+                // ErrMissingTabindex — role-based custom controls.
+                // A non-native element that advertises an interactive role (role="button",
+                // "link", "menuitem", "checkbox", "radio", "switch", "tab", "slider", ...) is
+                // announced to assistive technology as operable, but an ARIA role does NOT make
+                // an element focusable. Without tabindex="0" (or another focusable host) it cannot
+                // receive keyboard focus, so keyboard and switch users cannot operate it. Native
+                // controls (<button>, <a href>, <input>, ...) are intrinsically focusable and are
+                // not flagged. Inline onclick handlers are caught here too, since the script-text
+                // handler map only sees addEventListener registrations.
+                const focusableNativeTags = ['a', 'button', 'input', 'select', 'textarea', 'details', 'summary'];
+                const keyboardOperableRoles = [
+                    'button', 'link', 'menuitem', 'menuitemcheckbox', 'menuitemradio',
+                    'checkbox', 'radio', 'switch', 'tab', 'slider', 'spinbutton',
+                    'option', 'treeitem'
+                ];
+                Array.from(document.querySelectorAll('[role]')).forEach(element => {
+                    if (flaggedMissingTabindex.has(element)) return;
+                    if (element.hasAttribute('tabindex')) return;
+                    const tagName = element.tagName.toLowerCase();
+                    if (focusableNativeTags.includes(tagName)) return;
+                    const role = (element.getAttribute('role') || '').trim().toLowerCase();
+                    if (!keyboardOperableRoles.includes(role)) return;
+                    flaggedMissingTabindex.add(element);
+                    out.errors.push({
+                        err: 'ErrMissingTabindex',
+                        type: 'err',
+                        cat: 'event_handling',
+                        element: tagName,
+                        xpath: getFullXPath(element),
+                        html: element.outerHTML.substring(0, 200),
+                        description: `<${tagName}> with role="${role}" is not keyboard focusable - missing tabindex="0"`,
+                        elementTag: tagName,
+                        role: role,
+                        hasOnclick: element.hasAttribute('onclick'),
                     });
                     out.elements_failed++;
                 });

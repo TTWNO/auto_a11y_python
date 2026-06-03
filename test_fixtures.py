@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 from auto_a11y.core import Database
 from config import Config
 from auto_a11y.models import Website, Page, PageStatus, Project, ProjectStatus
-from auto_a11y.models.test_result import Violation
+from auto_a11y.models.test_result import Violation, TestResult
 from auto_a11y.core.website_manager import WebsiteManager
 from auto_a11y.testing.test_runner import TestRunner
 
@@ -280,27 +280,40 @@ class FixtureTestRunner:
                 notes.append("Page object not found in database")
                 return result
 
-            try:
-                # Determine if AI analysis should run
-                run_ai = is_ai_test and self.ai_available
+            # Determine if AI analysis should run
+            run_ai = is_ai_test and self.ai_available
+            if run_ai:
+                print("   🤖 Running with AI analysis enabled...")
 
-                if run_ai:
-                    print("   🤖 Running with AI analysis enabled...")
+            # Run the test, retrying once on an empty result. An empty result is the
+            # signature of a transient browser failure (a healthy run always emits ambient
+            # discovery/warning codes), so a single retry removes the rare flaky empty that
+            # would otherwise wrongly fail a positive test - or spuriously pass a negative
+            # one - under the all-fixtures-must-pass activation gate.
+            timeout = 60.0 if run_ai else 30.0
+            test_result: TestResult | None = None
+            for attempt in range(2):
+                try:
+                    test_result = await asyncio.wait_for(
+                        self.test_runner.test_page(
+                            page=page_obj,
+                            take_screenshot=False,
+                            run_ai_analysis=run_ai
+                        ),
+                        timeout=timeout
+                    )
+                except asyncio.TimeoutError:
+                    print("   ⏱️  Test timed out after 30 seconds")
+                    notes.append("Test timed out after 30 seconds")
+                    test_result = None
 
-                # Add a timeout of 30 seconds per fixture (60s for AI tests)
-                timeout = 60.0 if run_ai else 30.0
-                test_result = await asyncio.wait_for(
-                    self.test_runner.test_page(
-                        page=page_obj,
-                        take_screenshot=False,
-                        run_ai_analysis=run_ai
-                    ),
-                    timeout=timeout
-                )
-            except asyncio.TimeoutError:
-                print("   ⏱️  Test timed out after 30 seconds")
-                notes.append("Test timed out after 30 seconds")
-                test_result = None
+                produced_any = bool(test_result and (
+                    test_result.violations or test_result.warnings
+                    or test_result.info or test_result.discovery
+                ))
+                if produced_any or attempt == 1:
+                    break
+                print("   ↻ Empty result (likely transient browser issue); retrying once...")
             
             if test_result:
                 # Collect all violation/warning/info IDs

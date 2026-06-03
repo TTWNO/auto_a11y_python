@@ -1100,30 +1100,6 @@ How to fix: Add navigation content or remove empty landmark
 
 ---
 
-ID: ErrContentInfoLandmarkAccessibleNameIsBlank
-Type: Error
-Impact: Medium
-WCAG: 1.3.1, 2.4.6
-Touchpoint: landmarks
-Description: Contentinfo landmark has blank accessible name
-Why it matters: Blank labels provide no information
-Who it affects: Screen reader users
-How to fix: Add meaningful label text
-
----
-
-ID: ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
-Type: Error
-Impact: Medium
-WCAG: 4.1.2
-Touchpoint: landmarks
-Description: Contentinfo landmark has both aria-label and aria-labelledby
-Why it matters: Conflicting labeling methods
-Who it affects: Screen reader users
-How to fix: Use only one labeling method
-
----
-
 ID: ErrContentObscuring
 Type: Error
 Impact: High
@@ -1145,6 +1121,30 @@ Description: Page content (text and elements) is rendered outside of any landmar
 Why it matters: Content outside landmarks is skipped when assistive-technology users navigate by region, so meaningful content can be missed or hard to locate.
 Who it affects: Screen reader users who navigate by landmarks to orient themselves and jump between page regions.
 How to fix: Wrap all meaningful content in appropriate landmark regions (e.g., `<main>`, `<nav>`, `<header>`, `<footer>`); legitimate exceptions like skip links, hidden content, and scripts may remain outside.
+
+---
+
+ID: ErrContentinfoLandmarkAccessibleNameIsBlank
+Type: Error
+Impact: Medium
+WCAG: 1.3.1, 2.4.6
+Touchpoint: landmarks
+Description: Contentinfo landmark has blank accessible name
+Why it matters: Blank labels provide no information
+Who it affects: Screen reader users
+How to fix: Add meaningful label text
+
+---
+
+ID: ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
+Type: Error
+Impact: Medium
+WCAG: 4.1.2
+Touchpoint: landmarks
+Description: Contentinfo landmark has both aria-label and aria-labelledby
+Why it matters: Conflicting labeling methods
+Who it affects: Screen reader users
+How to fix: Use only one labeling method
 
 ---
 
@@ -2264,6 +2264,18 @@ How to fix: Remove the empty `<li>`, or give it meaningful content or an accessi
 
 ---
 
+ID: ErrMainLandmarkAccessibleNameIsBlank
+Type: Error
+Impact: High
+WCAG: 1.3.1, 2.4.6
+Touchpoint: landmarks
+Description: The main landmark has an aria-label or aria-labelledby that resolves to an empty or whitespace-only accessible name
+Why it matters: An empty accessible name gives screen reader users no useful label for the page's primary content region
+Who it affects: Screen reader users who navigate by landmarks
+How to fix: Provide a meaningful non-empty aria-label, reference non-empty visible text via aria-labelledby, or remove the empty labelling attribute
+
+---
+
 ID: ErrMainLandmarkHasAriaLabelAndAriaLabelledByAttrs
 Type: Error
 Impact: Medium
@@ -2300,7 +2312,7 @@ How to fix: Ensure main landmark is visible or remove if not needed
 
 ---
 
-ID: ErrMainLandmarkMayNotbeChildOfAnotherLandmark
+ID: ErrMainLandmarkMayNotBeChildOfAnotherLandmark
 Type: Error
 Impact: High
 WCAG: 1.3.1
@@ -2996,6 +3008,18 @@ How to fix: Remove "image of", "picture of", "graphic of" from alt text; describ
 
 ---
 
+ID: ErrRegionLandmarkAccessibleNameIsBlank
+Type: Error
+Impact: Medium
+WCAG: 1.3.1, 2.4.6
+Touchpoint: landmarks
+Description: Region landmark has blank accessible name
+Why it matters: Blank labels provide no information
+Who it affects: Screen reader users
+How to fix: Add meaningful label text
+
+---
+
 ID: ErrRegionLandmarkHasAriaLabelAndAriaLabelledByAttrs
 Type: Error
 Impact: Medium
@@ -3005,6 +3029,18 @@ Description: Region landmark has both aria-label and aria-labelledby
 Why it matters: Conflicting labeling methods
 Who it affects: Screen reader users
 How to fix: Use only one labeling method
+
+---
+
+ID: ErrRegionLandmarkMustHaveAccessibleName
+Type: Error
+Impact: High
+WCAG: 1.3.1
+Touchpoint: landmarks
+Description: A region landmark (role="region", or a <section> intended as a landmark) has no accessible name
+Why it matters: A <section> is only exposed as a region landmark when it has an accessible name; without one it is announced generically or not at all, defeating landmark navigation
+Who it affects: Screen reader users who navigate by landmarks
+How to fix: Add an aria-label or aria-labelledby that describes the region's purpose
 
 ---
 
@@ -3392,18 +3428,6 @@ How to fix: Test site in high contrast mode, ensure it remains usable, consider 
 
 ---
 
-ID: RegionLandmarkAccessibleNameIsBlank
-Type: Error
-Impact: Medium
-WCAG: 1.3.1, 2.4.6
-Touchpoint: landmarks
-Description: Region landmark has blank accessible name
-Why it matters: Blank labels provide no information
-Who it affects: Screen reader users
-How to fix: Add meaningful label text
-
----
-
 ID: WarnAmbiguousTabOrder
 Type: Warning
 Impact: Medium
@@ -3644,18 +3668,6 @@ How to fix: Add aria-label or aria-labelledby to identify the purpose
 
 ---
 
-ID: WarnContentInfoLandmarkHasNoLabel
-Type: Warning
-Impact: Low
-WCAG: 1.3.1, 2.4.6
-Touchpoint: landmarks
-Description: Contentinfo landmark lacks a label
-Why it matters: May be harder to identify purpose
-Who it affects: Screen reader users
-How to fix: Add descriptive label if multiple contentinfo exist
-
----
-
 ID: WarnContentOutsideLandmarks
 Type: Warning
 Impact: Medium
@@ -3677,6 +3689,18 @@ Description: Contentinfo landmark uses generic term "contentinfo" in label
 Why it matters: Redundant labeling
 Who it affects: Screen reader users
 How to fix: Use descriptive label or rely on implicit role
+
+---
+
+ID: WarnContentinfoLandmarkHasNoLabel
+Type: Warning
+Impact: Low
+WCAG: 1.3.1, 2.4.6
+Touchpoint: landmarks
+Description: Contentinfo landmark lacks a label
+Why it matters: May be harder to identify purpose
+Who it affects: Screen reader users
+How to fix: Add descriptive label if multiple contentinfo exist
 
 ---
 
@@ -4376,7 +4400,7 @@ How to fix: Ensure all complementary landmarks have unique labels
 
 ---
 
-ID: WarnMultipleContentInfoLandmarksButNotAllHaveLabels
+ID: WarnMultipleContentinfoLandmarksButNotAllHaveLabels
 Type: Warning
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -4580,7 +4604,7 @@ How to fix: Add legend as first child of fieldset to label the group.
 
 ---
 
-ID: WarnNoNavigationLandmark
+ID: WarnNoNavLandmark
 Type: Warning
 Impact: Low
 WCAG: 1.3.1 Info and Relationships, 2.4.1 Bypass Blocks
@@ -4628,7 +4652,7 @@ How to fix: Provide pause/stop controls and respect prefers-reduced-motion prefe
 
 ---
 
-ID: WarnRegionLandmarkAccessibleNameUsesNavigation
+ID: WarnRegionLandmarkAccessibleNameUsesRegion
 Type: Warning
 Impact: Low
 WCAG: 2.4.6
@@ -6901,7 +6925,7 @@ Why it matters: Empty navigation serves no purpose
 Who it affects: All users
 How to fix: Add navigation content or remove empty landmark
 
-ID: ErrContentInfoLandmarkAccessibleNameIsBlank
+ID: ErrContentinfoLandmarkAccessibleNameIsBlank
 Type: Error
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -6911,7 +6935,7 @@ Why it matters: Blank labels provide no information
 Who it affects: Screen reader users
 How to fix: Add meaningful label text
 
-ID: ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
+ID: ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
 Type: Error
 Impact: Medium
 WCAG: 4.1.2
@@ -7091,7 +7115,7 @@ Why it matters: Hidden main content defeats the purpose of the landmark
 Who it affects: All users
 How to fix: Ensure main landmark is visible or remove if not needed
 
-ID: ErrMainLandmarkMayNotbeChildOfAnotherLandmark
+ID: ErrMainLandmarkMayNotBeChildOfAnotherLandmark
 Type: Error
 Impact: High
 WCAG: 1.3.1
@@ -7201,7 +7225,7 @@ Why it matters: Conflicting labeling methods
 Who it affects: Screen reader users
 How to fix: Use only one labeling method
 
-ID: RegionLandmarkAccessibleNameIsBlank
+ID: ErrRegionLandmarkAccessibleNameIsBlank
 Type: Error
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -7241,7 +7265,7 @@ Why it matters: Hard to distinguish multiple complementary sections
 Who it affects: Screen reader users
 How to fix: Add aria-label or aria-labelledby to identify the purpose
 
-ID: WarnContentInfoLandmarkHasNoLabel
+ID: WarnContentinfoLandmarkHasNoLabel
 Type: Warning
 Impact: Low
 WCAG: 1.3.1, 2.4.6
@@ -7311,7 +7335,7 @@ Why it matters: Inconsistent labeling makes navigation difficult
 Who it affects: Screen reader users
 How to fix: Ensure all complementary landmarks have unique labels
 
-ID: WarnMultipleContentInfoLandmarksButNotAllHaveLabels
+ID: WarnMultipleContentinfoLandmarksButNotAllHaveLabels
 Type: Warning
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -7391,7 +7415,7 @@ Why it matters: The contentinfo landmark (typically a footer) contains important
 Who it affects: Screen reader users who navigate by landmarks to quickly find footer information, keyboard users who want to efficiently skip to footer content, users with cognitive disabilities who rely on consistent page structure, and users who need to frequently access footer links like privacy policies or contact information
 How to fix: Use the HTML5 <footer> element for your page footer (it has an implicit role of contentinfo when it's not nested inside article, aside, main, nav, or section elements). Alternatively, add role="contentinfo" to the container holding your footer content. Ensure there's only one contentinfo landmark per page at the top level. The footer should contain information about the page or site, not primary content.
 
-ID: WarnNoNavigationLandmark
+ID: WarnNoNavLandmark
 Type: Warning
 Impact: Low
 WCAG: 1.3.1 Info and Relationships, 2.4.1 Bypass Blocks
@@ -7401,7 +7425,7 @@ Why it matters: Navigation landmarks identify areas containing navigation links,
 Who it affects: Screen reader users who use landmarks to find navigation menus quickly, keyboard users navigating complex sites with multiple menus, users with cognitive disabilities who need clear identification of navigation areas, and users with motor disabilities who need to minimize unnecessary navigation
 How to fix: Wrap navigation areas in <nav> elements or add role="navigation" to containers with navigation links. If you have multiple navigation areas, label each one with aria-label to distinguish them (e.g., aria-label="Main navigation", aria-label="Footer links", aria-label="Breadcrumb"). Not every group of links needs to be a navigation landmark - use it for major navigation blocks that users would want to find quickly.
 
-ID: WarnRegionLandmarkAccessibleNameUsesNavigation
+ID: WarnRegionLandmarkAccessibleNameUsesRegion
 Type: Warning
 Impact: Low
 WCAG: 2.4.6

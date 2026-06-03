@@ -3212,6 +3212,18 @@ How to fix: Ensure DOM order matches visual order, avoid positive tabindex value
 
 ---
 
+ID: ErrTabindexNoVisibleFocus
+Type: Error
+Impact: High
+WCAG: 2.4.7
+Touchpoint: focus
+Description: An element made focusable with an explicit tabindex has no visible focus indicator (no :focus outline, border, or box-shadow)
+Why it matters: An explicit tabindex deliberately places the element in the tab order, so keyboard users will land on it and must be able to see that it has focus
+Who it affects: Keyboard-only users and low-vision users who track focus visually
+How to fix: Add a visible :focus / :focus-visible style (outline or box-shadow meeting 3:1 contrast) to the focusable element, or remove the tabindex if it should not be focusable
+
+---
+
 ID: ErrTabindexOfZeroOnNonInteractiveElement
 Type: Error
 Impact: Low

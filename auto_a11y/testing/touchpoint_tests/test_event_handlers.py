@@ -1057,9 +1057,18 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     ]
                     
                     is_interactive = role in interactive_roles or has_handler
-                    
+
+                    # An explicit tabindex makes the element focusable on purpose,
+                    # so the missing focus indicator is a hard failure regardless of
+                    # whether we can also prove interactivity (a click handler may be
+                    # attached via addEventListener, which this static check cannot
+                    # see). Event-handler elements without a detectable interactive
+                    # signal stay a warning, matching the softer "handler" path.
                     if is_interactive:
                         desc = f"Interactive element (role='{role}') with tabindex lacks visible focus indicator"
+                        issues_found.append((f'{code_prefix}NoVisibleFocus', desc))
+                    elif elem_type == 'tabindex':
+                        desc = f"Focusable <{tag}> with tabindex lacks a visible focus indicator. Keyboard users cannot tell when this element has focus. Add a visible :focus style (outline, box-shadow, or border), or use tabindex='-1' if the element does not need to be in the tab order."
                         issues_found.append((f'{code_prefix}NoVisibleFocus', desc))
                     else:
                         desc = f"Non-interactive <{tag}> with tabindex lacks visible focus indicator. Adding tabindex to non-interactive elements makes them focusable but may confuse users expecting interactivity. Consider: (1) removing tabindex if focus is not needed, (2) adding a visible focus style if focus is intentional, or (3) using tabindex='-1' for programmatic focus only."

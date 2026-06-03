@@ -249,6 +249,22 @@ async def test_menus(page: Page) -> dict[str, Any]:
                                 fpTempId: 'fp_nav_' + Date.now()
                             });
                             results.elements_failed++;
+
+                            // General warning: this navigation provides no current-page
+                            // indicator at all (neither aria-current nor a visual
+                            // "current"/"active" marker). Mirrors the more specific
+                            // screen-reader/magnification errors above.
+                            results.warnings.push({
+                                err: 'WarnNoCurrentPageIndicator',
+                                type: 'warn',
+                                cat: 'navigation',
+                                element: nav.tagName.toLowerCase(),
+                                xpath: getFullXPath(nav),
+                                html: nav.outerHTML.substring(0, 200),
+                                description: 'Navigation has no indication of the current page. Add aria-current="page" to the link for the current page and give it a distinct visual style so all users can tell where they are.',
+                                accessibleName: accessibleName,
+                                itemCount: items.length
+                            });
                         }
 
                         // Error: Check for missing visual styling on current page link (magnification issue - WCAG 1.4.13, 2.4.8)

@@ -215,6 +215,53 @@ async def test_tabindex(page: Page) -> dict[str, Any]:
                             description: 'Non-interactive element has tabindex="0" making it focusable without interaction capability',
                             role: element.getAttribute('role') || 'none'
                         });
+                        // Granular code: tabindex="0" on a non-interactive element.
+                        results.errors.push({
+                            err: 'ErrTabindexOfZeroOnNonInteractiveElement',
+                            type: 'err',
+                            cat: 'tabindex',
+                            element: element.tagName.toLowerCase(),
+                            xpath: getFullXPath(element),
+                            html: element.outerHTML.substring(0, 200),
+                            description: 'Non-interactive element has tabindex="0", adding a pointless stop to the tab order. Use a semantic interactive element or an appropriate ARIA role, or use tabindex="-1" for programmatic focus only.',
+                            role: element.getAttribute('role') || 'none'
+                        });
+                        hasViolation = true;
+                    }
+
+                    // Granular code: any non-negative tabindex on a non-interactive
+                    // element makes it keyboard focusable with no action available.
+                    // Covers tabindex="0" and positive values; skip in-page targets
+                    // (handled by ErrAnchorTargetTabindex) and SVG internals.
+                    if (tabindex >= 0 && !isInteractive && !isInPageTarget(element) && !inSVG) {
+                        results.errors.push({
+                            err: 'ErrTTabindexOnNonInteractiveElement',
+                            type: 'err',
+                            cat: 'tabindex',
+                            element: element.tagName.toLowerCase(),
+                            xpath: getFullXPath(element),
+                            html: element.outerHTML.substring(0, 200),
+                            description: `Non-interactive <${element.tagName.toLowerCase()}> has tabindex="${tabindex}", making it keyboard focusable even though it has no interactive behaviour. This adds a confusing stop to the tab order.`,
+                            tabindex: tabindex,
+                            role: element.getAttribute('role') || 'none'
+                        });
+                        hasViolation = true;
+                    }
+
+                    // Granular code: negative tabindex on a naturally interactive
+                    // element removes it from the keyboard tab order entirely.
+                    if (tabindex < 0 && isInteractive) {
+                        results.errors.push({
+                            err: 'ErrWrongTabindexForInteractiveElement',
+                            type: 'err',
+                            cat: 'tabindex',
+                            element: element.tagName.toLowerCase(),
+                            xpath: getFullXPath(element),
+                            html: element.outerHTML.substring(0, 200),
+                            description: `Interactive <${element.tagName.toLowerCase()}> has tabindex="${tabindex}", removing it from the keyboard tab order. Keyboard-only users cannot reach this control. Remove the negative tabindex so the element keeps its natural keyboard accessibility.`,
+                            tabindex: tabindex,
+                            role: element.getAttribute('role') || 'none'
+                        });
                         hasViolation = true;
                     }
                     

@@ -392,7 +392,6 @@ class TouchpointMapper:
         'DiscoSearchFound': TouchpointID.LANDMARKS,  # Search is a landmark
         'DiscoNoSubmitButton': TouchpointID.FORMS,
         'WarnButtonGenericText': TouchpointID.FORMS,
-        'WarnRequiredNotIndicated': TouchpointID.FORMS,
 
         # Color/contrast errors
         'ErrTextContrastAA': TouchpointID.COLORS,

@@ -2761,13 +2761,6 @@ WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark =
     .who = Screen reader users
     .remediation = Add aria-label or aria-labelledby, or use a different landmark type
 
-WarnRequiredNotIndicated =
-    .title = Required field not clearly indicated
-    .what = A field is required (e.g., the page submits an error when it is empty), but the markup does not declare it as required via the required attribute, aria-required, or a visible cue.
-    .why = Users don't know which fields are mandatory
-    .who = All users, especially those with cognitive disabilities
-    .remediation = Add required attribute and visual indication
-
 WarnRightAlignedText =
     .title = Body text is right-aligned affecting readability
     .what = Body text in a primarily left-to-right page is rendered with text-align: right, which disrupts the expected reading flow.

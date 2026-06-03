@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>forms_WarnRequiredNotIndicated - Warnings</title>
+    <title>WarnMissingRequiredIndication - Warnings</title>
     <script type="application/json" id="test-metadata">
 {
-    "id": "WarnRequiredNotIndicated_001_violations_basic",
-    "issueId": "WarnRequiredNotIndicated",
+    "id": "WarnMissingRequiredIndication_001_violations_basic",
+    "issueId": "WarnMissingRequiredIndication",
     "expectedViolationCount": 3,
     "expectedPassCount": 0,
     "description": "Required form fields without indication",
@@ -28,6 +28,7 @@
                 <input type="text"
                        id="username"
                        name="username"
+                       required
                        data-expected-violation="true"
                        data-violation-reason="Required field has no visual or programmatic indication it's required. Screen readers don't announce field is required. Users may skip field not knowing it's mandatory. No asterisk, text, or aria-required attribute. Users discover requirement only on form submission error. Warning for WCAG 3.3.2 Labels or Instructions - indicate required fields with visual marker and aria-required or required attribute">
             </section>
@@ -39,6 +40,7 @@
                 <input type="email"
                        id="email"
                        name="email"
+                       aria-required="true"
                        data-expected-violation="true"
                        data-violation-reason="Required email field lacks required indication. Screen readers don't announce mandatory status. Users may submit incomplete form. No visual or programmatic required indicator. Users only learn it's required from validation error. Warning for WCAG 3.3.2 Labels or Instructions - mark required fields visually and programmatically">
             </section>
@@ -50,6 +52,7 @@
                 <input type="password"
                        id="password"
                        name="password"
+                       required
                        data-expected-violation="true"
                        data-violation-reason="Required password field not marked as required. Screen readers don't indicate field is mandatory. Users may leave field blank unknowingly. No required attribute or aria-required. Users find out on error after submission. Warning for WCAG 3.3.2 Labels or Instructions - indicate required status with visual and programmatic markers">
 

@@ -3725,15 +3725,6 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'wcag': ['1.3.1', '4.1.2'],
             'remediation': "Remove empty <li> elements. If the item must exist, add accessible text with aria-label or visually hidden text. Never use empty list items for spacing - use CSS instead."
         },
-        'WarnRequiredNotIndicated': {
-            'title': "Required field not clearly indicated",
-            'what': "A field is required (e.g., the page submits an error when it is empty), but the markup does not declare it as required via the required attribute, aria-required, or a visible cue.",
-            'why': "Users don\'t know which fields are mandatory",
-            'who': "All users, especially those with cognitive disabilities",
-            'impact': ImpactScale.MEDIUM.value,
-            'wcag': ['3.3.2'],
-            'remediation': "Add required attribute and visual indication"
-        },
         'ErrStyleAttrColorFont': {
             'title': "Inline style attributes define color or font properties, preventing user customization",
             'what': "Inline style attributes define color or font properties directly on HTML elements, overriding user stylesheets and preventing users from customizing visual presentation",

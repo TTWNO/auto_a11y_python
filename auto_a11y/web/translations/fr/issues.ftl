@@ -3121,14 +3121,6 @@ WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark =
     .remediation = Ajouter aria-label ou aria-labelledby, ou utiliser un type de région repère différent
     .what-generic = La région repère manque du libellé requis pour être considérée comme une région repère
 
-WarnRequiredNotIndicated =
-    .title = Champ obligatoire non clairement indiqué
-    .what = Un champ est obligatoire (par exemple, la page renvoie une erreur lorsqu'il est vide), mais le balisage ne le déclare pas comme obligatoire via l'attribut required, aria-required ou un indice visible.
-    .why = Les utilisateurs ne savent pas quels champs sont obligatoires
-    .who = Tous les utilisateurs, en particulier ceux avec des déficiences cognitives
-    .remediation = Ajouter l'attribut required et une indication visuelle
-    .what-generic = Champ obligatoire non clairement indiqué
-
 WarnRightAlignedText =
     .title = Le texte du corps est aligné à droite, affectant la lisibilité
     .what = Le texte de corps d'une page principalement de gauche à droite est rendu avec text-align: right, ce qui perturbe le flux de lecture attendu.

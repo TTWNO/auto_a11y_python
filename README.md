@@ -658,7 +658,7 @@ Contributions are welcome! Please:
 
 ## License
 
-GNU General Public License v3.0
+Proprietary. Copyright (c) 2025-2026 Canadian National Institute for the Blind (CNIB). All rights reserved. See [LICENSE](./LICENSE).
 
 ## Author
 

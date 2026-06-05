@@ -662,7 +662,7 @@ Les contributions sont les bienvenues ! Veuillez :
 
 ## Licence
 
-Licence publique générale GNU v3.0
+Logiciel propriétaire. Copyright (c) 2025-2026 Institut national canadien pour les aveugles (INCA / CNIB). Tous droits réservés. Voir [LICENSE](./LICENSE).
 
 ## Auteur
 

@@ -660,9 +660,9 @@ Contributions are welcome! Please:
 
 Proprietary. Copyright (c) 2025-2026 Canadian National Institute for the Blind (CNIB). All rights reserved. See [LICENSE](./LICENSE).
 
-## Author
+## Authors
 
-Bob Dodd
+Bob Dodd and Tait Hoyem
 
 ## Acknowledgments
 

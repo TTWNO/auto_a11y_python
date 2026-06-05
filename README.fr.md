@@ -664,9 +664,9 @@ Les contributions sont les bienvenues ! Veuillez :
 
 Logiciel propriétaire. Copyright (c) 2025-2026 Institut national canadien pour les aveugles (INCA / CNIB). Tous droits réservés. Voir [LICENSE](./LICENSE).
 
-## Auteur
+## Auteurs
 
-Bob Dodd
+Bob Dodd et Tait Hoyem
 
 ## Remerciements
 

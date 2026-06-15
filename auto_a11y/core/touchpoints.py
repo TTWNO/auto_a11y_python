@@ -580,6 +580,12 @@ class TouchpointMapper:
         'AI_ErrVisualHeadingNotMarked': TouchpointID.HEADINGS,
         'AI_ErrReadingOrderMismatch': TouchpointID.FOCUS_MANAGEMENT,
 
+        # DOM-detected adaptability codes (2026-06-15 audit follow-up; replace former DOM-redundant AI codes)
+        'ErrViewportZoomDisabled': TouchpointID.PAGE,
+        'ErrOrientationLocked': TouchpointID.PAGE,
+        'ErrTargetSizeTooSmall': TouchpointID.PAGE,
+        'ErrTextSpacingRestricted': TouchpointID.FONTS,
+
         # AI-detected codes wired to match fixtures (2026-06-15 audit follow-up)
         'AI_ErrFlashingContent': TouchpointID.ANIMATION,
         'AI_ErrMotionWithoutControl': TouchpointID.ANIMATION,

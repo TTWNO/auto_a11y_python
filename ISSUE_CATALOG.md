@@ -8415,3 +8415,51 @@ Description: A video with audio and visual content is presented without an accom
 Why it matters: A transcript is the only fully accessible alternative for people who cannot use captions or audio, and it lets anyone read, search, skim, and reference the content. Without one, WCAG 1.2.3 (Audio Description or Media Alternative) and 1.2.8 (Media Alternative, Prerecorded) are not met.
 Who it affects: Deaf-blind users who rely on a braille display and cannot access captions or audio, people who are deaf or hard of hearing, users on slow connections or who prefer reading over watching, and anyone who needs to search or quote the content.
 How to fix: Provide a complete text transcript of all spoken dialogue and significant visual information, placed near the video (for example in a heading-labelled section) or as a clearly linked downloadable file; include timestamps so the transcript can be cross-referenced with the video.
+
+---
+
+ID: ErrOrientationLocked
+Type: Error
+Impact: High
+WCAG: 1.3.4
+Touchpoint: page
+Description: CSS hides primary content in one orientation (for example @media (orientation: portrait) { body { display: none } }), forcing the user to rotate the device to access the page.
+Why it matters: Restricting content to one orientation excludes users who cannot rotate their device, failing WCAG 1.3.4 Orientation.
+Who it affects: Users with devices mounted in a fixed position (e.g. on a wheelchair), and users with motor disabilities who cannot easily rotate a device.
+How to fix: Support both portrait and landscape orientations. Do not hide or disable content based on orientation unless a specific orientation is essential; instead use responsive CSS so the layout adapts to either orientation.
+
+---
+
+ID: ErrTargetSizeTooSmall
+Type: Error
+Impact: High
+WCAG: 2.5.8
+Touchpoint: page
+Description: A button, link, or other interactive control renders smaller than 24 by 24 CSS pixels, below the WCAG 2.5.8 minimum target size.
+Why it matters: Small targets are hard to activate accurately, failing WCAG 2.5.8 Target Size (Minimum) and causing mis-taps for users with limited dexterity or on touch screens.
+Who it affects: Users with motor or dexterity impairments, users with tremors, and anyone using a touch screen.
+How to fix: Make interactive targets at least 24x24 CSS pixels (ideally 44x44), or leave at least 24px of spacing between adjacent small targets. Increase padding or min-width/min-height on buttons, icons, and links.
+
+---
+
+ID: ErrTextSpacingRestricted
+Type: Error
+Impact: Medium
+WCAG: 1.4.12
+Touchpoint: fonts
+Description: Text uses negative letter or word spacing, or sits in a fixed-height container with overflow:hidden, so increasing text spacing clips or breaks the content.
+Why it matters: When users override spacing for readability (line height 1.5, letter spacing 0.12em, word spacing 0.16em), content must not be lost or overlapped, per WCAG 1.4.12 Text Spacing.
+Who it affects: People with dyslexia and low vision who increase text spacing to read more comfortably.
+How to fix: Avoid negative letter-spacing and word-spacing. Use min-height instead of a fixed height on text containers and avoid overflow:hidden on text, so the layout expands when users increase spacing.
+
+---
+
+ID: ErrViewportZoomDisabled
+Type: Error
+Impact: High
+WCAG: 1.4.4, 1.4.10
+Touchpoint: page
+Description: The <meta name="viewport"> tag uses user-scalable=no or a maximum-scale below 2, which prevents or limits the browser's pinch-to-zoom and page-zoom.
+Why it matters: Blocking zoom stops people with low vision from enlarging text and content to a readable size, failing WCAG 1.4.4 Resize Text and 1.4.10 Reflow.
+Who it affects: People with low vision who rely on browser zoom or pinch-to-zoom to read content, and users on small touch screens.
+How to fix: Remove user-scalable=no and any maximum-scale below 2 (or 5) from the viewport meta tag. Use content="width=device-width, initial-scale=1" and let users zoom freely up to at least 200%.

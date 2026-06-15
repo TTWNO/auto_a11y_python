@@ -3633,3 +3633,35 @@ AI_WarnVideoWithoutTranscript =
     .who = Les personnes sourdes-aveugles qui dépendent d'un afficheur braille et ne peuvent accéder ni aux sous-titres ni à l'audio, les personnes sourdes ou malentendantes, les utilisateurs sur connexion lente ou qui préfèrent lire plutôt que regarder, et toute personne devant rechercher ou citer le contenu.
     .remediation = Fournir une transcription textuelle complète de tous les dialogues parlés et de l'information visuelle importante, placée près de la vidéo (par exemple dans une section titrée) ou sous forme de fichier téléchargeable clairement lié ; inclure des horodatages pour permettre la mise en correspondance avec la vidéo.
     .what-generic = Le contenu vidéo est présenté sans solution de remplacement sous forme de transcription textuelle.
+
+ErrOrientationLocked =
+    .title = Le contenu est verrouillé dans une seule orientation d'écran
+    .what = Le CSS masque le contenu principal dans une orientation (par exemple @media (orientation: portrait) {"{"} body {"{"} display: none {"}"} {"}"}), forçant l'utilisateur à pivoter l'appareil pour accéder à la page.
+    .why = Restreindre le contenu à une seule orientation exclut les utilisateurs qui ne peuvent pas pivoter leur appareil, ce qui enfreint le critère WCAG 1.3.4 Orientation.
+    .who = Les utilisateurs dont l'appareil est monté en position fixe (par exemple sur un fauteuil roulant) et les personnes ayant des limitations motrices qui ne peuvent pas facilement pivoter un appareil.
+    .remediation = Prenez en charge les orientations portrait et paysage. Ne masquez pas et ne désactivez pas le contenu selon l'orientation, sauf si une orientation précise est essentielle ; utilisez plutôt un CSS adaptatif pour que la mise en page s'ajuste aux deux orientations.
+    .what-generic = La page masque le contenu dans une orientation, la verrouillant en portrait ou en paysage.
+
+ErrTargetSizeTooSmall =
+    .title = La cible interactive est plus petite que le minimum de 24 x 24 pixels
+    .what = Un bouton, un lien ou un autre contrôle interactif s'affiche à une taille inférieure à 24 sur 24 pixels CSS, en deçà de la taille de cible minimale du critère WCAG 2.5.8.
+    .why = Les petites cibles sont difficiles à activer avec précision, ce qui enfreint le critère WCAG 2.5.8 Taille de la cible (minimum) et provoque des erreurs de pointage pour les utilisateurs ayant une dextérité réduite ou sur écran tactile.
+    .who = Les utilisateurs ayant des limitations motrices ou de dextérité, les personnes sujettes aux tremblements et toute personne utilisant un écran tactile.
+    .remediation = Rendez les cibles interactives d'au moins 24 x 24 pixels CSS (idéalement 44 x 44), ou laissez au moins 24 px d'espacement entre les petites cibles adjacentes. Augmentez le remplissage ou min-width/min-height sur les boutons, icônes et liens.
+    .what-generic = Une cible interactive est plus petite que la taille minimale de 24 x 24 pixels.
+
+ErrTextSpacingRestricted =
+    .title = L'espacement du texte ne peut pas être ajusté sans perte de contenu
+    .what = Le texte utilise un espacement négatif des lettres ou des mots, ou se trouve dans un conteneur à hauteur fixe avec overflow:hidden, de sorte qu'augmenter l'espacement du texte tronque ou rompt le contenu.
+    .why = Lorsque les utilisateurs modifient l'espacement pour la lisibilité (interligne 1,5, espacement des lettres 0,12em, espacement des mots 0,16em), aucun contenu ne doit être perdu ni se chevaucher, conformément au critère WCAG 1.4.12 Espacement du texte.
+    .who = Les personnes dyslexiques et malvoyantes qui augmentent l'espacement du texte pour lire plus confortablement.
+    .remediation = Évitez les valeurs négatives de letter-spacing et word-spacing. Utilisez min-height plutôt qu'une hauteur fixe sur les conteneurs de texte et évitez overflow:hidden sur le texte, afin que la mise en page s'agrandisse lorsque les utilisateurs augmentent l'espacement.
+    .what-generic = L'espacement du texte est restreint, de sorte que son ajustement tronque ou rompt le contenu.
+
+ErrViewportZoomDisabled =
+    .title = La balise meta viewport désactive ou limite le zoom
+    .what = La balise <meta name="viewport"> utilise user-scalable=no ou un maximum-scale inférieur à 2, ce qui empêche ou limite le zoom par pincement et le zoom de page du navigateur.
+    .why = Bloquer le zoom empêche les personnes malvoyantes d'agrandir le texte et le contenu à une taille lisible, ce qui enfreint les critères WCAG 1.4.4 Redimensionnement du texte et 1.4.10 Redistribution.
+    .who = Les personnes malvoyantes qui dépendent du zoom du navigateur ou du zoom par pincement pour lire le contenu, et les utilisateurs sur petits écrans tactiles.
+    .remediation = Retirez user-scalable=no et tout maximum-scale inférieur à 2 (ou 5) de la balise meta viewport. Utilisez content="width=device-width, initial-scale=1" et laissez les utilisateurs zoomer librement jusqu'à au moins 200 %.
+    .what-generic = La balise meta viewport empêche les utilisateurs de zoomer sur la page.

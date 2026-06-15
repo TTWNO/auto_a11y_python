@@ -52,6 +52,47 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
     # Generated descriptions from template
     descriptions: dict[str, dict[str, str | list[str]]] = {
         # --- AI codes wired to fixtures (2026-06-15 audit follow-up) ---
+        "ErrOrientationLocked": {
+            'title': "Content is locked to a single screen orientation",
+            'what': "CSS hides primary content in one orientation (for example @media (orientation: portrait) { body { display: none } }), forcing the user to rotate the device to access the page.",
+            'what_generic': "The page hides content in one orientation, locking it to portrait or landscape.",
+            'why': "Restricting content to one orientation excludes users who cannot rotate their device, failing WCAG 1.3.4 Orientation.",
+            'who': "Users with devices mounted in a fixed position (e.g. on a wheelchair), and users with motor disabilities who cannot easily rotate a device.",
+            'impact': ImpactScale.HIGH.value,
+            'wcag': ["1.3.4"],
+            'remediation': "Support both portrait and landscape orientations. Do not hide or disable content based on orientation unless a specific orientation is essential; instead use responsive CSS so the layout adapts to either orientation.",
+        },
+        "ErrTargetSizeTooSmall": {
+            'title': "Interactive target is smaller than the 24x24 pixel minimum",
+            'what': "A button, link, or other interactive control renders smaller than 24 by 24 CSS pixels, below the WCAG 2.5.8 minimum target size.",
+            'what_generic': "An interactive target is smaller than the minimum 24x24 pixel size.",
+            'why': "Small targets are hard to activate accurately, failing WCAG 2.5.8 Target Size (Minimum) and causing mis-taps for users with limited dexterity or on touch screens.",
+            'who': "Users with motor or dexterity impairments, users with tremors, and anyone using a touch screen.",
+            'impact': ImpactScale.HIGH.value,
+            'wcag': ["2.5.8"],
+            'remediation': "Make interactive targets at least 24x24 CSS pixels (ideally 44x44), or leave at least 24px of spacing between adjacent small targets. Increase padding or min-width/min-height on buttons, icons, and links.",
+        },
+        "ErrTextSpacingRestricted": {
+            'title': "Text spacing cannot be adjusted without losing content",
+            'what': "Text uses negative letter or word spacing, or sits in a fixed-height container with overflow:hidden, so increasing text spacing clips or breaks the content.",
+            'what_generic': "Text spacing is restricted, so adjusting it clips or breaks content.",
+            'why': "When users override spacing for readability (line height 1.5, letter spacing 0.12em, word spacing 0.16em), content must not be lost or overlapped, per WCAG 1.4.12 Text Spacing.",
+            'who': "People with dyslexia and low vision who increase text spacing to read more comfortably.",
+            'impact': ImpactScale.MEDIUM.value,
+            'wcag': ["1.4.12"],
+            'remediation': "Avoid negative letter-spacing and word-spacing. Use min-height instead of a fixed height on text containers and avoid overflow:hidden on text, so the layout expands when users increase spacing.",
+        },
+        "ErrViewportZoomDisabled": {
+            'title': "Viewport meta tag disables or restricts zoom",
+            'what': "The <meta name=\"viewport\"> tag uses user-scalable=no or a maximum-scale below 2, which prevents or limits the browser's pinch-to-zoom and page-zoom.",
+            'what_generic': "The viewport meta tag prevents users from zooming the page.",
+            'why': "Blocking zoom stops people with low vision from enlarging text and content to a readable size, failing WCAG 1.4.4 Resize Text and 1.4.10 Reflow.",
+            'who': "People with low vision who rely on browser zoom or pinch-to-zoom to read content, and users on small touch screens.",
+            'impact': ImpactScale.HIGH.value,
+            'wcag': ["1.4.4", "1.4.10"],
+            'remediation': "Remove user-scalable=no and any maximum-scale below 2 (or 5) from the viewport meta tag. Use content=\"width=device-width, initial-scale=1\" and let users zoom freely up to at least 200%.",
+        },
+        # --- AI codes wired to fixtures (2026-06-15 audit follow-up) ---
         "AI_ErrAlertWithoutARIA": {
             'title': "Alert message {element_text} is missing ARIA live-region markup",
             'what': "A visual alert, banner, or status message is presented without role=\"alert\", role=\"status\", or an aria-live attribute, so assistive technology has no way to know it should be announced. The message appears styled as a success, error, or warning notice but is exposed to screen readers as ordinary text.",

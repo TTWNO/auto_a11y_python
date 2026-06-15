@@ -110,7 +110,12 @@ class TestConfiguration:
                     "modals": True,
                     "language": True,
                     "animations": True,
-                    "interactive": True
+                    "interactive": True,
+                    "widgets": True,
+                    "landmarks": True,
+                    "media": True,
+                    "live_regions": True,
+                    "structure": True
                 }
             },
             "individual_tests": {}  # Override specific test IDs

@@ -588,7 +588,7 @@ class TestRunner:
                             # Apply AI settings from project
                             test_config.config['global']['run_ai_tests'] = project_config.get('enable_ai_testing', False)
                             if 'ai_tests' in project_config:
-                                for test_name in ['headings', 'reading_order', 'modals', 'language', 'animations', 'interactive']:
+                                for test_name in ['headings', 'reading_order', 'modals', 'language', 'animations', 'interactive', 'widgets', 'landmarks', 'media', 'live_regions', 'structure']:
                                     enabled = test_name in project_config['ai_tests']
                                     test_config.set_ai_test_enabled(test_name, enabled)
                         else:
@@ -706,7 +706,7 @@ class TestRunner:
                     run_ai = run_ai_analysis
                     if run_ai and not ai_tests_to_run:
                         # Default tests if not specified
-                        ai_tests_to_run = ['headings', 'reading_order', 'language', 'interactive']
+                        ai_tests_to_run = ['headings', 'reading_order', 'modals', 'language', 'animations', 'interactive', 'widgets', 'landmarks', 'media', 'live_regions', 'structure']
                         logger.info(f"Using default AI tests: {ai_tests_to_run}")
                 
                 # Get API key from config if not provided
@@ -945,6 +945,11 @@ class TestRunner:
                                 "language",
                                 "animations",
                                 "interactive",
+                                "widgets",
+                                "landmarks",
+                                "media",
+                                "live_regions",
+                                "structure",
                             ):
                                 test_config.set_ai_test_enabled(
                                     test_name,
@@ -1030,8 +1035,15 @@ class TestRunner:
                 ai_tests_to_run = [
                     "headings",
                     "reading_order",
+                    "modals",
                     "language",
+                    "animations",
                     "interactive",
+                    "widgets",
+                    "landmarks",
+                    "media",
+                    "live_regions",
+                    "structure",
                 ]
 
             if not ai_api_key:

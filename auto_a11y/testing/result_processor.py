@@ -275,7 +275,12 @@ class ResultProcessor:
                     'modals': TouchpointID.DIALOGS,
                     'language': TouchpointID.LANGUAGE,
                     'animations': TouchpointID.ANIMATION,
-                    'interactive': TouchpointID.EVENT_HANDLING  # Interactive elements need proper event handling
+                    'interactive': TouchpointID.EVENT_HANDLING,  # Interactive elements need proper event handling
+                    'widgets': TouchpointID.EVENT_HANDLING,  # Custom widgets need ARIA roles/states
+                    'landmarks': TouchpointID.LANDMARKS,
+                    'media': TouchpointID.VIDEOS,
+                    'live_regions': TouchpointID.EVENT_HANDLING,  # Dynamic announcements
+                    'structure': TouchpointID.NAVIGATION  # Skip links, time limits, complex tables
                 }
                 
                 # Get the touchpoint for this AI analysis
@@ -296,7 +301,12 @@ class ResultProcessor:
                     'modals': 'Modal dialog accessibility check',
                     'language': 'Language declaration check',
                     'animations': 'Animation and motion check',
-                    'interactive': 'Interactive element keyboard accessibility'
+                    'interactive': 'Interactive element keyboard accessibility',
+                    'widgets': 'Custom widget ARIA check',
+                    'landmarks': 'Landmark roles and labels check',
+                    'media': 'Media captions and transcripts check',
+                    'live_regions': 'Dynamic content announcement check',
+                    'structure': 'Page structure (skip link, time limits, tables) check'
                 }
                 
                 checks.append({
@@ -322,7 +332,12 @@ class ResultProcessor:
                     'modals': TouchpointID.DIALOGS,
                     'language': TouchpointID.LANGUAGE,
                     'animations': TouchpointID.ANIMATION,
-                    'interactive': TouchpointID.EVENT_HANDLING
+                    'interactive': TouchpointID.EVENT_HANDLING,
+                    'widgets': TouchpointID.EVENT_HANDLING,
+                    'landmarks': TouchpointID.LANDMARKS,
+                    'media': TouchpointID.VIDEOS,
+                    'live_regions': TouchpointID.EVENT_HANDLING,
+                    'structure': TouchpointID.NAVIGATION
                 }
 
                 # Get the touchpoint for this AI analysis
@@ -341,7 +356,12 @@ class ResultProcessor:
                     'modals': 'Modal dialog accessibility check',
                     'language': 'Language declaration check',
                     'animations': 'Animation and motion check',
-                    'interactive': 'Interactive element keyboard accessibility'
+                    'interactive': 'Interactive element keyboard accessibility',
+                    'widgets': 'Custom widget ARIA check',
+                    'landmarks': 'Landmark roles and labels check',
+                    'media': 'Media captions and transcripts check',
+                    'live_regions': 'Dynamic content announcement check',
+                    'structure': 'Page structure (skip link, time limits, tables) check'
                 }
 
                 checks.append({
@@ -661,7 +681,12 @@ class ResultProcessor:
             'modals': ['2.1.2', '4.1.2', '2.4.3'],  # No Keyboard Trap, Name/Role/Value, Focus Order
             'language': ['3.1.1', '3.1.2'],  # Language of Page, Language of Parts
             'animations': ['2.2.2', '2.3.1'],  # Pause/Stop/Hide, Three Flashes
-            'interactive': ['2.1.1', '4.1.2']  # Keyboard, Name/Role/Value
+            'interactive': ['2.1.1', '4.1.2'],  # Keyboard, Name/Role/Value
+            'widgets': ['4.1.2', '2.1.1'],  # Name/Role/Value, Keyboard
+            'landmarks': ['1.3.1', '2.4.1'],  # Info and Relationships, Bypass Blocks
+            'media': ['1.2.2', '1.2.1', '1.4.2'],  # Captions, Audio-only/Video-only, Audio Control
+            'live_regions': ['4.1.3', '1.3.1'],  # Status Messages, Info and Relationships
+            'structure': ['2.4.1', '2.2.1', '1.3.1']  # Bypass Blocks, Timing Adjustable, Info and Relationships
         }
         return wcag_map.get(analysis_type, ['4.1.2'])  # Default to Name/Role/Value
     

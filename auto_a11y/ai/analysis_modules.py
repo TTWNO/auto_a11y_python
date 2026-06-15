@@ -272,6 +272,9 @@ ISSUE CODES:
 2. AI_ErrHeadingLevelMismatch - Heading level wrong for visual prominence
    Required: heading_text, element_tag, current_level, suggested_level, element_class, element_id
 
+3. AI_ErrSkippedHeading - Heading levels skip a level in the document outline (e.g. h2 followed by h4)
+   Required: heading_text, element_tag, current_level, expected_level, element_class, element_id
+
 Return JSON:
 {
     "issues": [
@@ -337,6 +340,9 @@ Compare the VISUAL reading order (left-to-right, top-to-bottom) with the DOM ord
 ISSUE CODES (use these exactly):
 - AI_ErrReadingOrderMismatch: Content appears in different order visually vs DOM (screen readers read wrong order)
 - AI_ErrVisualGroupingBroken: Related content appears grouped visually but is separated in DOM
+- AI_WarnPossibleReadingOrderIssue: Visual order MAY differ from DOM order but it is ambiguous and needs human review (WARNING)
+- AI_InfoContentOrder: Note about the content/reading order worth surfacing for manual confirmation (INFO)
+- AI_InfoVisualCue: Information conveyed by a purely visual cue (position, proximity, colour) that may not be in the DOM (INFO)
 
 Return ONLY valid JSON:
 {
@@ -356,7 +362,7 @@ Return ONLY valid JSON:
     "summary": "Brief summary"
 }
 
-IMPORTANT: Only report SIGNIFICANT mismatches that affect comprehension. Minor reordering within a section is usually fine."""
+IMPORTANT: Only report SIGNIFICANT mismatches that affect comprehension. Minor reordering within a section is usually fine. Set "type" to "warn" for AI_Warn* codes and "info" for AI_Info* codes; otherwise "err"."""
 
         try:
             result: dict[str, Any] = await self.client.analyze_with_image_and_html(
@@ -394,6 +400,11 @@ ISSUE CODES (use these exactly):
 - AI_ErrDialogMissingLabel: Dialog has role but no aria-label or aria-labelledby
 - AI_ErrDialogNoCloseButton: Modal has no visible close mechanism (button, X, etc.)
 - AI_WarnDialogBackgroundNotInert: Content behind modal appears still interactive (not properly disabled)
+- AI_ErrModalWithoutARIA: A modal overlay with no dialog ARIA at all (no role, no aria-modal, no label)
+- AI_ErrDialogWithoutARIA: An element that looks like a dialog/modal but lacks the required ARIA markup
+- AI_ErrModalFocusTrap: Modal is open but focus is not trapped inside it (tabbing reaches the page behind)
+- AI_WarnModalMissingLabel: Modal likely needs an accessible name and none is evident (WARNING)
+- AI_WarnModalWithoutFocusTrap: Focus trapping cannot be confirmed and needs manual review (WARNING)
 
 Return ONLY valid JSON:
 {
@@ -420,7 +431,7 @@ Return ONLY valid JSON:
     ]
 }
 
-IMPORTANT: Only analyze modals that are CURRENTLY VISIBLE in the screenshot."""
+IMPORTANT: Only analyze modals that are CURRENTLY VISIBLE in the screenshot. Set "type" to "warn" for AI_Warn* codes, otherwise "err"."""
 
         try:
             result: dict[str, Any] = await self.client.analyze_with_image_and_html(
@@ -469,6 +480,7 @@ ISSUE CODES (use these exactly):
 - AI_ErrPageLanguageMissing: No lang attribute on <html> element (only if html_lang is missing)
 - AI_ErrPageLanguageWrong: Page lang attribute doesn't match visible content language
 - AI_ErrForeignTextUnmarked: Foreign language text found without lang attribute (ERROR - screen readers will mispronounce)
+- AI_WarnMixedLanguage: Page mixes languages and some passages may need their own lang attribute - needs review (WARNING, set "type":"warn")
 
 For each foreign text found:
 1. Extract the EXACT text from the HTML
@@ -539,6 +551,8 @@ ISSUE CODES (use these exactly):
 - AI_ErrAutoPlayingMedia: Auto-playing video/audio without controls
 - AI_WarnNoReducedMotion: Animations don't respect prefers-reduced-motion
 - AI_WarnPotentialFlashing: Animation may cause flashing (seizure risk)
+- AI_ErrFlashingContent: Content flashes more than 3 times per second (seizure risk, WCAG 2.3.1)
+- AI_ErrMotionWithoutControl: Continuous/large motion (auto-scroll, parallax, marquee) with no mechanism to pause, stop, or hide it
 
 Return ONLY valid JSON:
 {
@@ -595,6 +609,7 @@ ISSUE CODES (use these exactly):
 - AI_ErrCustomControlNoARIA: Custom widget (tabs, accordion, dropdown) lacks proper ARIA roles/states
 - AI_ErrClickableNotFocusable: Element has click handler but no tabindex (not keyboard accessible)
 - AI_WarnFocusIndicatorWeak: Focus indicator appears too subtle or missing
+- AI_ErrMissingFocusIndicator: Interactive element shows NO visible focus indicator at all (outline removed with no replacement)
 
 Return ONLY valid JSON:
 {
@@ -627,3 +642,302 @@ IMPORTANT:
         except Exception as e:
             logger.error(f"Interactive analysis failed: {e}")
             return {'error': str(e), 'interactive_elements_found': False, 'issues': []}
+
+
+class WidgetARIAAnalyzer:
+    """Detects custom UI widgets that lack the ARIA roles/states their pattern requires."""
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
+        """Identify visually-recognisable widgets implemented without proper ARIA.
+
+        Args:
+            screenshot: Page screenshot
+            html: Page HTML
+
+        Returns:
+            Analysis results with specific issue codes
+        """
+        prompt = """Analyze this page for custom interactive WIDGETS that are missing the ARIA
+roles, states, and properties their design pattern requires. Use the screenshot to recognise the
+widget visually and the HTML to confirm the markup is missing the required ARIA.
+
+Only flag a widget when it VISUALLY presents as the pattern but the HTML lacks the required ARIA
+(or a native element that would supply it). If the correct role/state is already present, do NOT report it.
+
+ISSUE CODES (use the one that matches the widget; report at the widget's root element):
+- AI_ErrTabsWithoutARIA: Tabbed interface without role="tablist"/"tab"/"tabpanel" + aria-selected/aria-controls
+- AI_ErrToggleWithoutARIA: On/off switch/toggle without role="switch" (or checkbox) semantics
+- AI_ErrToggleWithoutState: Toggle/switch has a role but no aria-checked/aria-pressed reflecting its state
+- AI_ErrDisclosureWithoutARIA: Show/hide disclosure trigger without aria-expanded + aria-controls
+- AI_ErrDatePickerWithoutARIA: Date picker without grid/dialog roles and labelled, operable controls
+- AI_ErrCheckboxGroupWithoutARIA: Group of checkboxes without a group/fieldset and accessible group name
+- AI_ErrRadioGroupWithoutARIA: Custom radio group without role="radiogroup"/"radio" + aria-checked
+- AI_ErrCardWithoutARIA: Interactive card (whole-card click target) without a clear role/name for the action
+- AI_ErrBreadcrumbsWithoutARIA: Breadcrumb trail without nav + aria-label and aria-current on the current item
+- AI_ErrAutocompleteWithoutARIA: Autocomplete/combobox without role="combobox" + aria-expanded/aria-controls/aria-activedescendant
+- AI_ErrFeedWithoutARIA: Infinite/streaming feed without role="feed" and articles with aria-posinset/aria-setsize
+- AI_ErrSliderWithoutARIA: Custom slider without role="slider" + aria-valuenow/valuemin/valuemax
+- AI_ErrSpinbuttonWithoutARIA: Number spinner without role="spinbutton" + aria-valuenow/valuemin/valuemax
+- AI_ErrMeterWithoutARIA: Meter/gauge without role="meter" (or <meter>) + aria-valuenow/valuemin/valuemax
+- AI_ErrProgressBarWithoutARIA: Progress indicator without role="progressbar" (or <progress>) + aria-valuenow
+- AI_ErrTreeViewWithoutARIA: Tree view without role="tree"/"treeitem" + aria-expanded/aria-selected
+- AI_ErrPaginationWithoutARIA: Pagination without nav + aria-label and aria-current on the current page
+- AI_ErrSearchWithoutARIA: Search region without role="search" (or <search>) and a labelled search input
+- AI_WarnSearchRoleOnForm: A form is a search form but uses role="search" on the wrong element / redundantly
+
+Return ONLY valid JSON:
+{
+    "issues": [
+        {
+            "err": "AI_ErrTabsWithoutARIA",
+            "type": "err",
+            "element_tag": "div",
+            "element_class": "tabs",
+            "element_id": "id-or-null",
+            "element_text": "short label of the widget",
+            "description": "Tabbed interface lacks role=tablist/tab/tabpanel and aria-selected"
+        }
+    ],
+    "summary": "Brief summary"
+}
+
+IMPORTANT: type is "warn" for AI_Warn* codes, otherwise "err". Report HIGH-CONFIDENCE issues only."""
+
+        try:
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
+                screenshot, html, prompt
+            )
+            if 'issues' not in result:
+                result['issues'] = []
+            return result
+        except Exception as e:
+            logger.error(f"Widget ARIA analysis failed: {e}")
+            return {'error': str(e), 'issues': []}
+
+
+class LandmarkAIAnalyzer:
+    """Detects redundant ARIA roles on native landmarks and unlabelled duplicate landmarks."""
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
+        """Find redundant landmark roles and landmarks that need a distinguishing label.
+
+        Args:
+            screenshot: Page screenshot
+            html: Page HTML
+
+        Returns:
+            Analysis results with specific issue codes
+        """
+        prompt = """Analyze the landmark structure of this page using the HTML (and the screenshot
+for layout). Report two kinds of issue.
+
+REDUNDANT ROLE ON A NATIVE LANDMARK — a native element already has an implicit landmark role, so an
+explicit matching role is redundant (a warning, not an error). Report on the element carrying the role:
+- AI_WarnBannerRoleOnHeader: role="banner" on a top-level <header>
+- AI_WarnComplementaryRoleOnAside: role="complementary" on an <aside>
+- AI_WarnContentinfoRoleOnFooter: role="contentinfo" on a top-level <footer>
+- AI_WarnFormRoleOnForm: role="form" on a <form>
+- AI_WarnMainRoleOnMain: role="main" on a <main>
+- AI_WarnNavigationRoleOnNav: role="navigation" on a <nav>
+
+MISSING DISTINGUISHING LABEL:
+- AI_ErrLandmarkWithoutLabel: Multiple landmarks of the same type with no aria-label/aria-labelledby to tell them apart
+- AI_WarnRegionWithoutLabel: An element with role="region" (or <section> acting as a region) that has no accessible name
+
+Return ONLY valid JSON:
+{
+    "issues": [
+        {
+            "err": "AI_WarnBannerRoleOnHeader",
+            "type": "warn",
+            "element_tag": "header",
+            "element_class": "site-header",
+            "element_id": "id-or-null",
+            "description": "role=banner is redundant on a top-level <header>"
+        }
+    ],
+    "summary": "Brief summary"
+}
+
+IMPORTANT: type is "warn" for AI_Warn* codes, "err" for AI_Err* codes. Only report clear cases."""
+
+        try:
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
+                screenshot, html, prompt
+            )
+            if 'issues' not in result:
+                result['issues'] = []
+            return result
+        except Exception as e:
+            logger.error(f"Landmark AI analysis failed: {e}")
+            return {'error': str(e), 'issues': []}
+
+
+class MediaAnalyzer:
+    """Detects video/audio media that lacks captions, transcripts, or autoplay controls."""
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
+        """Find media elements missing required alternatives.
+
+        Args:
+            screenshot: Page screenshot
+            html: Page HTML
+
+        Returns:
+            Analysis results with specific issue codes
+        """
+        prompt = """Analyze audio and video media on this page using the HTML (and screenshot for
+context). Look at <video>, <audio>, and embedded players (iframes from video/audio providers).
+
+ISSUE CODES (use these exactly; report at the media element):
+- AI_ErrVideoWithoutCaptions: Video with speech/audio content and no captions track (<track kind="captions">) — ERROR
+- AI_WarnVideoWithoutCaptions: Video where captions cannot be confirmed and need manual review — WARNING
+- AI_WarnVideoWithoutTranscript: Video without a text transcript available near it — WARNING
+- AI_ErrAudioWithoutTranscript: Audio content (podcast, recording) with no text transcript — ERROR
+- AI_ErrAutoplayMedia: Audio or video that autoplays without an obvious pause/stop/mute control — ERROR
+
+Return ONLY valid JSON:
+{
+    "issues": [
+        {
+            "err": "AI_ErrVideoWithoutCaptions",
+            "type": "err",
+            "element_tag": "video",
+            "element_class": "class-or-null",
+            "element_id": "id-or-null",
+            "description": "Video has spoken content but no captions track"
+        }
+    ],
+    "summary": "Brief summary"
+}
+
+IMPORTANT: type is "warn" for AI_Warn* codes, otherwise "err". Decorative/muted background video without speech is not an error."""
+
+        try:
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
+                screenshot, html, prompt
+            )
+            if 'issues' not in result:
+                result['issues'] = []
+            return result
+        except Exception as e:
+            logger.error(f"Media analysis failed: {e}")
+            return {'error': str(e), 'issues': []}
+
+
+class LiveRegionAnalyzer:
+    """Detects dynamic content (alerts, notifications, status, errors) that is not announced."""
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
+        """Find dynamic UI that updates without an appropriate live region/role.
+
+        Args:
+            screenshot: Page screenshot
+            html: Page HTML
+
+        Returns:
+            Analysis results with specific issue codes
+        """
+        prompt = """Analyze this page for DYNAMIC content that updates without being announced to
+screen readers. Use the screenshot to recognise the component and the HTML to confirm the live
+region / role is missing.
+
+ISSUE CODES (use these exactly; report at the component's container):
+- AI_ErrAlertWithoutARIA: An alert/error banner that should interrupt the user but lacks role="alert"
+- AI_ErrNotificationWithoutARIA: A toast/notification without role="status"/"alert" or aria-live
+- AI_ErrLoadingStateNotAnnounced: A loading/spinner/progress state with no aria-live/role="status" announcement
+- AI_ErrMissingLiveRegion: Content that changes dynamically (results, counters, chat) with no live region at all
+- AI_ErrFormErrorNotAnnounced: Form validation errors shown visually but not tied to fields / not in a live region
+
+Return ONLY valid JSON:
+{
+    "issues": [
+        {
+            "err": "AI_ErrNotificationWithoutARIA",
+            "type": "err",
+            "element_tag": "div",
+            "element_class": "toast",
+            "element_id": "id-or-null",
+            "description": "Toast notification has no role=status/alert or aria-live"
+        }
+    ],
+    "summary": "Brief summary"
+}
+
+IMPORTANT: type is "err" for all of these. Only report components that clearly update dynamically."""
+
+        try:
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
+                screenshot, html, prompt
+            )
+            if 'issues' not in result:
+                result['issues'] = []
+            return result
+        except Exception as e:
+            logger.error(f"Live region analysis failed: {e}")
+            return {'error': str(e), 'issues': []}
+
+
+class StructuralAnalyzer:
+    """Detects page-level structural gaps: missing skip link, time limits, complex tables."""
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
+        """Find page-structure issues that need visual + structural judgement.
+
+        Args:
+            screenshot: Page screenshot
+            html: Page HTML
+
+        Returns:
+            Analysis results with specific issue codes
+        """
+        prompt = """Analyze this page for structural accessibility gaps that need both the rendered
+view and the HTML to judge.
+
+ISSUE CODES (use these exactly):
+- AI_ErrMissingSkipLink: Page has repeated navigation before the main content but no "skip to main content" link as the first focusable element
+- AI_ErrTimeLimitNoWarning: A countdown / session time limit is visible with no way to turn off, adjust, or extend it
+- AI_WarnTableWithComplexStructure: A data table has a complex structure (multi-level/merged headers, irregular spans) that likely needs scope/id+headers associations a screen reader can follow — needs review
+
+Return ONLY valid JSON:
+{
+    "issues": [
+        {
+            "err": "AI_ErrMissingSkipLink",
+            "type": "err",
+            "element_tag": "body",
+            "element_class": "class-or-null",
+            "element_id": "id-or-null",
+            "description": "Repeated nav precedes main content with no skip link"
+        }
+    ],
+    "summary": "Brief summary"
+}
+
+IMPORTANT: type is "warn" for AI_Warn* codes, otherwise "err". Only report clear cases."""
+
+        try:
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
+                screenshot, html, prompt
+            )
+            if 'issues' not in result:
+                result['issues'] = []
+            return result
+        except Exception as e:
+            logger.error(f"Structural analysis failed: {e}")
+            return {'error': str(e), 'issues': []}

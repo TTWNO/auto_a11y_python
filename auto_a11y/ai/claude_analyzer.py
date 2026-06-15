@@ -17,6 +17,11 @@ from auto_a11y.ai.analysis_modules import (
     LanguageAnalyzer,
     AnimationAnalyzer,
     InteractiveAnalyzer,
+    WidgetARIAAnalyzer,
+    LandmarkAIAnalyzer,
+    MediaAnalyzer,
+    LiveRegionAnalyzer,
+    StructuralAnalyzer,
     generate_xpath,
     find_element_xpath_by_text,
 )
@@ -88,6 +93,11 @@ class ClaudeAnalyzer:
         self.language_analyzer: LanguageAnalyzer = LanguageAnalyzer(self.client)
         self.animation_analyzer: AnimationAnalyzer = AnimationAnalyzer(self.client)
         self.interactive_analyzer: InteractiveAnalyzer = InteractiveAnalyzer(self.client)
+        self.widget_aria_analyzer: WidgetARIAAnalyzer = WidgetARIAAnalyzer(self.client)
+        self.landmark_ai_analyzer: LandmarkAIAnalyzer = LandmarkAIAnalyzer(self.client)
+        self.media_analyzer: MediaAnalyzer = MediaAnalyzer(self.client)
+        self.live_region_analyzer: LiveRegionAnalyzer = LiveRegionAnalyzer(self.client)
+        self.structural_analyzer: StructuralAnalyzer = StructuralAnalyzer(self.client)
 
         logger.info(f"Claude analyzer initialized with model: {resolved_model}")
 
@@ -128,7 +138,10 @@ class ClaudeAnalyzer:
 
         # Filter analyses based on configuration
         if analyses is None:
-            analyses = ['headings', 'reading_order', 'language', 'interactive']
+            analyses = [
+                'headings', 'reading_order', 'modals', 'language', 'animations',
+                'interactive', 'widgets', 'landmarks', 'media', 'live_regions', 'structure',
+            ]
 
         # Filter based on configuration
         enabled_analyses: list[str] = []
@@ -167,6 +180,21 @@ class ClaudeAnalyzer:
 
         if 'interactive' in analyses:
             tasks.append(('interactive', self.interactive_analyzer.analyze(screenshot, html)))
+
+        if 'widgets' in analyses:
+            tasks.append(('widgets', self.widget_aria_analyzer.analyze(screenshot, html)))
+
+        if 'landmarks' in analyses:
+            tasks.append(('landmarks', self.landmark_ai_analyzer.analyze(screenshot, html)))
+
+        if 'media' in analyses:
+            tasks.append(('media', self.media_analyzer.analyze(screenshot, html)))
+
+        if 'live_regions' in analyses:
+            tasks.append(('live_regions', self.live_region_analyzer.analyze(screenshot, html)))
+
+        if 'structure' in analyses:
+            tasks.append(('structure', self.structural_analyzer.analyze(screenshot, html)))
 
         # Run analyses in parallel
         for name, task in tasks:
@@ -307,6 +335,11 @@ class ClaudeAnalyzer:
                     'language': 'AI_ErrForeignTextUnmarked',
                     'animations': 'AI_WarnNoReducedMotion',
                     'interactive': 'AI_ErrNonSemanticButton',
+                    'widgets': 'AI_ErrCustomControlNoARIA',
+                    'landmarks': 'AI_ErrLandmarkWithoutLabel',
+                    'media': 'AI_ErrVideoWithoutCaptions',
+                    'live_regions': 'AI_ErrMissingLiveRegion',
+                    'structure': 'AI_ErrMissingSkipLink',
                 }
                 issue_code = fallback_codes.get(analysis_type, 'AI_ErrAccessibilityIssue')
 
@@ -361,8 +394,12 @@ class ClaudeAnalyzer:
                     use_text=bool(text_sample and not element_class and not element_id),
                 )
 
-            # Map analysis type to touchpoint
-            from auto_a11y.core.touchpoints import TouchpointID
+            # Resolve touchpoint per CODE first (single source of truth in
+            # core.touchpoints.ERROR_CODE_TO_TOUCHPOINT), since one analyzer can emit codes
+            # spanning several touchpoints (e.g. the widget analyzer covers event_handling,
+            # forms, and navigation). Fall back to a per-analysis-type map only when the code
+            # has no per-code entry.
+            from auto_a11y.core.touchpoints import TouchpointID, TouchpointMapper
             ai_to_touchpoint_map: dict[str, TouchpointID] = {
                 'headings': TouchpointID.HEADINGS,
                 'reading_order': TouchpointID.FOCUS_MANAGEMENT,
@@ -370,9 +407,14 @@ class ClaudeAnalyzer:
                 'language': TouchpointID.LANGUAGE,
                 'animations': TouchpointID.ANIMATION,
                 'interactive': TouchpointID.EVENT_HANDLING,
+                'widgets': TouchpointID.EVENT_HANDLING,
+                'landmarks': TouchpointID.LANDMARKS,
+                'media': TouchpointID.VIDEOS,
+                'live_regions': TouchpointID.EVENT_HANDLING,
+                'structure': TouchpointID.NAVIGATION,
             }
 
-            touchpoint_id = ai_to_touchpoint_map.get(analysis_type)
+            touchpoint_id = TouchpointMapper.get_touchpoint_for_error_code(issue_code) or ai_to_touchpoint_map.get(analysis_type)
             touchpoint_value: str = touchpoint_id.value if touchpoint_id else analysis_type
 
             violation = Violation(

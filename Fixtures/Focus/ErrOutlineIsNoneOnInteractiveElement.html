@@ -40,25 +40,35 @@
             outline: none;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrOutlineIsNoneOnInteractiveElement",
+    "issueId": "ErrOutlineIsNoneOnInteractiveElement",
+    "expectedViolationCount": 8,
+    "enforceElementExpectations": true,
+    "description": "Interactive elements set outline to none (directly or on focus) without providing a replacement focus indicator. Each affected element is validated individually.",
+    "wcag": "2.4.7"
+}
+    </script>
 </head>
 <body>
     <h1>Interactive Elements With Outline Set to None</h1>
     
     <!-- Standard form elements -->
-    <button class="no-outline">Button with no outline</button>
-    <a href="#" class="no-outline">Link with no outline</a>
-    <input type="text" class="no-outline" placeholder="Input with no outline">
-    <select class="no-outline">
+    <button class="no-outline" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="button element sets outline: none with no replacement focus style">Button with no outline</button>
+    <a href="#" class="no-outline" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="link sets outline: none with no replacement focus style">Link with no outline</a>
+    <input type="text" class="no-outline" placeholder="Input with no outline" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="input sets outline: none with no replacement focus style">
+    <select class="no-outline" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="select sets outline: none with no replacement focus style">
         <option>Select with no outline</option>
     </select>
-    <textarea class="no-outline" placeholder="Textarea with no outline"></textarea>
+    <textarea class="no-outline" placeholder="Textarea with no outline" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="textarea sets outline: none with no replacement focus style"></textarea>
     
     <!-- Elements that remove outline on focus -->
-    <button class="remove-on-focus">Outline removed on focus</button>
-    <a href="#" class="remove-on-focus">Link outline removed on focus</a>
+    <button class="remove-on-focus" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="button removes outline on :focus with no replacement">Outline removed on focus</button>
+    <a href="#" class="remove-on-focus" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="link removes outline on :focus with no replacement">Link outline removed on focus</a>
     
     <!-- Custom interactive elements -->
-    <div role="button" tabindex="0" class="no-outline">Custom button no outline</div>
+    <div role="button" tabindex="0" class="no-outline" data-expected-violation="true" data-violation-id="ErrOutlineIsNoneOnInteractiveElement" data-violation-reason="custom role=button element sets outline: none with no replacement">Custom button no outline</div>
     <span tabindex="0" class="no-outline">Focusable span no outline</span>
     
     <p>Removing outline without replacement focus indicator is an accessibility violation.</p>

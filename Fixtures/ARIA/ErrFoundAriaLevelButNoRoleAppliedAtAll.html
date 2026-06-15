@@ -37,6 +37,18 @@
             margin: 10px 0;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFoundAriaLevelButNoRoleAppliedAtAll",
+    "issueId": "ErrFoundAriaLevelButNoRoleAppliedAtAll",
+    "expectedViolationCount": 12,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Elements that carry an aria-level attribute but have no role applied at all, so the level has no heading role to apply to. Includes generic containers, inline elements, list items, a button, native headings given an explicit aria-level, and edge-case level values. Elements that pair aria-level with role heading are validated as passing. Each demonstrated case is validated individually.",
+    "wcag": "1.3.1"
+}
+    </script>
 </head>
 <body>
     <h1>Test Fixture: aria-level without role="heading"</h1>
@@ -46,17 +58,17 @@
     
     <div class="test-section error">
         <div class="test-title">❌ ERROR: Simple div with aria-level but no role</div>
-        <div aria-level="2">This div has aria-level="2" but no role="heading"</div>
+        <div aria-level="2" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Generic div has aria-level but no role">This div has aria-level="2" but no role="heading"</div>
     </div>
 
     <div class="test-section error">
         <div class="test-title">❌ ERROR: Span with aria-level but no role</div>
-        <span aria-level="1">Important announcement with aria-level but no heading role</span>
+        <span aria-level="1" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Span has aria-level but no role">Important announcement with aria-level but no heading role</span>
     </div>
 
     <div class="test-section error">
         <div class="test-title">❌ ERROR: Paragraph with aria-level but no role</div>
-        <p aria-level="3">This paragraph has aria-level="3" but lacks role="heading"</p>
+        <p aria-level="3" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Paragraph has aria-level but no role">This paragraph has aria-level="3" but lacks role="heading"</p>
     </div>
 
     <div class="test-section error">
@@ -66,18 +78,18 @@
 
     <div class="test-section error">
         <div class="test-title">❌ ERROR: Article with aria-level but no heading role</div>
-        <article aria-level="4">Article element with aria-level but no role="heading"</article>
+        <article aria-level="4" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Article has aria-level but no role">Article element with aria-level but no role="heading"</article>
     </div>
 
     <div class="test-section error">
         <div class="test-title">❌ ERROR: Button with aria-level (invalid combination)</div>
-        <button aria-level="1">Button with aria-level (buttons can't be headings)</button>
+        <button aria-level="1" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Button has aria-level but its implicit role is not heading">Button with aria-level (buttons can't be headings)</button>
     </div>
 
     <div class="test-section error">
         <div class="test-title">❌ ERROR: List item with aria-level but no heading role</div>
         <ul>
-            <li aria-level="2">List item with aria-level but no role="heading"</li>
+            <li aria-level="2" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="List item has aria-level but no role">List item with aria-level but no role="heading"</li>
         </ul>
     </div>
 
@@ -92,15 +104,15 @@
 
     <div class="test-section correct">
         <div class="test-title">✅ CORRECT: Elements with both aria-level and role="heading"</div>
-        <div role="heading" aria-level="1">Div with proper heading role and aria-level</div>
+        <div role="heading" aria-level="1" data-expected-pass="true" data-pass-reason="Div pairs aria-level with role heading">Div with proper heading role and aria-level</div>
         <span role="heading" aria-level="2">Span with proper heading role and aria-level</span>
         <p role="heading" aria-level="3">Paragraph with proper heading role and aria-level</p>
     </div>
 
     <div class="test-section correct">
         <div class="test-title">✅ CORRECT: Elements with aria-level on native headings</div>
-        <h1 aria-level="1">H1 with explicit aria-level (redundant but valid)</h1>
-        <h2 aria-level="3">H2 with different aria-level (overriding semantic level)</h2>
+        <h1 aria-level="1" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Native h1 carries an explicit aria-level with no role attribute applied">H1 with explicit aria-level (redundant but valid)</h1>
+        <h2 aria-level="3" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Native h2 carries an explicit aria-level with no role attribute applied">H2 with different aria-level (overriding semantic level)</h2>
     </div>
 
     <div class="test-section correct">
@@ -125,27 +137,27 @@
     
     <div class="test-section error">
         <div class="test-title">❌ EDGE CASE: Empty aria-level value</div>
-        <div aria-level="">Div with empty aria-level value</div>
+        <div aria-level="" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Div with empty aria-level value and no role">Div with empty aria-level value</div>
     </div>
 
     <div class="test-section error">
         <div class="test-title">❌ EDGE CASE: Invalid aria-level value</div>
-        <div aria-level="invalid">Div with invalid aria-level value</div>
+        <div aria-level="invalid" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Div with invalid aria-level value and no role">Div with invalid aria-level value</div>
     </div>
 
     <div class="test-section error">
         <div class="test-title">❌ EDGE CASE: aria-level with zero</div>
-        <div aria-level="0">Div with aria-level="0"</div>
+        <div aria-level="0" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Div with aria-level zero and no role">Div with aria-level="0"</div>
     </div>
 
     <div class="test-section error">
         <div class="test-title">❌ EDGE CASE: aria-level with negative number</div>
-        <div aria-level="-1">Div with aria-level="-1"</div>
+        <div aria-level="-1" data-expected-violation="true" data-violation-id="ErrFoundAriaLevelButNoRoleAppliedAtAll" data-violation-reason="Div with negative aria-level and no role">Div with aria-level="-1"</div>
     </div>
 
     <div class="test-section correct">
         <div class="test-title">✅ EDGE CASE: High aria-level number with proper role</div>
-        <div role="heading" aria-level="7">Heading with level 7 (beyond h1-h6)</div>
+        <div role="heading" aria-level="7" data-expected-pass="true" data-pass-reason="Div with high aria-level value also has role heading">Heading with level 7 (beyond h1-h6)</div>
     </div>
 
     <script>

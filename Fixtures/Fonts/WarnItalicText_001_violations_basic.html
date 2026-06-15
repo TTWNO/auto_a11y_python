@@ -6,9 +6,10 @@
     <title>WarnItalicText - Warnings</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnItalicText_001_violations_basic",
     "issueId": "WarnItalicText",
-    "expectedViolationCount": 3,
+    "expectedViolationCount": 5,
     "expectedPassCount": 0,
     "description": "Large blocks of italic text reducing readability",
     "wcag": "1.4.8",
@@ -38,14 +39,16 @@
         <section>
             <h2>Main Content</h2>
 
-            <div class="all-italic"
-                 data-expected-violation="true"
-                 data-violation-reason="Multiple paragraphs of body text in italic format reducing readability significantly. Extended italic text is difficult for users with dyslexia to process. Users with low vision find italic harder to distinguish. Reading speed decreases with italic body text. Eye strain increases with prolonged italic reading. Warning for WCAG 1.4.8 Visual Presentation - use regular text for body content, italics only for brief emphasis">
-                <p>The principles of accessible design extend beyond just technical implementation. They encompass a holistic approach to user experience that considers diverse user needs and capabilities.</p>
+            <!-- Engine emits WarnItalicText at the text-bearing <p> elements, not the wrapper div -->
+            <div class="all-italic">
+                <p data-expected-violation="true"
+                   data-violation-reason="Paragraph of body text in italic format reducing readability significantly. Extended italic text is difficult for users with dyslexia to process. Warning for WCAG 1.4.8 Visual Presentation - use regular text for body content, italics only for brief emphasis">The principles of accessible design extend beyond just technical implementation. They encompass a holistic approach to user experience that considers diverse user needs and capabilities.</p>
 
-                <p>When creating accessible content, it's essential to think about users who may have visual, auditory, motor, or cognitive disabilities. Each of these user groups has unique requirements that must be addressed.</p>
+                <p data-expected-violation="true"
+                   data-violation-reason="Paragraph of body text in italic format. Users with low vision find italic harder to distinguish. Reading speed decreases with italic body text. Warning for WCAG 1.4.8 Visual Presentation">When creating accessible content, it's essential to think about users who may have visual, auditory, motor, or cognitive disabilities. Each of these user groups has unique requirements that must be addressed.</p>
 
-                <p>By following established guidelines and testing with real users, we can create web experiences that work well for everyone regardless of their abilities or the technologies they use to access content.</p>
+                <p data-expected-violation="true"
+                   data-violation-reason="Paragraph of body text in italic format. Eye strain increases with prolonged italic reading. Warning for WCAG 1.4.8 Visual Presentation">By following established guidelines and testing with real users, we can create web experiences that work well for everyone regardless of their abilities or the technologies they use to access content.</p>
             </div>
         </section>
 

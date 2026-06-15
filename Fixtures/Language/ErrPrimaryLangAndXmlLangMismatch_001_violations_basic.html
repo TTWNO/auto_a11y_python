@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="es">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="es"
+      data-expected-violation="true"
+      data-violation-id="ErrPrimaryLangAndXmlLangMismatch"
+      data-violation-reason="HTML element has lang='en' but xml:lang='es', creating conflicting language information">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>XHTML Document - Language Mismatch</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrPrimaryLangAndXmlLangMismatch_001_violations_basic",
     "issueId": "ErrPrimaryLangAndXmlLangMismatch",
     "expectedViolationCount": 3,
@@ -16,9 +20,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrPrimaryLangAndXmlLangMismatch"
-      data-violation-reason="HTML element has lang='en' but xml:lang='es', creating conflicting language information">
+<body>
     <h1>Technical Documentation</h1>
 
     <p>This XHTML document has conflicting lang and xml:lang attributes on the html element.

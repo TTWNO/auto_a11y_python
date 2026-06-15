@@ -86,13 +86,13 @@
         .large-text-fail-green {
             font-size: 24px;
             font-weight: bold;
-            color: #90EE90; /* Light green - low contrast on green bg */
+            color: #6fd06f; /* Darker light-green - ~2.6:1 on the forest-green bg (fails 3:1) */
         }
         
         /* Edge case: exactly at threshold */
         .large-text-edge-case {
             font-size: 24px;
-            color: #949494; /* Approximately 2.95:1 - just below 3:1 threshold */
+            color: #9c9c9c; /* ~2.77:1 on white - just below the 3:1 large-text threshold */
         }
         
         /* Good examples for comparison (PASS AA) */
@@ -119,6 +119,17 @@
             text-decoration: underline;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrLargeTextContrastAA",
+    "issueId": "ErrLargeTextContrastAA",
+    "expectedViolationCount": 16,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Large text (>=24px or >=18.66px bold) failing the 3:1 AA contrast threshold against white, dark, blue and green backgrounds, plus interactive and inline-styled cases. Each case is validated individually; one comparison case passes.",
+    "wcag": "1.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Large Text Contrast AA Test Fixture</h1>
@@ -128,7 +139,7 @@
         <div class="test-description">
             <strong>Test 1:</strong> Large text (24px) with light gray color (~2.4:1 contrast ratio)
         </div>
-        <div class="large-text-fail-1">
+        <div class="large-text-fail-1" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="24px light gray on white fails 3:1">
             This large text should trigger ErrLargeTextContrastAA - insufficient contrast at 24px
         </div>
     </div>
@@ -137,7 +148,7 @@
         <div class="test-description">
             <strong>Test 2:</strong> Large bold text (26px bold) with very light gray (~2.1:1 contrast ratio)
         </div>
-        <div class="large-text-fail-2">
+        <div class="large-text-fail-2" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="26px bold very light gray on white fails 3:1">
             This bold large text fails AA contrast requirements
         </div>
     </div>
@@ -146,7 +157,7 @@
         <div class="test-description">
             <strong>Test 3:</strong> Extra large text (30px) with insufficient contrast (~2.6:1 ratio)
         </div>
-        <div class="large-text-fail-3">
+        <div class="large-text-fail-3" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="30px light gray on white fails 3:1">
             Even larger text can fail contrast requirements
         </div>
     </div>
@@ -155,7 +166,7 @@
         <div class="test-description">
             <strong>Test 4:</strong> Minimum large bold text size (18.66px bold) with poor contrast (~2.2:1 ratio)
         </div>
-        <div class="large-text-fail-4">
+        <div class="large-text-fail-4" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="18.66px bold light gray on white fails 3:1">
             This is the minimum size for large bold text and it fails contrast
         </div>
     </div>
@@ -164,7 +175,7 @@
         <div class="test-description">
             <strong>Test 5:</strong> Large text with very poor contrast (~1.8:1 ratio)
         </div>
-        <div class="large-text-fail-5">
+        <div class="large-text-fail-5" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="28px very light gray on white fails 3:1">
             This text has severely insufficient contrast
         </div>
     </div>
@@ -173,7 +184,7 @@
         <div class="test-description">
             <strong>Test 6:</strong> Edge case - just below 3:1 threshold (~2.95:1 ratio)
         </div>
-        <div class="large-text-edge-case">
+        <div class="large-text-edge-case" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="24px just below the 3:1 threshold">
             This large text is just below the 3:1 threshold for AA compliance
         </div>
     </div>
@@ -182,7 +193,7 @@
         <div class="test-description" style="background-color: #555; color: white;">
             <strong>Test 7:</strong> Large text on dark background with insufficient contrast
         </div>
-        <div class="large-text-fail-dark-1">
+        <div class="large-text-fail-dark-1" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="25px dark gray on dark bg fails 3:1">
             Large text on dark background with poor contrast
         </div>
     </div>
@@ -191,7 +202,7 @@
         <div class="test-description" style="background-color: #555; color: white;">
             <strong>Test 8:</strong> Large bold text on dark background
         </div>
-        <div class="large-text-fail-dark-2">
+        <div class="large-text-fail-dark-2" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="32px bold dark gray on dark bg fails 3:1">
             Bold large text on dark background failing contrast
         </div>
     </div>
@@ -200,7 +211,7 @@
         <div class="test-description" style="background-color: rgba(255,255,255,0.9);">
             <strong>Test 9:</strong> Large text on colored background (blue)
         </div>
-        <div class="large-text-fail-blue">
+        <div class="large-text-fail-blue" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="28px slate blue on royal blue fails 3:1">
             Large text on blue background with insufficient contrast
         </div>
     </div>
@@ -209,7 +220,7 @@
         <div class="test-description" style="background-color: rgba(255,255,255,0.9);">
             <strong>Test 10:</strong> Large bold text on colored background (green)
         </div>
-        <div class="large-text-fail-green">
+        <div class="large-text-fail-green" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="24px bold light green on forest green fails 3:1">
             Bold large text on green background failing contrast
         </div>
     </div>
@@ -218,9 +229,9 @@
         <div class="test-description">
             <strong>Test 11:</strong> Interactive elements with large text contrast issues
         </div>
-        <button class="button-large-text-fail">Button with Poor Contrast</button>
+        <button class="button-large-text-fail" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="24px button label light gray on light bg fails 3:1">Button with Poor Contrast</button>
         <br><br>
-        <a href="#" class="link-large-text-fail">Link with insufficient contrast</a>
+        <a href="#" class="link-large-text-fail" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="26px link light gray on white fails 3:1">Link with insufficient contrast</a>
     </div>
     
     <!-- Comparison: Good contrast examples -->
@@ -228,7 +239,7 @@
         <div class="test-description" style="background-color: #e8f5e8;">
             <strong>Comparison:</strong> Large text that PASSES AA contrast requirements (should NOT trigger error)
         </div>
-        <div class="large-text-pass">
+        <div class="large-text-pass" data-expected-pass="true" data-pass-reason="24px #767676 on white meets 3:1">
             This large text has sufficient contrast and should pass AA requirements
         </div>
     </div>
@@ -238,10 +249,10 @@
         <div class="test-description">
             <strong>Mixed Test:</strong> Multiple large text elements with various contrast failures
         </div>
-        <h2 style="font-size: 28px; color: #b8b8b8;">Large Heading with Poor Contrast</h2>
-        <p style="font-size: 24px; color: #c0c0c0;">Large paragraph text with insufficient contrast for AA compliance.</p>
-        <div style="font-size: 20px; font-weight: bold; color: #a5a5a5;">Bold text at 20px (considered large due to weight) with poor contrast.</div>
-        <span style="font-size: 36px; color: #d5d5d5;">Very large text with very poor contrast ratio.</span>
+        <h2 style="font-size: 28px; color: #b8b8b8;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="28px heading light gray on white fails 3:1">Large Heading with Poor Contrast</h2>
+        <p style="font-size: 24px; color: #c0c0c0;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="24px paragraph light gray on white fails 3:1">Large paragraph text with insufficient contrast for AA compliance.</p>
+        <div style="font-size: 20px; font-weight: bold; color: #a5a5a5;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="20px bold (large) light gray on white fails 3:1">Bold text at 20px (considered large due to weight) with poor contrast.</div>
+        <span style="font-size: 36px; color: #d5d5d5;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="36px very light gray on white fails 3:1">Very large text with very poor contrast ratio.</span>
     </div>
     
     <footer style="margin-top: 50px; padding: 20px; background-color: #f5f5f5; font-size: 12px; color: #666;">

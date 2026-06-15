@@ -6,6 +6,7 @@
     <title>DiscoStyleElementOnPage - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "DiscoStyleElementOnPage_001_violations_basic",
     "issueId": "DiscoStyleElementOnPage",
     "expectedViolationCount": 1,
@@ -15,7 +16,9 @@
     "impact": "N/A"
 }
     </script>
-    <style>
+    <style data-expected-violation="true"
+           data-violation-id="DiscoStyleElementOnPage"
+           data-violation-reason="Page contains embedded <style> element. Users with custom stylesheets may have difficulty overriding styles. Embedded styles harder to cache than external stylesheets. May interfere with user preferences for high contrast, dark mode, or custom fonts">
         /* Embedded styles in the page - Discovery finding */
         body {
             font-family: Arial, sans-serif;
@@ -82,9 +85,7 @@
         }
     </style>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="DiscoStyleElementOnPage"
-      data-violation-reason="Page contains embedded <style> element. Users with custom stylesheets may have difficulty overriding styles. Embedded styles harder to cache than external stylesheets. May interfere with user preferences for high contrast, dark mode, or custom fonts">
+<body>
     <header class="page-header">
         <h1 class="page-title">Welcome to Our Platform</h1>
         <p>Discover amazing features and capabilities</p>

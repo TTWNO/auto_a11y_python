@@ -6,6 +6,7 @@
     <title>ErrClickableWithoutKeyboard - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "AI_ErrClickableWithoutKeyboard_001_violations_basic",
     "issueId": "ErrClickableWithoutKeyboard",
     "expectedViolationCount": 3,
@@ -24,7 +25,7 @@
         <div class="card"
              onclick="showDetails('product1')"
              data-expected-violation="true"
-             data-violation-id="AI_ErrClickableWithoutKeyboard"
+             data-violation-id="ErrClickableWithoutKeyboard"
              data-violation-reason="Div has onclick handler but lacks tabindex and keyboard event handlers. Keyboard users cannot activate this control">
             <img src="product1.jpg" alt="Product 1">
             <p>Click to view details</p>
@@ -34,9 +35,9 @@
         <span class="close-icon"
               onclick="closePanel()"
               data-expected-violation="true"
-              data-violation-id="AI_ErrClickableWithoutKeyboard"
+              data-violation-id="ErrClickableWithoutKeyboard"
               data-violation-reason="Span with onclick lacks tabindex='0' and keyboard handlers for Enter/Space keys. Not accessible to keyboard-only users">
-            ×
+            Ã—
         </span>
 
         <!-- Image with onclick but no keyboard support -->
@@ -44,7 +45,7 @@
              alt="Preview"
              onclick="openLightbox()"
              data-expected-violation="true"
-             data-violation-id="AI_ErrClickableWithoutKeyboard"
+             data-violation-id="ErrClickableWithoutKeyboard"
              data-violation-reason="Image has onclick but no tabindex or keyboard event listeners. Cannot be activated via keyboard">
     </main>
 

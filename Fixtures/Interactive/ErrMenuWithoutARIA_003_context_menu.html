@@ -6,6 +6,7 @@
     <title>ErrMenuWithoutARIA - Context Menu</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrMenuWithoutARIA_003_context_menu",
     "issueId": "ErrMenuWithoutARIA",
     "expectedViolationCount": 2,
@@ -35,6 +36,7 @@
         <!-- Context menu without role -->
         <div class="context-menu" id="contextMenu"
              data-expected-violation="true"
+             data-violation-id="ErrMenuWithoutARIA"
              data-violation-reason="Context menu lacks role='menu'. Screen readers treat as generic div, users miss menu semantics and arrow key navigation">
             <div class="menu-item" onclick="cut()">Cut</div>
             <div class="menu-item" onclick="copy()">Copy</div>
@@ -43,6 +45,7 @@
                 Insert
                 <div class="menu" id="submenu"
                      data-expected-violation="true"
+                     data-violation-id="ErrMenuWithoutARIA"
                      data-violation-reason="Nested submenu without role='menu'. Missing menu ARIA pattern for hierarchical menu structure">
                     <div class="menu-item" onclick="insertImage()">Image</div>
                     <div class="menu-item" onclick="insertLink()">Link</div>

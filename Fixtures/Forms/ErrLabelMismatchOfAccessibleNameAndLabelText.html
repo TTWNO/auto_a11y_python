@@ -14,6 +14,17 @@
         .error { background-color: #ffe6e6; }
         .correct { background-color: #e6ffe6; }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrLabelMismatchOfAccessibleNameAndLabelText",
+    "issueId": "ErrLabelMismatchOfAccessibleNameAndLabelText",
+    "expectedViolationCount": 5,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Form fields whose programmatically-associated visible <label> text differs from the field's aria-label accessible name (WCAG 2.5.3 Label in Name). Five fields demonstrate the mismatch; two comparison fields whose aria-label matches (or is absent) pass.",
+    "wcag": "2.5.3"
+}
+    </script>
 </head>
 <body>
     <h1>Accessible Name vs Visible Label Mismatch Test Cases</h1>
@@ -23,7 +34,7 @@
         <h2>❌ Test 1: aria-label mismatch</h2>
         <div class="form-group">
             <label for="email1">Email Address</label>
-            <input type="email" id="email1" aria-label="Enter your work email here" />
+            <input type="email" id="email1" aria-label="Enter your work email here" data-expected-violation="true" data-violation-id="ErrLabelMismatchOfAccessibleNameAndLabelText" data-violation-reason="visible label 'Email Address' differs from aria-label 'Enter your work email here'">
         </div>
         <p><strong>Issue:</strong> Visible label says "Email Address" but aria-label says "Enter your work email here"</p>
     </div>
@@ -62,7 +73,7 @@
         <h2>❌ Test 5: Select label mismatch</h2>
         <div class="form-group">
             <label for="country">Country</label>
-            <select id="country" aria-label="Choose your nation">
+            <select id="country" aria-label="Choose your nation" data-expected-violation="true" data-violation-id="ErrLabelMismatchOfAccessibleNameAndLabelText" data-violation-reason="visible label 'Country' differs from aria-label 'Choose your nation'">
                 <option value="">Select an option</option>
                 <option value="us">United States</option>
                 <option value="ca">Canada</option>
@@ -76,7 +87,7 @@
         <h2>❌ Test 6: Complex labeling mismatch</h2>
         <div class="form-group">
             <label for="password1">Password</label>
-            <input type="password" id="password1" aria-label="Secret access code" aria-describedby="pwd-help" />
+            <input type="password" id="password1" aria-label="Secret access code" aria-describedby="pwd-help" data-expected-violation="true" data-violation-id="ErrLabelMismatchOfAccessibleNameAndLabelText" data-violation-reason="visible label 'Password' differs from aria-label 'Secret access code'">
             <div id="pwd-help">Must be at least 8 characters</div>
         </div>
         <p><strong>Issue:</strong> Label says "Password" but aria-label says "Secret access code"</p>
@@ -88,7 +99,7 @@
         <div class="form-group">
             <fieldset>
                 <legend>Preferred Contact Method</legend>
-                <input type="radio" id="contact-email" name="contact" value="email" aria-label="Electronic mail">
+                <input type="radio" id="contact-email" name="contact" value="email" aria-label="Electronic mail" data-expected-violation="true" data-violation-id="ErrLabelMismatchOfAccessibleNameAndLabelText" data-violation-reason="visible label 'Email' differs from aria-label 'Electronic mail'">
                 <label for="contact-email">Email</label>
                 <input type="radio" id="contact-phone" name="contact" value="phone" aria-label="Telephone call">
                 <label for="contact-phone">Phone</label>
@@ -102,7 +113,7 @@
         <h2>❌ Test 8: Textarea label mismatch</h2>
         <div class="form-group">
             <label for="comments">Comments</label>
-            <textarea id="comments" aria-label="Additional feedback and suggestions"></textarea>
+            <textarea id="comments" aria-label="Additional feedback and suggestions" data-expected-violation="true" data-violation-id="ErrLabelMismatchOfAccessibleNameAndLabelText" data-violation-reason="visible label 'Comments' differs from aria-label 'Additional feedback and suggestions'"></textarea>
         </div>
         <p><strong>Issue:</strong> Label says "Comments" but aria-label says "Additional feedback and suggestions"</p>
     </div>
@@ -113,13 +124,13 @@
         
         <div class="form-group">
             <label for="email-correct">Email Address</label>
-            <input type="email" id="email-correct" />
+            <input type="email" id="email-correct" data-expected-pass="true" data-pass-reason="no conflicting aria-label; accessible name comes from associated visible label">
             <p><strong>Correct:</strong> No conflicting aria-label, uses associated label</p>
         </div>
 
         <div class="form-group">
             <label for="name-correct">Full Name</label>
-            <input type="text" id="name-correct" aria-label="Full Name" />
+            <input type="text" id="name-correct" aria-label="Full Name" data-expected-pass="true" data-pass-reason="aria-label 'Full Name' matches visible label exactly">
             <p><strong>Correct:</strong> aria-label matches visible label exactly</p>
         </div>
 

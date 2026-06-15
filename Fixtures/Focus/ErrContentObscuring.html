@@ -50,6 +50,17 @@
             z-index: 900;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrContentObscuring",
+    "issueId": "ErrContentObscuring",
+    "expectedViolationCount": 1,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "A fixed-position overlay covers an interactive button beneath it, obscuring content. The obscured button is validated individually; a clearly visible paragraph passes.",
+    "wcag": "2.4.11"
+}
+    </script>
 </head>
 <body>
     <h1>Content Obscuring Issues</h1>
@@ -61,7 +72,7 @@
     
     <!-- Content that gets obscured -->
     <div style="margin: 60px;">
-        <button>This button might be partially hidden</button>
+        <button data-expected-violation="true" data-violation-id="ErrContentObscuring" data-violation-reason="Button is covered by the fixed overlay and partially hidden">This button might be partially hidden</button>
         <input type="text" placeholder="This input might be obscured">
     </div>
     
@@ -81,6 +92,6 @@
     <!-- Semi-transparent modal backdrop -->
     <div class="modal-backdrop" style="display: none;"></div>
     
-    <p>Content should not be obscured by other elements.</p>
+    <p data-expected-pass="true" data-pass-reason="Visible paragraph in normal flow; not covered by any overlay">Content should not be obscured by other elements.</p>
 </body>
 </html>

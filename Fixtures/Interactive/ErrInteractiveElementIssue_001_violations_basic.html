@@ -6,6 +6,7 @@
     <title>Interactive Elements - Accessibility Issues</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrInteractiveElementIssue_001_violations_basic",
     "issueId": "ErrInteractiveElementIssue",
     "expectedViolationCount": 4,
@@ -34,36 +35,40 @@
 <body>
     <h1>Product Listing</h1>
 
-    <div data-expected-violation="true"
-         data-violation-id="ErrInteractiveElementIssue"
-         data-violation-reason="Div used as button without role, keyboard support, or accessible name">
-        <div class="fake-button" onclick="alert('Clicked')">
+    <div>
+        <div class="fake-button" onclick="alert('Clicked')"
+             data-expected-violation="true"
+             data-violation-id="ErrInteractiveElementIssue"
+             data-violation-reason="Div used as button without role, keyboard support, or accessible name">
             Add to Cart
         </div>
     </div>
 
-    <div data-expected-violation="true"
-         data-violation-id="ErrInteractiveElementIssue"
-         data-violation-reason="Span used as interactive element without semantic role or keyboard accessibility">
-        <span class="fake-button" onclick="window.location='/checkout'">
+    <div>
+        <span class="fake-button" onclick="window.location='/checkout'"
+              data-expected-violation="true"
+              data-violation-id="ErrInteractiveElementIssue"
+              data-violation-reason="Span used as interactive element without semantic role or keyboard accessibility">
             Proceed to Checkout
         </span>
     </div>
 
-    <div data-expected-violation="true"
-         data-violation-id="ErrInteractiveElementIssue"
-         data-violation-reason="Div clickable but not keyboard accessible and missing ARIA role">
-        <div class="clickable-div" onclick="toggleDetails()">
+    <div>
+        <div class="clickable-div" onclick="toggleDetails()"
+             data-expected-violation="true"
+             data-violation-id="ErrInteractiveElementIssue"
+             data-violation-reason="Div clickable but not keyboard accessible and missing ARIA role">
             View Product Details
         </div>
     </div>
 
-    <div data-expected-violation="true"
-         data-violation-id="ErrInteractiveElementIssue"
-         data-violation-reason="Image used as button without button role, keyboard support, or proper accessible name">
+    <div>
         <img src="delete.png"
              alt="Delete"
              onclick="deleteItem()"
+             data-expected-violation="true"
+             data-violation-id="ErrInteractiveElementIssue"
+             data-violation-reason="Image used as button without button role, keyboard support, or proper accessible name"
              style="cursor: pointer; width: 24px; height: 24px;">
     </div>
 

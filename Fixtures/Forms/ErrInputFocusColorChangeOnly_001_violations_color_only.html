@@ -6,6 +6,7 @@
     <title>ErrInputFocusColorChangeOnly - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrInputFocusColorChangeOnly_001_violations_color_only",
     "issueId": "ErrInputFocusColorChangeOnly",
     "expectedViolationCount": 3,
@@ -89,7 +90,7 @@
                id="input1"
                class="color-only-1"
                data-expected-violation="true"
-               data-violation-id="ErrInputColorChangeOnly"
+               data-violation-id="ErrInputFocusColorChangeOnly"
                data-violation-reason="Border color changes from gray to blue with no structural change">
     </section>
 
@@ -100,7 +101,7 @@
                id="input2"
                class="color-only-2"
                data-expected-violation="true"
-               data-violation-id="ErrInputColorChangeOnly"
+               data-violation-id="ErrInputFocusColorChangeOnly"
                data-violation-reason="Border color changes with no structural indicator">
     </section>
 
@@ -111,7 +112,7 @@
                   class="textarea-color-only"
                   rows="4"
                   data-expected-violation="true"
-                  data-violation-id="ErrInputColorChangeOnly"
+                  data-violation-id="ErrInputFocusColorChangeOnly"
                   data-violation-reason="Textarea border color changes with no structural indicator"></textarea>
     </section>
 </body>

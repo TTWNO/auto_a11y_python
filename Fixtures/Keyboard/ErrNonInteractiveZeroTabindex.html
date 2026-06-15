@@ -4,40 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Non-Interactive Zero Tabindex Test - ErrNonInteractiveZeroTabindex</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrNonInteractiveZeroTabindex",
+    "issueId": "ErrNonInteractiveZeroTabindex",
+    "expectedViolationCount": 6,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Non-interactive elements (paragraph, generic div, heading, span, list item and table cell) given tabindex=0, which inserts them into the keyboard tab order without any interactive purpose. Each case is validated individually; one interactive control with tabindex=0 is a correct comparison.",
+    "wcag": "2.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Non-Interactive Elements with Tabindex="0"</h1>
     
     <!-- Paragraph with tabindex="0" -->
-    <p tabindex="0">
+    <p tabindex="0" data-expected-violation="true" data-violation-id="ErrNonInteractiveZeroTabindex" data-violation-reason="paragraph with tabindex=0 - non-interactive element placed in tab order">
         This paragraph is focusable but not interactive.
     </p>
     
     <!-- Div with tabindex="0" but no role -->
-    <div tabindex="0">
+    <div tabindex="0" data-expected-violation="true" data-violation-id="ErrNonInteractiveZeroTabindex" data-violation-reason="generic div with tabindex=0 and no role - non-interactive in tab order">
         This div can receive focus but serves no interactive purpose.
     </div>
     
     <!-- Heading with tabindex="0" -->
-    <h2 tabindex="0">Focusable Heading</h2>
+    <h2 tabindex="0" data-expected-violation="true" data-violation-id="ErrNonInteractiveZeroTabindex" data-violation-reason="heading with tabindex=0 - non-interactive element placed in tab order">Focusable Heading</h2>
     
     <!-- Span with tabindex="0" -->
-    <span tabindex="0">This text span is focusable unnecessarily.</span>
+    <span tabindex="0" data-expected-violation="true" data-violation-id="ErrNonInteractiveZeroTabindex" data-violation-reason="text span with tabindex=0 - non-interactive element placed in tab order">This text span is focusable unnecessarily.</span>
     
     <!-- List item with tabindex="0" -->
     <ul>
-        <li tabindex="0">Focusable list item</li>
+        <li tabindex="0" data-expected-violation="true" data-violation-id="ErrNonInteractiveZeroTabindex" data-violation-reason="list item with tabindex=0 - non-interactive element placed in tab order">Focusable list item</li>
         <li>Normal list item</li>
     </ul>
     
     <!-- Table cell with tabindex="0" -->
     <table>
         <tr>
-            <td tabindex="0">Focusable cell</td>
+            <td tabindex="0" data-expected-violation="true" data-violation-id="ErrNonInteractiveZeroTabindex" data-violation-reason="table cell with tabindex=0 - non-interactive element placed in tab order">Focusable cell</td>
             <td>Normal cell</td>
         </tr>
     </table>
     
+    <!-- Correct: a genuinely interactive element may carry tabindex="0" -->
+    <button id="good-interactive-tabindex" tabindex="0" data-expected-pass="true" data-pass-reason="genuinely interactive button may carry tabindex=0">Interactive button with tabindex 0</button>
+
     <p>Only interactive elements should have tabindex="0".</p>
 </body>
 </html>

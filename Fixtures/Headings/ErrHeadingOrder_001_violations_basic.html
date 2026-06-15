@@ -9,7 +9,9 @@
     "id": "ErrHeadingOrder_001_violations_basic",
     "issueId": "ErrHeadingOrder",
     "expectedViolationCount": 2,
-    "description": "Page with illogical heading order - H3, H2, then H1",
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Page with illogical heading order - H3, H2, then H1. The first heading (H3) is the page's starting point and is not itself flagged; the order errors are reported on the following H2 and H1.",
     "wcag": "1.3.1",
     "impact": "High"
 }
@@ -17,8 +19,8 @@
 </head>
 <body>
     <!-- Start with h3, then h2, then h1 - wrong order -->
-    <h3 data-expected-violation="false"
-        data-violation-reason="First heading but it's H3 (no error flagged here, error will be on H2 and H1)">Starting with Level 3</h3>
+    <h3 data-expected-pass="true"
+        data-pass-reason="First heading on the page (its starting point), so no ErrHeadingOrder is flagged here; the order errors are on the following H2 and H1.">Starting with Level 3</h3>
     <p>This heading comes first but is level 3.</p>
 
     <h2 data-expected-violation="true"

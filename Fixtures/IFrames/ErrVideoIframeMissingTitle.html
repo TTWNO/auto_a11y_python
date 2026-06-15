@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Iframe Missing Title Test - ErrVideoIframeMissingTitle</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrVideoIframeMissingTitle",
+    "issueId": "ErrVideoIframeMissingTitle",
+    "expectedViolationCount": 3,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "iframe elements embedding video content with no title attribute. Each recognised video iframe element is validated individually for the missing-title violation.",
+    "wcag": "4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Embedded Video Iframes Without Titles</h1>
@@ -13,20 +25,20 @@
             src="https://www.youtube.com/embed/dQw4w9WgXcQ"
             frameborder="0" 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen>
+            allowfullscreen data-expected-violation="true" data-violation-id="ErrVideoIframeMissingTitle" data-violation-reason="YouTube video iframe has no title attribute">
     </iframe>
     
     <!-- Vimeo video iframe without title -->
     <iframe src="https://player.vimeo.com/video/76979871" 
             width="640" height="360" 
             frameborder="0" 
-            allow="autoplay; fullscreen; picture-in-picture">
+            allow="autoplay; fullscreen; picture-in-picture" data-expected-violation="true" data-violation-id="ErrVideoIframeMissingTitle" data-violation-reason="Vimeo video iframe has no title attribute">
     </iframe>
     
     <!-- Dailymotion video iframe without title -->
     <iframe frameborder="0" width="480" height="270" 
             src="https://www.dailymotion.com/embed/video/x2wfgiv" 
-            allowfullscreen allow="autoplay">
+            allowfullscreen allow="autoplay" data-expected-violation="true" data-violation-id="ErrVideoIframeMissingTitle" data-violation-reason="Dailymotion video iframe has no title attribute">
     </iframe>
     
     <!-- Custom video player iframe with empty title -->

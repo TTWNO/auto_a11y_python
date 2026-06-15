@@ -10,11 +10,12 @@
 
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrTitleAttrFound_005_violations_body_elements",
     "issueId": "ErrTitleAttrFound",
-    "expectedViolationCount": 3,
+    "expectedViolationCount": 2,
     "expectedPassCount": 2,
-    "description": "Title attributes on body elements violate WCAG 5.2.4 - only valid in head and on iframes",
+    "description": "Title attributes on body elements violate WCAG 5.2.4 - only valid in head and on iframes (span case emits the more specific ErrImproperTitleAttribute)",
     "wcag": "5.2.4, 4.1.2",
     "impact": "Medium"
 }
@@ -28,29 +29,32 @@
             <h2>Features</h2>
 
             <!-- Link with title in body - VIOLATION -->
-            <p data-expected-violation="true"
-               data-violation-id="ErrTitleAttrFound"
-               data-violation-reason="Title attribute on link in body section. Fails WCAG 5.2.4 - screen magnifier users cannot read tooltips at high magnification. Use visible text instead.">
+            <p>
                 <a href="/details"
-                   title="Click here for more detailed product specifications">
+                   title="Click here for more detailed product specifications"
+                   data-expected-violation="true"
+                   data-violation-id="ErrTitleAttrFound"
+                   data-violation-reason="Title attribute on link in body section. Fails WCAG 5.2.4 - screen magnifier users cannot read tooltips at high magnification. Use visible text instead.">
                     View Specifications
                 </a>
             </p>
 
             <!-- Abbreviation with title in body - VIOLATION -->
-            <p data-expected-violation="true"
-               data-violation-id="ErrTitleAttrFound"
-               data-violation-reason="Title attribute on abbreviation in body. Not accessible to screen magnifier users or mobile users. Provide expansion in visible text instead.">
-                Supports <abbr title="Hypertext Transfer Protocol Secure">HTTPS</abbr> connections.
+            <p>
+                Supports <abbr title="Hypertext Transfer Protocol Secure"
+                               data-expected-violation="true"
+                               data-violation-id="ErrTitleAttrFound"
+                               data-violation-reason="Title attribute on abbreviation in body. Not accessible to screen magnifier users or mobile users. Provide expansion in visible text instead.">HTTPS</abbr> connections.
             </p>
 
-            <!-- Span with title in body - VIOLATION -->
+            <!-- Span with title in body - VIOLATION (engine reports the more
+                 specific ErrImproperTitleAttribute for non-interactive containers) -->
             <p>
                 Processing time:
                 <span title="Typical processing time is 2-3 business days"
                       data-expected-violation="true"
-                      data-violation-id="ErrTitleAttrFound"
-                      data-violation-reason="Title attribute on span element in body. Tooltip content inaccessible to many users. Make this information visible.">
+                      data-violation-id="ErrImproperTitleAttribute"
+                      data-violation-reason="Title attribute on non-interactive span element in body. Tooltip content inaccessible to many users. Make this information visible.">
                     2-3 days
                 </span>
             </p>

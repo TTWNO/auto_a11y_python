@@ -6,7 +6,8 @@
     <title>AI_WarnProblematicAnimation - Warnings</title>
     <script type="application/json" id="test-metadata">
 {
-    "id": "AI_WarnProblematicAnimation_001_violations_basic",
+    "enforceElementExpectations": true,
+    "id": "WarnProblematicAnimation_001_violations_basic",
     "issueId": "WarnProblematicAnimation",
     "expectedViolationCount": 3,
     "expectedPassCount": 0,
@@ -68,8 +69,11 @@
             </div>
         </section>
 
+        <!-- 5s cycle is outside WarnProblematicAnimation's deliberate <1s "rapid" gate; the
+             engine claims this infinite, uncontrolled animation as ErrInfiniteAnimation instead -->
         <div class="parallax-content"
              data-expected-violation="true"
+             data-violation-id="ErrInfiniteAnimation"
              data-violation-reason="Continuous parallax scrolling animation without user input. Moves 1000px in 5 seconds creating persistent motion effect. Can trigger vestibular disorders causing dizziness, nausea, disorientation. No mechanism to pause or disable. Violates WCAG 2.2.2 Pause, Stop, Hide and 2.3.2 Three Flashes - animation plays automatically for more than 5 seconds without pause control">
             <h2>Scrolling Background</h2>
         </div>

@@ -6,6 +6,7 @@
     <title>Main Landmark Nested in Other Landmarks - Violations</title>
     <script type="application/json" id="test-metadata">
     {
+    "enforceElementExpectations": true,
         "id": "ErrMainLandmarkMayNotbeChildOfAnotherLandmark_001_violations_basic",
         "issueId": "ErrMainLandmarkMayNotBeChildOfAnotherLandmark",
         "expectedViolationCount": 3,
@@ -24,7 +25,7 @@
         <h2>Sidebar Content</h2>
 
         <main data-expected-violation="true"
-              data-violation-id="ErrMainLandmarkMayNotbeChildOfAnotherLandmark"
+              data-violation-id="ErrMainLandmarkMayNotBeChildOfAnotherLandmark"
               data-violation-reason="Main landmark is nested inside complementary landmark, violating landmark hierarchy rules. Main must be at top level">
             <h3>Article Content</h3>
             <p>This main landmark is incorrectly nested inside a complementary landmark.</p>
@@ -37,7 +38,7 @@
 
         <div role="main"
              data-expected-violation="true"
-             data-violation-id="ErrMainLandmarkMayNotbeChildOfAnotherLandmark"
+             data-violation-id="ErrMainLandmarkMayNotBeChildOfAnotherLandmark"
              data-violation-reason="Main landmark is nested inside region landmark, breaking proper landmark structure. Main cannot be a child of region">
             <h3>Primary Information</h3>
             <p>The main landmark here is nested inside a region landmark, which is invalid.</p>
@@ -51,7 +52,7 @@
         </ul>
 
         <main data-expected-violation="true"
-              data-violation-id="ErrMainLandmarkMayNotbeChildOfAnotherLandmark"
+              data-violation-id="ErrMainLandmarkMayNotBeChildOfAnotherLandmark"
               data-violation-reason="Main landmark is nested inside navigation landmark, which is invalid. Main must not be a child of nav">
             <h3>Welcome Content</h3>
             <p>Nesting main inside navigation breaks the landmark hierarchy.</p>

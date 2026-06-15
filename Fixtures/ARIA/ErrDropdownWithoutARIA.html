@@ -114,7 +114,42 @@
         .option:hover {
             background-color: #f0f0f0;
         }
+
+        /* Combobox (last passing example) listbox */
+        #combo-list {
+            list-style: none;
+            margin: 4px 0 0;
+            padding: 0;
+            min-width: 200px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+        }
+
+        #combo-list [role="option"] {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        #combo-list [role="option"]:hover,
+        #combo-list [role="option"].active {
+            background-color: #f0f0f0;
+        }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrDropdownWithoutARIA",
+    "issueId": "ErrDropdownWithoutARIA",
+    "expectedViolationCount": 6,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Custom dropdown widgets that lack the ARIA markup needed to be operable and understandable, missing attributes such as aria-haspopup, aria-expanded, and the menu and menuitem roles. A properly marked-up dropdown is validated as passing. Each demonstrated case is validated individually.",
+    "wcag": "4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Dropdown ARIA Test Fixture - AI_ErrDropdownWithoutARIA</h1>
@@ -125,7 +160,7 @@
         <h2>❌ ERROR: Basic Dropdown Without ARIA</h2>
         <p><strong>Issue:</strong> Missing aria-haspopup, aria-expanded, and proper roles</p>
         
-        <div class="dropdown">
+        <div class="dropdown" data-expected-violation="true" data-violation-id="ErrDropdownWithoutARIA" data-violation-reason="Basic dropdown missing aria-haspopup, aria-expanded, and menu roles">
             <button class="dropdown-toggle" id="basic-dropdown">
                 Choose an Option
             </button>
@@ -141,7 +176,7 @@
         <h2>❌ ERROR: Dropdown with Partial ARIA</h2>
         <p><strong>Issue:</strong> Has aria-haspopup but missing aria-expanded and menu roles</p>
         
-        <div class="dropdown">
+        <div class="dropdown" data-expected-violation="true" data-violation-id="ErrDropdownWithoutARIA" data-violation-reason="Dropdown has aria-haspopup but still missing aria-expanded and menu roles">
             <button class="dropdown-toggle" id="partial-dropdown" aria-haspopup="true">
                 Select Category
             </button>
@@ -157,7 +192,7 @@
         <h2>❌ ERROR: DIV-based Dropdown</h2>
         <p><strong>Issue:</strong> Using div instead of button, no ARIA attributes</p>
         
-        <div class="dropdown">
+        <div class="dropdown" data-expected-violation="true" data-violation-id="ErrDropdownWithoutARIA" data-violation-reason="Div-based dropdown toggle with no ARIA attributes">
             <div class="dropdown-toggle" id="div-dropdown">
                 Pick a Color
             </div>
@@ -173,7 +208,7 @@
         <h2>❌ ERROR: Custom Select Without ARIA</h2>
         <p><strong>Issue:</strong> Custom select implementation without proper accessibility</p>
         
-        <div class="custom-select">
+        <div class="custom-select" data-expected-violation="true" data-violation-id="ErrDropdownWithoutARIA" data-violation-reason="Custom select implementation without ARIA">
             <div class="select-button" id="custom-select">
                 Choose Size
             </div>
@@ -191,7 +226,7 @@
         <p><strong>Issue:</strong> Navigation menu without proper ARIA markup</p>
         
         <nav>
-            <div class="dropdown">
+            <div class="dropdown" data-expected-violation="true" data-violation-id="ErrDropdownWithoutARIA" data-violation-reason="Navigation dropdown without ARIA markup">
                 <a href="#" class="dropdown-toggle" id="nav-dropdown">
                     Products
                 </a>
@@ -208,7 +243,7 @@
         <h2>❌ ERROR: Nested Dropdown Menu</h2>
         <p><strong>Issue:</strong> Complex dropdown structure without ARIA</p>
         
-        <div class="dropdown">
+        <div class="dropdown" data-expected-violation="true" data-violation-id="ErrDropdownWithoutARIA" data-violation-reason="Nested dropdown structure without ARIA">
             <button class="dropdown-toggle" id="nested-dropdown">
                 Account Settings
             </button>
@@ -232,7 +267,7 @@
         <h2>✅ PASS: Properly Implemented Dropdown</h2>
         <p><strong>Correct:</strong> Has all required ARIA attributes and roles</p>
         
-        <div class="dropdown">
+        <div class="dropdown" data-expected-pass="true" data-pass-reason="Dropdown has aria-haspopup, aria-expanded, aria-controls, and menu/menuitem roles">
             <button class="dropdown-toggle" 
                     id="proper-dropdown"
                     aria-haspopup="true" 
@@ -277,9 +312,9 @@
                aria-controls="combo-list"
                autocomplete="off">
         <ul id="combo-list" role="listbox" style="display: none;">
-            <li role="option">Apple</li>
-            <li role="option">Banana</li>
-            <li role="option">Cherry</li>
+            <li role="option" id="combo-option-0" aria-selected="false">Apple</li>
+            <li role="option" id="combo-option-1" aria-selected="false">Banana</li>
+            <li role="option" id="combo-option-2" aria-selected="false">Cherry</li>
         </ul>
     </div>
 
@@ -349,11 +384,97 @@
                         menu.style.display = 'none';
                     });
                     
-                    document.querySelectorAll('[aria-expanded]').forEach(toggle => {
+                    document.querySelectorAll('.dropdown [aria-expanded], .custom-select [aria-expanded]').forEach(toggle => {
                         toggle.setAttribute('aria-expanded', 'false');
                     });
                 }
             });
+
+            // Combobox (last passing example): wire up the listbox so it can actually open.
+            (function setupCombobox() {
+                const input = document.getElementById('combo-input');
+                const list = document.getElementById('combo-list');
+                if (!input || !list) return;
+                const options = Array.from(list.querySelectorAll('[role="option"]'));
+                let activeIndex = -1;
+
+                const isOpen = () => input.getAttribute('aria-expanded') === 'true';
+                const visibleOptions = () => options.filter(o => o.style.display !== 'none');
+
+                function open() {
+                    list.style.display = 'block';
+                    input.setAttribute('aria-expanded', 'true');
+                }
+
+                function setActive(idx) {
+                    options.forEach(o => {
+                        o.classList.remove('active');
+                        o.setAttribute('aria-selected', 'false');
+                    });
+                    const vis = visibleOptions();
+                    activeIndex = idx;
+                    if (idx >= 0 && idx < vis.length) {
+                        const opt = vis[idx];
+                        opt.classList.add('active');
+                        opt.setAttribute('aria-selected', 'true');
+                        input.setAttribute('aria-activedescendant', opt.id);
+                        opt.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        input.removeAttribute('aria-activedescendant');
+                    }
+                }
+
+                function close() {
+                    list.style.display = 'none';
+                    input.setAttribute('aria-expanded', 'false');
+                    setActive(-1);
+                }
+
+                function filter() {
+                    const q = input.value.trim().toLowerCase();
+                    options.forEach(o => {
+                        o.style.display = o.textContent.toLowerCase().includes(q) ? '' : 'none';
+                    });
+                }
+
+                function selectOption(opt) {
+                    input.value = opt.textContent.trim();
+                    filter();
+                    close();
+                    input.focus();
+                }
+
+                input.addEventListener('focus', open);
+                input.addEventListener('click', open);
+                input.addEventListener('input', () => { filter(); open(); setActive(-1); });
+                input.addEventListener('blur', close);
+                input.addEventListener('keydown', (e) => {
+                    const vis = visibleOptions();
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (!isOpen()) open();
+                        setActive(activeIndex < vis.length - 1 ? activeIndex + 1 : 0);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!isOpen()) open();
+                        setActive(activeIndex > 0 ? activeIndex - 1 : vis.length - 1);
+                    } else if (e.key === 'Enter') {
+                        if (isOpen() && activeIndex >= 0 && activeIndex < vis.length) {
+                            e.preventDefault();
+                            selectOption(vis[activeIndex]);
+                        }
+                    } else if (e.key === 'Escape') {
+                        close();
+                    }
+                });
+                options.forEach(opt => {
+                    // mousedown (not click) so the input keeps focus and blur doesn't pre-empt selection
+                    opt.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        selectOption(opt);
+                    });
+                });
+            })();
         });
     </script>
 </body>

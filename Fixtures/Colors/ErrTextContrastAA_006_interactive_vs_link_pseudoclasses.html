@@ -9,8 +9,9 @@
     "id": "ErrTextContrastAA_006_interactive_vs_link_pseudoclasses",
     "issueId": "ErrTextContrastAA",
     "expectedViolationCount": 33,
-    "expectedPassCount": 0,
-    "description": "Tests distinction between link-specific pseudoclasses (:link, :visited) and general interactive pseudoclasses (:hover, :focus, :active) across different element types - tested at 3 breakpoints. Note: first link reports both default and :link state as they share the same poor contrast.",
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Tests distinction between link-specific pseudoclasses (:link, :visited) and general interactive pseudoclasses (:hover, :focus, :active) across different element types - tested at 3 breakpoints. Each interactive element is expected to emit ErrTextContrastAA because one of its states fails AA contrast (the failing state is named in each data-violation-reason); the button whose :link style must be ignored is the lone pass. Note: first link reports both default and :link state as they share the same poor contrast.",
     "wcag": "1.4.3",
     "impact": "High"
 }
@@ -145,7 +146,8 @@
 
         <p>
             <a href="#test1" class="link-bad-link"
-               data-expected-violation=":link"
+               data-expected-violation="true"
+               data-violation-id="ErrTextContrastAA"
                data-violation-reason="Link in :link state has 2.32:1 contrast, failing AA requirement. This affects unvisited links.">
                 Link with bad :link state
             </a>
@@ -153,7 +155,8 @@
 
         <p>
             <a href="#test2" class="link-bad-visited"
-               data-expected-violation=":visited"
+               data-expected-violation="true"
+               data-violation-id="ErrTextContrastAA"
                data-violation-reason="Link in :visited state has 1.87:1 contrast, failing AA requirement. This affects previously visited links.">
                 Link with bad :visited state
             </a>
@@ -161,7 +164,8 @@
 
         <p>
             <a href="#test3" class="link-bad-hover"
-               data-expected-violation=":hover"
+               data-expected-violation="true"
+               data-violation-id="ErrTextContrastAA"
                data-violation-reason="Link in :hover state has 1.61:1 contrast, failing AA requirement. This affects mouse hover interaction.">
                 Link with bad :hover state
             </a>
@@ -169,7 +173,8 @@
 
         <p>
             <a href="#test4" class="link-bad-focus"
-               data-expected-violation=":focus"
+               data-expected-violation="true"
+               data-violation-id="ErrTextContrastAA"
                data-violation-reason="Link in :focus state has 1.42:1 contrast, failing AA requirement. This affects keyboard navigation.">
                 Link with bad :focus state
             </a>
@@ -177,7 +182,8 @@
 
         <p>
             <a href="#test5" class="link-bad-active"
-               data-expected-violation=":active"
+               data-expected-violation="true"
+               data-violation-id="ErrTextContrastAA"
                data-violation-reason="Link in :active state has 1.27:1 contrast, failing AA requirement. This affects the moment of clicking.">
                 Link with bad :active state
             </a>
@@ -197,7 +203,8 @@
 
         <p>
             <button class="button-bad-hover"
-                    data-expected-violation=":hover"
+                    data-expected-violation="true"
+                    data-violation-id="ErrTextContrastAA"
                     data-violation-reason="Button in :hover state has 2.32:1 contrast, failing AA requirement.">
                 Button with bad :hover state
             </button>
@@ -205,7 +212,8 @@
 
         <p>
             <button class="button-bad-focus"
-                    data-expected-violation=":focus"
+                    data-expected-violation="true"
+                    data-violation-id="ErrTextContrastAA"
                     data-violation-reason="Button in :focus state has 1.87:1 contrast, failing AA requirement.">
                 Button with bad :focus state
             </button>
@@ -213,7 +221,8 @@
 
         <p>
             <button class="button-bad-active"
-                    data-expected-violation=":active"
+                    data-expected-violation="true"
+                    data-violation-id="ErrTextContrastAA"
                     data-violation-reason="Button in :active state has 1.61:1 contrast, failing AA requirement.">
                 Button with bad :active state
             </button>
@@ -225,7 +234,8 @@
 
         <p>
             <div role="link" tabindex="0" class="div-link-bad-hover"
-                 data-expected-violation=":hover"
+                 data-expected-violation="true"
+                 data-violation-id="ErrTextContrastAA"
                  data-violation-reason="Element with role='link' should be tested like a link. Fails in :hover state with 1.42:1 contrast.">
                 Div with role="link" and bad :hover
             </div>
@@ -233,7 +243,8 @@
 
         <p>
             <div role="button" tabindex="0" class="div-button-bad-focus"
-                 data-expected-violation=":focus"
+                 data-expected-violation="true"
+                 data-violation-id="ErrTextContrastAA"
                  data-violation-reason="Element with role='button' should be tested like a button. Fails in :focus state with 1.27:1 contrast.">
                 Div with role="button" and bad :focus
             </div>

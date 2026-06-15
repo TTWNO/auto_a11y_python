@@ -6,6 +6,7 @@
     <title>WarnMultipleContentInfoLandmarksButNotAllHaveLabels - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnMultipleContentInfoLandmarksButNotAllHaveLabels_001_violations_basic",
     "issueId": "WarnMultipleContentinfoLandmarksButNotAllHaveLabels",
     "expectedViolationCount": 2,
@@ -36,7 +37,7 @@
     <!-- Second contentinfo WITHOUT label -->
     <div role="contentinfo"
          data-expected-violation="true"
-         data-violation-id="WarnMultipleContentInfoLandmarksButNotAllHaveLabels"
+         data-violation-id="WarnMultipleContentinfoLandmarksButNotAllHaveLabels"
          data-violation-reason="Multiple contentinfo landmarks exist but this one has no label. Inconsistent labeling makes it difficult for screen reader users to distinguish between different footer areas">
         <p>Additional footer information without label.</p>
     </div>
@@ -44,7 +45,7 @@
     <!-- Third contentinfo WITHOUT label -->
     <footer role="contentinfo"
             data-expected-violation="true"
-            data-violation-id="WarnMultipleContentInfoLandmarksButNotAllHaveLabels"
+            data-violation-id="WarnMultipleContentinfoLandmarksButNotAllHaveLabels"
             data-violation-reason="Third contentinfo landmark without label while first contentinfo has a label. All contentinfo landmarks should have consistent labeling when multiple exist">
         <p>Secondary footer section.</p>
     </footer>

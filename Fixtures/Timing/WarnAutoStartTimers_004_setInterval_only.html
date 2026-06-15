@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"
+      data-expected-violation="true"
+      data-violation-id="WarnAutoStartTimers"
+      data-violation-reason="setInterval calls execute on page load creating continuous updates">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>setInterval Only - Warning</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnAutoStartTimers_004_setInterval_only",
     "issueId": "WarnAutoStartTimers",
     "expectedViolationCount": 1,
@@ -28,9 +32,7 @@
         }
     </style>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="WarnAutoStartTimers"
-      data-violation-reason="setInterval calls execute on page load creating continuous updates">
+<body>
     <div class="content">
         <h1>Live Clock</h1>
         <div class="clock" id="clock">00:00:00</div>

@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- The page-level ErrNoHeadingsOnPage is emitted at /html, so the annotation lives on the html element -->
+<html lang="en"
+      data-expected-violation="true"
+      data-violation-id="ErrNoHeadingsOnPage"
+      data-violation-reason="No heading elements (h1-h6) found on page">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Fixture: No Headings on Page</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrNoHeadingsOnPage_001_violations_basic",
     "issueId": "ErrNoHeadingsOnPage",
     "expectedViolationCount": 1,
@@ -16,9 +21,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrNoHeadingsOnPage"
-      data-violation-reason="No heading elements (h1-h6) found on page">
+<body>
     <div class="header">
         <div class="logo">Company Name</div>
         <nav>

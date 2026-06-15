@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en_US">
+<html lang="en_US" data-expected-violation="true" data-violation-id="ErrIncorrectlyFormattedPrimaryLang" data-violation-reason="lang attribute en_US uses an underscore and is not valid BCP 47">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,18 @@
         .valid { color: #198754; }
         code { background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px; }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrIncorrectlyFormattedPrimaryLang",
+    "issueId": "ErrIncorrectlyFormattedPrimaryLang",
+    "expectedViolationCount": 1,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "The page-level html lang attribute is malformed (en_US uses an underscore instead of a hyphen and is not valid BCP 47). The html element is validated for the incorrectly-formatted-primary-language violation.",
+    "wcag": "3.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Test Fixture: Incorrectly Formatted Primary Language Code</h1>

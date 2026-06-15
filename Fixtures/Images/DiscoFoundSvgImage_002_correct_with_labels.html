@@ -7,11 +7,13 @@
     <title>DiscoFoundSvgImage - Correct Usage</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "DiscoFoundSvgImage_002_correct_with_labels",
     "issueId": "DiscoFoundSvgImage",
     "expectedViolationCount": 0,
-    "expectedPassCount": 3,
-    "description": "SVG images with proper accessibility markup",
+    "expectedPassCount": 0,
+    "expectedDiscoveryCount": 3,
+    "description": "SVG images with proper accessibility markup - discovery still flags every SVG image for manual review",
     "wcag": "1.1.1",
     "impact": "Info"
 }
@@ -25,8 +27,9 @@
             <h2>Shopping Cart</h2>
 
             <img src="cart-icon.svg" alt="Shopping cart icon"
-                 data-expected-pass="true"
-                 data-pass-reason="SVG image has proper accessibility markup with alt text. Screen readers announce 'Shopping cart icon' describing image. SVG evaluated and determined to be meaningful. Appropriate text alternative provided via alt attribute. Complies with WCAG 1.1.1 Non-text Content - SVG properly marked up with accessible label">
+                 data-expected-discovery="true"
+                 data-discovery-id="DiscoFoundSvgImage"
+                 data-discovery-reason="Discovery fires for every SVG image regardless of alt quality. SVG image has proper accessibility markup with alt text. Screen readers announce 'Shopping cart icon' describing image. SVG evaluated and determined to be meaningful. Appropriate text alternative provided via alt attribute. Complies with WCAG 1.1.1 Non-text Content - SVG properly marked up with accessible label">
 
             <p>Add items to cart</p>
         </section>
@@ -35,8 +38,9 @@
             <h2>User Profile</h2>
 
             <img src="profile-icon.svg" alt="User profile icon"
-                 data-expected-pass="true"
-                 data-pass-reason="SVG image has accessibility markup with alt text. Screen readers announce 'User profile icon'. SVG reviewed and identified as informative. Appropriate accessible label provided via alt attribute. Meets WCAG 1.1.1 Non-text Content - SVG has proper text alternative">
+                 data-expected-discovery="true"
+                 data-discovery-id="DiscoFoundSvgImage"
+                 data-discovery-reason="Discovery fires for every SVG image regardless of alt quality. SVG image has accessibility markup with alt text. Screen readers announce 'User profile icon'. SVG reviewed and identified as informative. Appropriate accessible label provided via alt attribute. Meets WCAG 1.1.1 Non-text Content - SVG has proper text alternative">
 
             <p>View profile</p>
         </section>
@@ -45,8 +49,9 @@
             <h2>Settings</h2>
 
             <img src="settings-icon.svg" alt="Settings icon"
-                 data-expected-pass="true"
-                 data-pass-reason="SVG image has alt text for accessibility. Screen readers announce 'Settings icon'. SVG evaluated as meaningful requiring text alternative. Alt attribute provides accessible label. Complies with WCAG 1.1.1 Non-text Content - SVG reviewed and properly implemented with accessible markup">
+                 data-expected-discovery="true"
+                 data-discovery-id="DiscoFoundSvgImage"
+                 data-discovery-reason="Discovery fires for every SVG image regardless of alt quality. SVG image has alt text for accessibility. Screen readers announce 'Settings icon'. SVG evaluated as meaningful requiring text alternative. Alt attribute provides accessible label. Complies with WCAG 1.1.1 Non-text Content - SVG reviewed and properly implemented with accessible markup">
 
             <p>Adjust settings</p>
         </section>

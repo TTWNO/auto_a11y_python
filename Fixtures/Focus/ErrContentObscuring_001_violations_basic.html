@@ -6,6 +6,7 @@
     <title>ErrContentObscuring - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrContentObscuring_001_violations_basic",
     "issueId": "ErrContentObscuring",
     "expectedViolationCount": 3,
@@ -60,22 +61,25 @@
 <body>
     <h1>Test Page: Content Obscured By Other Elements</h1>
 
-    <div class="overlay"
-         data-expected-violation="true"
-         data-violation-id="ErrContentObscuring"
-         data-violation-reason="Fixed overlay covers all content on page, preventing interaction">
+    <!-- The engine reports ErrContentObscuring at each OBSCURED interactive control
+         (hit-test via elementFromPoint), not at the floating element doing the
+         obscuring, so the violation annotations sit on the covered controls below. -->
+    <div class="overlay">
     </div>
 
     <main style="position: relative;">
         <section>
             <h2>Obscured Form</h2>
-            <form class="obscured-form"
-                  data-expected-violation="true"
-                  data-violation-id="ErrContentObscuring"
-                  data-violation-reason="Form is below the overlay banner and cannot be interacted with">
+            <form class="obscured-form">
                 <label for="name">Name:</label>
-                <input type="text" id="name">
-                <button type="submit">Submit</button>
+                <input type="text" id="name"
+                       data-expected-violation="true"
+                       data-violation-id="ErrContentObscuring"
+                       data-violation-reason="Input is below the fixed overlay and cannot be interacted with">
+                <button type="submit"
+                        data-expected-violation="true"
+                        data-violation-id="ErrContentObscuring"
+                        data-violation-reason="Submit button is below the fixed overlay and cannot be interacted with">Submit</button>
             </form>
         </section>
 

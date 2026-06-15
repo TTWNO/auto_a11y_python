@@ -74,6 +74,17 @@
             font-weight: bold;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFormUsesAriaLabelInsteadOfVisibleElement",
+    "issueId": "ErrFormUsesAriaLabelInsteadOfVisibleElement",
+    "expectedViolationCount": 2,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Form landmarks named with aria-label text rather than referencing a visible heading via aria-labelledby. Two forms demonstrate the issue (one aria-label-only, one with a visible heading that aria-label overrides); one comparison form uses aria-labelledby pointing at a visible heading and passes. Other error sections in this fixture (input/fieldset/div aria-label cases) map to different field-level codes and are intentionally not annotated for this target.",
+    "wcag": "2.5.3"
+}
+    </script>
 </head>
 <body>
     <div class="container">
@@ -85,7 +96,7 @@
         <!-- Case 1: Form with only aria-label (no visible heading) -->
         <div class="form-section error-case">
             <p class="section-title">❌ ERROR: Form with only aria-label</p>
-            <form aria-label="Contact Information Form">
+            <form aria-label="Contact Information Form" data-expected-violation="true" data-violation-id="ErrFormUsesAriaLabelInsteadOfVisibleElement" data-violation-reason="form landmark named only by aria-label with no visible heading referenced via aria-labelledby">
                 <div class="form-group">
                     <input type="text" name="name" placeholder="Your Name" required>
                 </div>
@@ -184,7 +195,7 @@
         <div class="form-section good-case">
             <p class="section-title">✅ GOOD: Form with visible heading and aria-labelledby</p>
             <h3 id="contact-heading">Contact Information Form</h3>
-            <form aria-labelledby="contact-heading">
+            <form aria-labelledby="contact-heading" data-expected-pass="true" data-pass-reason="form named via aria-labelledby referencing the visible h3 heading, not aria-label">
                 <div class="form-group">
                     <label for="contact-name">Your Name:</label>
                     <input type="text" id="contact-name" name="name" required>
@@ -254,7 +265,7 @@
         <div class="form-section error-case">
             <p class="section-title">⚠️ EDGE CASE: Form with both visible heading and aria-label</p>
             <h3>Newsletter Subscription</h3>
-            <form aria-label="Email Newsletter Sign-up Form">
+            <form aria-label="Email Newsletter Sign-up Form" data-expected-violation="true" data-violation-id="ErrFormUsesAriaLabelInsteadOfVisibleElement" data-violation-reason="form uses aria-label instead of pointing aria-labelledby at the visible 'Newsletter Subscription' heading">
                 <div class="form-group">
                     <label for="newsletter-email">Email Address:</label>
                     <input type="email" id="newsletter-email" name="email" required>

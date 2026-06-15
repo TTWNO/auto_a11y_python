@@ -121,6 +121,17 @@
             font-size: var(--font-size, 16px);
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrTextContrastAAA",
+    "issueId": "ErrTextContrastAAA",
+    "expectedViolationCount": 17,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Normal text failing the WCAG AAA 7:1 contrast threshold across grayscale, blue, green, red, purple, orange, teal and brown colour pairs, plus dynamic custom-property, inline-styled, nested, and small font-size cases (16 ErrTextContrastAAA). One 24px case is large text and fails the 4.5:1 large-text AAA threshold (1 ErrLargeTextContrastAAA). One high-contrast reference case passes. Each case is validated individually.",
+    "wcag": "1.4.6"
+}
+    </script>
 </head>
 <body>
     <h1>WCAG AAA Text Contrast Test Fixture</h1>
@@ -130,7 +141,7 @@
         <div class="test-description">
             <strong>Test Case 1:</strong> Light gray on white background (4.5:1 ratio - passes AA, fails AAA)
         </div>
-        <div class="fail-aaa-light">
+        <div class="fail-aaa-light" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="16px #757575 on #ffffff is 4.61:1, fails normal-text AAA 7:1">
             This text should trigger ErrTextContrastAAA. The contrast ratio is approximately 4.5:1 between #757575 and #ffffff, which passes WCAG AA but fails AAA requirements of 7:1 for normal text.
         </div>
     </div>
@@ -139,7 +150,7 @@
         <div class="test-description">
             <strong>Test Case 2:</strong> Medium gray on light gray background (3.5:1 ratio)
         </div>
-        <div class="fail-aaa-medium">
+        <div class="fail-aaa-medium" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="18px #888888 on #f5f5f5 is 3.25:1, fails normal-text AAA 7:1">
             This text demonstrates insufficient contrast with approximately 3.5:1 ratio between #888888 and #f5f5f5. This should definitely trigger the AAA contrast error.
         </div>
     </div>
@@ -148,7 +159,7 @@
         <div class="test-description">
             <strong>Test Case 3:</strong> Blue on light blue background (3.2:1 ratio)
         </div>
-        <div class="fail-aaa-blue">
+        <div class="fail-aaa-blue" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="14px #4d94ff on #e6f3ff is 2.66:1, fails normal-text AAA 7:1">
             Blue text (#4d94ff) on light blue background (#e6f3ff) creates poor contrast of about 3.2:1, well below AAA requirements.
         </div>
     </div>
@@ -157,7 +168,7 @@
         <div class="test-description">
             <strong>Test Case 4:</strong> Dark gray on medium gray (2.8:1 ratio)
         </div>
-        <div class="fail-aaa-gray-combo">
+        <div class="fail-aaa-gray-combo" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="20px #666666 on #cccccc is 3.58:1, fails normal-text AAA 7:1">
             This combination of #666666 on #cccccc background has very poor contrast at approximately 2.8:1.
         </div>
     </div>
@@ -166,7 +177,7 @@
         <div class="test-description">
             <strong>Test Case 5:</strong> Green on light green (3.8:1 ratio)
         </div>
-        <div class="fail-aaa-green">
+        <div class="fail-aaa-green" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="16px #6b8e6b on #f0fff0 is 3.55:1, fails normal-text AAA 7:1">
             Green text (#6b8e6b) on mint background (#f0fff0) provides insufficient contrast at about 3.8:1.
         </div>
     </div>
@@ -175,7 +186,7 @@
         <div class="test-description">
             <strong>Test Case 6:</strong> Red on pink background (3.1:1 ratio)
         </div>
-        <div class="fail-aaa-red">
+        <div class="fail-aaa-red" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="15px #cc6666 on #ffe6e6 is 3.13:1, fails normal-text AAA 7:1">
             Red text (#cc6666) on pink background (#ffe6e6) creates poor readability with 3.1:1 contrast.
         </div>
     </div>
@@ -184,7 +195,7 @@
         <div class="test-description">
             <strong>Test Case 7:</strong> Purple on light purple (4.2:1 ratio)
         </div>
-        <div class="fail-aaa-purple">
+        <div class="fail-aaa-purple" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="17px #8066cc on #f5f0ff is 4.01:1, fails normal-text AAA 7:1">
             Purple text (#8066cc) on lavender background (#f5f0ff) has 4.2:1 contrast - passes AA but fails AAA.
         </div>
     </div>
@@ -193,7 +204,7 @@
         <div class="test-description">
             <strong>Test Case 8:</strong> Orange on cream (5.5:1 ratio)
         </div>
-        <div class="fail-aaa-orange">
+        <div class="fail-aaa-orange" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="16px #cc8533 on #fffaf0 is 2.90:1, fails normal-text AAA 7:1">
             Orange text (#cc8533) on cream background (#fffaf0) provides 5.5:1 contrast - close to AAA but still insufficient.
         </div>
     </div>
@@ -202,7 +213,7 @@
         <div class="test-description">
             <strong>Test Case 9:</strong> Teal on light teal (4.8:1 ratio)
         </div>
-        <div class="fail-aaa-teal">
+        <div class="fail-aaa-teal" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="19px #4d9999 on #e6ffff is 3.18:1, fails normal-text AAA 7:1">
             Teal text (#4d9999) on light teal background (#e6ffff) offers 4.8:1 contrast ratio.
         </div>
     </div>
@@ -211,7 +222,7 @@
         <div class="test-description">
             <strong>Test Case 10:</strong> Brown on beige (6.2:1 ratio - very close to AAA threshold)
         </div>
-        <div class="fail-aaa-brown">
+        <div class="fail-aaa-brown" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="14px #8b6914 on #f5f5dc is 4.60:1, fails normal-text AAA 7:1">
             Brown text (#8b6914) on beige (#f5f5dc) is close at 6.2:1 but still below 7:1 AAA requirement.
         </div>
     </div>
@@ -221,7 +232,7 @@
         <div class="test-description">
             <strong>Dynamic Test Case:</strong> Customizable via CSS custom properties
         </div>
-        <div class="dynamic-contrast-test" style="--bg-color: #eeeeee; --text-color: #777777; --font-size: 18px;">
+        <div class="dynamic-contrast-test" style="--bg-color: #eeeeee; --text-color: #777777; --font-size: 18px;" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="18px #777777 on #eeeeee is 3.86:1, fails normal-text AAA 7:1">
             This text uses CSS custom properties and can be modified dynamically for testing different contrast scenarios.
         </div>
     </div>
@@ -231,7 +242,7 @@
         <div class="test-description">
             <strong>Reference:</strong> Good AAA contrast (12.6:1 ratio) - should NOT trigger error
         </div>
-        <div class="pass-aaa-reference">
+        <div class="pass-aaa-reference" data-expected-pass="true" data-pass-reason="16px #333333 on #ffffff is 12.63:1, passes normal-text AAA 7:1">
             This text demonstrates good AAA contrast with #333333 on #ffffff background, providing 12.6:1 ratio.
         </div>
     </div>
@@ -241,10 +252,10 @@
         <div class="test-description">
             <strong>Font Size Variations:</strong> Same contrast ratio with different font sizes
         </div>
-        <p style="background-color: #ffffff; color: #777777; font-size: 12px; padding: 5px;">12px text with poor contrast</p>
-        <p style="background-color: #ffffff; color: #777777; font-size: 14px; padding: 5px;">14px text with poor contrast</p>
-        <p style="background-color: #ffffff; color: #777777; font-size: 18px; padding: 5px;">18px text with poor contrast</p>
-        <p style="background-color: #ffffff; color: #777777; font-size: 24px; padding: 5px;">24px text with poor contrast</p>
+        <p style="background-color: #ffffff; color: #777777; font-size: 12px; padding: 5px;" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="12px #777777 on #ffffff is 4.48:1, fails normal-text AAA 7:1">12px text with poor contrast</p>
+        <p style="background-color: #ffffff; color: #777777; font-size: 14px; padding: 5px;" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="14px #777777 on #ffffff is 4.48:1, fails normal-text AAA 7:1">14px text with poor contrast</p>
+        <p style="background-color: #ffffff; color: #777777; font-size: 18px; padding: 5px;" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="18px #777777 on #ffffff is 4.48:1, fails normal-text AAA 7:1">18px text with poor contrast</p>
+        <p style="background-color: #ffffff; color: #777777; font-size: 24px; padding: 5px;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="24px (large) #777777 on #ffffff is 4.48:1, fails large-text AAA 4.5:1">24px text with poor contrast</p>
     </div>
     
     <!-- Inline styles for additional test coverage -->
@@ -252,7 +263,7 @@
         <div class="test-description">
             <strong>Inline Styles:</strong> Testing contrast detection with inline CSS
         </div>
-        <span style="background-color: #f9f9f9; color: #909090; padding: 8px; font-size: 16px;">
+        <span style="background-color: #f9f9f9; color: #909090; padding: 8px; font-size: 16px;" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="16px inline #909090 on #f9f9f9 is 3.03:1, fails normal-text AAA 7:1">
             Inline styled text that should fail AAA contrast requirements.
         </span>
     </div>
@@ -263,7 +274,7 @@
             <strong>Nested Elements:</strong> Text within nested containers
         </div>
         <div style="background-color: #fafafa; padding: 10px;">
-            <p style="color: #808080; margin: 0;">
+            <p style="color: #808080; margin: 0;" data-expected-violation="true" data-violation-id="ErrTextContrastAAA" data-violation-reason="16px nested #808080 on #fafafa is 3.78:1, fails normal-text AAA 7:1">
                 Nested paragraph with inherited background and explicit text color that fails AAA.
             </p>
         </div>

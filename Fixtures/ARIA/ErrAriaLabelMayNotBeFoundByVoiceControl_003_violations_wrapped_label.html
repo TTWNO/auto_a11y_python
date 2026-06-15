@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ErrAriaLabelMayNotBeFoundByVoiceControl - wrapping label</title>
+    <script type="application/json" id="test-metadata">
+{
+    "enforceElementExpectations": true,
+    "id": "ErrAriaLabelMayNotBeFoundByVoiceControl_003_violations_wrapped_label",
+    "issueId": "ErrAriaLabelMayNotBeFoundByVoiceControl",
+    "expectedViolationCount": 6,
+    "expectedPassCount": 0,
+    "description": "Form controls whose only label is an implicit wrapping <label> (no for/id association) are not voice-operable: Dragon NaturallySpeaking cannot target them by the visible label text.",
+    "wcag": "2.5.3",
+    "impact": "Medium"
+}
+    </script>
+</head>
+<body>
+    <h1>Wrapping label is not voice-operable</h1>
+
+    <form>
+        <div>
+            <label>
+                Full name
+                <input type="text" name="full-name"
+                       data-expected-violation="true"
+                       data-violation-id="ErrAriaLabelMayNotBeFoundByVoiceControl"
+                       data-violation-reason="Text input named only by a wrapping <label> with no for/id; Dragon cannot target it by voice — use <label for>">
+            </label>
+        </div>
+
+        <div>
+            <label>
+                Email
+                <input type="email" name="email"
+                       data-expected-violation="true"
+                       data-violation-id="ErrAriaLabelMayNotBeFoundByVoiceControl"
+                       data-violation-reason="Email input named only by a wrapping <label> with no for/id; not voice-operable — use <label for>">
+            </label>
+        </div>
+
+        <div>
+            <label>
+                Country
+                <select name="country"
+                        data-expected-violation="true"
+                        data-violation-id="ErrAriaLabelMayNotBeFoundByVoiceControl"
+                        data-violation-reason="Select named only by a wrapping <label> with no for/id; not voice-operable — use <label for>">
+                    <option value="">Choose...</option>
+                    <option value="us">United States</option>
+                    <option value="ca">Canada</option>
+                </select>
+            </label>
+        </div>
+
+        <div>
+            <label>
+                Comments
+                <textarea name="comments" rows="3"
+                          data-expected-violation="true"
+                          data-violation-id="ErrAriaLabelMayNotBeFoundByVoiceControl"
+                          data-violation-reason="Textarea named only by a wrapping <label> with no for/id; not voice-operable — use <label for>"></textarea>
+            </label>
+        </div>
+
+        <div>
+            <label>
+                <input type="checkbox" name="terms"
+                       data-expected-violation="true"
+                       data-violation-id="ErrAriaLabelMayNotBeFoundByVoiceControl"
+                       data-violation-reason="Checkbox named only by a wrapping <label> with no for/id; not voice-operable — use <label for>">
+                I agree to the terms and conditions
+            </label>
+        </div>
+
+        <div>
+            <label>
+                <input type="radio" name="contact" value="phone"
+                       data-expected-violation="true"
+                       data-violation-id="ErrAriaLabelMayNotBeFoundByVoiceControl"
+                       data-violation-reason="Radio named only by a wrapping <label> with no for/id; not voice-operable — use <label for>">
+                Contact me by phone
+            </label>
+        </div>
+
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

@@ -4,9 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heading Near Length Limit Test - InfoHeadingNearLengthLimit</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "InfoHeadingNearLengthLimit",
+    "issueId": "InfoHeadingNearLengthLimit",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 2,
+    "expectedInfoCount": 2,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Two headings whose length approaches the recommended maximum trigger InfoHeadingNearLengthLimit: the h1 element and the h3 element (which sits exactly at the 60-character limit). The two h2 elements exceed the limit and trigger the separate over-limit warning instead, so they are not annotated for this target.",
+    "wcag": "2.4.6"
+}
+    </script>
 </head>
 <body>
-    <h1>Headings Approaching Maximum Recommended Length</h1>
+    <h1 data-expected-info="true" data-info-id="InfoHeadingNearLengthLimit" data-info-reason="h1 length approaches the recommended maximum heading length">Headings Approaching Maximum Recommended Length</h1>
     
     <!-- Heading with 55-60 characters (near limit) -->
     <h2>This Is a Fairly Long Heading That Is Getting Close to Being Too Long</h2>
@@ -17,7 +30,7 @@
     <p>This heading is approaching the maximum recommended length.</p>
     
     <!-- Heading at exactly 60 characters -->
-    <h3>This Heading Has Exactly Sixty Characters Which Is The Limit</h3>
+    <h3 data-expected-info="true" data-info-id="InfoHeadingNearLengthLimit" data-info-reason="h3 length sits at the 60-character recommended maximum">This Heading Has Exactly Sixty Characters Which Is The Limit</h3>
     <p>60 characters is typically considered the maximum for headings.</p>
     
     <p>Long headings can be difficult to scan and understand quickly.</p>

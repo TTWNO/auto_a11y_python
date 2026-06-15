@@ -4,10 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contentinfo Landmark Labeling Test Fixture</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs",
+    "issueId": "ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs",
+    "expectedViolationCount": 5,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 3,
+    "enforceElementExpectations": true,
+    "description": "Contentinfo landmarks (footer or role=contentinfo) that carry BOTH a non-empty aria-label and aria-labelledby simultaneously are flagged, including implicit footer and hidden-reference cases. Each violation is validated individually; footers with only one labeling method (or none) pass.",
+    "wcag": "1.3.1,4.1.2"
+}
+    </script>
 </head>
 <body>
     <!-- Test Case 1: ERROR - Contentinfo with both aria-label and aria-labelledby -->
-    <footer role="contentinfo" aria-label="Main site footer" aria-labelledby="footer-heading">
+    <footer role="contentinfo" aria-label="Main site footer" aria-labelledby="footer-heading" data-expected-violation="true" data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="footer role=contentinfo has both aria-label and aria-labelledby">
         <h2 id="footer-heading">Site Footer</h2>
         <p>This footer has conflicting labeling methods and should trigger an error.</p>
         <nav>
@@ -19,13 +31,13 @@
     </footer>
 
     <!-- Test Case 2: ERROR - Multiple contentinfo landmarks with conflicting labels -->
-    <div role="contentinfo" aria-label="Secondary footer" aria-labelledby="secondary-footer-title">
+    <div role="contentinfo" aria-label="Secondary footer" aria-labelledby="secondary-footer-title" data-expected-violation="true" data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="div role=contentinfo has both aria-label and aria-labelledby">
         <h3 id="secondary-footer-title">Additional Information</h3>
         <p>Another contentinfo landmark with both labeling attributes.</p>
     </div>
 
     <!-- Test Case 3: ERROR - Implicit contentinfo (footer) with both attributes -->
-    <footer aria-label="Newsletter footer" aria-labelledby="newsletter-heading">
+    <footer aria-label="Newsletter footer" aria-labelledby="newsletter-heading" data-expected-violation="true" data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="implicit contentinfo footer has both aria-label and aria-labelledby">
         <h2 id="newsletter-heading">Newsletter Signup</h2>
         <p>Footer element with implicit contentinfo role and conflicting labels.</p>
         <form>
@@ -36,7 +48,7 @@
     </footer>
 
     <!-- Test Case 4: PASS - Contentinfo with only aria-label -->
-    <footer role="contentinfo" aria-label="Company information footer">
+    <footer role="contentinfo" aria-label="Company information footer" data-expected-pass="true" data-pass-reason="contentinfo footer with only aria-label is correctly labeled">
         <h2>Company Info</h2>
         <p>This footer only uses aria-label and should pass validation.</p>
         <address>
@@ -46,14 +58,14 @@
     </footer>
 
     <!-- Test Case 5: PASS - Contentinfo with only aria-labelledby -->
-    <footer role="contentinfo" aria-labelledby="contact-heading">
+    <footer role="contentinfo" aria-labelledby="contact-heading" data-expected-pass="true" data-pass-reason="contentinfo footer with only aria-labelledby is correctly labeled">
         <h2 id="contact-heading">Contact Information</h2>
         <p>This footer only uses aria-labelledby and should pass validation.</p>
         <p>Phone: (555) 123-4567</p>
     </footer>
 
     <!-- Test Case 6: PASS - Contentinfo with no labeling attributes -->
-    <footer role="contentinfo">
+    <footer role="contentinfo" data-expected-pass="true" data-pass-reason="contentinfo footer with no labeling attributes is correct">
         <h2>Copyright Information</h2>
         <p>© 2024 Test Company. All rights reserved.</p>
         <p>This footer has no labeling attributes and should pass validation.</p>
@@ -69,7 +81,7 @@
     <div id="complex-footer-label">Advanced Footer Section</div>
     <footer role="contentinfo" 
             aria-label="Comprehensive site footer with links and information" 
-            aria-labelledby="complex-footer-label">
+            aria-labelledby="complex-footer-label" data-expected-violation="true" data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="contentinfo footer has both aria-label and a valid aria-labelledby reference">
         <h2>Site Navigation</h2>
         <nav aria-label="Footer navigation">
             <ul>
@@ -91,7 +103,7 @@
     <div id="hidden-label" style="display: none;">Hidden Label Text</div>
     
     <!-- Test Case 9: ERROR - References hidden element -->
-    <footer role="contentinfo" aria-label="Visible label" aria-labelledby="hidden-label">
+    <footer role="contentinfo" aria-label="Visible label" aria-labelledby="hidden-label" data-expected-violation="true" data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="contentinfo footer has both aria-label and aria-labelledby (hidden reference)">
         <h2>Footer with Hidden Reference</h2>
         <p>Tests edge case where aria-labelledby references a hidden element.</p>
     </footer>

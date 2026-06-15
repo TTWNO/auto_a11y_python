@@ -6,6 +6,7 @@
     <title>ContentInfo Landmark No Label - Violations</title>
     <script type="application/json" id="test-metadata">
     {
+    "enforceElementExpectations": true,
         "id": "WarnContentInfoLandmarkHasNoLabel_001_violations_basic",
         "issueId": "WarnContentinfoLandmarkHasNoLabel",
         "expectedViolationCount": 2,
@@ -29,7 +30,7 @@
     </main>
 
     <footer data-expected-violation="true"
-            data-violation-id="WarnContentInfoLandmarkHasNoLabel"
+            data-violation-id="WarnContentinfoLandmarkHasNoLabel"
             data-violation-reason="Multiple contentinfo landmarks exist without labels. Users cannot easily distinguish between this and other footer sections">
         <p>© 2025 Example Corporation. All rights reserved.</p>
         <nav>
@@ -40,7 +41,7 @@
 
     <div role="contentinfo"
          data-expected-violation="true"
-         data-violation-id="WarnContentInfoLandmarkHasNoLabel"
+         data-violation-id="WarnContentinfoLandmarkHasNoLabel"
          data-violation-reason="Second unlabeled contentinfo landmark. Without labels, screen reader users must explore content to determine each footer's purpose">
         <h2>Contact Information</h2>
         <address>

@@ -6,23 +6,28 @@
     <title>Style Tag with HTML Mixed Properties - Violation</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrStyleTagColorFont_006_violations_html_mixed",
     "issueId": "ErrStyleTagColorFont",
-    "expectedViolationCount": 1,
+    "expectedViolationCount": 2,
     "expectedPassCount": 0,
-    "description": "Style tag targeting html with CSS variables (allowed) AND hard-coded colors (not allowed) - SHOULD be flagged",
+    "description": "Style tag targeting html with CSS variables (allowed) AND hard-coded colors (not allowed) - SHOULD be flagged. The decorative second style tag also contains color/font properties and is independently flagged",
     "wcag": ["1.4.3", "1.4.8", "1.4.12"],
     "impact": "High"
 }
     </script>
-    <style>
+    <style data-expected-violation="true"
+           data-violation-id="ErrStyleTagColorFont"
+           data-violation-reason="The first <style> tag mixes CSS variables (--primary-color, --spacing) with a hard-coded background-color property. Even though some properties are legitimate, the presence of ANY hard-coded color property should trigger a violation. The rule is: ALL properties must be allowed (CSS variables or color-scheme) for the style tag to pass.">
         html {
             --primary-color: #007bff;
             background-color: #ffffff;
             --spacing: 8px;
         }
     </style>
-    <style>
+    <style data-expected-violation="true"
+           data-violation-id="ErrStyleTagColorFont"
+           data-violation-reason="The second (decorative page-styling) <style> tag also declares font-family and background-color, so it is independently flagged.">
         body {
             font-family: system-ui, -apple-system, sans-serif;
             max-width: 800px;
@@ -38,10 +43,7 @@
         }
     </style>
 </head>
-<body data-expected-violation="true"
-      data-violation-xpath="/html[1]/head[1]/style[1]"
-      data-violation-id="ErrStyleTagColorFont"
-      data-violation-reason="The first <style> tag mixes CSS variables (--primary-color, --spacing) with a hard-coded background-color property. Even though some properties are legitimate, the presence of ANY hard-coded color property should trigger a violation. The rule is: ALL properties must be allowed (CSS variables or color-scheme) for the style tag to pass.">
+<body>
     <h1>Mixed Properties in Style Tag</h1>
 
     <main>

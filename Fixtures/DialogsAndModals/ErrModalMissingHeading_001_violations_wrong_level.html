@@ -8,9 +8,10 @@
     {
         "id": "ErrModalMissingHeading_001_violations_wrong_level",
         "issueId": "ErrModalMissingHeading",
-        "description": "Modal dialogs with headings at wrong levels (h3-h6 instead of h1/h2)",
+        "description": "Modal dialogs with headings at wrong levels (h3-h6 instead of h1/h2). Each modal is validated individually: the engine flags ErrModalMissingHeading on a dialog whose first heading is deeper than h2.",
         "expectedViolationCount": 3,
-        "expectedPasses": 0
+        "expectedPassCount": 0,
+        "enforceElementExpectations": true
     }
     </script>
     <style>
@@ -70,7 +71,9 @@
              role="dialog" 
              aria-modal="true"
              aria-labelledby="modal-h3"
-             data-violation-id="ErrModalMissingHeading">
+             data-expected-violation="true"
+             data-violation-id="ErrModalMissingHeading"
+             data-violation-reason="Modal's first heading is an h3; a dialog should start at h1/h2, so the engine flags ErrModalMissingHeading.">
             <h3 id="modal-h3">Edit Profile</h3>
             <p>Update your profile information below.</p>
             <input type="text" placeholder="Name">
@@ -84,7 +87,9 @@
          role="dialog" 
          aria-modal="true"
          aria-labelledby="panel-h4"
-         data-violation-id="ErrModalMissingHeading">
+         data-expected-violation="true"
+         data-violation-id="ErrModalMissingHeading"
+         data-violation-reason="Side panel dialog's first heading is an h4; a dialog should start at h1/h2, so the engine flags ErrModalMissingHeading.">
         <h4 id="panel-h4">Filter Options</h4>
         <p>Select your filter criteria.</p>
         <label><input type="checkbox"> Option 1</label>
@@ -97,7 +102,9 @@
          role="dialog" 
          aria-modal="true"
          aria-labelledby="sheet-h5"
-         data-violation-id="ErrModalMissingHeading">
+         data-expected-violation="true"
+         data-violation-id="ErrModalMissingHeading"
+         data-violation-reason="Bottom sheet dialog's first heading is an h5; a dialog should start at h1/h2, so the engine flags ErrModalMissingHeading.">
         <h5 id="sheet-h5">Share This Item</h5>
         <p>Choose how to share.</p>
         <button>Copy Link</button>

@@ -4,15 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image with File Extension Alt Test - ErrImageWithImgFileExtensionAlt</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrImageWithImgFileExtensionAlt",
+    "issueId": "ErrImageWithImgFileExtensionAlt",
+    "expectedViolationCount": 2,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Each img element whose alt text is an image filename ending in an image file extension is flagged individually. A control image whose alt has no file extension is not flagged.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Images with File Names as Alt Text</h1>
     
     <!-- Alt text is just the filename -->
-    <img src="DSC_0001.jpg" alt="DSC_0001.jpg">
+    <img src="DSC_0001.jpg" alt="DSC_0001.jpg" data-expected-violation="true" data-violation-id="ErrImageWithImgFileExtensionAlt" data-violation-reason="alt text is a jpg filename">
     
     <!-- Alt text is filename without extension -->
-    <img src="image_final_v2.png" alt="image_final_v2">
+    <img src="image_final_v2.png" alt="image_final_v2" data-expected-pass="true" data-pass-reason="alt text has no image file extension so does not trigger the file-extension check">
     
     <!-- Alt text with path and filename -->
     <img src="/images/photo.gif" alt="/images/photo.gif">
@@ -24,7 +36,7 @@
     <img src="IMG_20240115.jpg" alt="IMG_20240115">
     
     <!-- Alt text with technical filename -->
-    <img src="screenshot-2024-01-15-093045.png" alt="screenshot-2024-01-15-093045.png">
+    <img src="screenshot-2024-01-15-093045.png" alt="screenshot-2024-01-15-093045.png" data-expected-violation="true" data-violation-id="ErrImageWithImgFileExtensionAlt" data-violation-reason="alt text is a png filename">
     
     <p>Alt text should describe the image, not its filename.</p>
 </body>

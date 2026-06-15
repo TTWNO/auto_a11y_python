@@ -4,25 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Positive Tabindex Test - ErrPositiveTabindex</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrPositiveTabindex",
+    "issueId": "ErrPositiveTabindex",
+    "expectedViolationCount": 6,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Elements assigned a positive tabindex value (greater than zero) which overrides the natural DOM tab order and creates confusing keyboard navigation. Covers buttons, a link, a custom role=button div and a custom role=link span. Each case is validated individually; one button relying on the natural tab order is a correct comparison.",
+    "wcag": "2.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Positive Tabindex Values</h1>
     
     <!-- Positive tabindex values disrupt natural tab order -->
-    <button tabindex="3">Third in tab order</button>
-    <button tabindex="1">First in tab order</button>
-    <button tabindex="2">Second in tab order</button>
+    <button tabindex="3" data-expected-violation="true" data-violation-id="ErrPositiveTabindex" data-violation-reason="button with tabindex=3 - positive tabindex overrides natural order">Third in tab order</button>
+    <button tabindex="1" data-expected-violation="true" data-violation-id="ErrPositiveTabindex" data-violation-reason="button with tabindex=1 - positive tabindex overrides natural order">First in tab order</button>
+    <button tabindex="2" data-expected-violation="true" data-violation-id="ErrPositiveTabindex" data-violation-reason="button with tabindex=2 - positive tabindex overrides natural order">Second in tab order</button>
     
     <!-- Natural tab order elements come after positive tabindex -->
     <input type="text" placeholder="This comes fourth">
-    <button>This button comes fifth</button>
+    <button id="good-natural-order" data-expected-pass="true" data-pass-reason="button with no tabindex relies on natural DOM tab order">This button comes fifth</button>
     
     <!-- Very high tabindex -->
-    <a href="#" tabindex="999">This link has tabindex 999</a>
+    <a href="#" tabindex="999" data-expected-violation="true" data-violation-id="ErrPositiveTabindex" data-violation-reason="link with tabindex=999 - positive tabindex overrides natural order">This link has tabindex 999</a>
     
     <!-- Mixed positive values -->
-    <div tabindex="10" role="button">Custom button with tabindex 10</div>
-    <span tabindex="5" role="link">Custom link with tabindex 5</span>
+    <div tabindex="10" role="button" data-expected-violation="true" data-violation-id="ErrPositiveTabindex" data-violation-reason="custom role=button div with tabindex=10 - positive tabindex overrides natural order">Custom button with tabindex 10</div>
+    <span tabindex="5" role="link" data-expected-violation="true" data-violation-id="ErrPositiveTabindex" data-violation-reason="custom role=link span with tabindex=5 - positive tabindex overrides natural order">Custom link with tabindex 5</span>
     
     <p>Positive tabindex values create confusing navigation order.</p>
 </body>

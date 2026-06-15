@@ -6,6 +6,7 @@
     <title>ErrButtonSingleSideBoxShadow - Correct Implementation</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrButtonSingleSideBoxShadow_002_correct_all_around",
     "issueId": "ErrButtonSingleSideBoxShadow",
     "expectedViolationCount": 0,
@@ -16,6 +17,22 @@
 }
     </script>
     <style>
+        /* Flat buttons (appearance:none) so the focus indicators render uniformly
+           across browsers. Native-themed buttons clip box-shadows in Firefox/WebKit:
+           the inset shadow hides behind the platform bevel and the spread shadow
+           paints unevenly on the bottom/right edges. */
+        button {
+            appearance: none;
+            -webkit-appearance: none;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            border: 1px solid #767676;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
         .box-shadow-spread:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.5); /* All around - zero offset, spread only */

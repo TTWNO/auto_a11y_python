@@ -4,27 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Negative Tabindex Warning Test - WarnNegativeTabindex</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnNegativeTabindex",
+    "issueId": "WarnNegativeTabindex",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 6,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Natively interactive elements carry tabindex of minus one, removing a button, link, text input, select, submit button and skip link from the keyboard tab order. Each flagged element is validated individually.",
+    "wcag": "2.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Interactive Elements with Negative Tabindex</h1>
     
     <!-- Active button with tabindex="-1" -->
-    <button tabindex="-1">Active button removed from tab order</button>
+    <button tabindex="-1" data-expected-warning="true" data-warning-id="WarnNegativeTabindex" data-warning-reason="active button removed from tab order via tabindex minus one">Active button removed from tab order</button>
     
     <!-- Link with negative tabindex -->
-    <a href="page.html" tabindex="-1">Link not keyboard accessible</a>
+    <a href="page.html" tabindex="-1" data-expected-warning="true" data-warning-id="WarnNegativeTabindex" data-warning-reason="link removed from tab order via tabindex minus one">Link not keyboard accessible</a>
     
     <!-- Form elements with negative tabindex -->
-    <input type="text" tabindex="-1" placeholder="Can't tab to this input">
+    <input type="text" tabindex="-1" placeholder="Can't tab to this input" data-expected-warning="true" data-warning-id="WarnNegativeTabindex" data-warning-reason="text input removed from tab order via tabindex minus one">
     
-    <select tabindex="-1">
+    <select tabindex="-1" data-expected-warning="true" data-warning-id="WarnNegativeTabindex" data-warning-reason="select removed from tab order via tabindex minus one">
         <option>Can't tab to this select</option>
     </select>
     
     <!-- Important interactive elements with tabindex="-1" -->
-    <button tabindex="-1" onclick="submitForm()">Submit (not in tab order)</button>
+    <button tabindex="-1" onclick="submitForm()" data-expected-warning="true" data-warning-id="WarnNegativeTabindex" data-warning-reason="submit button removed from tab order via tabindex minus one">Submit (not in tab order)</button>
     
-    <a href="#main" tabindex="-1">Skip to main (can't tab to it)</a>
+    <a href="#main" tabindex="-1" data-expected-warning="true" data-warning-id="WarnNegativeTabindex" data-warning-reason="skip link removed from tab order via tabindex minus one">Skip to main (can't tab to it)</a>
     
     <p>Negative tabindex removes elements from keyboard navigation.</p>
 </body>

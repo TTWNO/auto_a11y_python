@@ -6,6 +6,7 @@
     <title>International Resources - Invalid Hreflang Codes</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrPrimaryHrefLangNotRecognized_001_violations_basic",
     "issueId": "ErrPrimaryHrefLangNotRecognized",
     "expectedViolationCount": 3,
@@ -23,20 +24,23 @@
 
     <nav>
         <ul>
-            <li data-expected-violation="true"
-                data-violation-id="ErrPrimaryHrefLangNotRecognized"
-                data-violation-reason="hreflang='spanish' is not a valid ISO 639 code, should be 'es'">
-                <a href="/docs/es/" hreflang="spanish">Spanish Documentation</a>
+            <li>
+                <a href="/docs/es/" hreflang="spanish"
+                   data-expected-violation="true"
+                   data-violation-id="ErrPrimaryHrefLangNotRecognized"
+                   data-violation-reason="hreflang='spanish' is not a valid ISO 639 code, should be 'es'">Spanish Documentation</a>
             </li>
-            <li data-expected-violation="true"
-                data-violation-id="ErrPrimaryHrefLangNotRecognized"
-                data-violation-reason="hreflang='chinese' is not a valid ISO 639 code, should be 'zh'">
-                <a href="/docs/zh/" hreflang="chinese">Chinese Version</a>
+            <li>
+                <a href="/docs/zh/" hreflang="chinese"
+                   data-expected-violation="true"
+                   data-violation-id="ErrPrimaryHrefLangNotRecognized"
+                   data-violation-reason="hreflang='chinese' is not a valid ISO 639 code, should be 'zh'">Chinese Version</a>
             </li>
-            <li data-expected-violation="true"
-                data-violation-id="ErrPrimaryHrefLangNotRecognized"
-                data-violation-reason="hreflang='jp' is not a valid ISO 639 code, should be 'ja' for Japanese">
-                <a href="/docs/ja/" hreflang="jp">Japanese Guide</a>
+            <li>
+                <a href="/docs/ja/" hreflang="jp"
+                   data-expected-violation="true"
+                   data-violation-id="ErrPrimaryHrefLangNotRecognized"
+                   data-violation-reason="hreflang='jp' is not a valid ISO 639 code, should be 'ja' for Japanese">Japanese Guide</a>
             </li>
         </ul>
     </nav>

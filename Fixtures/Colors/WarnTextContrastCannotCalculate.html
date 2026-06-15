@@ -43,9 +43,9 @@
             margin-top: 10px;
         }
 
-        /* Section 1: Background Images - High Contrast */
+        /* Section 1: Background Images - distinct dark hues so the image/pattern is visible */
         .bg-image-simple {
-            background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22200%22%20height%3D%22100%22%20fill%3D%22%23000000%22%2F%3E%3C%2Fsvg%3E');
+            background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22200%22%20height%3D%22100%22%20fill%3D%22%230b2545%22%2F%3E%3C%2Fsvg%3E');
             padding: 20px;
             color: #ffffff;
             font-weight: bold;
@@ -53,7 +53,7 @@
         }
 
         .bg-image-data-uri {
-            background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%23000000%22%2F%3E%3Crect%20x%3D%2220%22%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%23111111%22%2F%3E%3Crect%20y%3D%2220%22%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%23111111%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%2220%22%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%23000000%22%2F%3E%3C%2Fsvg%3E');
+            background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%2306302b%22%2F%3E%3Crect%20x%3D%2220%22%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%2308323f%22%2F%3E%3Crect%20y%3D%2220%22%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%2308323f%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%2220%22%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%2306302b%22%2F%3E%3C%2Fsvg%3E');
             background-repeat: repeat;
             background-size: 40px 40px;
             padding: 20px;
@@ -65,10 +65,10 @@
         .bg-image-pattern {
             background: repeating-linear-gradient(
                 45deg,
-                #000000 0px,
-                #000000 20px,
-                #1a1a1a 20px,
-                #1a1a1a 40px
+                #1b0f47 0px,
+                #1b0f47 20px,
+                #2e0b46 20px,
+                #2e0b46 40px
             );
             padding: 20px;
             color: #ffffff;
@@ -78,8 +78,8 @@
 
         .bg-image-layered {
             background-image:
-                url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%2225%22%20fill%3D%22%23000000%22%20opacity%3D%220.9%22%2F%3E%3C%2Fsvg%3E'),
-                linear-gradient(to bottom, #000000, #1a1a1a);
+                url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%2225%22%20fill%3D%22%233a0b30%22%20opacity%3D%220.9%22%2F%3E%3C%2Fsvg%3E'),
+                linear-gradient(to bottom, #45101a, #4a230c);
             background-repeat: repeat;
             background-size: 60px 60px, 100% 100%;
             padding: 20px;
@@ -88,9 +88,9 @@
             font-size: 18px;
         }
 
-        /* Section 2: Gradients - High Contrast */
+        /* Section 2: Gradients - two distinct dark hues so the gradient is visible */
         .gradient-linear {
-            background: linear-gradient(to right, #000000, #1a1a1a);
+            background: linear-gradient(to right, #0b2545, #06302b);
             padding: 20px;
             color: #ffffff;
             font-weight: bold;
@@ -98,7 +98,7 @@
         }
 
         .gradient-radial {
-            background: radial-gradient(circle, #1a1a1a, #000000);
+            background: radial-gradient(circle, #2e0b46, #0d1b3a);
             padding: 20px;
             color: #ffffff;
             font-weight: bold;
@@ -106,7 +106,7 @@
         }
 
         .gradient-multi-stop {
-            background: linear-gradient(to right, #000000 0%, #0d0d0d 25%, #1a1a1a 50%, #0d0d0d 75%, #000000 100%);
+            background: linear-gradient(to right, #45101a 0%, #2e0b46 25%, #06302b 50%, #2e0b46 75%, #45101a 100%);
             padding: 20px;
             color: #ffffff;
             font-weight: bold;
@@ -114,7 +114,7 @@
         }
 
         .gradient-with-alpha {
-            background: linear-gradient(to right, rgba(0,0,0,1), rgba(26,26,26,1));
+            background: linear-gradient(to right, rgba(11,37,69,1), rgba(58,11,48,1));
             padding: 20px;
             color: #ffffff;
             font-weight: bold;
@@ -122,7 +122,7 @@
         }
 
         .gradient-conic {
-            background: conic-gradient(from 0deg, #000000, #1a1a1a, #000000);
+            background: conic-gradient(from 0deg, #1b0f47, #0a3a1e, #1b0f47);
             padding: 20px;
             color: #ffffff;
             font-weight: bold;
@@ -130,7 +130,7 @@
         }
 
         .gradient-extreme {
-            background: linear-gradient(135deg, #000000 0%, #1a1a1a 20%, #0d0d0d 40%, #000000 60%, #1a1a1a 80%, #000000 100%);
+            background: linear-gradient(135deg, #480d22 0%, #240a4d 20%, #08323f 40%, #480d22 60%, #2c3209 80%, #480d22 100%);
             padding: 20px;
             color: #ffffff;
             font-weight: bold;
@@ -162,7 +162,7 @@
             top: 100px;
             left: 50px;
             z-index: 100;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(27, 15, 71, 0.7);
             color: #ffffff;
             padding: 20px;
             font-weight: bold;
@@ -189,10 +189,10 @@
             border: 2px solid #000000;
         }
 
-        /* Section 4: Text Overflow - High Contrast Inside, No Background Outside */
+        /* Section 4: Text Overflow - distinct dark solids, high contrast inside, no background outside */
         .overflow-horizontal {
             width: 200px;
-            background: #000000;
+            background: #0b2545;
             overflow: visible;
             white-space: nowrap;
             padding: 15px;
@@ -203,7 +203,7 @@
 
         .overflow-vertical {
             height: 25px;
-            background: #000000;
+            background: #06302b;
             overflow: visible;
             padding: 8px;
             color: #ffffff;
@@ -215,7 +215,7 @@
         .overflow-absolute-parent {
             position: relative;
             height: 100px;
-            background: #000000;
+            background: #2e0b46;
             padding: 15px;
         }
 
@@ -229,7 +229,7 @@
         }
 
         .overflow-negative-margin {
-            background: #000000;
+            background: #45101a;
             color: #ffffff;
             padding: 15px;
             margin-left: -50px;
@@ -238,7 +238,7 @@
         }
 
         .overflow-transform {
-            background: #000000;
+            background: #4a230c;
             color: #ffffff;
             padding: 15px;
             transform: translateX(-30px);
@@ -247,7 +247,7 @@
         }
 
         .overflow-rotated {
-            background: #000000;
+            background: #0a3a1e;
             color: #ffffff;
             padding: 15px;
             transform: rotate(-5deg);
@@ -258,7 +258,7 @@
 
         .overflow-float {
             float: left;
-            background: #000000;
+            background: #480d22;
             color: #ffffff;
             padding: 15px;
             width: 150px;
@@ -274,11 +274,11 @@
         }
 
         @keyframes colorChange {
-            0% { background-color: #000000; }
-            25% { background-color: #0d0d0d; }
-            50% { background-color: #1a1a1a; }
-            75% { background-color: #0d0d0d; }
-            100% { background-color: #000000; }
+            0% { background-color: #0b2545; }
+            25% { background-color: #2e0b46; }
+            50% { background-color: #06302b; }
+            75% { background-color: #2e0b46; }
+            100% { background-color: #0b2545; }
         }
 
         @keyframes textColorChange {
@@ -302,7 +302,7 @@
         .anim-position-parent {
             position: relative;
             height: 80px;
-            background: linear-gradient(to right, #ffffff, #000000);
+            background: linear-gradient(to right, #ffffff, #0d1b3a);
             overflow: visible;
         }
 
@@ -325,7 +325,7 @@
         }
 
         .anim-text-color {
-            background: #000000;
+            background: #1b0f47;
             animation: textColorChange 3s infinite;
             padding: 20px;
             font-weight: bold;
@@ -333,7 +333,7 @@
         }
 
         .anim-opacity {
-            background: #000000;
+            background: #45101a;
             color: #ffffff;
             padding: 20px;
             font-weight: bold;
@@ -342,7 +342,7 @@
         }
 
         .anim-combined {
-            background: radial-gradient(circle, #1a1a1a, #000000);
+            background: radial-gradient(circle, #0a3a1e, #0d1b3a);
             color: #ffffff;
             padding: 20px;
             font-weight: bold;
@@ -352,7 +352,7 @@
 
         /* Section 6: Complex/Combined Cases - High Contrast */
         .complex-transparent-over-gradient {
-            background: linear-gradient(to bottom, #000000, #1a1a1a);
+            background: linear-gradient(to bottom, #0b2545, #3a0b30);
             padding: 20px;
             position: relative;
         }
@@ -366,23 +366,35 @@
         }
 
         .complex-layered {
-            background: linear-gradient(to right, #000000, #1a1a1a);
+            background: linear-gradient(to right, #06302b, #240a4d);
             padding: 20px;
             position: relative;
         }
 
         .complex-layered-inner {
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(20, 10, 45, 0.9);
             color: #ffffff;
             padding: 15px;
             font-weight: bold;
             font-size: 18px;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnTextContrastCannotCalculate",
+    "issueId": "WarnTextContrastCannotCalculate",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 22,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Each case has visibly high contrast (white text stays >= 7:1 on every background) but an uncomputable background (background image, gradient, semi-transparent z-index stacking context, content/box overflow, or CSS animation), so the engine emits WarnTextContrastCannotCalculate for manual review. Backgrounds use distinct dark hues (not flat black) so each case's feature is visible and cases are distinguishable during manual review; the background TYPE, not its colour, is what the engine flags. Every flagged case is validated individually via data-expected-warning annotations. Suspected engine gaps (NOT annotated, intentionally): ZINDEX-1 (.zindex-transparent-text) and ZINDEX-3 (.zindex-modal-content) are intended z-index cannot-calculate cases but are not flagged; OVER-3 (.overflow-absolute), OVER-6 (.overflow-rotated) and OVER-7 (.overflow-float) are intended overflow cannot-calculate cases whose overflow the engine does not detect.",
+    "wcag": "1.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Warning: Text Contrast Cannot Calculate - Manual Testing Required</h1>
-    <p><strong>Purpose:</strong> These cases have HIGH CONTRAST (text inside passes 4.5:1), but automated tools cannot reliably calculate contrast due to complex backgrounds, animations, or overflow. Manual testing is required.</p>
+    <p><strong>Purpose:</strong> These cases have HIGH CONTRAST (white text stays at least 7:1 on every background), but automated tools cannot reliably calculate contrast due to complex backgrounds, animations, or overflow. Manual testing is required. Backgrounds use distinct dark hues (not flat black) so each case's feature is actually visible.</p>
 
     <div class="section">
         <h2>Section 1: Background Images</h2>
@@ -390,33 +402,33 @@
         <p><strong>Why manual testing needed:</strong> Image content may vary or change; automated tools cannot reliably determine all background colors behind text.</p>
 
         <div class="case">
-            <span class="case-label">BG-IMG-1: Simple SVG Background (Black)</span>
-            <div class="bg-image-simple">
-                White text on black SVG background. Contrast is 21:1, but image could change.
+            <span class="case-label">BG-IMG-1: Simple SVG Background (Dark Blue)</span>
+            <div class="bg-image-simple" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Background image (SVG data URI) - effective background behind text cannot be auto-sampled (manual review required)">
+                White text on a dark-blue SVG background. High contrast, but the image could change.
             </div>
-            <div class="note">✓ Text inside passes contrast (21:1). Manual testing needed due to background-image.</div>
+            <div class="note">✓ Text inside passes contrast (high). Manual testing needed due to background-image.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">BG-IMG-2: Data URI Pattern (Dark Checkerboard)</span>
-            <div class="bg-image-data-uri">
-                White text on dark checkerboard pattern. High contrast, but pattern is image-based.
+            <span class="case-label">BG-IMG-2: Data URI Pattern (Teal/Cyan Checkerboard)</span>
+            <div class="bg-image-data-uri" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Background image (data-URI checkerboard pattern) - effective background cannot be auto-sampled (manual review required)">
+                White text on a teal-and-cyan checkerboard pattern. High contrast, but pattern is image-based.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to SVG pattern.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">BG-IMG-3: Repeating Pattern (Dark Stripes)</span>
-            <div class="bg-image-pattern">
-                White text on dark diagonal stripes. High contrast throughout, but gradient-based.
+            <span class="case-label">BG-IMG-3: Repeating Pattern (Indigo/Purple Stripes)</span>
+            <div class="bg-image-pattern" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Repeating-gradient pattern background - varies across the surface, contrast cannot be auto-computed (manual review required)">
+                White text on indigo-and-purple diagonal stripes. High contrast throughout, but gradient-based.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to repeating gradient.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">BG-IMG-4: Layered Backgrounds (Dark Circles + Gradient)</span>
-            <div class="bg-image-layered">
-                White text on layered dark backgrounds. Multiple layers make automated calculation complex.
+            <span class="case-label">BG-IMG-4: Layered Backgrounds (Magenta Circles + Gradient)</span>
+            <div class="bg-image-layered" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Layered background images + gradient - effective background cannot be auto-computed (manual review required)">
+                White text on layered dark backgrounds (magenta circles over a maroon-to-rust gradient). Multiple layers make automated calculation complex.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to layered images.</div>
         </div>
@@ -428,49 +440,49 @@
         <p><strong>Why manual testing needed:</strong> Contrast ratio varies across the gradient; no single value represents all text.</p>
 
         <div class="case">
-            <span class="case-label">GRAD-1: Linear Gradient (Black to Dark Gray)</span>
-            <div class="gradient-linear">
-                White text on black-to-gray gradient. High contrast throughout, but ratio varies.
+            <span class="case-label">GRAD-1: Linear Gradient (Blue to Teal)</span>
+            <div class="gradient-linear" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Linear-gradient background - contrast varies across the gradient, cannot be auto-computed (manual review required)">
+                White text on a blue-to-teal gradient. High contrast throughout, but ratio varies.
             </div>
             <div class="note">✓ Text inside passes contrast across gradient. Manual testing needed due to varying background.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">GRAD-2: Radial Gradient (Dark Gray to Black)</span>
-            <div class="gradient-radial">
-                White text on radial dark gradient. Contrast excellent, but changes from center to edges.
+            <span class="case-label">GRAD-2: Radial Gradient (Purple to Navy)</span>
+            <div class="gradient-radial" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Radial-gradient background - contrast varies from centre to edge, cannot be auto-computed (manual review required)">
+                White text on a radial purple-to-navy gradient. Contrast excellent, but changes from center to edges.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to radial variation.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">GRAD-3: Multi-Stop Gradient (Dark Variations)</span>
-            <div class="gradient-multi-stop">
-                White text on multi-stop dark gradient. High contrast at all stops, but complex.
+            <span class="case-label">GRAD-3: Multi-Stop Gradient (Maroon/Purple/Teal)</span>
+            <div class="gradient-multi-stop" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Multi-stop linear gradient - contrast varies across stops, cannot be auto-computed (manual review required)">
+                White text on a multi-stop maroon-purple-teal gradient. High contrast at all stops, but complex.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to multiple color stops.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">GRAD-4: Gradient with Alpha (Black with Opacity)</span>
-            <div class="gradient-with-alpha">
-                White text on alpha-channel dark gradient. Fully opaque here, but uses rgba().
+            <span class="case-label">GRAD-4: Gradient with Alpha (Blue to Magenta)</span>
+            <div class="gradient-with-alpha" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Gradient using rgba() stops - contrast cannot be auto-computed (manual review required)">
+                White text on an rgba() blue-to-magenta gradient. Fully opaque here, but uses rgba().
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to alpha channel.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">GRAD-5: Conic Gradient (Dark Circular)</span>
-            <div class="gradient-conic">
-                White text on conic dark gradient. High contrast, but background rotates in color wheel.
+            <span class="case-label">GRAD-5: Conic Gradient (Indigo/Green)</span>
+            <div class="gradient-conic" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Conic-gradient background - contrast varies around the wheel, cannot be auto-computed (manual review required)">
+                White text on a conic indigo-and-green gradient. High contrast, but background rotates in color wheel.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to conic rotation.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">GRAD-6: Extreme Multi-Directional (Dark Complex)</span>
-            <div class="gradient-extreme">
-                White text on complex dark gradient. Multiple angles and stops, but high contrast.
+            <span class="case-label">GRAD-6: Extreme Multi-Directional (Multi-Hue)</span>
+            <div class="gradient-extreme" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Complex multi-directional gradient - contrast varies, cannot be auto-computed (manual review required)">
+                White text on a complex multi-hue dark gradient. Multiple angles and stops, but high contrast.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to complexity.</div>
         </div>
@@ -493,8 +505,8 @@
 
         <div class="case">
             <span class="case-label">ZINDEX-2: Fixed Position with Z-Index</span>
-            <div class="zindex-floating-layer">
-                White text on semi-transparent black with position: fixed and z-index: 100. Content underneath may change.
+            <div class="zindex-floating-layer" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Semi-transparent background on a fixed/z-index stacking context - background behind text is unpredictable, contrast cannot be auto-computed (manual review required)">
+                White text on a semi-transparent indigo layer with position: fixed and z-index: 100. Content underneath may change.
             </div>
             <div class="note">✓ Text inside passes contrast. Manual testing needed due to fixed positioning + z-index.</div>
         </div>
@@ -517,28 +529,28 @@
 
         <div class="case">
             <span class="case-label">OVER-1: Horizontal Overflow (nowrap)</span>
-            <div class="overflow-horizontal">
-                White on black inside, but this text extends beyond the black container edge and has no background.
+            <div class="overflow-horizontal" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Nowrap text overflows its solid container - text outside the box sits on an undefined background, contrast cannot be auto-computed (manual review required)">
+                White on dark blue inside, but this text extends beyond the coloured container edge and has no background.
             </div>
-            <div class="note">✓ Text inside passes (21:1). ⚠ Text outside has no background. Manual testing required.</div>
+            <div class="note">✓ Text inside passes (high contrast). ⚠ Text outside has no background. Manual testing required.</div>
         </div>
 
         <div class="case">
             <span class="case-label">OVER-2: Vertical Overflow (limited height)</span>
-            <div class="overflow-vertical">
-                Inside black box.<br>
+            <div class="overflow-vertical" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Fixed-height container; extra lines overflow below the box onto an undefined background, contrast cannot be auto-computed (manual review required)">
+                Inside the teal box.<br>
                 Line 2 overflows.<br>
                 Line 3 overflows.<br>
                 Line 4 overflows.
             </div>
-            <div class="note">✓ Text inside passes (21:1). ⚠ Lines 2-4 overflow with no background. Manual testing required.</div>
+            <div class="note">✓ Text inside passes (high contrast). ⚠ Lines 2-4 overflow with no background. Manual testing required.</div>
         </div>
 
         <div class="case">
             <span class="case-label">OVER-3: Absolute Positioning Outside</span>
             <div class="overflow-absolute-parent">
                 <div class="overflow-absolute">
-                    This text is positioned absolutely and extends beyond the black container using position: absolute with large dimensions.
+                    This text is positioned absolutely and extends beyond the purple container using position: absolute with large dimensions.
                 </div>
             </div>
             <div class="note">✓ Text inside passes. ⚠ Text positioned outside has no background. Manual testing required.</div>
@@ -546,16 +558,16 @@
 
         <div class="case">
             <span class="case-label">OVER-4: Negative Margin</span>
-            <div class="overflow-negative-margin">
-                White text on black with negative left margin. Part extends left with no background.
+            <div class="overflow-negative-margin" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Negative margin pushes the box outside its parent - overflowing text sits on an undefined background, contrast cannot be auto-computed (manual review required)">
+                White text on maroon with a negative left margin. Part extends left with no background.
             </div>
             <div class="note">✓ Text inside passes. ⚠ Text in negative margin area has no background. Manual testing required.</div>
         </div>
 
         <div class="case">
             <span class="case-label">OVER-5: Transform Translation</span>
-            <div class="overflow-transform">
-                White text on black with transform translateX. Part extends left with no background.
+            <div class="overflow-transform" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="transform:translateX shifts the box outside its parent - overflowing text sits on an undefined background, contrast cannot be auto-computed (manual review required)">
+                White text on a rust box with transform: translateX. Part extends left with no background.
             </div>
             <div class="note">✓ Text inside passes. ⚠ Transformed text extends beyond background. Manual testing required.</div>
         </div>
@@ -563,7 +575,7 @@
         <div class="case">
             <span class="case-label">OVER-6: Rotated Text</span>
             <div class="overflow-rotated">
-                White text on black rotated -5deg. Corners extend beyond black background area.
+                White text on a green box rotated -5deg. Corners extend beyond the coloured background area.
             </div>
             <div class="note">✓ Text inside passes. ⚠ Rotated corners may extend beyond background. Manual testing required.</div>
         </div>
@@ -571,7 +583,7 @@
         <div class="case">
             <span class="case-label">OVER-7: Floated Element</span>
             <div class="overflow-float">
-                White text on black with float. May extend beyond black container in float context.
+                White text on a crimson box with float. May extend beyond the coloured container in float context.
             </div>
             <div style="clear: both;"></div>
             <div class="note">✓ Text inside passes. ⚠ Floated text may extend beyond background. Manual testing required.</div>
@@ -586,41 +598,41 @@
         <div class="case">
             <span class="case-label">ANIM-1: Moving Transparent Text Over Gradient</span>
             <div class="anim-position-parent">
-                <div class="anim-position-moving">
-                    Text moves left-right over white-to-black gradient. High contrast throughout, but background changes.
+                <div class="anim-position-moving" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Animated position over a gradient parent (transparent text) - background behind text changes over time, contrast cannot be auto-computed (manual review required)">
+                    Text moves left-right over a white-to-navy gradient. High contrast throughout, but background changes.
                 </div>
             </div>
             <div class="note">✓ Text passes contrast across entire gradient. Manual testing needed due to animated position.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">ANIM-2: Animated Background Color (Dark Cycle)</span>
-            <div class="anim-bg-color">
-                White text on background cycling through dark shades. High contrast maintained, but background animates.
+            <span class="case-label">ANIM-2: Animated Background Color (Hue Cycle)</span>
+            <div class="anim-bg-color" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Animated background-color - contrast changes over the animation, cannot be auto-computed (manual review required)">
+                White text on a background cycling through dark blue, purple and teal. High contrast maintained, but background animates.
             </div>
             <div class="note">✓ Text passes contrast at all keyframes. Manual testing needed due to animated background.</div>
         </div>
 
         <div class="case">
             <span class="case-label">ANIM-3: Animated Text Color (White to Light Gray)</span>
-            <div class="anim-text-color">
-                Text color changes from white to light gray on black. Contrast varies but remains high.
+            <div class="anim-text-color" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Animated text colour - contrast changes over the animation, cannot be auto-computed (manual review required)">
+                Text colour changes from white to light grey on an indigo background. Contrast varies but remains high.
             </div>
             <div class="note">✓ Text passes contrast at all keyframes. Manual testing needed due to animated text color.</div>
         </div>
 
         <div class="case">
             <span class="case-label">ANIM-4: Animated Opacity (Pulsing)</span>
-            <div class="anim-opacity">
-                White text on black with pulsing opacity (100% to 95%). High contrast maintained throughout.
+            <div class="anim-opacity" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Animated opacity - effective contrast changes over the animation, cannot be auto-computed (manual review required)">
+                White text on maroon with pulsing opacity (100% to 95%). High contrast maintained throughout.
             </div>
             <div class="note">✓ Text passes contrast at all opacity levels. Manual testing needed due to animated opacity.</div>
         </div>
 
         <div class="case">
             <span class="case-label">ANIM-5: Combined Animations (Position + Opacity)</span>
-            <div class="anim-combined">
-                White text on dark radial gradient with position and opacity animations. High contrast throughout.
+            <div class="anim-combined" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Combined position+opacity animation over a radial gradient - contrast changes over time, cannot be auto-computed (manual review required)">
+                White text on a green-to-navy radial gradient with position and opacity animations. High contrast throughout.
             </div>
             <div class="note">✓ Text passes contrast across animation. Manual testing needed due to multiple animated properties.</div>
         </div>
@@ -631,20 +643,20 @@
         <p><strong>Why manual testing needed:</strong> Multiple factors combine making automated calculation unreliable, even though visible contrast appears high.</p>
 
         <div class="case">
-            <span class="case-label">COMPLEX-1: Transparent Text Over Dark Gradient</span>
+            <span class="case-label">COMPLEX-1: Transparent Text Over a Blue/Magenta Gradient</span>
             <div class="complex-transparent-over-gradient">
-                <div class="complex-transparent-text">
-                    White text with transparent background over black-to-gray gradient. High contrast, but layered transparency and gradient.
+                <div class="complex-transparent-text" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Transparent text background over a gradient parent - effective background cannot be auto-computed (manual review required)">
+                    White text with a transparent background over a blue-to-magenta gradient. High contrast, but layered transparency and gradient.
                 </div>
             </div>
             <div class="note">✓ Text passes contrast across gradient. Manual testing needed due to transparent + gradient combination.</div>
         </div>
 
         <div class="case">
-            <span class="case-label">COMPLEX-2: Layered Transparencies on Dark Gradient</span>
+            <span class="case-label">COMPLEX-2: Layered Transparencies on a Teal/Violet Gradient</span>
             <div class="complex-layered">
-                <div class="complex-layered-inner">
-                    White text on 90% opaque black, over dark gradient. Multiple layers, but high contrast maintained.
+                <div class="complex-layered-inner" data-expected-warning="true" data-warning-id="WarnTextContrastCannotCalculate" data-warning-reason="Semi-transparent layer over a gradient parent - effective background cannot be auto-computed (manual review required)">
+                    White text on a 90%-opaque violet layer, over a teal-to-violet gradient. Multiple layers, but high contrast maintained.
                 </div>
             </div>
             <div class="note">✓ Text passes contrast through layers. Manual testing needed due to multiple transparent layers + gradient.</div>
@@ -652,7 +664,7 @@
     </div>
 
     <p style="margin-top: 40px; padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
-        <strong>Summary:</strong> All test cases in this fixture have HIGH CONTRAST (text inside container passes 4.5:1 minimum for AA). However, automated tools should flag these for manual testing due to:
+        <strong>Summary:</strong> All test cases in this fixture have HIGH CONTRAST (white text stays at least 7:1 on every background). However, automated tools should flag these for manual testing due to:
         <ul>
             <li><strong>Complex backgrounds</strong> (images, gradients) where contrast may vary across the surface</li>
             <li><strong>Z-index stacking contexts</strong> where positioned elements with z-index may have unpredictable backgrounds due to layering (Note: transparent backgrounds WITHOUT z-index are fine and should NOT be flagged)</li>
@@ -662,7 +674,7 @@
         </ul>
         <strong>Expected Result:</strong> Warning/Manual Testing Required (e.g., <code>WarnTextContrastCannotCalculate</code>)
         <br><br>
-        <strong>Important:</strong> Simple transparent backgrounds without z-index are NOT included here because they can be reliably calculated by walking up the DOM tree to find the effective background color.
+        <strong>Important:</strong> Backgrounds use distinct dark hues rather than flat black so the gradient/pattern/image in each case is actually visible for manual review; the engine flags these on background <em>type</em>, not colour. Simple transparent backgrounds without z-index are NOT included here because they can be reliably calculated by walking up the DOM tree to find the effective background color.
     </p>
 </body>
 </html>

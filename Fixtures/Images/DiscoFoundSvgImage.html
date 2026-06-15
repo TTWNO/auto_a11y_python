@@ -4,12 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Found SVG Image Discovery Test - DiscoFoundSvgImage</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "DiscoFoundSvgImage",
+    "issueId": "DiscoFoundSvgImage",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "An img element whose source points at an .svg file is discovered for manual review of the SVG accessibility.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>SVG Image Discovery</h1>
     
     <!-- SVG used as image source -->
-    <img src="icon.svg" alt="Icon">
+    <img src="icon.svg" alt="Icon" data-expected-discovery="true" data-discovery-id="DiscoFoundSvgImage" data-discovery-reason="img element with .svg source discovered for manual review">
     
     <!-- SVG in object element -->
     <object data="diagram.svg" type="image/svg+xml">

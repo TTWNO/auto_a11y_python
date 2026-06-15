@@ -4,35 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Empty List Test - ErrEmptyList</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrEmptyList",
+    "issueId": "ErrEmptyList",
+    "expectedViolationCount": 6,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Empty list containers (ul, ol) with no list-item children, including whitespace-only, comment-only, and nested-empty cases. One ul with a real li child is a correct case and must not trigger the error.",
+    "wcag": "1.3.1"
+}
+    </script>
 </head>
 <body>
     <h1>Empty Lists</h1>
     
     <!-- Completely empty unordered list -->
-    <ul></ul>
+    <ul data-expected-violation="true" data-violation-id="ErrEmptyList" data-violation-reason="completely empty unordered list"></ul>
     
     <!-- Empty ordered list -->
-    <ol></ol>
+    <ol data-expected-violation="true" data-violation-id="ErrEmptyList" data-violation-reason="completely empty ordered list"></ol>
     
     <!-- List with only whitespace -->
-    <ul>
+    <ul data-expected-violation="true" data-violation-id="ErrEmptyList" data-violation-reason="list contains only whitespace, no items">
         
     </ul>
     
     <!-- List with only comments -->
-    <ol>
+    <ol data-expected-violation="true" data-violation-id="ErrEmptyList" data-violation-reason="list contains only a comment, no items">
         <!-- TODO: Add list items -->
     </ol>
     
     <!-- Nested empty lists -->
-    <ul>
+    <ul data-expected-pass="true" data-pass-reason="outer list has a real li child so it is not empty">
         <li>Valid item
-            <ul></ul>
+            <ul data-expected-violation="true" data-violation-id="ErrEmptyList" data-violation-reason="nested empty unordered list inside a valid item"></ul>
         </li>
     </ul>
     
     <!-- Definition list without terms or definitions -->
-    <dl></dl>
+    <dl data-expected-violation="true" data-violation-id="ErrEmptyList" data-violation-reason="definition list has no dt/dd items"></dl>
     
     <p>Empty lists create confusion for screen reader users.</p>
 </body>

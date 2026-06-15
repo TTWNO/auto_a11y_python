@@ -16,6 +16,17 @@
         h2 { margin-top: 0; }
         .description { font-style: italic; color: #666; margin-bottom: 10px; }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrOrphanLabelWithNoId",
+    "issueId": "ErrOrphanLabelWithNoId",
+    "expectedViolationCount": 9,
+    "expectedPassCount": 4,
+    "enforceElementExpectations": true,
+    "description": "Label elements that are not associated with any form control because they have no usable 'for' attribute (missing, empty, or whitespace-only) and do not wrap a control. Covers labels in plain divs, repeated labels, a fieldset, a table cell, and one carrying an aria-label. Each orphan label is validated individually; properly associated and wrapping labels pass.",
+    "wcag": "1.3.1,3.3.2,4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>ErrOrphanLabelWithNoId Test Fixture</h1>
@@ -26,24 +37,24 @@
     <div class="test-section error">
         <h2>❌ Error Case 1: Basic orphan label</h2>
         <div class="description">Label with no 'for' attribute and no associated input</div>
-        <label>First Name</label>
+        <label data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="label has no for attribute and no wrapped control">First Name</label>
         <input type="text" id="firstName">
     </div>
 
     <div class="test-section error">
         <h2>❌ Error Case 2: Multiple orphan labels</h2>
         <div class="description">Multiple labels without 'for' attributes</div>
-        <label>Email Address</label>
+        <label data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="orphan label, no for attribute">Email Address</label>
         <input type="email" id="email">
         <br><br>
-        <label>Phone Number</label>
+        <label data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="second orphan label in same group, no for attribute">Phone Number</label>
         <input type="tel" id="phone">
     </div>
 
     <div class="test-section error">
         <h2>❌ Error Case 3: Orphan label with form controls nearby</h2>
         <div class="description">Label exists but not properly associated despite proximity to inputs</div>
-        <label>Choose your preference</label>
+        <label data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="orphan label near radios but not associated">Choose your preference</label>
         <input type="radio" name="preference" value="option1" id="opt1"> Option 1
         <input type="radio" name="preference" value="option2" id="opt2"> Option 2
     </div>
@@ -53,7 +64,7 @@
         <div class="description">Label without 'for' attribute inside fieldset</div>
         <fieldset>
             <legend>Personal Information</legend>
-            <label>Date of Birth</label>
+            <label data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="orphan label inside fieldset, no for attribute">Date of Birth</label>
             <input type="date" id="dob">
         </fieldset>
     </div>
@@ -61,14 +72,14 @@
     <div class="test-section error">
         <h2>❌ Error Case 5: Orphan label with empty for attribute</h2>
         <div class="description">Label has 'for' attribute but it's empty</div>
-        <label for="">Last Name</label>
+        <label for="" data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="empty for attribute, label is orphaned">Last Name</label>
         <input type="text" id="lastName">
     </div>
 
     <div class="test-section error">
         <h2>❌ Error Case 6: Orphan label with whitespace-only for attribute</h2>
         <div class="description">Label has 'for' attribute but contains only whitespace</div>
-        <label for="   ">Middle Name</label>
+        <label for="   " data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="whitespace-only for attribute, label is orphaned">Middle Name</label>
         <input type="text" id="middleName">
     </div>
 
@@ -77,7 +88,7 @@
         <div class="description">Label without proper association in table structure</div>
         <table>
             <tr>
-                <td><label>Username</label></td>
+                <td><label data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="orphan label in table cell, no for attribute">Username</label></td>
                 <td><input type="text" id="username"></td>
             </tr>
         </table>
@@ -88,7 +99,7 @@
     <div class="test-section pass">
         <h2>✅ Pass Case 1: Properly associated label with 'for' attribute</h2>
         <div class="description">Label correctly associated using 'for' attribute</div>
-        <label for="properEmail">Email Address</label>
+        <label for="properEmail" data-expected-pass="true" data-pass-reason="label for matches an existing input id">Email Address</label>
         <input type="email" id="properEmail">
     </div>
 
@@ -104,17 +115,17 @@
     <div class="test-section pass">
         <h2>✅ Pass Case 3: Multiple labels properly associated</h2>
         <div class="description">Multiple labels each with correct 'for' attributes</div>
-        <label for="address1">Address Line 1</label>
+        <label for="address1" data-expected-pass="true" data-pass-reason="label for matches an existing input id">Address Line 1</label>
         <input type="text" id="address1">
         <br><br>
-        <label for="address2">Address Line 2</label>
+        <label for="address2" data-expected-pass="true" data-pass-reason="label for matches an existing input id">Address Line 2</label>
         <input type="text" id="address2">
     </div>
 
     <div class="test-section pass">
         <h2>✅ Pass Case 4: Label for textarea</h2>
         <div class="description">Label properly associated with textarea</div>
-        <label for="comments">Comments</label>
+        <label for="comments" data-expected-pass="true" data-pass-reason="label for matches an existing textarea id">Comments</label>
         <textarea id="comments" rows="4" cols="50"></textarea>
     </div>
 
@@ -171,7 +182,7 @@
     <div class="test-section error">
         <h2>❌ Edge Case 2: Orphan label with ARIA attributes</h2>
         <div class="description">Label has ARIA attributes but no proper association</div>
-        <label aria-label="Special Field">Special Input</label>
+        <label aria-label="Special Field" data-expected-violation="true" data-violation-id="ErrOrphanLabelWithNoId" data-violation-reason="aria-label present but no for attribute, label is orphaned">Special Input</label>
         <input type="text" id="specialField" aria-describedby="help">
         <div id="help">This field needs special attention</div>
     </div>

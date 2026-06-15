@@ -6,6 +6,7 @@
     <title>WarnMissingRequiredIndication - HTML required Attribute Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnMissingRequiredIndication_001_violations_required_attr",
     "issueId": "WarnMissingRequiredIndication",
     "expectedViolationCount": 5,
@@ -21,43 +22,48 @@
 
     <form>
         <!-- Violation 1: Text input with required, no indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Text input has required but label lacks asterisk or 'required' text">
+        <div>
             <label for="username">Username</label>
-            <input type="text" id="username" name="username" required>
+            <input type="text" id="username" name="username" required
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="Text input has required but label lacks asterisk or 'required' text">
         </div>
 
         <!-- Violation 2: Email input with required, no indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Email input has required but label lacks visual indicator">
+        <div>
             <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" required>
+            <input type="email" id="email" name="email" required
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="Email input has required but label lacks visual indicator">
         </div>
 
         <!-- Violation 3: Password input with required, no indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Password input has required but label lacks visual indicator">
+        <div>
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+            <input type="password" id="password" name="password" required
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="Password input has required but label lacks visual indicator">
         </div>
 
         <!-- Violation 4: Textarea with required, no indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Textarea has required but label lacks visual indicator">
+        <div>
             <label for="bio">Biography</label>
-            <textarea id="bio" name="bio" required></textarea>
+            <textarea id="bio" name="bio" required
+                      data-expected-violation="true"
+                      data-violation-id="WarnMissingRequiredIndication"
+                      data-violation-reason="Textarea has required but label lacks visual indicator"></textarea>
         </div>
 
         <!-- Violation 5: Select with required, no indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Select has required but label lacks visual indicator">
+        <div>
             <label for="country">Country</label>
-            <select id="country" name="country" required>
+            <select id="country" name="country" required
+                    data-expected-violation="true"
+                    data-violation-id="WarnMissingRequiredIndication"
+                    data-violation-reason="Select has required but label lacks visual indicator">
                 <option value="">Select a country</option>
                 <option value="us">United States</option>
                 <option value="uk">United Kingdom</option>

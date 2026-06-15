@@ -31,26 +31,38 @@
             box-shadow: none;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrNoFocusIndicator",
+    "issueId": "ErrNoFocusIndicator",
+    "expectedViolationCount": 6,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Focusable elements (button, link, input, select and a custom role=button) whose focus indicator has been removed via CSS so no visible focus style remains. Each case is validated individually.",
+    "wcag": "2.4.7"
+}
+    </script>
 </head>
 <body>
     <h1>Missing Focus Indicators</h1>
     
     <!-- Buttons with focus outline removed -->
-    <button class="no-focus">No Focus Outline</button>
+    <button class="no-focus" data-expected-violation="true" data-violation-id="ErrNoFocusIndicator" data-violation-reason="button with outline:none on focus - no visible focus indicator">No Focus Outline</button>
     <button class="transparent-focus">Transparent Focus</button>
-    <button class="zero-outline">Zero Width Outline</button>
+    <button class="zero-outline" data-expected-violation="true" data-violation-id="ErrNoFocusIndicator" data-violation-reason="button with outline-width:0 on focus - no visible focus indicator">Zero Width Outline</button>
     
     <!-- Links with focus disabled -->
-    <a href="#" class="no-focus">Link without focus indicator</a>
+    <a href="#" class="no-focus" data-expected-violation="true" data-violation-id="ErrNoFocusIndicator" data-violation-reason="link with focus outline removed - no visible focus indicator">Link without focus indicator</a>
     
     <!-- Form elements without focus -->
-    <input type="text" class="no-focus" placeholder="Input without focus">
-    <select class="no-focus">
+    <input type="text" class="no-focus" placeholder="Input without focus" data-expected-violation="true" data-violation-id="ErrNoFocusIndicator" data-violation-reason="text input with focus outline removed - no visible focus indicator">
+    <select class="no-focus" data-expected-violation="true" data-violation-id="ErrNoFocusIndicator" data-violation-reason="select with focus outline removed - no visible focus indicator">
         <option>Select without focus</option>
     </select>
     
     <!-- Custom interactive elements -->
-    <div role="button" tabindex="0" class="no-focus">Custom button no focus</div>
+    <div role="button" tabindex="0" class="no-focus" data-expected-violation="true" data-violation-id="ErrNoFocusIndicator" data-violation-reason="custom role=button with focus outline removed - no visible focus indicator">Custom button no focus</div>
     
     <p>All interactive elements above have focus indicators removed.</p>
 </body>

@@ -1,16 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" style="background-color: #f0f0f0; color: #333;">
+<html lang="en" style="background-color: #f0f0f0; color: #333;"
+      data-expected-violation="true"
+      data-violation-id="ErrStyleAttrColorFont"
+      data-violation-reason="The <html> element has inline style='background-color: #f0f0f0; color: #333;' which hard-codes colors. Unlike CSS variables or color-scheme, these are actual color properties that override user preferences and prevent accessibility customization. Users who need high contrast, inverted colors, or custom color schemes cannot override these inline styles.">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hard-Coded Colors on HTML Element - Violation</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrStyleAttrColorFont_007_violations_html_with_color",
     "issueId": "ErrStyleAttrColorFont",
-    "expectedViolationCount": 1,
+    "expectedViolationCount": 2,
     "expectedPassCount": 0,
-    "description": "HTML element with hard-coded color properties - SHOULD be flagged as a violation because these prevent user customization",
+    "description": "HTML element with hard-coded color properties - SHOULD be flagged as a violation because these prevent user customization. The explanatory table row with an inline background-color is also flagged",
     "wcag": ["1.4.3", "1.4.8", "1.4.12"],
     "impact": "High"
 }
@@ -32,10 +36,7 @@
         }
     </style>
 </head>
-<body data-expected-violation="true"
-      data-violation-xpath="/html[1]"
-      data-violation-id="ErrStyleAttrColorFont"
-      data-violation-reason="The <html> element has inline style='background-color: #f0f0f0; color: #333;' which hard-codes colors. Unlike CSS variables or color-scheme, these are actual color properties that override user preferences and prevent accessibility customization. Users who need high contrast, inverted colors, or custom color schemes cannot override these inline styles.">
+<body>
     <h1>Hard-Coded Colors on HTML Element</h1>
 
     <main>
@@ -82,7 +83,10 @@
                         <td>❌ No</td>
                         <td>Accessibility feature for dark mode support</td>
                     </tr>
-                    <tr style="background-color: #fff5f5;">
+                    <tr style="background-color: #fff5f5;"
+                        data-expected-violation="true"
+                        data-violation-id="ErrStyleAttrColorFont"
+                        data-violation-reason="This explanatory table row also hard-codes background-color in an inline style attribute, so it is independently flagged.">
                         <td><strong>Hard-Coded Colors</strong></td>
                         <td><code>background-color: #f0f0f0;</code></td>
                         <td><strong>✅ Yes</strong></td>

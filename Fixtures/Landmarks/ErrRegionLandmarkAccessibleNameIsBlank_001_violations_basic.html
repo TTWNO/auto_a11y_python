@@ -6,6 +6,7 @@
     <title>RegionLandmarkAccessibleNameIsBlank - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "RegionLandmarkAccessibleNameIsBlank_001_violations_basic",
     "issueId": "ErrRegionLandmarkAccessibleNameIsBlank",
     "expectedViolationCount": 3,
@@ -26,7 +27,7 @@
         <div role="region"
              aria-label=""
              data-expected-violation="true"
-             data-violation-id="RegionLandmarkAccessibleNameIsBlank"
+             data-violation-id="ErrRegionLandmarkAccessibleNameIsBlank"
              data-violation-reason="Region landmark has empty aria-label attribute. Region landmarks require meaningful accessible names to be useful">
             <h3>Featured Content</h3>
             <p>This region has a blank label.</p>
@@ -36,7 +37,7 @@
         <section role="region"
                  aria-labelledby="blank-heading"
                  data-expected-violation="true"
-                 data-violation-id="RegionLandmarkAccessibleNameIsBlank"
+                 data-violation-id="ErrRegionLandmarkAccessibleNameIsBlank"
                  data-violation-reason="Region landmark references element with blank text via aria-labelledby, resulting in blank accessible name">
             <h3 id="blank-heading"></h3>
             <p>Important information here but heading is empty.</p>
@@ -46,7 +47,7 @@
         <div role="region"
              aria-label="    "
              data-expected-violation="true"
-             data-violation-id="RegionLandmarkAccessibleNameIsBlank"
+             data-violation-id="ErrRegionLandmarkAccessibleNameIsBlank"
              data-violation-reason="Region landmark has aria-label with only whitespace, effectively blank for screen readers">
             <h3>Special Section</h3>
             <p>This region's label contains only whitespace.</p>

@@ -37,6 +37,17 @@
             border-radius: 3px;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnButtonGenericText",
+    "issueId": "WarnButtonGenericText",
+    "expectedWarningCount": 16,
+    "expectedPassCount": 4,
+    "enforceElementExpectations": true,
+    "description": "Buttons and button-role controls whose visible text (or accessible name) is generic, such as Click here, Go, Download, More. Each flagged control is validated individually; descriptive-text controls pass.",
+    "wcag": "2.4.6"
+}
+    </script>
 </head>
 <body>
     <h1>Button Generic Text Accessibility Test Fixture</h1>
@@ -47,16 +58,16 @@
         <h2>🚨 Should Trigger Warnings - Generic Button Text</h2>
         
         <h3>Common Generic Words</h3>
-        <button>Click here</button>
-        <button>CLICK HERE</button>
-        <button>Click Here</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Click here">Click here</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: CLICK HERE">CLICK HERE</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Click Here">Click Here</button>
         <button>Submit</button>
         <button>OK</button>
         <button>ok</button>
         <button>Cancel</button>
         <button>Yes</button>
         <button>No</button>
-        <button>Go</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Go">Go</button>
         <button>Next</button>
         <button>Previous</button>
         <button>Back</button>
@@ -71,10 +82,10 @@
         <button>Add</button>
         <button>Edit</button>
         <button>Update</button>
-        <button>Download</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Download">Download</button>
         <button>Upload</button>
         <button>Send</button>
-        <button>Get</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Get">Get</button>
         <button>Buy</button>
         <button>Search</button>
         <button>Find</button>
@@ -83,10 +94,10 @@
         <button>Hide</button>
         <button>Open</button>
         <button>Close</button>
-        <button>More</button>
-        <button>Less</button>
-        <button>Read more</button>
-        <button>Learn more</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: More">More</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Less">Less</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Read more">Read more</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: Learn more">Learn more</button>
 
         <h3>Generic with Punctuation/Symbols</h3>
         <button>Click here!</button>
@@ -117,15 +128,15 @@
         <button>submit</button>
         <button>SUBMIT</button>
         <button>Submit</button>
-        <button>click here</button>
-        <button>CLICK HERE</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: click here">click here</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text: CLICK HERE">CLICK HERE</button>
 
         <h3>Generic with Extra Whitespace</h3>
         <button>  Submit  </button>
         <button>
             OK
         </button>
-        <button>	Click here	</button>
+        <button data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic button text (whitespace-padded): Click here">	Click here	</button>
     </div>
 
     <!-- SECTION 2: Descriptive text that should NOT trigger warnings -->
@@ -133,10 +144,10 @@
         <h2>✅ Should NOT Trigger Warnings - Descriptive Button Text</h2>
         
         <h3>Descriptive Action Buttons</h3>
-        <button>Submit registration form</button>
-        <button>Download PDF report</button>
-        <button>Save draft article</button>
-        <button>Delete selected items</button>
+        <button data-expected-pass="true" data-pass-reason="Descriptive button text states the specific action">Submit registration form</button>
+        <button data-expected-pass="true" data-pass-reason="Descriptive button text states the specific action">Download PDF report</button>
+        <button data-expected-pass="true" data-pass-reason="Descriptive button text states the specific action">Save draft article</button>
+        <button data-expected-pass="true" data-pass-reason="Descriptive button text states the specific action">Delete selected items</button>
         <button>Add new contact</button>
         <button>Edit profile information</button>
         <button>Search for products</button>
@@ -159,7 +170,7 @@
 
         <h3>Buttons with aria-label (Good Practice)</h3>
         <button aria-label="Submit contact form">Submit</button>
-        <button aria-label="Download annual financial report">Download</button>
+        <button aria-label="Download annual financial report" data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Button flagged for generic text cue: Download">Download</button>
         <button aria-label="Delete this comment permanently">Delete</button>
         <button aria-label="Save changes to user profile">Save</button>
 
@@ -211,7 +222,7 @@
         <button>10</button>
 
         <h3>Role Button Elements</h3>
-        <div role="button" tabindex="0">Click here</div>
+        <div role="button" tabindex="0" data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic role=button text: Click here">Click here</div>
         <div role="button" tabindex="0">Submit form</div>
         <span role="button" tabindex="0">OK</span>
         <a href="#" role="button">Download file</a>
@@ -226,7 +237,7 @@
         <button>♡</button> <!-- Should trigger warning -->
 
         <h3>Link Buttons</h3>
-        <a href="#" role="button">Click here</a> <!-- Should warn -->
+        <a href="#" role="button" data-expected-warning="true" data-warning-id="WarnButtonGenericText" data-warning-reason="Generic role=button link text: Click here">Click here</a> <!-- Should warn -->
         <a href="#" role="button">Read full article</a> <!-- Should not warn -->
     </div>
 

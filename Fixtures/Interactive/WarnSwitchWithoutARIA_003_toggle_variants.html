@@ -6,6 +6,7 @@
     <title>WarnSwitchWithoutARIA - Toggle Variants</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnSwitchWithoutARIA_003_toggle_variants",
     "issueId": "WarnSwitchWithoutARIA",
     "expectedViolationCount": 3,
@@ -27,31 +28,34 @@
 
     <main>
         <!-- iOS-style toggle without ARIA -->
-        <div style="margin: 20px 0;"
-             data-expected-violation="true"
-             data-violation-reason="iOS-style toggle switch without role='switch' or aria-checked. Screen readers treat as generic div">
+        <div style="margin: 20px 0;">
             <label>Dark Mode:</label>
-            <div class="switch" onclick="this.classList.toggle('on')">
+            <div class="switch" onclick="this.classList.toggle('on')"
+                 data-expected-violation="true"
+                 data-violation-id="WarnSwitchWithoutARIA"
+                 data-violation-reason="iOS-style toggle switch without role='switch' or aria-checked. Screen readers treat as generic div">
                 <div class="switch-thumb"></div>
             </div>
         </div>
 
         <!-- Checkbox-styled toggle without ARIA -->
-        <div style="margin: 20px 0;"
-             data-expected-violation="true"
-             data-violation-reason="Toggle styled as checkbox but lacking role='switch' and aria-checked. Confuses users about control type">
+        <div style="margin: 20px 0;">
             <label>Auto-save:</label>
-            <div class="switch on" onclick="this.classList.toggle('on')" tabindex="0">
+            <div class="switch on" onclick="this.classList.toggle('on')" tabindex="0"
+                 data-expected-violation="true"
+                 data-violation-id="WarnSwitchWithoutARIA"
+                 data-violation-reason="Toggle styled as checkbox but lacking role='switch' and aria-checked. Confuses users about control type">
                 <div class="switch-thumb"></div>
             </div>
         </div>
 
         <!-- Text-based toggle without ARIA -->
-        <div style="margin: 20px 0;"
-             data-expected-violation="true"
-             data-violation-reason="Text-based toggle (ON/OFF) without role='switch' or aria-checked. Screen readers don't announce as toggle control">
+        <div style="margin: 20px 0;">
             <label>Notifications:</label>
-            <div class="switch" onclick="toggleText(this)" tabindex="0" style="width: 60px; text-align: center; line-height: 20px; font-size: 11px; font-weight: bold; color: white;">
+            <div class="switch" onclick="toggleText(this)" tabindex="0" style="width: 60px; text-align: center; line-height: 20px; font-size: 11px; font-weight: bold; color: white;"
+                 data-expected-violation="true"
+                 data-violation-id="WarnSwitchWithoutARIA"
+                 data-violation-reason="Text-based toggle (ON/OFF) without role='switch' or aria-checked. Screen readers don't announce as toggle control">
                 OFF
             </div>
         </div>

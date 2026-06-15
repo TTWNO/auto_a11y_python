@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contentinfo Landmark Label Test Fixture</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnContentinfoLandmarkHasNoLabel",
+    "issueId": "WarnContentinfoLandmarkHasNoLabel",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 6,
+    "expectedPassCount": 4,
+    "enforceElementExpectations": true,
+    "description": "Contentinfo landmarks (footer / role=contentinfo) with no accessible name trigger WarnContentinfoLandmarkHasNoLabel when multiples exist; each unlabelled case is validated individually, and four labelled comparison cases must not warn.",
+    "wcag": "1.3.1"
+}
+    </script>
 </head>
 <body>
     <header>
@@ -16,13 +28,13 @@
     </main>
 
     <!-- Test Case 1: Single contentinfo without label (SHOULD NOT trigger warning) -->
-    <footer>
+    <footer data-expected-warning="true" data-warning-id="WarnContentinfoLandmarkHasNoLabel" data-warning-reason="contentinfo footer with no accessible name">
         <p>&copy; 2024 Company Name. All rights reserved.</p>
         <p>Contact: info@example.com</p>
     </footer>
 
     <!-- Test Case 2: Multiple contentinfo landmarks without labels (SHOULD trigger warnings) -->
-    <div role="contentinfo">
+    <div role="contentinfo" data-expected-warning="true" data-warning-id="WarnContentinfoLandmarkHasNoLabel" data-warning-reason="div role=contentinfo with no accessible name">
         <h3>Newsletter Footer</h3>
         <p>Subscribe to our newsletter for updates.</p>
         <form>
@@ -31,7 +43,7 @@
         </form>
     </div>
 
-    <footer>
+    <footer data-expected-warning="true" data-warning-id="WarnContentinfoLandmarkHasNoLabel" data-warning-reason="contentinfo footer with no accessible name">
         <h3>Site Footer</h3>
         <nav>
             <ul>
@@ -44,12 +56,12 @@
     </footer>
 
     <!-- Test Case 3: Multiple contentinfo landmarks with proper labels (SHOULD NOT trigger warnings) -->
-    <footer aria-label="Article comments footer">
+    <footer aria-label="Article comments footer" data-expected-pass="true" data-pass-reason="contentinfo footer has aria-label, no warning">
         <h3>Comments Section Footer</h3>
         <p>End of comments. <a href="#top">Back to top</a></p>
     </footer>
 
-    <div role="contentinfo" aria-labelledby="social-footer-heading">
+    <div role="contentinfo" aria-labelledby="social-footer-heading" data-expected-pass="true" data-pass-reason="contentinfo named via aria-labelledby, no warning">
         <h3 id="social-footer-heading">Social Media Footer</h3>
         <ul>
             <li><a href="#" aria-label="Facebook">FB</a></li>
@@ -59,27 +71,27 @@
     </div>
 
     <!-- Test Case 4: Contentinfo with aria-describedby (SHOULD NOT trigger warning) -->
-    <footer aria-describedby="main-footer-desc">
+    <footer aria-describedby="main-footer-desc" data-expected-warning="true" data-warning-id="WarnContentinfoLandmarkHasNoLabel" data-warning-reason="aria-describedby provides no accessible name; contentinfo footer still unlabelled">
         <p id="main-footer-desc">Primary site footer with legal information</p>
         <p>Legal notices and corporate information.</p>
     </footer>
 
     <!-- Test Case 5: Nested contentinfo (edge case) -->
-    <footer aria-label="Outer footer">
+    <footer aria-label="Outer footer" data-expected-pass="true" data-pass-reason="contentinfo footer has aria-label, no warning">
         <div>
             <p>Outer footer content</p>
             <!-- This nested contentinfo without label SHOULD trigger warning -->
-            <div role="contentinfo">
+            <div role="contentinfo" data-expected-warning="true" data-warning-id="WarnContentinfoLandmarkHasNoLabel" data-warning-reason="nested div role=contentinfo with no accessible name">
                 <p>Nested footer without label</p>
             </div>
         </div>
     </footer>
 
     <!-- Test Case 6: Empty contentinfo without label (SHOULD trigger warning if multiple exist) -->
-    <footer></footer>
+    <footer data-expected-warning="true" data-warning-id="WarnContentinfoLandmarkHasNoLabel" data-warning-reason="empty contentinfo footer with no accessible name"></footer>
 
     <!-- Test Case 7: Contentinfo with only whitespace content -->
-    <div role="contentinfo" aria-label="Whitespace footer">
+    <div role="contentinfo" aria-label="Whitespace footer" data-expected-pass="true" data-pass-reason="contentinfo has aria-label, no warning">
         
         
     </div>

@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"
+      data-expected-violation="true"
+      data-violation-id="ErrInaccessibleFont"
+      data-violation-reason="Multiple inaccessible fonts used: Comic Sans MS (script/cursive), Papyrus (decorative), Arial Narrow (narrow/condensed), Old English Text MT (blackletter/gothic). Engine emits this page-level error at /html[1], one per inaccessible font.">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inaccessible Fonts Test - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrInaccessibleFont_001_violations_basic",
     "issueId": "ErrInaccessibleFont",
     "expectedViolationCount": 4,
@@ -34,9 +38,7 @@
         }
     </style>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrInaccessibleFont"
-      data-violation-reason="Multiple inaccessible fonts used: Comic Sans MS (script/cursive), Papyrus (decorative), Arial Narrow (narrow/condensed), Old English Text MT (blackletter/gothic)">
+<body>
 
     <h1>Testing Inaccessible Fonts</h1>
 

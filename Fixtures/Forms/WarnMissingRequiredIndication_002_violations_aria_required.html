@@ -6,6 +6,7 @@
     <title>WarnMissingRequiredIndication - aria-required Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnMissingRequiredIndication_002_violations_aria_required",
     "issueId": "WarnMissingRequiredIndication",
     "expectedViolationCount": 4,
@@ -21,35 +22,39 @@
 
     <form>
         <!-- Violation 1: aria-required="true" without visual indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Field has aria-required='true' but label lacks visual indicator">
+        <div>
             <label for="firstName">First Name</label>
-            <input type="text" id="firstName" name="firstName" aria-required="true">
+            <input type="text" id="firstName" name="firstName" aria-required="true"
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="Field has aria-required='true' but label lacks visual indicator">
         </div>
 
         <!-- Violation 2: aria-required="true" on email -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Email has aria-required='true' but no visual indicator">
+        <div>
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" aria-required="true">
+            <input type="email" id="email" name="email" aria-required="true"
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="Email has aria-required='true' but no visual indicator">
         </div>
 
         <!-- Violation 3: aria-required="true" on textarea -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Textarea has aria-required='true' but label lacks indicator">
+        <div>
             <label for="message">Message</label>
-            <textarea id="message" name="message" aria-required="true"></textarea>
+            <textarea id="message" name="message" aria-required="true"
+                      data-expected-violation="true"
+                      data-violation-id="WarnMissingRequiredIndication"
+                      data-violation-reason="Textarea has aria-required='true' but label lacks indicator"></textarea>
         </div>
 
         <!-- Violation 4: Both required and aria-required="true", still no indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Field has both required and aria-required but label lacks visual indicator">
+        <div>
             <label for="phone">Phone Number</label>
-            <input type="tel" id="phone" name="phone" required aria-required="true">
+            <input type="tel" id="phone" name="phone" required aria-required="true"
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="Field has both required and aria-required but label lacks visual indicator">
         </div>
 
         <button type="submit">Send</button>

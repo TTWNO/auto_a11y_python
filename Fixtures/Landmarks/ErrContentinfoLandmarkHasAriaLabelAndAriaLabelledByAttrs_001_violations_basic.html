@@ -6,6 +6,7 @@
     <title>ContentInfo Landmark Conflicting ARIA Attributes - Violations</title>
     <script type="application/json" id="test-metadata">
     {
+    "enforceElementExpectations": true,
         "id": "ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs_001_violations_basic",
         "issueId": "ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs",
         "expectedViolationCount": 3,
@@ -32,7 +33,7 @@
             aria-label="Main site footer"
             aria-labelledby="footer-heading"
             data-expected-violation="true"
-            data-violation-id="ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs"
+            data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs"
             data-violation-reason="ContentInfo landmark has both aria-label and aria-labelledby, creating ambiguity. Only aria-labelledby will be used, making aria-label redundant and confusing">
         <h2 id="footer-heading">Company Information</h2>
         <p>© 2025 Example Corporation. All rights reserved.</p>
@@ -46,7 +47,7 @@
          aria-label="Contact footer section"
          aria-labelledby="contact-footer-heading empty-element"
          data-expected-violation="true"
-         data-violation-id="ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs"
+         data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs"
          data-violation-reason="ContentInfo landmark has both aria-label and aria-labelledby attributes, only one should be used. This creates confusion about which labeling method is intended">
         <h2 id="contact-footer-heading">Contact Us</h2>
         <span id="empty-element"></span>
@@ -60,7 +61,7 @@
          aria-labelledby="social-heading"
          aria-label="Social media footer"
          data-expected-violation="true"
-         data-violation-id="ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs"
+         data-violation-id="ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs"
          data-violation-reason="ContentInfo landmark specifies both aria-labelledby and aria-label. The aria-labelledby takes precedence, making aria-label unnecessary and violating best practices">
         <h2 id="social-heading">Follow Us</h2>
         <ul>

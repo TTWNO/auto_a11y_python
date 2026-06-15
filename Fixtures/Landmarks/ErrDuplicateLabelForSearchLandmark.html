@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Fixture: Duplicate Search Landmark Labels</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrDuplicateLabelForSearchLandmark",
+    "issueId": "ErrDuplicateLabelForSearchLandmark",
+    "expectedViolationCount": 9,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 3,
+    "enforceElementExpectations": true,
+    "description": "Multiple search landmarks (role=search, native search element, and aria-labelledby cases) sharing the accessible name 'Search'; each duplicate is flagged. Three uniquely-named search landmarks pass.",
+    "wcag": "1.3.1,2.4.1"
+}
+    </script>
 </head>
 <body>
     <h1>Test Fixture: ErrDuplicateLabelForSearchLandmark</h1>
@@ -12,7 +24,7 @@
     <header>
         <h2>Site Header</h2>
         <!-- VIOLATION: First search landmark with generic label -->
-        <div role="search" aria-label="Search">
+        <div role="search" aria-label="Search" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
             <label for="main-search">Main Site Search:</label>
             <input type="search" id="main-search" name="main-search" placeholder="Search the entire site">
             <button type="submit">Search</button>
@@ -26,7 +38,7 @@
         <section>
             <h3>Product Catalog</h3>
             <!-- VIOLATION: Second search landmark with same generic label -->
-            <form role="search" aria-label="Search">
+            <form role="search" aria-label="Search" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
                 <label for="product-search">Product Search:</label>
                 <input type="search" id="product-search" name="product-search" placeholder="Find products">
                 <button type="submit">Find Products</button>
@@ -37,7 +49,7 @@
         <section>
             <h3>Blog Articles</h3>
             <!-- VIOLATION: Third search landmark with same generic label -->
-            <div role="search" aria-label="Search">
+            <div role="search" aria-label="Search" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
                 <label for="blog-search">Blog Search:</label>
                 <input type="search" id="blog-search" name="blog-search" placeholder="Search articles">
                 <button type="submit">Search Articles</button>
@@ -48,7 +60,7 @@
         <section>
             <h3>Help & Documentation</h3>
             <!-- VIOLATION: Fourth search landmark with same generic label -->
-            <search aria-label="Search">
+            <search aria-label="Search" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
                 <label for="help-search">Help Search:</label>
                 <input type="search" id="help-search" name="help-search" placeholder="Search documentation">
                 <button type="submit">Search Help</button>
@@ -59,7 +71,7 @@
     <aside>
         <h2>Sidebar</h2>
         <!-- VIOLATION: Fifth search landmark with same generic label -->
-        <form role="search" aria-label="Search">
+        <form role="search" aria-label="Search" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
             <label for="quick-search">Quick Search:</label>
             <input type="search" id="quick-search" name="quick-search" placeholder="Quick search">
             <button type="submit">Go</button>
@@ -69,7 +81,7 @@
     <footer>
         <h2>Site Footer</h2>
         <!-- VIOLATION: Sixth search landmark with same generic label -->
-        <div role="search" aria-label="Search">
+        <div role="search" aria-label="Search" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
             <label for="footer-search">Footer Search:</label>
             <input type="search" id="footer-search" name="footer-search" placeholder="Search from footer">
             <button type="submit">Search</button>
@@ -82,7 +94,7 @@
     <div role="dialog" aria-labelledby="search-modal-title" style="display: none;">
         <h3 id="search-modal-title">Advanced Search</h3>
         <!-- VIOLATION: Another search landmark with same generic label -->
-        <form role="search" aria-label="Search">
+        <form role="search" aria-label="Search" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
             <label for="modal-search">Advanced Search:</label>
             <input type="search" id="modal-search" name="modal-search" placeholder="Advanced search options">
             <button type="submit">Advanced Search</button>
@@ -94,19 +106,19 @@
         <h2 style="color: green;">✓ CORRECT Examples (for contrast)</h2>
         
         <!-- Properly labeled search landmarks -->
-        <div role="search" aria-label="Site-wide search">
+        <div role="search" aria-label="Site-wide search" data-expected-pass="true" data-pass-reason="uniquely-named search landmark (Site-wide search)">
             <label for="correct-main">Site Search:</label>
             <input type="search" id="correct-main" placeholder="Search entire website">
             <button type="submit">Search</button>
         </div>
 
-        <form role="search" aria-label="Product catalog search">
+        <form role="search" aria-label="Product catalog search" data-expected-pass="true" data-pass-reason="uniquely-named search landmark (Product catalog search)">
             <label for="correct-products">Product Search:</label>
             <input type="search" id="correct-products" placeholder="Find products">
             <button type="submit">Find</button>
         </form>
 
-        <search aria-label="Blog and article search">
+        <search aria-label="Blog and article search" data-expected-pass="true" data-pass-reason="uniquely-named search landmark (Blog and article search)">
             <label for="correct-blog">Blog Search:</label>
             <input type="search" id="correct-blog" placeholder="Search blog posts">
             <button type="submit">Search</button>
@@ -119,13 +131,13 @@
         
         <!-- Using aria-labelledby with same text -->
         <h4 id="search-heading-1">Search</h4>
-        <form role="search" aria-labelledby="search-heading-1">
+        <form role="search" aria-labelledby="search-heading-1" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
             <input type="search" placeholder="Search by heading reference 1">
             <button type="submit">Search</button>
         </form>
 
         <h4 id="search-heading-2">Search</h4>
-        <div role="search" aria-labelledby="search-heading-2">
+        <div role="search" aria-labelledby="search-heading-2" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForSearchLandmark" data-violation-reason="duplicate search-landmark label">
             <input type="search" placeholder="Search by heading reference 2">
             <button type="submit">Search</button>
         </div>

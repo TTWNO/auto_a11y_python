@@ -8,9 +8,11 @@
 {
     "id": "WarnFormLandmarkAccessibleNameUsesForm",
     "issueId": "WarnFormLandmarkAccessibleNameUsesForm",
-    "expectedViolationCount": 1,
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 1,
     "expectedPassCount": 1,
-    "description": "Form landmark accessible name contains redundant word 'form'",
+    "enforceElementExpectations": true,
+    "description": "Form landmark accessible name contains redundant word 'form' (warning) vs label without 'form' (pass)",
     "wcag": "2.4.6",
     "impact": "Low"
 }
@@ -21,9 +23,9 @@
 
     <!-- VIOLATION: Contains word "form" -->
     <form aria-label="Contact form"
-          data-expected-violation="true"
-          data-violation-id="WarnFormLandmarkAccessibleNameUsesForm"
-          data-violation-reason="Label contains redundant 'form' - screen reader announces 'Contact form form'">
+          data-expected-warning="true"
+          data-warning-id="WarnFormLandmarkAccessibleNameUsesForm"
+          data-warning-reason="Label contains redundant 'form' - screen reader announces 'Contact form form'">
         <label for="name1">Name</label>
         <input type="text" id="name1">
         <button type="submit">Send</button>

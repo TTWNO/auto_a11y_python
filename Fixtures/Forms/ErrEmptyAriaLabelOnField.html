@@ -59,6 +59,18 @@
             border: 0;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrEmptyAriaLabelOnField",
+    "issueId": "ErrEmptyAriaLabelOnField",
+    "expectedViolationCount": 17,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Form fields whose only labelling is an empty/whitespace aria-label, so they have no accessible name. Each case is validated individually.",
+    "wcag": "1.3.1"
+}
+    </script>
 </head>
 <body>
     <h1>Empty aria-label Test Fixture</h1>
@@ -70,23 +82,23 @@
         
         <div class="form-group">
             <label>Text input with empty aria-label:</label>
-            <input type="text" aria-label="" placeholder="Enter text">
+            <input type="text" aria-label="" placeholder="Enter text" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Email input with aria-label containing only spaces:</label>
-            <input type="email" aria-label="   " placeholder="Enter email">
+            <input type="email" aria-label="   " placeholder="Enter email" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Password input with aria-label containing only whitespace:</label>
             <input type="password" aria-label="	
-            " placeholder="Enter password">
+            " placeholder="Enter password" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Select with empty aria-label:</label>
-            <select aria-label="">
+            <select aria-label="" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
                 <option value="">Choose option</option>
                 <option value="1">Option 1</option>
                 <option value="2">Option 2</option>
@@ -95,54 +107,54 @@
 
         <div class="form-group">
             <label>Textarea with empty aria-label:</label>
-            <textarea aria-label="" placeholder="Enter description"></textarea>
+            <textarea aria-label="" placeholder="Enter description" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case"></textarea>
         </div>
 
         <div class="form-group">
             <label>Number input with empty aria-label:</label>
-            <input type="number" aria-label="" placeholder="Enter number" min="0" max="100">
+            <input type="number" aria-label="" placeholder="Enter number" min="0" max="100" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Date input with empty aria-label:</label>
-            <input type="date" aria-label="">
+            <input type="date" aria-label="" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Tel input with empty aria-label:</label>
-            <input type="tel" aria-label="" placeholder="Phone number">
+            <input type="tel" aria-label="" placeholder="Phone number" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>URL input with empty aria-label:</label>
-            <input type="url" aria-label="" placeholder="Website URL">
+            <input type="url" aria-label="" placeholder="Website URL" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Search input with empty aria-label:</label>
-            <input type="search" aria-label="" placeholder="Search">
+            <input type="search" aria-label="" placeholder="Search" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Range input with empty aria-label:</label>
-            <input type="range" aria-label="" min="0" max="100" value="50">
+            <input type="range" aria-label="" min="0" max="100" value="50" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Color input with empty aria-label:</label>
-            <input type="color" aria-label="" value="#ff0000">
+            <input type="color" aria-label="" value="#ff0000" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <!-- Complex cases -->
         <div class="form-group">
             <label>Input with aria-labelledby but also empty aria-label:</label>
             <span id="label1">Age</span>
-            <input type="number" aria-labelledby="label1" aria-label="">
+            <input type="number" aria-labelledby="label1" aria-label="" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Required field with empty aria-label:</label>
-            <input type="text" aria-label="" required placeholder="Required field">
+            <input type="text" aria-label="" required placeholder="Required field" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
     </div>
 
@@ -217,19 +229,19 @@
         
         <div class="form-group">
             <label>Disabled input with empty aria-label (may or may not fail depending on implementation):</label>
-            <input type="text" aria-label="" disabled placeholder="Disabled field">
+            <input type="text" aria-label="" disabled placeholder="Disabled field" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Readonly input with empty aria-label:</label>
-            <input type="text" aria-label="" readonly value="Read only value">
+            <input type="text" aria-label="" readonly value="Read only value" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
         </div>
 
         <div class="form-group">
             <label>Input inside fieldset with legend:</label>
             <fieldset>
                 <legend>Personal Information</legend>
-                <input type="text" aria-label="" placeholder="First name">
+                <input type="text" aria-label="" placeholder="First name" data-expected-violation="true" data-violation-id="ErrEmptyAriaLabelOnField" data-violation-reason="ErrEmptyAriaLabelOnField case">
             </fieldset>
         </div>
     </div>

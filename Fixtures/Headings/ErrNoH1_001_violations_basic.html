@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- The page-level ErrNoH1 is emitted at /html, so the annotation lives on the html element -->
+<html lang="en"
+      data-expected-violation="true"
+      data-violation-id="ErrNoH1"
+      data-violation-reason="Page has no h1 element">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Fixture: Missing H1</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrNoH1_001_violations_basic",
     "issueId": "ErrNoH1",
     "expectedViolationCount": 1,
@@ -16,9 +21,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrNoH1"
-      data-violation-reason="Page has no h1 element">
+<body>
     <header>
         <h2>Company Name</h2>
         <nav>

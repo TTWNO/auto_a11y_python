@@ -4,12 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Div Map Missing Attributes Test - ErrDivMapMissingAttributes</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrDivMapMissingAttributes",
+    "issueId": "ErrDivMapMissingAttributes",
+    "expectedViolationCount": 2,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "div-based interactive map containers lacking the ARIA attributes needed for accessibility. Each recognised map div is validated individually for the missing-attributes violation.",
+    "wcag": "4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Interactive Map Divs Without Accessibility Attributes</h1>
     
     <!-- Interactive map div without any ARIA labels -->
-    <div id="map" style="width: 600px; height: 400px; background: #ccc;">
+    <div id="map" style="width: 600px; height: 400px; background: #ccc;" data-expected-violation="true" data-violation-id="ErrDivMapMissingAttributes" data-violation-reason="map div has no role or aria-label">
         <!-- Map rendered by JavaScript -->
     </div>
     
@@ -26,7 +38,7 @@
     </svg>
     
     <!-- Custom map container without role or aria-label -->
-    <div class="custom-map" style="width: 100%; height: 500px; position: relative;">
+    <div class="custom-map" style="width: 100%; height: 500px; position: relative;" data-expected-violation="true" data-violation-id="ErrDivMapMissingAttributes" data-violation-reason="custom-map div has no role or aria-label">
         <div class="map-marker" style="position: absolute; top: 100px; left: 200px;">📍</div>
         <div class="map-marker" style="position: absolute; top: 250px; left: 400px;">📍</div>
     </div>

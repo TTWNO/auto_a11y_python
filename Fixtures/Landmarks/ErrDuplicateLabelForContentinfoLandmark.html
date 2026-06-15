@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Fixture: Duplicate Label for Contentinfo Landmark</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrDuplicateLabelForContentinfoLandmark",
+    "issueId": "ErrDuplicateLabelForContentinfoLandmark",
+    "expectedViolationCount": 5,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Multiple contentinfo landmarks sharing the same accessible name. Three duplicate aria-label 'Footer'; two more duplicate the computed name 'Site Footer' via aria-labelledby. The correct comparison block is commented out, so no live pass case.",
+    "wcag": "1.3.1,2.4.1"
+}
+    </script>
 </head>
 <body>
     <header>
@@ -28,7 +40,7 @@
     </main>
 
     <!-- VIOLATION: First contentinfo landmark with generic label -->
-    <footer role="contentinfo" aria-label="Footer">
+    <footer role="contentinfo" aria-label="Footer" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForContentinfoLandmark" data-violation-reason="contentinfo shares aria-label 'Footer' with other contentinfo landmarks">
         <div>
             <h3>Company Information</h3>
             <p>Main company footer with contact details</p>
@@ -41,7 +53,7 @@
     </footer>
 
     <!-- VIOLATION: Second contentinfo landmark with identical label -->
-    <div role="contentinfo" aria-label="Footer">
+    <div role="contentinfo" aria-label="Footer" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForContentinfoLandmark" data-violation-reason="role=contentinfo shares aria-label 'Footer' with other contentinfo landmarks">
         <div>
             <h3>Legal Information</h3>
             <p>Legal disclaimer and privacy policy links</p>
@@ -54,7 +66,7 @@
     </div>
 
     <!-- VIOLATION: Third contentinfo landmark with identical label -->
-    <section role="contentinfo" aria-label="Footer">
+    <section role="contentinfo" aria-label="Footer" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForContentinfoLandmark" data-violation-reason="role=contentinfo shares aria-label 'Footer' with other contentinfo landmarks">
         <div>
             <h3>Social Media</h3>
             <p>Follow us on social media</p>
@@ -69,7 +81,7 @@
     <!-- Additional test cases with different duplicate scenarios -->
     
     <!-- VIOLATION: Contentinfo landmarks with aria-labelledby pointing to identical text -->
-    <div role="contentinfo" aria-labelledby="footer-heading-1">
+    <div role="contentinfo" aria-labelledby="footer-heading-1" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForContentinfoLandmark" data-violation-reason="role=contentinfo shares computed name 'Site Footer' via aria-labelledby with another contentinfo">
         <h4 id="footer-heading-1">Site Footer</h4>
         <p>Newsletter signup area</p>
         <form>
@@ -79,7 +91,7 @@
         </form>
     </div>
 
-    <footer role="contentinfo" aria-labelledby="footer-heading-2">
+    <footer role="contentinfo" aria-labelledby="footer-heading-2" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForContentinfoLandmark" data-violation-reason="contentinfo shares computed name 'Site Footer' via aria-labelledby with another contentinfo">
         <h4 id="footer-heading-2">Site Footer</h4>
         <p>Copyright and licensing information</p>
         <p>&copy; 2024 Company Name. All rights reserved.</p>

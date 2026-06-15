@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title data-expected-violation="true"
+           data-violation-id="WarnPageTitleTooShort"
+           data-violation-reason="Page title is too short (under the engine's 5-character minimum). Doesn't provide enough context about page content. Multiple pages may have same generic title. Screen reader users cannot distinguish between pages easily. Poor search engine optimization. Users cannot identify page when reviewing browser history or bookmarks">Home</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnPageTitleTooShort_001_violations_basic",
     "issueId": "WarnPageTitleTooShort",
     "expectedViolationCount": 1,
@@ -16,9 +19,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="WarnPageTitleTooShort"
-      data-violation-reason="Page title is too short (under 10 characters recommended). Doesn't provide enough context about page content. Multiple pages may have same generic title. Screen reader users cannot distinguish between pages easily. Poor search engine optimization. Users cannot identify page when reviewing browser history or bookmarks">
+<body>
     <h1>Welcome to DataFlow Analytics</h1>
 
     <main>

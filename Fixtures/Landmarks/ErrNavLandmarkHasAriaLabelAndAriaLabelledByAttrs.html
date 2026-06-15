@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navigation Landmark Labeling Test Fixture</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs",
+    "issueId": "ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs",
+    "expectedViolationCount": 4,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Navigation landmarks (nav element or role=navigation) carrying BOTH aria-label and aria-labelledby trigger the conflicting-attributes error. Cases with only one labeling method are correct and must not trigger it.",
+    "wcag": "1.3.1,4.1.2"
+}
+    </script>
 </head>
 <body>
     <!-- Hidden heading for aria-labelledby reference -->
@@ -14,7 +26,7 @@
     <!-- ERROR CASES: Navigation landmarks with both aria-label and aria-labelledby -->
     
     <!-- Test Case 1: nav element with both attributes -->
-    <nav aria-label="Primary navigation menu" aria-labelledby="main-nav-heading">
+    <nav aria-label="Primary navigation menu" aria-labelledby="main-nav-heading" data-expected-violation="true" data-violation-id="ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="nav has both aria-label and aria-labelledby">
         <ul>
             <li><a href="#home">Home</a></li>
             <li><a href="#about">About</a></li>
@@ -24,7 +36,7 @@
     </nav>
 
     <!-- Test Case 2: div with navigation role and both attributes -->
-    <div role="navigation" aria-label="Footer navigation" aria-labelledby="footer-nav-heading">
+    <div role="navigation" aria-label="Footer navigation" aria-labelledby="footer-nav-heading" data-expected-violation="true" data-violation-id="ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="role=navigation div has both aria-label and aria-labelledby">
         <ul>
             <li><a href="#privacy">Privacy Policy</a></li>
             <li><a href="#terms">Terms of Service</a></li>
@@ -33,7 +45,7 @@
     </div>
 
     <!-- Test Case 3: nav with both attributes in different order -->
-    <nav aria-labelledby="breadcrumb-heading" aria-label="Breadcrumb navigation">
+    <nav aria-labelledby="breadcrumb-heading" aria-label="Breadcrumb navigation" data-expected-violation="true" data-violation-id="ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="nav has both aria-labelledby and aria-label (order reversed)">
         <ol>
             <li><a href="#home">Home</a></li>
             <li><a href="#category">Category</a></li>
@@ -42,7 +54,7 @@
     </nav>
 
     <!-- Test Case 4: aside with navigation role and both attributes -->
-    <aside role="navigation" aria-label="Secondary menu" aria-labelledby="main-nav-heading">
+    <aside role="navigation" aria-label="Secondary menu" aria-labelledby="main-nav-heading" data-expected-violation="true" data-violation-id="ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs" data-violation-reason="role=navigation aside has both aria-label and aria-labelledby">
         <ul>
             <li><a href="#news">News</a></li>
             <li><a href="#events">Events</a></li>
@@ -52,7 +64,7 @@
     <!-- CORRECT CASES: Navigation landmarks with only one labeling method -->
     
     <!-- Correct: Only aria-label -->
-    <nav aria-label="User account navigation">
+    <nav aria-label="User account navigation" data-expected-pass="true" data-pass-reason="nav uses only aria-label, no conflicting attributes">
         <ul>
             <li><a href="#profile">Profile</a></li>
             <li><a href="#settings">Settings</a></li>
@@ -62,7 +74,7 @@
 
     <!-- Correct: Only aria-labelledby -->
     <h3 id="social-nav-heading">Social Media Links</h3>
-    <nav aria-labelledby="social-nav-heading">
+    <nav aria-labelledby="social-nav-heading" data-expected-pass="true" data-pass-reason="nav uses only aria-labelledby, no conflicting attributes">
         <ul>
             <li><a href="#facebook">Facebook</a></li>
             <li><a href="#twitter">Twitter</a></li>

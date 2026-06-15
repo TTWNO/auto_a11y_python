@@ -39,7 +39,7 @@
         }
         
         .carousel-slide {
-            min-width: 100%;
+            flex: 0 0 33.3333%;
             height: 300px;
             display: flex;
             align-items: center;
@@ -118,6 +118,18 @@
             overflow: hidden;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrCarouselWithoutARIA",
+    "issueId": "ErrCarouselWithoutARIA",
+    "expectedViolationCount": 5,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Carousel widgets that lack the ARIA markup needed to be operable and understandable, including missing region role, label, slide grouping, and live-region semantics. A fully marked-up accessible carousel is validated as passing. Each demonstrated case is validated individually.",
+    "wcag": "4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Carousel ARIA Test Fixture - AI_ErrCarouselWithoutARIA</h1>
@@ -128,7 +140,7 @@
         <h2 class="error">❌ Test 1: Basic Carousel Without ARIA (Should Fail)</h2>
         <p>This carousel lacks all ARIA attributes and proper semantic markup.</p>
         
-        <div class="carousel" id="basic-carousel">
+        <div class="carousel" id="basic-carousel" data-expected-violation="true" data-violation-id="ErrCarouselWithoutARIA" data-violation-reason="Basic carousel with no ARIA region, label, or slide semantics">
             <div class="carousel-track" id="track1">
                 <div class="carousel-slide slide-1">Product Carousel Slide 1</div>
                 <div class="carousel-slide slide-2">Product Carousel Slide 2</div>
@@ -152,7 +164,7 @@
         <h2 class="error">❌ Test 2: Carousel with Incomplete ARIA (Should Fail)</h2>
         <p>This carousel has some ARIA attributes but is missing critical ones.</p>
         
-        <div class="carousel" role="region" id="partial-carousel">
+        <div class="carousel" role="region" id="partial-carousel" data-expected-violation="true" data-violation-id="ErrCarouselWithoutARIA" data-violation-reason="Carousel has region role but is still missing required carousel ARIA">
             <div class="carousel-track" id="track2">
                 <div class="carousel-slide slide-1">News Carousel Item 1</div>
                 <div class="carousel-slide slide-2">News Carousel Item 2</div>
@@ -171,7 +183,7 @@
         <h2 class="error">❌ Test 3: Auto-rotating Carousel Without ARIA (Should Fail)</h2>
         <p>This auto-rotating carousel lacks aria-live and proper controls.</p>
         
-        <div class="carousel" id="auto-carousel">
+        <div class="carousel" id="auto-carousel" data-expected-violation="true" data-violation-id="ErrCarouselWithoutARIA" data-violation-reason="Auto-rotating carousel without aria-live or carousel ARIA">
             <div class="carousel-track" id="track3">
                 <div class="carousel-slide slide-1">Featured Content Slide 1</div>
                 <div class="carousel-slide slide-2">Featured Content Slide 2</div>
@@ -187,7 +199,7 @@
         <h2 class="error">❌ Test 4: Image Gallery Carousel Without ARIA (Should Fail)</h2>
         <p>Image carousel with no accessibility markup.</p>
         
-        <div class="carousel" id="image-carousel">
+        <div class="carousel" id="image-carousel" data-expected-violation="true" data-violation-id="ErrCarouselWithoutARIA" data-violation-reason="Image carousel with no accessibility markup">
             <div class="carousel-track" id="track4">
                 <div class="carousel-slide slide-1">Image Gallery Photo 1</div>
                 <div class="carousel-slide slide-2">Image Gallery Photo 2</div>
@@ -209,7 +221,7 @@
         <div class="carousel accessible-carousel" 
              role="region" 
              aria-label="Featured testimonials carousel"
-             id="accessible-carousel">
+             id="accessible-carousel" data-expected-pass="true" data-pass-reason="Carousel has region role, aria-label, slide grouping, and live region">
             <div class="carousel-track" 
                  id="track5" 
                  aria-live="polite" 
@@ -278,7 +290,7 @@
         <h2 class="error">❌ Test 6: Value Slider Misidentified as Carousel (Edge Case)</h2>
         <p>This is actually a value slider but might be detected as a carousel.</p>
         
-        <div class="carousel" id="slider-carousel">
+        <div class="carousel" id="slider-carousel" data-expected-violation="true" data-violation-id="ErrCarouselWithoutARIA" data-violation-reason="Carousel-styled widget with no ARIA markup">
             <div class="carousel-track" id="track6">
                 <div class="carousel-slide slide-1">Price Range Slider $0-100</div>
                 <div class="carousel-slide slide-2">Price Range Slider $100-500</div>

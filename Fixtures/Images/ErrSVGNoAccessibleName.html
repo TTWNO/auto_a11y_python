@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVG No Accessible Name Test - ErrSVGNoAccessibleName</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrSVGNoAccessibleName",
+    "issueId": "ErrSVGNoAccessibleName",
+    "expectedViolationCount": 1,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "An svg element with role img but no title, aria-label, or aria-labelledby has no accessible name and triggers the violation.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>SVG Elements Without Accessible Names</h1>
@@ -14,7 +26,7 @@
     </svg>
     
     <!-- SVG with role="img" but no accessible name -->
-    <svg width="200" height="100" role="img">
+    <svg width="200" height="100" role="img" data-expected-violation="true" data-violation-id="ErrSVGNoAccessibleName" data-violation-reason="svg with role img has no title or aria-label so it lacks an accessible name">
         <rect width="200" height="100" fill="blue"/>
         <text x="100" y="50" text-anchor="middle" fill="white">Logo</text>
     </svg>

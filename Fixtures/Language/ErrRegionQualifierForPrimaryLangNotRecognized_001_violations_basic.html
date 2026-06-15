@@ -1,31 +1,33 @@
 <!DOCTYPE html>
-<html lang="en-XYZ">
+<html lang="en-XYZ"
+      data-expected-violation="true"
+      data-violation-id="ErrRegionQualifierForPrimaryLangNotRecognized"
+      data-violation-reason="lang='en-XYZ' uses invalid region code 'XYZ' which is not a valid ISO 3166-1 code">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Regional Content - Invalid Region Codes</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrRegionQualifierForPrimaryLangNotRecognized_001_violations_basic",
     "issueId": "ErrRegionQualifierForPrimaryLangNotRecognized",
-    "expectedViolationCount": 3,
+    "expectedViolationCount": 1,
     "expectedPassCount": 0,
-    "description": "Invalid region qualifiers in lang attributes",
+    "description": "Invalid region qualifiers in lang attributes; element-level cases emit ErrElementRegionQualifierNotRecognized instead",
     "wcag": "3.1.1",
     "impact": "Medium"
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrRegionQualifierForPrimaryLangNotRecognized"
-      data-violation-reason="lang='en-XYZ' uses invalid region code 'XYZ' which is not a valid ISO 3166-1 code">
+<body>
     <h1>Global Content</h1>
 
     <p>This page uses an invalid region qualifier "XYZ" which doesn't exist in ISO 3166-1.</p>
 
     <article lang="es-MEX"
              data-expected-violation="true"
-             data-violation-id="ErrRegionQualifierForPrimaryLangNotRecognized"
+             data-violation-id="ErrElementRegionQualifierNotRecognized"
              data-violation-reason="lang='es-MEX' uses 'MEX' which is not a valid ISO 3166-1 alpha-2 code, should be 'MX'">
         <h2>Contenido en Español</h2>
         <p>Este artículo usa "MEX" en lugar del código ISO correcto "MX" para México.</p>
@@ -33,7 +35,7 @@
 
     <section lang="fr-FRA"
              data-expected-violation="true"
-             data-violation-id="ErrRegionQualifierForPrimaryLangNotRecognized"
+             data-violation-id="ErrElementRegionQualifierNotRecognized"
              data-violation-reason="lang='fr-FRA' uses 'FRA' which is not a valid ISO 3166-1 alpha-2 code, should be 'FR'">
         <h2>Contenu en Français</h2>
         <p>Cette section utilise "FRA" au lieu du code ISO "FR" pour la France.</p>

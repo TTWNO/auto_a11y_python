@@ -4,27 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image with URL as Alt Test - ErrImageWithURLAsAlt</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrImageWithURLAsAlt",
+    "issueId": "ErrImageWithURLAsAlt",
+    "expectedViolationCount": 6,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Each img element whose alt text is a URL (full URL, bare domain, relative path, CDN URL, or file URL) is flagged individually. Alt should describe image content, not its address.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Images with URLs as Alt Text</h1>
     
     <!-- Alt text is full URL -->
-    <img src="logo.png" alt="https://www.example.com/images/logo.png">
+    <img src="logo.png" alt="https://www.example.com/images/logo.png" data-expected-violation="true" data-violation-id="ErrImageWithURLAsAlt" data-violation-reason="alt text is a full https URL">
     
     <!-- Alt text is domain name -->
-    <img src="banner.jpg" alt="www.example.com">
+    <img src="banner.jpg" alt="www.example.com" data-expected-violation="true" data-violation-id="ErrImageWithURLAsAlt" data-violation-reason="alt text is a bare domain name">
     
     <!-- Alt text is relative URL -->
-    <img src="photo.gif" alt="/assets/images/photo.gif">
+    <img src="photo.gif" alt="/assets/images/photo.gif" data-expected-violation="true" data-violation-id="ErrImageWithURLAsAlt" data-violation-reason="alt text is a relative URL path">
     
     <!-- Alt text is CDN URL -->
-    <img src="icon.svg" alt="https://cdn.example.com/icons/icon.svg">
+    <img src="icon.svg" alt="https://cdn.example.com/icons/icon.svg" data-expected-violation="true" data-violation-id="ErrImageWithURLAsAlt" data-violation-reason="alt text is a CDN URL">
     
     <!-- Alt text is data URL -->
-    <img src="data:image/png;base64,..." alt="data:image/png;base64,...">
+    <img src="data:image/png;base64,..." alt="data:image/png;base64,..." data-expected-violation="true" data-violation-id="ErrImageWithURLAsAlt" data-violation-reason="alt text is a data: URI">
     
     <!-- Alt text is file:// URL -->
-    <img src="local.jpg" alt="file:///C:/Users/images/local.jpg">
+    <img src="local.jpg" alt="file:///C:/Users/images/local.jpg" data-expected-violation="true" data-violation-id="ErrImageWithURLAsAlt" data-violation-reason="alt text is a file URL">
     
     <p>Alt text should describe the image content, not its URL.</p>
 </body>

@@ -6,6 +6,7 @@
     <title>Test Fixture: Empty Label Elements</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrEmptyLabel_001_violations_basic",
     "issueId": "ErrEmptyLabel",
     "expectedViolationCount": 3,
@@ -20,27 +21,27 @@
     <h1>Contact Form</h1>
     <form>
         <div>
-            <label for="name"
+            <label for="name"></label>
+            <input type="text" id="name"
                    data-expected-violation="true"
                    data-violation-id="ErrEmptyLabel"
-                   data-violation-reason="Label element is completely empty"></label>
-            <input type="text" id="name">
+                   data-violation-reason="Associated label element is completely empty (engine reports at the input)">
         </div>
 
         <div>
-            <label for="email"
+            <label for="email">   </label>
+            <input type="email" id="email"
                    data-expected-violation="true"
                    data-violation-id="ErrEmptyLabel"
-                   data-violation-reason="Label contains only whitespace">   </label>
-            <input type="email" id="email">
+                   data-violation-reason="Associated label contains only whitespace (engine reports at the input)">
         </div>
 
         <div>
-            <label for="phone"
+            <label for="phone">&nbsp;</label>
+            <input type="tel" id="phone"
                    data-expected-violation="true"
                    data-violation-id="ErrEmptyLabel"
-                   data-violation-reason="Label contains only non-breaking spaces">&nbsp;</label>
-            <input type="tel" id="phone">
+                   data-violation-reason="Associated label contains only non-breaking spaces (engine reports at the input)">
         </div>
 
         <button type="submit">Submit</button>

@@ -6,6 +6,7 @@
     <title>Navigation Landmark Blank Accessible Name - Violations</title>
     <script type="application/json" id="test-metadata">
     {
+    "enforceElementExpectations": true,
         "id": "ErrNavigationLandmarkAccessibleNameIsBlank_001_violations_basic",
         "issueId": "ErrNavLandmarkAccessibleNameIsBlank",
         "expectedViolationCount": 3,
@@ -22,7 +23,7 @@
 
         <nav aria-label=""
              data-expected-violation="true"
-             data-violation-id="ErrNavigationLandmarkAccessibleNameIsBlank"
+             data-violation-id="ErrNavLandmarkAccessibleNameIsBlank"
              data-violation-reason="Navigation landmark has empty aria-label attribute, screen readers cannot distinguish it from other navigation regions on the page">
             <ul>
                 <li><a href="/">Home</a></li>
@@ -39,7 +40,7 @@
 
             <nav aria-labelledby="blank-nav-heading"
                  data-expected-violation="true"
-                 data-violation-id="ErrNavigationLandmarkAccessibleNameIsBlank"
+                 data-violation-id="ErrNavLandmarkAccessibleNameIsBlank"
                  data-violation-reason="Navigation landmark references element with blank text content via aria-labelledby, resulting in blank accessible name">
                 <h3 id="blank-nav-heading">   </h3>
                 <ul>
@@ -55,7 +56,7 @@
         <div role="navigation"
              aria-label="     "
              data-expected-violation="true"
-             data-violation-id="ErrNavigationLandmarkAccessibleNameIsBlank"
+             data-violation-id="ErrNavLandmarkAccessibleNameIsBlank"
              data-violation-reason="Navigation landmark has aria-label with only whitespace characters, effectively blank for screen readers">
             <ul>
                 <li><a href="/privacy">Privacy Policy</a></li>

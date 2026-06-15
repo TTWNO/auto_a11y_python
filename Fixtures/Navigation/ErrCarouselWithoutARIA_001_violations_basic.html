@@ -6,7 +6,8 @@
     <title>ErrCarouselWithoutARIA - Violations</title>
     <script type="application/json" id="test-metadata">
 {
-    "id": "AI_ErrCarouselWithoutARIA_001_violations_basic",
+    "enforceElementExpectations": true,
+    "id": "ErrCarouselWithoutARIA_001_violations_basic",
     "issueId": "ErrCarouselWithoutARIA",
     "expectedViolationCount": 2,
     "expectedPassCount": 0,
@@ -23,7 +24,7 @@
         <!-- Carousel without ARIA or accessible controls -->
         <div class="carousel"
              data-expected-violation="true"
-             data-violation-id="AI_ErrCarouselWithoutARIA"
+             data-violation-id="ErrCarouselWithoutARIA"
              data-violation-reason="Carousel lacks role='region', aria-label, aria-live for updates, and accessible previous/next controls. Screen readers cannot understand carousel structure or navigate between slides">
             <div class="carousel-inner">
                 <div class="slide" style="display:block;">
@@ -46,7 +47,7 @@
         <!-- Auto-rotating carousel without controls or live region -->
         <div class="auto-carousel"
              data-expected-violation="true"
-             data-violation-id="AI_ErrCarouselWithoutARIA"
+             data-violation-id="ErrCarouselWithoutARIA"
              data-violation-reason="Auto-rotating carousel lacks pause controls, aria-live for announcements, and keyboard-accessible navigation. Users with cognitive disabilities or screen readers cannot control or track slide changes">
             <div class="carousel-slides">
                 <div class="slide active">

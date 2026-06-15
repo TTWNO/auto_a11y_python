@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ErrAriaLabelMayNotBeFoundByVoiceControl - explicit for is voice-operable</title>
+    <script type="application/json" id="test-metadata">
+{
+    "enforceElementExpectations": true,
+    "id": "ErrAriaLabelMayNotBeFoundByVoiceControl_004_correct_explicit_for",
+    "issueId": "ErrAriaLabelMayNotBeFoundByVoiceControl",
+    "expectedViolationCount": 0,
+    "expectedPassCount": 6,
+    "description": "Form controls associated with a visible label via an explicit <label for> are voice-operable; a wrapping label that also carries a matching for/id is accepted too.",
+    "wcag": "2.5.3",
+    "impact": "Medium"
+}
+    </script>
+</head>
+<body>
+    <h1>Explicit label[for] is voice-operable</h1>
+
+    <form>
+        <div data-expected-pass="true"
+             data-pass-reason="Explicit <label for> associates the visible text; Dragon can target it by voice">
+            <label for="vc-full-name">Full name</label>
+            <input type="text" id="vc-full-name" name="full-name">
+        </div>
+
+        <div data-expected-pass="true"
+             data-pass-reason="Explicit <label for> associates the visible text">
+            <label for="vc-email">Email</label>
+            <input type="email" id="vc-email" name="email">
+        </div>
+
+        <div data-expected-pass="true"
+             data-pass-reason="Explicit <label for> associates the visible text for the select">
+            <label for="vc-country">Country</label>
+            <select id="vc-country" name="country">
+                <option value="">Choose...</option>
+                <option value="us">United States</option>
+                <option value="ca">Canada</option>
+            </select>
+        </div>
+
+        <div data-expected-pass="true"
+             data-pass-reason="Explicit <label for> associates the visible text for the textarea">
+            <label for="vc-comments">Comments</label>
+            <textarea id="vc-comments" name="comments" rows="3"></textarea>
+        </div>
+
+        <div data-expected-pass="true"
+             data-pass-reason="Checkbox carries a matching for/id even though it sits inside the label, so it is voice-operable">
+            <label for="vc-terms">
+                <input type="checkbox" id="vc-terms" name="terms">
+                I agree to the terms and conditions
+            </label>
+        </div>
+
+        <div data-expected-pass="true"
+             data-pass-reason="Radio has an explicit <label for> association">
+            <input type="radio" id="vc-contact-phone" name="contact" value="phone">
+            <label for="vc-contact-phone">Contact me by phone</label>
+        </div>
+
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

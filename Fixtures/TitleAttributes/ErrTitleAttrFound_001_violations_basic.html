@@ -6,11 +6,12 @@
     <title>ErrTitleAttrFound - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrTitleAttrFound_001_violations_basic",
     "issueId": "ErrTitleAttrFound",
-    "expectedViolationCount": 3,
+    "expectedViolationCount": 2,
     "expectedPassCount": 0,
-    "description": "Title attributes used for important information",
+    "description": "Title attributes used for important information (first case emits the more specific ErrTitleAsOnlyLabel)",
     "wcag": "3.3.2, 4.1.2",
     "impact": "Low"
 }
@@ -21,13 +22,14 @@
 
     <main>
         <form>
-            <!-- Title attribute as only label - VIOLATION -->
+            <!-- Title attribute as only label - VIOLATION (engine reports the
+                 more specific ErrTitleAsOnlyLabel for unlabelled form fields) -->
             <div>
                 <input type="text"
                        name="username"
                        title="Enter your username"
                        data-expected-violation="true"
-                       data-violation-id="ErrTitleAttrFound"
+                       data-violation-id="ErrTitleAsOnlyLabel"
                        data-violation-reason="Form field relies on title attribute for labeling. Mobile users cannot see the tooltip. Keyboard users cannot access title without mouse hover. Screen readers may not announce title consistently. Critical information hidden from many users">
             </div>
 

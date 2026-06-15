@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Form Landmark Label Duplication Test</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrDuplicateLabelForFormLandmark",
+    "issueId": "ErrDuplicateLabelForFormLandmark",
+    "expectedViolationCount": 4,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 3,
+    "enforceElementExpectations": true,
+    "description": "Multiple form landmarks sharing the same accessible name. One pair duplicates aria-label 'User Login', another duplicates aria-labelledby 'Registration'. Three uniquely-named forms are correct comparison cases.",
+    "wcag": "1.3.1,2.4.1"
+}
+    </script>
 </head>
 <body>
     <header>
@@ -14,7 +26,7 @@
         <!-- Test Case 1: Multiple forms with identical aria-label (ERROR) -->
         <section>
             <h2>Login Forms Section</h2>
-            <form aria-label="User Login">
+            <form aria-label="User Login" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForFormLandmark" data-violation-reason="form shares aria-label 'User Login' with another form landmark">
                 <fieldset>
                     <legend>Main Login</legend>
                     <label for="username1">Username:</label>
@@ -25,7 +37,7 @@
                 </fieldset>
             </form>
 
-            <form aria-label="User Login">
+            <form aria-label="User Login" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForFormLandmark" data-violation-reason="form shares aria-label 'User Login' with another form landmark">
                 <fieldset>
                     <legend>Admin Login</legend>
                     <label for="username2">Admin Username:</label>
@@ -42,7 +54,7 @@
             <h2>Registration Forms</h2>
             <h3 id="registration-heading">Registration</h3>
             
-            <form aria-labelledby="registration-heading">
+            <form aria-labelledby="registration-heading" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForFormLandmark" data-violation-reason="form shares computed name 'Registration' via aria-labelledby with another form landmark">
                 <fieldset>
                     <legend>Personal Registration</legend>
                     <label for="name1">Full Name:</label>
@@ -53,7 +65,7 @@
                 </fieldset>
             </form>
 
-            <form aria-labelledby="registration-heading">
+            <form aria-labelledby="registration-heading" data-expected-violation="true" data-violation-id="ErrDuplicateLabelForFormLandmark" data-violation-reason="form shares computed name 'Registration' via aria-labelledby with another form landmark">
                 <fieldset>
                     <legend>Business Registration</legend>
                     <label for="company">Company Name:</label>
@@ -135,7 +147,7 @@
         <!-- Test Case 5: CORRECT - Properly labeled unique forms -->
         <section>
             <h2>Correctly Labeled Forms (No Errors Expected)</h2>
-            <form aria-label="User Account Login">
+            <form aria-label="User Account Login" data-expected-pass="true" data-pass-reason="form has unique accessible name 'User Account Login'">
                 <fieldset>
                     <legend>Login to Your Account</legend>
                     <label for="user-email">Email:</label>
@@ -146,7 +158,7 @@
                 </fieldset>
             </form>
 
-            <form aria-label="Administrator Access Portal">
+            <form aria-label="Administrator Access Portal" data-expected-pass="true" data-pass-reason="form has unique accessible name 'Administrator Access Portal'">
                 <fieldset>
                     <legend>Administrator Login</legend>
                     <label for="admin-id">Admin ID:</label>
@@ -158,7 +170,7 @@
             </form>
 
             <h3 id="feedback-form-title">Customer Feedback Form</h3>
-            <form aria-labelledby="feedback-form-title">
+            <form aria-labelledby="feedback-form-title" data-expected-pass="true" data-pass-reason="form has unique accessible name 'Customer Feedback Form'">
                 <fieldset>
                     <legend>Share Your Experience</legend>
                     <label for="customer-name">Your Name:</label>

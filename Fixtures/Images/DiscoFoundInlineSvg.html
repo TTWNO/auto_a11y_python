@@ -4,23 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Found Inline SVG Discovery Test - DiscoFoundInlineSvg</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "DiscoFoundInlineSvg",
+    "issueId": "DiscoFoundInlineSvg",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Inline svg elements on the page are discovered for manual review. Each inline svg element is reported individually.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Inline SVG Discovery</h1>
     
     <!-- Inline SVG icon -->
-    <svg width="24" height="24" viewBox="0 0 24 24">
+    <svg width="24" height="24" viewBox="0 0 24 24" data-expected-discovery="true" data-discovery-id="DiscoFoundInlineSvg" data-discovery-reason="inline svg icon discovered for manual review">
         <circle cx="12" cy="12" r="10" fill="blue"/>
     </svg>
     
     <!-- Inline SVG with title -->
-    <svg width="100" height="100" role="img" aria-labelledby="svg-title">
+    <svg width="100" height="100" role="img" aria-labelledby="svg-title" data-expected-discovery="true" data-discovery-id="DiscoFoundInlineSvg" data-discovery-reason="inline svg with title discovered for manual review">
         <title id="svg-title">Company Logo</title>
         <rect width="100" height="100" fill="red"/>
     </svg>
     
     <!-- Complex inline SVG graphic -->
-    <svg width="200" height="200">
+    <svg width="200" height="200" data-expected-discovery="true" data-discovery-id="DiscoFoundInlineSvg" data-discovery-reason="complex inline svg graphic discovered for manual review">
         <defs>
             <pattern id="pattern1" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
                 <rect width="10" height="10" fill="lightblue"/>

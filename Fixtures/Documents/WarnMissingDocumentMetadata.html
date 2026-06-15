@@ -53,6 +53,18 @@
             padding-left: 20px;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnMissingDocumentMetadata",
+    "issueId": "WarnMissingDocumentMetadata",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 5,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Links to downloadable documents that do not expose file metadata (type and size) in their text, title, or adjacent content. Links that include the file type and size are validated as passing. Each demonstrated case is validated individually.",
+    "wcag": "2.4.4"
+}
+    </script>
 </head>
 <body>
     <h1>Document Link Metadata Test Fixture</h1>
@@ -66,15 +78,15 @@
         <ul>
             <li><a href="report.pdf">Annual Report</a></li>
             <li><a href="budget.xlsx">Budget Spreadsheet</a></li>
-            <li><a href="presentation.pptx">Marketing Presentation</a></li>
+            <li><a href="presentation.pptx" data-expected-warning="true" data-warning-id="WarnMissingDocumentMetadata" data-warning-reason="PowerPoint document link with no file type or size metadata">Marketing Presentation</a></li>
             <li><a href="handbook.doc">Employee Handbook</a></li>
             <li><a href="data.zip">Archive File</a></li>
         </ul>
 
         <h3>Links with extension visible but no size information</h3>
         <ul>
-            <li><a href="financial-report.pdf">financial-report.pdf</a></li>
-            <li><a href="sales-data.xlsx">sales-data.xlsx</a></li>
+            <li><a href="financial-report.pdf" data-expected-warning="true" data-warning-id="WarnMissingDocumentMetadata" data-warning-reason="PDF document link showing only the filename, no size metadata">financial-report.pdf</a></li>
+            <li><a href="sales-data.xlsx" data-expected-warning="true" data-warning-id="WarnMissingDocumentMetadata" data-warning-reason="Excel document link showing only the filename, no size metadata">sales-data.xlsx</a></li>
             <li><a href="company-photos.zip">company-photos.zip</a></li>
         </ul>
 
@@ -101,8 +113,8 @@
         
         <h3>Complete metadata in link text</h3>
         <ul>
-            <li><a href="report.pdf">Annual Report (PDF, 2.5 MB)</a></li>
-            <li><a href="budget.xlsx">Budget Spreadsheet (Excel, 450 KB)</a></li>
+            <li><a href="report.pdf" data-expected-pass="true" data-pass-reason="PDF link text includes both file type and size (PDF, 2.5 MB)">Annual Report (PDF, 2.5 MB)</a></li>
+            <li><a href="budget.xlsx" data-expected-pass="true" data-pass-reason="Excel link text includes both file type and size (Excel, 450 KB)">Budget Spreadsheet (Excel, 450 KB)</a></li>
             <li><a href="presentation.pptx">Marketing Presentation (PowerPoint, 12 MB)</a></li>
             <li><a href="handbook.doc">Employee Handbook (Word, 1.2 MB)</a></li>
             <li><a href="data.zip">Archive File (ZIP, 25 MB)</a></li>
@@ -163,7 +175,7 @@
         <h3>External document links without metadata</h3>
         <ul>
             <li><a href="https://example.com/remote-file.pdf">Remote PDF File</a></li>
-            <li><a href="http://other-site.com/document.docx">External Document</a></li>
+            <li><a href="http://other-site.com/document.docx" data-expected-warning="true" data-warning-id="WarnMissingDocumentMetadata" data-warning-reason="External Word document link with no file type or size metadata">External Document</a></li>
         </ul>
 
         <h3>Ambiguous cases</h3>
@@ -176,7 +188,7 @@
 
         <h3>Partial metadata (might need additional info)</h3>
         <ul>
-            <li><a href="report.pdf">Annual Report (PDF)</a> <!-- Missing size --></li>
+            <li><a href="report.pdf" data-expected-warning="true" data-warning-id="WarnMissingDocumentMetadata" data-warning-reason="PDF document link giving file type but no size metadata">Annual Report (PDF)</a> <!-- Missing size --></li>
             <li><a href="data.xlsx">Spreadsheet (2.5 MB)</a> <!-- Missing file type clarification --></li>
             <li><a href="archive.zip">Large file</a> <!-- Vague size description --></li>
         </ul>

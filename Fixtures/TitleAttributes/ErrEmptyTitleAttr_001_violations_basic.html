@@ -6,6 +6,7 @@
     <title>ErrEmptyTitleAttr - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrEmptyTitleAttr_001_violations_basic",
     "issueId": "ErrEmptyTitleAttr",
     "expectedViolationCount": 3,
@@ -45,10 +46,11 @@
                  data-violation-reason="Image has empty title attribute. Adds no value to accessibility. Screen readers may announce empty title creating confusion. Unnecessary attribute bloating markup. Should remove empty title or provide supplementary information">
 
             <!-- Abbreviation with empty title - VIOLATION -->
-            <p data-expected-violation="true"
-               data-violation-id="ErrEmptyTitleAttr"
-               data-violation-reason="Abbreviation has empty title attribute. Should provide expansion or remove title. Screen readers cannot access empty expansion. Users cannot understand abbreviation meaning. Empty attribute wastes markup">
-                Available in 128<abbr title="">GB</abbr> and 256GB capacities.
+            <p>
+                Available in 128<abbr title=""
+                                      data-expected-violation="true"
+                                      data-violation-id="ErrEmptyTitleAttr"
+                                      data-violation-reason="Abbreviation has empty title attribute. Should provide expansion or remove title. Screen readers cannot access empty expansion. Users cannot understand abbreviation meaning. Empty attribute wastes markup">GB</abbr> and 256GB capacities.
             </p>
         </section>
 

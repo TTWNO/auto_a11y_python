@@ -19,14 +19,14 @@ AS_OF: date = date(2026, 5, 19)
 # Model whose rates the constants below capture. Unknown models fall back
 # to these rates (with a logged warning) rather than failing the analysis —
 # cost bookkeeping must NEVER lose a paid result.
-DEFAULT_PRICING_MODEL = "claude-opus-4-7"
+DEFAULT_PRICING_MODEL = "claude-opus-4-8"
 
 
-# === Anthropic Opus 4.7 (per million tokens) ===
-OPUS_47_INPUT_USD_PER_M = 5.0
-OPUS_47_OUTPUT_USD_PER_M = 25.0
-OPUS_47_EXTENDED_INPUT_USD_PER_M = 10.0   # 2× above 200K tokens
-OPUS_47_EXTENDED_OUTPUT_USD_PER_M = 37.5  # 1.5× above 200K tokens
+# === Anthropic Opus 4.8 (per million tokens) — same rates as Opus 4.7 ===
+OPUS_48_INPUT_USD_PER_M = 5.0
+OPUS_48_OUTPUT_USD_PER_M = 25.0
+OPUS_48_EXTENDED_INPUT_USD_PER_M = 10.0   # 2× above 200K tokens
+OPUS_48_EXTENDED_OUTPUT_USD_PER_M = 37.5  # 1.5× above 200K tokens
 CACHE_READ_RATIO = 0.10
 CACHE_WRITE_RATIO = 1.25
 
@@ -79,7 +79,7 @@ def cost_for_anthropic_call(
 ) -> float:
     """Compute USD cost of one Anthropic call.
 
-    Pricing constants are defined for ``claude-opus-4-7`` (see
+    Pricing constants are defined for ``claude-opus-4-8`` (see
     ``DEFAULT_PRICING_MODEL``). For any other model we fall back to those
     rates and log a warning rather than raising: this function is called
     *after* a paid Claude response, so a hard failure here would discard a
@@ -100,25 +100,25 @@ def cost_for_anthropic_call(
         std_out = min(usage.output_tokens, EXTENDED_CONTEXT_THRESHOLD)
         ext_out = max(0, usage.output_tokens - EXTENDED_CONTEXT_THRESHOLD)
         in_cost = (
-            (std_in / 1_000_000) * OPUS_47_INPUT_USD_PER_M
-            + (ext_in / 1_000_000) * OPUS_47_EXTENDED_INPUT_USD_PER_M
+            (std_in / 1_000_000) * OPUS_48_INPUT_USD_PER_M
+            + (ext_in / 1_000_000) * OPUS_48_EXTENDED_INPUT_USD_PER_M
         )
         out_cost = (
-            (std_out / 1_000_000) * OPUS_47_OUTPUT_USD_PER_M
-            + (ext_out / 1_000_000) * OPUS_47_EXTENDED_OUTPUT_USD_PER_M
+            (std_out / 1_000_000) * OPUS_48_OUTPUT_USD_PER_M
+            + (ext_out / 1_000_000) * OPUS_48_EXTENDED_OUTPUT_USD_PER_M
         )
     else:
-        in_cost = (usage.input_tokens / 1_000_000) * OPUS_47_INPUT_USD_PER_M
-        out_cost = (usage.output_tokens / 1_000_000) * OPUS_47_OUTPUT_USD_PER_M
+        in_cost = (usage.input_tokens / 1_000_000) * OPUS_48_INPUT_USD_PER_M
+        out_cost = (usage.output_tokens / 1_000_000) * OPUS_48_OUTPUT_USD_PER_M
 
     cache_read_cost = (
         (usage.cache_read_tokens / 1_000_000)
-        * OPUS_47_INPUT_USD_PER_M
+        * OPUS_48_INPUT_USD_PER_M
         * CACHE_READ_RATIO
     )
     cache_write_cost = (
         (usage.cache_write_tokens / 1_000_000)
-        * OPUS_47_INPUT_USD_PER_M
+        * OPUS_48_INPUT_USD_PER_M
         * CACHE_WRITE_RATIO
     )
 
@@ -165,7 +165,7 @@ def estimate_cost(
                 output_tokens=TYPICAL_OUTPUT_TOKENS_PER_PASS,
             )
             per_lang += cost_for_anthropic_call(
-                usage, model="claude-opus-4-7", extended_context=extended_context,
+                usage, model=DEFAULT_PRICING_MODEL, extended_context=extended_context,
             )
         breakdown[f"claude_{lang}"] = per_lang
 

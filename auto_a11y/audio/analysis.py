@@ -31,10 +31,11 @@ Language = Literal["en", "fr"]
 # JSON for a full audit (every issue + painpoint + takeaway + assertion):
 # ~22.5 KB of dense JSON ≈ 8000 tokens, so the response was cut off
 # mid-object (stop_reason="max_tokens") and json.loads failed with a
-# misleading "Expecting ',' delimiter". 32000 leaves wide headroom. The
-# request streams (below) so the SDK doesn't trip its non-streaming timeout
-# guard at this size.
-_MAX_OUTPUT_TOKENS = 32000
+# misleading "Expecting ',' delimiter". We now request Opus's full 128K
+# output ceiling; the request streams (below) so the SDK doesn't trip its
+# non-streaming timeout guard at this size. max_tokens is only a cap —
+# billed on actual output — so the headroom costs nothing when unused.
+_MAX_OUTPUT_TOKENS = 128000
 
 
 _FRENCH_PREFIX = (
@@ -74,7 +75,7 @@ class Analyzer:
         self,
         *,
         client: Any,
-        model: str = "claude-opus-4-7",
+        model: str = "claude-opus-4-8",
         extended_context: bool = False,
     ) -> None:
         self._client = client

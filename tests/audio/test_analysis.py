@@ -101,23 +101,35 @@ def test_analyzer_records_cost_in_result() -> None:
     assert result.cost_usd > 0
 
 
-def test_analyzer_requests_a_large_token_budget() -> None:
-    """The analysis JSON for a full audit needs far more than the old 8000.
+def test_analyzer_requests_the_full_128k_output_budget() -> None:
+    """Use the model's full 128K output ceiling for a pass.
 
     Regression for the truncation bug: a full audit's JSON (~22.5 KB ≈ 8000
-    tokens) was cut off at max_tokens=8000 and failed to parse. The budget
-    must be generously above that.
+    tokens) was cut off at max_tokens=8000 and failed to parse. We now
+    request the Opus 128K output ceiling (streamed).
     """
     client = _client_returning(
         _fake_message(json.dumps({"recording": "x", "issues": []}))
     )
     analyzer = Analyzer(
-        client=client, model="claude-opus-4-7", extended_context=False
+        client=client, model="claude-opus-4-8", extended_context=False
     )
     analyzer.analyze(
         vtt="W", context="audit", kind="issues", language="en", recording_id="X"
     )
-    assert client.messages.stream.call_args.kwargs["max_tokens"] >= 16000
+    assert client.messages.stream.call_args.kwargs["max_tokens"] == 128000
+
+
+def test_analyzer_defaults_to_opus_4_8() -> None:
+    """A default-constructed Analyzer targets claude-opus-4-8."""
+    client = _client_returning(
+        _fake_message(json.dumps({"recording": "x", "issues": []}))
+    )
+    analyzer = Analyzer(client=client)  # no explicit model → default
+    analyzer.analyze(
+        vtt="W", context="audit", kind="issues", language="en", recording_id="X"
+    )
+    assert client.messages.stream.call_args.kwargs["model"] == "claude-opus-4-8"
 
 
 def test_analyzer_raises_clear_error_when_output_truncated() -> None:

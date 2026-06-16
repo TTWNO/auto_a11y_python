@@ -27,6 +27,16 @@ logger = logging.getLogger(__name__)
 Language = Literal["en", "fr"]
 
 
+# Output-token ceiling for one analysis pass. Was 8000, which truncated the
+# JSON for a full audit (every issue + painpoint + takeaway + assertion):
+# ~22.5 KB of dense JSON ≈ 8000 tokens, so the response was cut off
+# mid-object (stop_reason="max_tokens") and json.loads failed with a
+# misleading "Expecting ',' delimiter". 32000 leaves wide headroom. The
+# request streams (below) so the SDK doesn't trip its non-streaming timeout
+# guard at this size.
+_MAX_OUTPUT_TOKENS = 32000
+
+
 _FRENCH_PREFIX = (
     "IMPORTANT: Produce ALL output in French (français). All field values, "
     "all natural-language content, in French.\n\n"
@@ -92,12 +102,26 @@ class Analyzer:
         if self._extended_context:
             betas.append("output-128k-2025-02-19")
 
-        message = self._client.messages.create(
+        # Stream the request: the analysis JSON can be large, and the SDK
+        # refuses / times out non-streaming requests at a high max_tokens.
+        # ``get_final_message()`` reassembles the full message for us.
+        with self._client.messages.stream(
             model=self._model,
-            max_tokens=8000,
+            max_tokens=_MAX_OUTPUT_TOKENS,
             messages=[{"role": "user", "content": full_prompt}],
             extra_headers={"anthropic-beta": ",".join(betas)},
-        )
+        ) as stream:
+            message = stream.get_final_message()
+
+        # Fail loudly and clearly if the model still hit the ceiling, instead
+        # of letting a truncated body surface as a cryptic JSON parse error.
+        if getattr(message, "stop_reason", None) == "max_tokens":
+            raise AnalysisError(
+                f"Analysis output for recording {recording_id} was truncated at "
+                + f"the {_MAX_OUTPUT_TOKENS}-token limit (stop_reason=max_tokens); "
+                + "the transcript may be unusually long. Raise the analysis token "
+                + "budget and retry."
+            )
 
         # Extract content text. Anthropic SDK returns a list of content
         # blocks; only text-bearing blocks contribute to the payload.

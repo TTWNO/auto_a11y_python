@@ -124,7 +124,7 @@ class ProcessManager {
   /**
    * Clean up stale MongoDB lock file if no mongod process is running.
    */
-  cleanStaleLock() {
+  async cleanStaleLock() {
     const dbPath = path.join(this.settings.userDataDir, 'mongodb', 'data');
     const lockFile = path.join(dbPath, 'mongod.lock');
 
@@ -133,16 +133,87 @@ class ProcessManager {
     const content = fs.readFileSync(lockFile, 'utf8').trim();
     if (!content) return; // Empty lock = clean shutdown
 
-    log.warn(`Found stale mongod.lock with PID ${content}, cleaning up...`);
+    const pid = parseInt(content, 10);
+    const clear = () => {
+      try {
+        fs.writeFileSync(lockFile, '', 'utf8');
+        log.info('Cleared mongod.lock');
+      } catch (err) {
+        log.warn('Could not clear mongod.lock:', err.message);
+      }
+    };
+
+    // Is the recorded owner still alive?
+    let alive = false;
+    if (Number.isInteger(pid) && pid > 0) {
+      try { process.kill(pid, 0); alive = true; } catch { alive = false; }
+    }
+
+    if (!alive) {
+      // Owner gone — just a stale file from an unclean shutdown.
+      log.warn(`Found stale mongod.lock (PID ${content}); owner is gone, clearing.`);
+      clear();
+      return;
+    }
+
+    // A process still holds OUR dbpath. If it's a leftover mongod — a
+    // crashed/orphaned previous launch, or a second app instance — a fresh
+    // mongod would die with DBPathInUse (exit 100) and the app would "fail
+    // to start". Terminate the leftover so this launch can recover. Guard
+    // against PID reuse: only kill if it actually looks like mongod.
+    if (this.isMongodPid(pid)) {
+      log.warn(`A mongod (PID ${pid}) still holds the dbpath; terminating it to recover startup...`);
+      await this.terminatePid(pid);
+      clear();
+    } else {
+      log.warn(`mongod.lock PID ${pid} is held by a non-mongod process; leaving it alone.`);
+    }
+  }
+
+  /**
+   * Best-effort check that `pid` is a mongod process. Guards terminatePid
+   * against killing an unrelated process that happened to reuse a dead
+   * mongod's PID. Returns false (don't kill) if it can't positively
+   * identify mongod.
+   */
+  isMongodPid(pid) {
     try {
-      // Check if the PID is still running
-      process.kill(parseInt(content), 0);
-      // If no error, process is still running — don't clean
-      log.warn('mongod process is still running, skipping lock cleanup');
+      if (process.platform === 'win32') {
+        const out = execSync(`tasklist /fi "PID eq ${pid}" /fo csv /nh`, {
+          encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+        });
+        return /mongod/i.test(out);
+      }
+      const out = execSync(`ps -p ${pid} -o comm=`, {
+        encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      return /mongod/i.test(out);
     } catch {
-      // Process not running — safe to clean
-      fs.writeFileSync(lockFile, '', 'utf8');
-      log.info('Cleaned stale mongod.lock');
+      return false;
+    }
+  }
+
+  /**
+   * SIGTERM a pid, escalate to SIGKILL if it hasn't exited within graceMs,
+   * then wait briefly for the OS to release its file locks. Resolves once
+   * the process is gone (or was never alive). Never throws.
+   */
+  async terminatePid(pid, { graceMs = 4000, killMs = 2000, stepMs = 100 } = {}) {
+    const alive = () => { try { process.kill(pid, 0); return true; } catch { return false; } };
+    if (!alive()) return;
+
+    try { process.kill(pid, 'SIGTERM'); } catch { /* already gone */ }
+    let deadline = Date.now() + graceMs;
+    while (Date.now() < deadline && alive()) {
+      await new Promise((r) => setTimeout(r, stepMs));
+    }
+
+    if (alive()) {
+      try { process.kill(pid, 'SIGKILL'); } catch { /* already gone */ }
+      deadline = Date.now() + killMs;
+      while (Date.now() < deadline && alive()) {
+        await new Promise((r) => setTimeout(r, stepMs));
+      }
     }
   }
 
@@ -157,7 +228,7 @@ class ProcessManager {
 
     onProgress && onProgress('Starting database...');
 
-    this.cleanStaleLock();
+    await this.cleanStaleLock();
 
     const paths = this.getPaths();
     const dbPath = path.join(this.settings.userDataDir, 'mongodb', 'data');

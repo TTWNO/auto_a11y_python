@@ -144,6 +144,67 @@ async def test_aria(page: Page) -> dict[str, Any]:
                     }
                 });
 
+                // Test 1b: ErrAriaLabelMayNotBeFoundByVoiceControl - implicit (wrapping) label.
+                // A form control whose ONLY label is an implicit wrapping <label> (no for/id
+                // association, no aria-label/aria-labelledby) is not voice-operable: Dragon
+                // NaturallySpeaking cannot target it by the visible label text. An explicit
+                // <label for> is required. Controls with a for-association, an ARIA name, or
+                // no wrapping label at all are out of scope for this check.
+                const wrappableControls = Array.from(document.querySelectorAll('input, select, textarea')).filter(el => {
+                    if (el.tagName.toLowerCase() === 'input') {
+                        const type = (el.getAttribute('type') || 'text').toLowerCase();
+                        if (type === 'hidden') return false;
+                    }
+                    return true;
+                });
+                checksRun += wrappableControls.length;
+
+                wrappableControls.forEach(control => {
+                    // Named by an ARIA attribute - handled by Test 1 / other codes, not here.
+                    if (control.hasAttribute('aria-label') || control.hasAttribute('aria-labelledby')) {
+                        return;
+                    }
+                    // Only concerned with controls wrapped by an implicit <label>.
+                    const wrappingLabel = control.closest('label');
+                    if (!wrappingLabel) return;
+                    // An explicit <label for> association IS voice-operable, so it is fine even
+                    // when the control also happens to sit inside a wrapping label.
+                    const id = control.getAttribute('id');
+                    let hasExplicitFor = false;
+                    if (id) {
+                        let selectorId = id;
+                        try {
+                            if (window.CSS && typeof CSS.escape === 'function') {
+                                selectorId = CSS.escape(id);
+                            }
+                        } catch (e) {
+                            selectorId = id;
+                        }
+                        try {
+                            hasExplicitFor = !!document.querySelector('label[for="' + selectorId + '"]');
+                        } catch (e) {
+                            hasExplicitFor = false;
+                        }
+                    }
+                    if (hasExplicitFor) {
+                        results.elements_passed++;
+                        return;
+                    }
+                    const labelText = (wrappingLabel.textContent || '').trim();
+                    results.errors.push({
+                        err: 'ErrAriaLabelMayNotBeFoundByVoiceControl',
+                        type: 'err',
+                        cat: 'accessible_names',
+                        element: control.tagName.toLowerCase(),
+                        xpath: getFullXPath(control),
+                        html: control.outerHTML.substring(0, 200),
+                        description: `Control is labelled only by a wrapping <label> with no for/id association - Dragon NaturallySpeaking cannot target it by voice. Use <label for>.`,
+                        visibleText: labelText,
+                        wcag: '2.5.3'
+                    });
+                    results.elements_failed++;
+                });
+
                 // Test 2: ErrAccordionWithoutARIA
                 // Look for accordion patterns: elements that toggle content
                 // This includes buttons with toggle functions AND divs/h3 with accordion-header class
@@ -221,8 +282,12 @@ async def test_aria(page: Page) -> dict[str, Any]:
                 // Look for menu patterns: elements with "menubar" or containers with menu items
                 const potentialMenus = allElements.filter(el => {
                     const classes = getClassName(el).toLowerCase();
+                    const classTokens = classes.split(' ');
                     const hasMenubarClass = classes.includes('menubar');
-                    const hasMenuClass = classes.split(' ').includes('menu') && !classes.includes('menu-');
+                    // 'context-menu' is a common class for div-based context menus - an
+                    // equivalent menu pattern the bare 'menu' token check would miss.
+                    const hasMenuClass = (classTokens.includes('menu') || classTokens.includes('context-menu')) &&
+                                         !classes.includes('menu-');
                     return (hasMenubarClass || hasMenuClass) && el.tagName.toLowerCase() === 'div';
                 });
 

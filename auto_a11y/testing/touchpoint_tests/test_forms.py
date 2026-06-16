@@ -214,7 +214,24 @@ async def test_forms(page: Page) -> dict[str, Any]:
                     }
                     return path;
                 }
-                
+
+                // Text of an element as it contributes to the accessible name: descendants
+                // hidden via display:none or visibility:hidden are excluded (they contribute
+                // nothing to the accessible name), while visually-hidden "sr-only" text (which
+                // uses clip/position, not display/visibility) is correctly retained. This is
+                // why a label whose only content is display:none resolves to an empty name.
+                function getVisibleTextContent(element) {
+                    let text = '';
+                    (function walk(node) {
+                        if (node.nodeType === 3) { text += node.nodeValue; return; }
+                        if (node.nodeType !== 1) return;
+                        const cs = window.getComputedStyle(node);
+                        if (cs.display === 'none' || cs.visibility === 'hidden' || cs.visibility === 'collapse') return;
+                        node.childNodes.forEach(walk);
+                    })(element);
+                    return text.replace(/\s+/g, ' ').trim();
+                }
+
                 // ERROR: Check for empty forms with no child nodes (must run before inputs check)
                 const allForms = Array.from(document.querySelectorAll('form'));
                 allForms.forEach(form => {
@@ -334,7 +351,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         if (label) {
                             hasLabel = true;
                             hasVisibleLabel = true;
-                            labelText = label.textContent.trim();
+                            labelText = getVisibleTextContent(label);
                         }
                     }
 
@@ -344,7 +361,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         if (parentLabel) {
                             hasLabel = true;
                             hasVisibleLabel = true;
-                            labelText = parentLabel.textContent.trim();
+                            labelText = getVisibleTextContent(parentLabel);
                         }
                     }
 
@@ -592,7 +609,37 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         }
                     }
                 });
-                
+
+                // ERROR: aria-labelledby reference existence on ARIA-role custom widgets.
+                // The native-input loop above only validates aria-labelledby refs on
+                // input/select/textarea, so a custom form widget (e.g. a role="textbox"
+                // contenteditable) with a broken aria-labelledby reference would slip through.
+                // Check those here, scoped to widget roles and skipping native controls.
+                const ariaWidgetRoles = ['textbox', 'combobox', 'searchbox', 'spinbutton', 'listbox', 'slider', 'checkbox', 'radio', 'switch'];
+                document.querySelectorAll('[aria-labelledby][role]').forEach(el => {
+                    const widgetRole = (el.getAttribute('role') || '').trim().toLowerCase();
+                    if (!ariaWidgetRoles.includes(widgetRole)) return;
+                    if (el.matches('input, select, textarea')) return; // native: handled above
+                    const ref = (el.getAttribute('aria-labelledby') || '').trim();
+                    if (ref === '') return;
+                    ref.split(/\s+/).forEach(refId => {
+                        if (!document.getElementById(refId)) {
+                            results.errors.push({
+                                err: 'ErrFieldAriaRefDoesNotExist',
+                                type: 'err',
+                                cat: 'forms',
+                                element: el.tagName,
+                                xpath: getFullXPath(el),
+                                html: el.outerHTML.substring(0, 200),
+                                description: `Custom ${widgetRole} widget has aria-labelledby referencing non-existent ID: "${refId}"`,
+                                inputType: widgetRole,
+                                missingId: refId
+                            });
+                            results.elements_failed++;
+                        }
+                    });
+                });
+
                 // Check for fieldset/legend for radio and checkbox groups
                 const radioGroups = {};
                 const checkboxGroups = {};
@@ -607,41 +654,61 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         radioGroups[name].push(radio);
                     }
                 });
-                
-                // Check each radio group for fieldset
-                Object.entries(radioGroups).forEach(([name, radios]) => {
-                    if (radios.length > 1) {
-                        const firstRadio = radios[0];
-                        const fieldset = firstRadio.closest('fieldset');
-                        
-                        if (!fieldset) {
+
+                // Group checkboxes by name (same-name checkboxes form a group, e.g. interests[])
+                checkboxes.forEach(checkbox => {
+                    const name = checkbox.name;
+                    if (name) {
+                        if (!checkboxGroups[name]) {
+                            checkboxGroups[name] = [];
+                        }
+                        checkboxGroups[name].push(checkbox);
+                    }
+                });
+
+                // Check each radio/checkbox group for fieldset and legend.
+                // A fieldset can contain several groups, so dedupe WarnNoLegend per fieldset.
+                const fieldsetsMissingLegend = new Set();
+                function checkGroupFieldset(name, controls, groupKindLabel, elementLabel) {
+                    if (controls.length <= 1) return;
+                    const firstControl = controls[0];
+                    const fieldset = firstControl.closest('fieldset');
+
+                    if (!fieldset) {
+                        results.warnings.push({
+                            err: 'WarnNoFieldset',
+                            type: 'warn',
+                            cat: 'forms',
+                            element: elementLabel,
+                            xpath: getFullXPath(firstControl),
+                            html: firstControl.outerHTML.substring(0, 200),
+                            description: `${groupKindLabel} group "${name}" should be wrapped in a fieldset with legend`,
+                            groupName: name,
+                            groupSize: controls.length
+                        });
+                    } else {
+                        const legend = fieldset.querySelector('legend');
+                        if ((!legend || !legend.textContent.trim()) && !fieldsetsMissingLegend.has(fieldset)) {
+                            fieldsetsMissingLegend.add(fieldset);
                             results.warnings.push({
-                                err: 'WarnNoFieldset',
+                                err: 'WarnNoLegend',
                                 type: 'warn',
                                 cat: 'forms',
-                                element: 'RADIO_GROUP',
-                                xpath: getFullXPath(firstRadio),
-                                html: firstRadio.outerHTML.substring(0, 200),
-                                description: `Radio button group "${name}" should be wrapped in a fieldset with legend`,
-                                groupName: name,
-                                groupSize: radios.length
+                                element: 'FIELDSET',
+                                xpath: getFullXPath(fieldset),
+                                html: fieldset.outerHTML.substring(0, 200),
+                                description: 'Fieldset is missing a legend element',
+                                groupName: name
                             });
-                        } else {
-                            const legend = fieldset.querySelector('legend');
-                            if (!legend || !legend.textContent.trim()) {
-                                results.warnings.push({
-                                    err: 'WarnNoLegend',
-                                    type: 'warn',
-                                    cat: 'forms',
-                                    element: 'FIELDSET',
-                                    xpath: getFullXPath(fieldset),
-                                    html: fieldset.outerHTML.substring(0, 200),
-                                    description: 'Fieldset is missing a legend element',
-                                    groupName: name
-                                });
-                            }
                         }
                     }
+                }
+
+                Object.entries(radioGroups).forEach(([name, radios]) => {
+                    checkGroupFieldset(name, radios, 'Radio button', 'RADIO_GROUP');
+                });
+                Object.entries(checkboxGroups).forEach(([name, boxes]) => {
+                    checkGroupFieldset(name, boxes, 'Checkbox', 'CHECKBOX_GROUP');
                 });
                 
                 // Add check information for reporting

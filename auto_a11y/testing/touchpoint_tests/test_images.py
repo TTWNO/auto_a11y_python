@@ -111,6 +111,10 @@ async def test_images(page: Page) -> dict[str, Any]:
                         /^photo of/i,
                         /^picture of/i,
                         /^graphic of/i,
+                        /^icon depicting/i,
+                        /^icon of/i,
+                        /^screenshot showing/i,
+                        /^screenshot of/i,
                         /^untitled/i,
                         /^dsc[0-9]/i,
                         /^img_[0-9]/i,
@@ -178,8 +182,10 @@ async def test_images(page: Page) -> dict[str, Any]:
                         });
                         results.elements_failed++;
                     }
-                    // Check for whitespace-only alt (not truly empty)
-                    else if (altAttr !== '' && altAttr.trim() === '') {
+                    // Check for whitespace-only alt (not truly empty). Zero-width characters
+                    // (U+200B/U+200C/U+200D/U+FEFF) are invisible but not removed by trim(),
+                    // so strip them first — they provide no accessible name either.
+                    else if (altAttr !== '' && altAttr.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').trim() === '') {
                         results.errors.push({
                             err: 'ErrImageWithEmptyAlt',
                             type: 'err',
@@ -195,8 +201,9 @@ async def test_images(page: Page) -> dict[str, Any]:
                         results.elements_failed++;
                     }
                     // Check for HTML tags in alt text
-                    // Match actual HTML tags (starting with letter) not mathematical operators like < or >
-                    else if (/<[a-zA-Z][^>]*>/.test(altAttr)) {
+                    // Match actual HTML tags (starting with letter) and HTML comments ("<!--"),
+                    // not mathematical operators like < or >
+                    else if (/<[a-zA-Z][^>]*>|<!--/.test(altAttr)) {
                         results.errors.push({
                             err: 'ErrImageAltContainsHTML',
                             type: 'err',
@@ -211,8 +218,10 @@ async def test_images(page: Page) -> dict[str, Any]:
                         results.elements_failed++;
                     }
                     // Check for URLs or file paths in alt text
-                    // Match various URL schemes: http://, https://, file://, ftp://, tel:, mailto:, www., or file paths starting with /
-                    else if (/^(https?:\/\/|ftp:\/\/|file:\/\/|tel:|mailto:|www\.)|^\/[a-zA-Z0-9]/i.test(altAttr)) {
+                    // Match various URL schemes: http://, https://, file://, ftp://, data: (e.g. data:image/png;base64,...),
+                    // tel:, mailto:, www., or file paths starting with /. `data:` requires a non-space next char so a
+                    // sentence like "Data: 42" is not misread as a data URI.
+                    else if (/^(https?:\/\/|ftp:\/\/|file:\/\/|data:[^\s]|tel:|mailto:|www\.)|^\/[a-zA-Z0-9]/i.test(altAttr)) {
                         results.errors.push({
                             err: 'ErrImageWithURLAsAlt',
                             type: 'err',

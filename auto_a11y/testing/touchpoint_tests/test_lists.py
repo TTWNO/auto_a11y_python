@@ -160,6 +160,25 @@ async def test_lists(page: Page) -> dict[str, Any]:
                             }
                         }
 
+                        // Check for CSS ::before bullets/counters on the element's children
+                        // (a list visually faked with generated content instead of <li>).
+                        const pseudoChildren = Array.from(el.children).filter(c =>
+                            ['DIV', 'P', 'SPAN', 'LI', 'SECTION', 'ARTICLE'].includes(c.tagName));
+                        if (pseudoChildren.length >= 3) {
+                            let pseudoBullets = 0;
+                            pseudoChildren.forEach(c => {
+                                const content = window.getComputedStyle(c, '::before').content;
+                                if (!content || content === 'none' || content === 'normal') return;
+                                // bullet glyph, or a CSS counter (numbered list)
+                                if (/[•·‣◦▪▫]/.test(content) || /counter\s*\(/i.test(content)) {
+                                    pseudoBullets++;
+                                }
+                            });
+                            if (pseudoBullets >= pseudoChildren.length * 0.7) {
+                                return true;
+                            }
+                        }
+
                         // Check for text starting with dash/hyphen/asterisk bullets
                         const lines = text.split('\n').filter(line => line.trim().length > 0);
                         if (lines.length >= 3) {
@@ -360,8 +379,8 @@ async def test_lists(page: Page) -> dict[str, Any]:
                         }
                     }
 
-                    // Check for empty lists (only for ul/ol, not dl)
-                    if (listTag !== 'dl' && items.length === 0) {
+                    // Check for empty lists. An empty dl (no dt/dd) is also an empty list.
+                    if (items.length === 0) {
                         results.errors.push({
                             err: 'ErrEmptyList',
                             type: 'err',
@@ -369,7 +388,9 @@ async def test_lists(page: Page) -> dict[str, Any]:
                             element: listTag,
                             xpath: getFullXPath(list),
                             html: list.outerHTML.substring(0, 200),
-                            description: 'List element contains no list items',
+                            description: listTag === 'dl'
+                                ? 'Definition list (dl) contains no dt/dd items'
+                                : 'List element contains no list items',
                             listType: listTag
                         });
                         results.elements_failed++;
@@ -400,13 +421,21 @@ async def test_lists(page: Page) -> dict[str, Any]:
                             return;
                         }
 
-                        const textContent = item.textContent.trim();
+                        // Zero-width characters (ZWSP/ZWNJ/ZWJ/word-joiner/BOM) are
+                        // invisible and announce nothing, so an item containing only
+                        // them is still empty. String.prototype.trim() does not
+                        // strip them, hence the explicit replace.
+                        const textContent = item.textContent.replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').trim();
                         const ariaLabel = item.getAttribute('aria-label');
                         const ariaLabelledby = item.getAttribute('aria-labelledby');
                         const hasVisuallyHiddenText = item.querySelector('.visually-hidden, .sr-only, .screen-reader-only, [class*="sr-only"], [class*="visually-hidden"]');
+                        // An image with non-empty alt text gives the item an
+                        // accessible name even without any text content.
+                        const hasImgWithAlt = Array.from(item.querySelectorAll('img'))
+                            .some(img => (img.getAttribute('alt') || '').trim() !== '');
 
                         // Check if item is empty or only whitespace
-                        if (textContent === '' && !ariaLabel && !ariaLabelledby && !hasVisuallyHiddenText) {
+                        if (textContent === '' && !ariaLabel && !ariaLabelledby && !hasVisuallyHiddenText && !hasImgWithAlt) {
                             results.errors.push({
                                 err: 'ErrListitemEmpty',
                                 type: 'err',
@@ -564,13 +593,17 @@ async def test_lists(page: Page) -> dict[str, Any]:
 
                 // Check role="listitem" elements outside native lists
                 roleListitems.forEach(item => {
-                    const textContent = item.textContent.trim();
+                    // Same emptiness rules as native list items above: ignore
+                    // zero-width characters and honour img alt text.
+                    const textContent = item.textContent.replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').trim();
                     const ariaLabel = item.getAttribute('aria-label');
                     const ariaLabelledby = item.getAttribute('aria-labelledby');
                     const hasVisuallyHiddenText = item.querySelector('.visually-hidden, .sr-only, .screen-reader-only, [class*="sr-only"], [class*="visually-hidden"]');
+                    const hasImgWithAlt = Array.from(item.querySelectorAll('img'))
+                        .some(img => (img.getAttribute('alt') || '').trim() !== '');
 
                     // Check if item is empty or only whitespace
-                    if (textContent === '' && !ariaLabel && !ariaLabelledby && !hasVisuallyHiddenText) {
+                    if (textContent === '' && !ariaLabel && !ariaLabelledby && !hasVisuallyHiddenText && !hasImgWithAlt) {
                         results.errors.push({
                             err: 'ErrListitemEmpty',
                             type: 'err',

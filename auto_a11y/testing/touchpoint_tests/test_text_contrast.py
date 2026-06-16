@@ -418,7 +418,38 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
 
                 // Check if text overflows its container
                 // Returns { hasOverflow, containerXpath } or { hasOverflow: false }
+                //
+                // Two distinct overflow modes both leave some text on an undefined
+                // background where contrast cannot be verified:
+                //   (1) CONTENT overflow - the element's own text paints beyond its
+                //       border box because the overflowing axis is `visible` (e.g.
+                //       white-space:nowrap wider than the box, or a fixed height with
+                //       more lines). The coloured background stops at the box edge, so
+                //       the spilled text sits on whatever is behind the element.
+                //   (2) BOX overflow - the element's layout box itself extends beyond
+                //       its direct parent's box (negative margin, transform, absolute
+                //       positioning, ...).
                 function checkTextOverflow(element) {
+                    // (1) Content overflow. scrollW/H exceed clientW/H by more than a
+                    // rounding tolerance, but only counts on an axis whose overflow is
+                    // `visible` (overflow:hidden/clip/auto/scroll keep the text contained,
+                    // so it is not painted on an unknown background). Inline elements
+                    // report 0 for client/scroll metrics and are naturally excluded.
+                    const cs = window.getComputedStyle(element);
+                    const horizVisible = cs.overflowX === 'visible';
+                    const vertVisible = cs.overflowY === 'visible';
+                    const contentOverflow =
+                        (horizVisible && (element.scrollWidth - element.clientWidth) > 1) ||
+                        (vertVisible && (element.scrollHeight - element.clientHeight) > 1);
+
+                    if (contentOverflow) {
+                        return {
+                            hasOverflow: true,
+                            containerXpath: getXPath(element)
+                        };
+                    }
+
+                    // (2) Box overflow.
                     const elementRect = element.getBoundingClientRect();
                     let parent = element.parentElement;
 

@@ -492,6 +492,30 @@ async def test_focus_management(page: Page) -> dict[str, Any]:
                     }
                 });
                 
+                // Custom clickable elements (inline onclick) that fall outside the
+                // interactive selector above (e.g. a plain <div onclick> or <span
+                // onclick> without role/tabindex) still need the pointer-cursor
+                // affordance check: nothing else signals their clickability. Focus
+                // -indicator checks are NOT applied here - without tabindex these
+                // elements are not focusable, and that defect is reported separately
+                // by the event-handlers touchpoint.
+                Array.from(document.querySelectorAll('[onclick]')).forEach(element => {
+                    if (interactiveElements.includes(element)) return;
+                    const style = window.getComputedStyle(element);
+                    if (style.display === 'none' || style.visibility === 'hidden') return;
+                    if (style.cursor === 'pointer') return;
+                    results.warnings.push({
+                        err: 'WarnNoCursorPointer',
+                        type: 'warn',
+                        cat: 'focus_management',
+                        element: element.tagName.toLowerCase(),
+                        xpath: getFullXPath(element),
+                        html: element.outerHTML.substring(0, 200),
+                        description: 'Interactive element does not have pointer cursor on hover',
+                        text: element.textContent.trim().substring(0, 50)
+                    });
+                });
+
                 // Check in-page link targets
                 const anchorLinks = Array.from(document.querySelectorAll('a[href^="#"]:not([href="#"])'));
                 const processedTargets = new Set();

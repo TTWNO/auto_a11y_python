@@ -196,16 +196,19 @@ def merge_focus_styles(link_data: dict[str, Any], css_focus_rules: dict[str, Any
     
     element_id = link_data.get('elementId', '')
     class_name = link_data.get('className', '')
-    
-    selectors_to_check = ['a', '*']
-    
+    # Use the element's own tag so a bare `a:focus` rule is not applied to
+    # non-anchor links (e.g. span[role="link"]).
+    tag = str(link_data.get('tagName', 'a')).lower()
+
+    selectors_to_check = [tag, '*']
+
     if element_id:
-        selectors_to_check.extend([f'#{element_id}', f'a#{element_id}'])
-    
+        selectors_to_check.extend([f'#{element_id}', f'{tag}#{element_id}'])
+
     if class_name:
         for cls in class_name.split():
             if cls:
-                selectors_to_check.extend([f'.{cls}', f'a.{cls}'])
+                selectors_to_check.extend([f'.{cls}', f'{tag}.{cls}'])
     
     for selector in selectors_to_check:
         if selector in rules:
@@ -309,7 +312,9 @@ async def test_links(page: Page) -> dict[str, Any]:
                 return '';
             }
 
-            const allLinks = Array.from(document.querySelectorAll('a[href]'));
+            // Include ARIA links (role="link") - they behave as links for
+            // keyboard users and need the same focus-indicator guarantees.
+            const allLinks = Array.from(document.querySelectorAll('a[href], [role="link"]'));
 
             const visibleLinks = allLinks.filter(link => {
                 const style = window.getComputedStyle(link);
@@ -627,6 +632,29 @@ async def test_links(page: Page) -> dict[str, Any]:
             if not (has_outline or has_border or has_box_shadow):
                 error_code = 'ErrLinkImageNoFocusIndicator'
                 violation_reason = 'Image link has no visible focus indicator (must have outline, border, or box-shadow)'
+
+            elif has_outline and link.get('focusOutlineColor') and link.get('focusOutlineWidth'):
+                # An outline on an image link must still be thick enough and
+                # have sufficient contrast - an invisible outline is no better
+                # than no outline (image links cannot fall back to underline).
+                outline_width = parse_px(str(link.get('focusOutlineWidth', '0px')), font_size, root_font_size)
+
+                if outline_width > 0 and outline_width < 2.0:
+                    error_code = 'ErrLinkOutlineWidthInsufficient'
+                    violation_reason = f'Image link focus outline is too thin ({outline_width:.2f}px, needs ≥2px)'
+
+                elif not has_gradient:
+                    outline_color = parse_color(str(link.get('focusOutlineColor', '')))
+                    bg_color = parse_color(str(link.get('backgroundColor', '')))
+
+                    if outline_color['a'] < 0.5:
+                        error_code = 'WarnLinkTransparentOutline'
+                        violation_reason = f'Image link focus outline is semi-transparent (alpha={outline_color["a"]:.2f}) which may not provide sufficient visibility'
+                    else:
+                        contrast = get_contrast_ratio(outline_color, bg_color)
+                        if contrast < 3.0:
+                            error_code = 'ErrLinkFocusContrastFail'
+                            violation_reason = f'Image link focus outline has insufficient contrast ({contrast:.2f}:1, needs ≥3:1 per WCAG 1.4.11)'
 
         elif link.get('focusOutlineStyle') == 'none':
             has_box_shadow = link.get('focusBoxShadow') and link.get('focusBoxShadow') != 'none'

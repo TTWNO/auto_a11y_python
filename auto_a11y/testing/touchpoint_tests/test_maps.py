@@ -230,6 +230,11 @@ async def test_maps(page: Page) -> dict[str, Any]:
                 // ============================================================
 
                 function isInteractiveMap(element) {
+                    // Iframe map embeds (Google Maps embed, OpenStreetMap embed, etc.) are
+                    // interactive applications with zoom/pan controls, but their cross-origin
+                    // content cannot be queried from this document, so treat them as interactive.
+                    if (element.tagName === 'IFRAME') return true;
+
                     // Check for focusable elements within the map
                     const interactiveTags = ['button', 'a', 'input', 'select', 'textarea', 'video', 'audio'];
                     const interactiveRoles = ['button', 'link', 'checkbox', 'radio', 'slider', 'spinbutton',
@@ -273,7 +278,9 @@ async def test_maps(page: Page) -> dict[str, Any]:
                         const ariaLabel = element.getAttribute('aria-label');
                         const ariaLabelledby = element.getAttribute('aria-labelledby');
 
-                        if (title) {
+                        // A whitespace-only title provides no accessible name, so it must
+                        // fall through to the missing-name checks, not the generic-name check.
+                        if (title && title.trim()) {
                             result.hasName = true;
                             result.name = title;
                             result.source = 'title';

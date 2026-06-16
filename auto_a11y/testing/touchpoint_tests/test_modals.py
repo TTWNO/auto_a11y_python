@@ -182,6 +182,12 @@ async def test_modals(page: Page) -> dict[str, Any]:
                     );
 
                     interactiveElements.forEach(element => {
+                        // A close control hidden by its OWN display:none is not a usable close
+                        // mechanism. `display` does not inherit, so getComputedStyle reflects the
+                        // element's own value even while the modal itself is display:none (closed),
+                        // avoiding false positives on every closed modal.
+                        if (window.getComputedStyle(element).display === 'none') return;
+
                         const text = element.textContent.trim().toLowerCase();
                         const ariaLabel = element.getAttribute('aria-label')?.toLowerCase();
                         const title = element.getAttribute('title')?.toLowerCase();

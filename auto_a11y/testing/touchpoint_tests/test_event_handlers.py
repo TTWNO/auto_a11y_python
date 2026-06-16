@@ -556,9 +556,13 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     return path;
                 }
                 function isIntrinsicInteractive(element) {
-                    const interactiveTags = ['a', 'button', 'input', 'select', 'textarea', 'details', 'summary'];
+                    const interactiveTags = ['button', 'input', 'select', 'textarea', 'details', 'summary'];
                     const interactiveRoles = ['button', 'link', 'menuitem', 'tab', 'checkbox', 'radio', 'switch'];
-                    return interactiveTags.includes(element.tagName.toLowerCase()) ||
+                    const tag = element.tagName.toLowerCase();
+                    // An <a> without href is not focusable or keyboard-operable, so it
+                    // is NOT intrinsically interactive (a fake button needing checks).
+                    if (tag === 'a') return element.hasAttribute('href');
+                    return interactiveTags.includes(tag) ||
                            (element.getAttribute('role') &&
                             interactiveRoles.includes(element.getAttribute('role')));
                 }

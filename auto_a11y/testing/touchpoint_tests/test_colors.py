@@ -276,13 +276,16 @@ async def test_colors(page: Page) -> dict[str, Any]:
                 }
                 
                 // Add warning for missing high contrast support
+                // Page-level warnings are anchored on <body> (the conventional
+                // node for page-scoped issues) so per-element fixture
+                // annotations on <body> can match by node identity.
                 if (!hasContrastSupport) {
                     results.warnings.push({
                         err: 'WarnNoContrastSupport',
                         type: 'warn',
                         cat: 'colors',
                         element: 'page',
-                        xpath: '/html',
+                        xpath: getFullXPath(document.body),
                         html: '<page>',
                         description: 'Page lacks prefers-contrast media query support for high contrast preferences, failing to support users who require high contrast mode'
                     });
@@ -294,7 +297,7 @@ async def test_colors(page: Page) -> dict[str, Any]:
                         type: 'warn',
                         cat: 'colors',
                         element: 'page',
-                        xpath: '/html',
+                        xpath: getFullXPath(document.body),
                         html: '<page>',
                         description: 'Page lacks prefers-color-scheme media query support for dark/light mode preferences, failing to support users who require dark mode or other color scheme preferences'
                     });

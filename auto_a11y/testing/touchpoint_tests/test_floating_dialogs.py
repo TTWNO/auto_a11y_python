@@ -727,7 +727,9 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
                         });
                     }
                     
-                    if (!ariaLabelledby) {
+                    // An empty or whitespace-only aria-labelledby references nothing,
+                    // so it is equivalent to the attribute being absent.
+                    if (!ariaLabelledby || !ariaLabelledby.trim()) {
                         results.warnings.push({
                             err: 'WarnMissingAriaLabelledby',
                             type: 'warn',

@@ -541,11 +541,17 @@ async def test_buttons(page: Page) -> dict[str, Any]:
             darker = min(lum1, lum2)
             return (lighter + 0.05) / (darker + 0.05)
 
-        # Helper to detect gradient backgrounds
+        # Helper to detect gradient backgrounds. Matches CSS gradient functions
+        # only: the bare word "gradient" can also appear inside SVG data: URIs
+        # (e.g. <linearGradient>), which are image backgrounds, not CSS gradients.
         def has_gradient_background(bg_str: str | None) -> bool:
             if not bg_str:
                 return False
-            return 'gradient' in bg_str.lower()
+            return re.search(
+                r'(?:repeating-)?(?:linear|radial|conic)-gradient\(',
+                bg_str,
+                re.IGNORECASE,
+            ) is not None
 
         # Helper to detect image backgrounds
         def has_image_background(bg_str: str | None) -> bool:

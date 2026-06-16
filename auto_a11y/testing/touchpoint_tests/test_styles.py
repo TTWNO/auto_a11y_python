@@ -149,6 +149,19 @@ async def test_styles(page: Page) -> dict[str, Any]:
                     'font-synthesis'
                 ];
 
+                // Shorthand properties that only set a colour when their value
+                // embeds an explicit colour literal (`border: 1px solid red`).
+                // Presence alone is not enough: `border: 1px solid` or
+                // `border: none` set no colour, so these are checked by value.
+                const colorShorthandProperties = [
+                    'border',
+                    'border-top',
+                    'border-right',
+                    'border-bottom',
+                    'border-left',
+                    'outline'
+                ];
+
                 // Color-related CSS properties whose values we inspect to decide
                 // whether an *explicit* colour literal is hard-coded (as opposed
                 // to a var()/inherit/currentColor reference).
@@ -305,6 +318,21 @@ async def test_styles(page: Page) -> dict[str, Any]:
                             const regex = new RegExp(`(^|;|\\s)${prop}\\s*:`, 'i');
                             return regex.test(styleLower);
                         });
+                    }
+
+                    // Border/outline shorthands hard-code a colour only when the
+                    // declaration value contains an explicit colour literal.
+                    if (!hasColor) {
+                        for (const decl of styleAttr.split(';')) {
+                            const colonIdx = decl.indexOf(':');
+                            if (colonIdx < 0) continue;
+                            const prop = decl.substring(0, colonIdx).trim().toLowerCase();
+                            if (colorShorthandProperties.includes(prop) &&
+                                hasExplicitColorValue(decl.substring(colonIdx + 1))) {
+                                hasColor = true;
+                                break;
+                            }
+                        }
                     }
 
                     if (hasColor || hasFont) {

@@ -613,7 +613,10 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                         case 'aside': return 'complementary';
                         case 'form': return 'form';
                         case 'search': return 'search';
-                        case 'section': return null; // section is only a region when labelled
+                        case 'section':
+                            // A <section> is a region landmark only when it has an accessible
+                            // name (aria-label/aria-labelledby); otherwise it is generic.
+                            return (el.hasAttribute('aria-label') || el.hasAttribute('aria-labelledby')) ? 'region' : null;
                         default: return null;
                     }
                 }
@@ -1221,12 +1224,17 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                             const refIds = labelledByTrimmed.split(/\s+/);
                             let labelTexts = [];
                             let hasError = false;
+                            let sawBlankRef = false;
 
                             refIds.forEach(refId => {
                                 const labelElement = document.getElementById(refId);
 
                                 if (labelElement) {
-                                    const elementText = labelElement.textContent.trim();
+                                    // Strip zero-width / invisible characters that trim() leaves
+                                    // behind (U+200B/C/D, word joiner, BOM) so an invisible-character
+                                    // label resolves to an empty accessible name.
+                                    const elementText = labelElement.textContent
+                                        .replace(/[​‌‍⁠﻿]/g, '').trim();
 
                                     // Check if element is hidden
                                     const computedStyle = window.getComputedStyle(labelElement);
@@ -1251,20 +1259,10 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                                         results.elements_failed++;
                                         hasError = true;
                                     } else if (!elementText) {
-                                        // ERROR: aria-labelledby references blank/empty element
-                                        results.errors.push({
-                                            err: 'ErrFormAriaLabelledByIsBlank',
-                                            type: 'err',
-                                            cat: 'landmarks',
-                                            element: element.tagName.toLowerCase(),
-                                            xpath: getFullXPath(element),
-                                            html: element.outerHTML.substring(0, 200),
-                                            description: `Form aria-labelledby references blank or empty element (id="${refId}")`,
-                                            referencedId: refId,
-                                            referencedElement: labelElement.tagName
-                                        });
-                                        results.elements_failed++;
-                                        hasError = true;
+                                        // Visible but empty reference. Defer judgement: flag the
+                                        // form only if the ENTIRE resolved name turns out blank
+                                        // (an empty ref alongside text-bearing siblings is fine).
+                                        sawBlankRef = true;
                                     } else {
                                         labelTexts.push(elementText);
                                     }
@@ -1284,6 +1282,22 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                                     hasError = true;
                                 }
                             });
+
+                            // The resolved accessible name is the concatenation of the text-
+                            // bearing references. Flag it blank only when NONE contributed text.
+                            if (sawBlankRef && labelTexts.length === 0 && !hasError) {
+                                results.errors.push({
+                                    err: 'ErrFormAriaLabelledByIsBlank',
+                                    type: 'err',
+                                    cat: 'landmarks',
+                                    element: element.tagName.toLowerCase(),
+                                    xpath: getFullXPath(element),
+                                    html: element.outerHTML.substring(0, 200),
+                                    description: 'Form aria-labelledby resolves to a blank or empty accessible name'
+                                });
+                                results.elements_failed++;
+                                hasError = true;
+                            }
 
                             // Only consider it as having an accessible name if we found at least one valid label
                             if (labelTexts.length > 0 && !hasError) {

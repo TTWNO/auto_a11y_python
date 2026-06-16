@@ -15,7 +15,7 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from datetime import datetime, timedelta
 import uuid
 import time
@@ -146,34 +146,57 @@ class FixtureTestRunner:
             return None
     
     def extract_fixture_metadata(self, fixture_path: Path) -> dict[str, Any]:
-        """Extract test metadata from fixture HTML file"""
+        """Extract test metadata from fixture HTML file.
+
+        A present-but-unparseable ``test-metadata`` block is logged at WARNING (not
+        silently swallowed): otherwise a corrupted block would make an opt-in fixture
+        quietly fall back to the whole-file check and "pass" without real enforcement.
+        """
+        import re
+        import json
         try:
             with open(fixture_path, 'r', encoding='utf-8') as f:
                 content = f.read()
+        except OSError as e:
+            logger.debug(f"Could not read {fixture_path}: {e}")
+            return {}
 
-            # Look for test-metadata JSON in the HTML
-            import re
-            import json
-            pattern = r'<script[^>]*id=["\']test-metadata["\'][^>]*>\s*(\{.*?\})\s*</script>'
-            match = re.search(pattern, content, re.DOTALL)
+        pattern = r'<script[^>]*id=["\']test-metadata["\'][^>]*>\s*(\{.*?\})\s*</script>'
+        match = re.search(pattern, content, re.DOTALL)
+        if not match:
+            return {}
+        try:
+            parsed: dict[str, Any] = json.loads(match.group(1))
+            return parsed
+        except json.JSONDecodeError as e:
+            msg = f"test-metadata block in {fixture_path} is present but is not valid JSON ({e})"
+            logger.warning(f"{msg}; fixture will fall back to the whole-file check. Fix the JSON.")
+            return {}
 
-            if match:
-                metadata_str = match.group(1)
-                parsed: dict[str, Any] = json.loads(metadata_str)
-                return parsed
-        except Exception as e:
-            logger.debug(f"Could not extract metadata from {fixture_path}: {e}")
+    @staticmethod
+    def _bare_code(issue_id: str) -> str | None:
+        """Strip any touchpoint namespace from an issue id, returning the bare code.
 
-        return {}
+        Issue ids may be namespaced (e.g. ``forms_ErrNoLabel`` or
+        ``colors_contrast_ErrPartialTextContrastAA``); the bare code is the suffix
+        starting at the first ``Err``/``Warn``/``Info``/``Disco``/``AI`` segment.
+        Returns ``None`` for an id that contains a namespace separator but no such
+        segment (so callers can skip it rather than match a malformed code).
+        """
+        if '_' in issue_id:
+            id_parts = issue_id.split('_')
+            for idx, part in enumerate(id_parts):
+                if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
+                    return '_'.join(id_parts[idx:])
+            return None
+        return issue_id
 
     @staticmethod
     def _extract_found_codes(test_result: TestResult) -> list[str]:
         """Collect the de-duplicated set of issue codes a test run surfaced.
 
-        Issue ids may be namespaced (e.g. ``forms_ErrNoLabel``); the bare code is
-        the suffix starting at the first ``Err``/``Warn``/``Info``/``Disco``/``AI``
-        segment. Shared by the in-loop retry check and the post-loop result so both
-        agree on what "found" means.
+        Shared by the in-loop retry check and the post-loop result so both agree on
+        what "found" means.
         """
         all_issues: list[str] = []
         violation_lists: list[list[Violation]] = [
@@ -184,16 +207,159 @@ class FixtureTestRunner:
         ]
         for violation_list in violation_lists:
             for item in violation_list:
-                issue_id: str = item.id
-                if '_' in issue_id:
-                    id_parts: list[str] = issue_id.split('_')
-                    for idx, part in enumerate(id_parts):
-                        if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
-                            all_issues.append('_'.join(id_parts[idx:]))
-                            break
-                else:
-                    all_issues.append(issue_id)
+                bare = FixtureTestRunner._bare_code(item.id)
+                if bare is not None:
+                    all_issues.append(bare)
         return list(set(all_issues))
+
+    @staticmethod
+    def _emitted_issues(test_result: TestResult) -> list[tuple[str, str, str | None]]:
+        """Flatten a TestResult into ``(bare_code, kind, xpath)`` tuples.
+
+        ``kind`` is one of ``violation``/``warning``/``info``/``discovery`` so it can be
+        compared directly against the ``data-expected-*`` annotation kind. Issues whose
+        id has no recognisable bare code are dropped.
+        """
+        emitted: list[tuple[str, str, str | None]] = []
+        lists: list[tuple[list[Violation], str]] = [
+            (test_result.violations, 'violation'),
+            (test_result.warnings, 'warning'),
+            (test_result.info, 'info'),
+            (test_result.discovery, 'discovery'),
+        ]
+        for violation_list, kind in lists:
+            for item in violation_list:
+                bare = FixtureTestRunner._bare_code(item.id)
+                if bare is not None:
+                    emitted.append((bare, kind, item.xpath))
+        return emitted
+
+    # Browser-side evaluator. Different touchpoint tests emit xpaths in DIFFERENT formats
+    # (the contrast test uses an id short-circuit + index-free /html/body; forms/landmarks
+    # emit plain absolute paths). Comparing xpath strings is therefore unreliable across
+    # touchpoints. Instead we resolve every emitted xpath to a real DOM node with
+    # document.evaluate and compare by NODE IDENTITY against the annotated elements — any
+    # valid xpath format resolves to the same node, so the match is format-agnostic.
+    _EVAL_JS = r"""
+    (arg) => {
+        const emitted = arg.emitted;   // [[bareCode, xpath], ...]
+        const target = arg.target;     // fixture's filename-derived code
+
+        function reportXPath(el) {
+            // Readable absolute path for diagnostics only (not used for matching).
+            if (el === document.documentElement) return '/html';
+            if (!el.parentElement) return '/' + el.tagName.toLowerCase();
+            let ix = 1, sib = el.previousElementSibling;
+            while (sib) { if (sib.tagName === el.tagName) ix++; sib = sib.previousElementSibling; }
+            return reportXPath(el.parentElement) + '/' + el.tagName.toLowerCase() + '[' + ix + ']';
+        }
+
+        function resolveNode(xpath) {
+            let node = null;
+            try {
+                node = document.evaluate(xpath, document, null,
+                    XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            } catch (e) { node = null; }
+            if (node) return node;
+            // Fallback for namespaced (SVG / MathML) elements: an unprefixed element step
+            // like `svg[1]` does not match an SVG-namespaced node under document.evaluate,
+            // so rewrite each element step to a namespace-agnostic local-name() test.
+            try {
+                const nsless = xpath.replace(/\/([A-Za-z][\w-]*)(\[\d+\])?/g,
+                    (m, tag, idx) => "/*[local-name()='" + tag + "']" + (idx || ''));
+                if (nsless !== xpath) {
+                    node = document.evaluate(nsless, document, null,
+                        XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+                }
+            } catch (e) { node = null; }
+            return node;
+        }
+
+        // Map each DOM node to the set of bare codes the engine emitted on it.
+        const codesByNode = new Map();
+        for (const pair of emitted) {
+            const code = pair[0], xpath = pair[1];
+            if (!xpath) continue;
+            const node = resolveNode(xpath);
+            if (node) {
+                if (!codesByNode.has(node)) codesByNode.set(node, new Set());
+                codesByNode.get(node).add(code);
+            }
+        }
+
+        const out = [];
+        const sel = '[data-expected-violation="true"],[data-expected-warning="true"],'
+                  + '[data-expected-discovery="true"],[data-expected-info="true"],[data-expected-pass="true"]';
+        document.querySelectorAll(sel).forEach(el => {
+            const codes = codesByNode.get(el) || new Set();
+            const checks = [];
+            if (el.getAttribute('data-expected-violation') === 'true') checks.push(['violation', el.getAttribute('data-violation-id')]);
+            if (el.getAttribute('data-expected-warning') === 'true') checks.push(['warning', el.getAttribute('data-warning-id')]);
+            if (el.getAttribute('data-expected-discovery') === 'true') checks.push(['discovery', el.getAttribute('data-discovery-id')]);
+            if (el.getAttribute('data-expected-info') === 'true') checks.push(['info', el.getAttribute('data-info-id')]);
+            if (el.getAttribute('data-expected-pass') === 'true') checks.push(['pass', el.getAttribute('data-pass-id')]);
+            for (const c of checks) {
+                const kind = c[0];
+                const want = c[1] || target;
+                const present = codes.has(want);
+                const ok = (kind === 'pass') ? !present : present;
+                out.push({kind: kind, code: want, ok: ok, xpath: reportXPath(el), emitted: Array.from(codes)});
+            }
+        });
+        return out;
+    }
+    """
+
+    async def evaluate_element_expectations(
+        self,
+        fixture_path: Path,
+        emitted: list[tuple[str, str, str | None]],
+        fixture_target_code: str,
+    ) -> tuple[bool, list[str]]:
+        """Scoped-strict per-element enforcement, matched by DOM node identity.
+
+        Loads the fixture, resolves every emitted xpath to a node, and for each
+        ``data-expected-*`` element checks that the engine emitted (violation/warning/
+        discovery) — or did NOT emit (pass) — its declared code on that same node. Other
+        codes on unannotated elements are ignored. Returns ``(all_ok, notes)``.
+        """
+        from playwright.async_api import async_playwright
+
+        pairs = [[code, xpath] for code, _, xpath in emitted if xpath]
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page()
+                await page.goto(f"file://{fixture_path.absolute()}")
+                raw = cast(
+                    list[dict[str, object]],
+                    await page.evaluate(self._EVAL_JS, {"emitted": pairs, "target": fixture_target_code}),
+                )
+            finally:
+                await browser.close()
+
+        notes: list[str] = []
+        all_ok = True
+        for entry in raw:
+            kind = entry.get('kind')
+            code = entry.get('code')
+            ok = entry.get('ok')
+            xpath = entry.get('xpath')
+            kind_s = kind if isinstance(kind, str) else '?'
+            code_s = code if isinstance(code, str) else '?'
+            xpath_s = xpath if isinstance(xpath, str) else '?'
+            if ok:
+                if kind_s == 'pass':
+                    notes.append(f"  ✅ pass: {code_s} correctly absent @ {xpath_s}")
+                else:
+                    notes.append(f"  ✅ {kind_s}: {code_s} @ {xpath_s}")
+            else:
+                all_ok = False
+                if kind_s == 'pass':
+                    notes.append(f"  ❌ pass: {code_s} should NOT be emitted @ {xpath_s}")
+                else:
+                    notes.append(f"  ❌ {kind_s}: expected {code_s} @ {xpath_s} — not emitted")
+        return all_ok, notes
 
     async def test_fixture(self, fixture_path: Path, expected_code: str, fixture_num: int, total_fixtures: int) -> dict[str, Any]:
         """Test a single fixture file"""
@@ -368,8 +534,30 @@ class FixtureTestRunner:
 
                 # Check success based on whether this is a negative test
                 code_found = expected_code in result["found_codes"]
+                enforce_elements = bool(metadata.get('enforceElementExpectations'))
 
-                if is_negative_test:
+                if enforce_elements:
+                    # Opt-in per-element enforcement governs success: each data-expected-*
+                    # annotated element must emit (or correctly withhold) its declared code
+                    # at its own xpath. This supersedes the whole-file binary check, which
+                    # passes as soon as ONE element emits the code and so cannot tell whether
+                    # every demonstrated case is actually detected.
+                    emitted = self._emitted_issues(test_result)
+                    enforce_ok, enforce_notes = await self.evaluate_element_expectations(
+                        fixture_path, emitted, expected_code
+                    )
+                    result["success"] = enforce_ok
+                    print(f"   🔬 Per-element enforcement ({len(enforce_notes)} annotations):")
+                    for line in enforce_notes:
+                        print(line)
+                    verdict = '✅ Per-element enforcement passed' if enforce_ok else '❌ Per-element enforcement failed'
+                    print(f"   {verdict}")
+                    enforce_verdict = 'PASS' if enforce_ok else 'FAIL'
+                    notes.append(
+                        f"Per-element enforcement: {enforce_verdict} ({len(enforce_notes)} annotations)"
+                    )
+                    notes.extend(enforce_notes)
+                elif is_negative_test:
                     # Negative test: success if code is NOT found
                     if not code_found:
                         result["success"] = True
@@ -740,7 +928,15 @@ async def main() -> None:
             print(f"❌ Fixture not found: {args.fixture}")
             sys.exit(1)
         
-        expected_code = fixture_path.stem
+        # Derive the expected code the same way the bulk run does (strip the
+        # _NNN_description suffix); the raw stem made --fixture disagree with
+        # bulk mode for every suffixed file.
+        stem_parts: list[str] = []
+        for part in fixture_path.stem.split('_'):
+            if part.isdigit():
+                break
+            stem_parts.append(part)
+        expected_code = '_'.join(stem_parts) if stem_parts else fixture_path.stem
         result = await runner.test_fixture(fixture_path, expected_code, 1, 1)
         
         if result["success"]:

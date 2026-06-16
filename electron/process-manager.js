@@ -6,6 +6,17 @@ const http = require('http');
 const { app } = require('electron');
 const log = require('electron-log');
 
+// How long to wait for Flask's /health before giving up. The bundled
+// app imports a large dependency graph (Flask + reporting + the audio
+// pipeline's torch/pyannote stack) under an embedded Python, and on the
+// FIRST launch macOS Gatekeeper also scans the freshly de-quarantined
+// resources. Observed cold-start to "Serving Flask app" is ~30-32s even
+// when warm; the old 30s budget timed out 2-3s before Flask was ready
+// and surfaced a spurious "failed to start". 120s leaves comfortable
+// headroom for a cold first launch without masking a genuine hang
+// (MongoDB is already verified up before we get here).
+const FLASK_HEALTH_TIMEOUT_MS = 120000;
+
 class ProcessManager {
   constructor(settingsManager) {
     this.settings = settingsManager;
@@ -82,7 +93,17 @@ class ProcessManager {
           res.on('end', () => {
             try {
               const data = JSON.parse(body);
-              if (data.status === 'healthy') {
+              // 'healthy'  → the full app is up.
+              // 'recovery' → Settings Recovery mode: a required preflight
+              //   check failed, so Flask is serving ONLY the recovery
+              //   page (and answers /health with 503 + status 'recovery').
+              //   That still means the server is up and reachable, so we
+              //   resolve and let the window open — it lands on /recovery/
+              //   where the user can fix the configuration. Treating it as
+              //   "not ready" would poll until timeout and surface a dead
+              //   "failed to start" dialog, leaving the recovery UI
+              //   permanently unreachable.
+              if (data.status === 'healthy' || data.status === 'recovery') {
                 resolve(data);
               } else {
                 setTimeout(check, intervalMs);
@@ -293,11 +314,21 @@ class ProcessManager {
       }
     });
 
-    // Poll /health until ready
+    // Poll /health until ready. Recovery mode counts as "up" (the server
+    // is serving the recovery page); see pollUrl.
     const healthUrl = `http://127.0.0.1:${port}/health`;
     onProgress && onProgress('Waiting for server...');
-    await this.pollUrl(healthUrl, 30000);
-    log.info(`Flask is ready on port ${port}`);
+    const health = await this.pollUrl(healthUrl, FLASK_HEALTH_TIMEOUT_MS);
+    if (health && health.status === 'recovery') {
+      log.warn(
+        `Flask started in Settings Recovery mode on port ${port} — a required ` +
+        `check failed (e.g. MongoDB unreachable or ffmpeg/ffprobe missing). ` +
+        `Opening the recovery page so the user can fix the configuration.`
+      );
+      onProgress && onProgress('Configuration needed — opening settings...');
+    } else {
+      log.info(`Flask is ready on port ${port}`);
+    }
   }
 
   /**

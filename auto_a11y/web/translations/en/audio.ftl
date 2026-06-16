@@ -50,6 +50,7 @@ audio-error-invalid-mp4                 = Not a valid video file.
 audio-error-no-project                  = Project is required.
 audio-error-no-project-access           = You do not have access to this project.
 audio-error-runner-not-configured       = Video runner is not configured on the server.
+audio-error-keys-not-configured         = Can't start processing — these API keys are not configured: { $keys }. Add them in Settings, then try again.
 audio-error-already-processing          = This recording is not in the uploaded state and cannot be processed.
 
 # === Pipeline stage labels ===

@@ -840,6 +840,18 @@ def process_recording(recording_id: str) -> Response | WerkzeugResponse:
         flash(ftl('audio-error-runner-not-configured'), 'danger')
         return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
+    # Refuse to start a run that can only fail: the pipeline needs the
+    # Deepgram (transcription) and Anthropic (analysis) API keys. Without
+    # them the SDKs build an empty ``Token`` auth header and die deep in
+    # httpx; surface an actionable message up front instead.
+    missing_keys = runner.missing_api_keys()
+    if missing_keys:
+        flash(
+            ftl('audio-error-keys-not-configured', keys=', '.join(missing_keys)),
+            'danger',
+        )
+        return redirect(url_for('recordings.view_recording', recording_id=recording_id))
+
     recording.status = 'processing'
     recording.started_at = datetime.now()
     get_db().update_recording(recording)

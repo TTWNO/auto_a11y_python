@@ -29,3 +29,21 @@ class AudioConfig:
             huggingface_token=os.environ.get("HF_TOKEN") or None,
             data_dir=Path(os.environ.get("AUTO_A11Y_DATA_DIR", "data")),
         )
+
+    def missing_api_keys(self) -> list[str]:
+        """Human-readable names of the API keys required to process a recording.
+
+        An end-to-end run needs both Deepgram (transcription) and
+        Anthropic (analysis). A blank/whitespace key is treated as
+        missing because the SDKs would otherwise build an empty
+        ``Authorization: Token`` header and fail deep in the HTTP client
+        with a cryptic ``Illegal header value`` instead of a clear
+        "configure your key" message. Returns the unconfigured services in
+        pipeline order (Deepgram before Anthropic); empty when both are set.
+        """
+        missing: list[str] = []
+        if not self.deepgram_api_key.strip():
+            missing.append("Deepgram")
+        if not self.anthropic_api_key.strip():
+            missing.append("Anthropic")
+        return missing

@@ -99,6 +99,86 @@ def test_runner_happy_path_sets_status_complete(slot: AllocatedSlot, tmp_path: P
     assert db.update_recording.call_count >= 2
 
 
+def test_missing_api_keys_reports_both_when_unset(tmp_path: Path) -> None:
+    """Both services are reported when neither key is configured."""
+    config = AudioConfig(
+        deepgram_api_key="",
+        anthropic_api_key="",
+        claude_model="claude-opus-4-7",
+        deepgram_model="nova-3",
+        huggingface_token=None,
+        data_dir=tmp_path,
+    )
+    assert config.missing_api_keys() == ["Deepgram", "Anthropic"]
+
+
+def test_missing_api_keys_empty_when_both_set(tmp_path: Path) -> None:
+    """Nothing is reported when both keys are present."""
+    assert _make_audio_config(tmp_path).missing_api_keys() == []
+
+
+def test_missing_api_keys_treats_blank_as_unset(tmp_path: Path) -> None:
+    """A whitespace-only key counts as missing (it would yield ``Token``)."""
+    config = AudioConfig(
+        deepgram_api_key="   ",
+        anthropic_api_key="an-key",
+        claude_model="claude-opus-4-7",
+        deepgram_model="nova-3",
+        huggingface_token=None,
+        data_dir=tmp_path,
+    )
+    assert config.missing_api_keys() == ["Deepgram"]
+
+
+def test_runner_fails_fast_when_api_keys_missing(slot: AllocatedSlot, tmp_path: Path) -> None:
+    """Empty API keys → recording marked failed with a clear message; pipeline never runs.
+
+    Regression test for the cryptic ``Illegal header value b'Token '``
+    Deepgram crash: with no key the SDK built an empty ``Token`` auth
+    header and failed deep in httpx after 3 retries. The runner must
+    instead bail before building any client and record an actionable
+    failure naming the unconfigured services.
+    """
+    from auto_a11y.audio.errors import ConfigurationError
+
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+
+    db = MagicMock()
+    db.get_recording_by_recording_id.return_value = rec
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = AudioConfig(
+        deepgram_api_key="",
+        anthropic_api_key="",
+        claude_model="claude-opus-4-7",
+        deepgram_model="nova-3",
+        huggingface_token=None,
+        data_dir=tmp_path,
+    )
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    with patch("auto_a11y.audio.runner._make_anthropic_client") as anthropic_mock, \
+         patch("auto_a11y.audio.runner._make_deepgram_client") as deepgram_mock, \
+         patch("auto_a11y.audio.runner.run_pipeline") as pipeline_mock:
+        with pytest.raises(ConfigurationError):
+            asyncio.run(runner.run(recording_id))
+
+    # We bail before building clients or entering the pipeline.
+    anthropic_mock.assert_not_called()
+    deepgram_mock.assert_not_called()
+    pipeline_mock.assert_not_called()
+    # The recording is recorded as failed with an actionable message.
+    assert rec.status == "failed"
+    assert rec.error_message is not None
+    assert "Deepgram" in rec.error_message
+    assert "Anthropic" in rec.error_message
+    assert rec.finished_at is not None
+
+
 def test_runner_cancellation_sets_status_cancelled(slot: AllocatedSlot, tmp_path: Path) -> None:
     """A cancel-flag set out-of-band unwinds to status='cancelled'.
 

@@ -50,6 +50,7 @@ audio-error-invalid-mp4                 = Le fichier n'est pas une vidéo valide
 audio-error-no-project                  = Le projet est obligatoire.
 audio-error-no-project-access           = Vous n'avez pas accès à ce projet.
 audio-error-runner-not-configured       = Le processus vidéo n'est pas configuré sur le serveur.
+audio-error-keys-not-configured         = Impossible de démarrer le traitement — ces clés API ne sont pas configurées : { $keys }. Ajoutez-les dans les paramètres, puis réessayez.
 audio-error-already-processing          = Cet enregistrement n'est pas à l'état « téléversé » et ne peut pas être traité.
 
 # === Étiquettes d'étape du pipeline ===

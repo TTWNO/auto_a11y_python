@@ -273,6 +273,39 @@ def test_process_endpoint_flips_status_and_submits_job(
     submit_task.assert_called_once()
 
 
+def test_process_endpoint_refuses_when_api_keys_missing(
+    client: FlaskClient,
+    mock_db: MagicMock,
+    mock_video_runner: MagicMock,
+) -> None:
+    """No Deepgram/Anthropic key → refuse to start: no status flip, no job.
+
+    Regression test for the Mac colleague's failure: with no API keys the
+    pipeline used to start and die at transcription with a cryptic
+    ``Illegal header value b'Token '``. The process route must instead
+    refuse up front and tell the user to configure their keys.
+    """
+    rec = _make_recording_mock(status='uploaded')
+    mock_db.get_recording.return_value = rec
+    mock_video_runner.missing_api_keys.return_value = ['Deepgram', 'Anthropic']
+
+    with patch(
+        'auto_a11y.web.routes.recordings.task_runner.submit_task',
+    ) as submit_task, patch(
+        'auto_a11y.web.routes.recordings.JobManager'
+    ) as job_manager_cls:
+        resp = client.post(f'/recordings/{rec.id}/process')
+
+    # Redirect back to the detail page with a flashed error.
+    assert resp.status_code == 302
+    assert f'/recordings/{rec.id}' in resp.headers['Location']
+    # Crucially: nothing was started.
+    assert rec.status == 'uploaded'
+    assert not mock_db.update_recording.called
+    assert not job_manager_cls.get_instance.called
+    submit_task.assert_not_called()
+
+
 def test_process_endpoint_rejects_non_uploaded_status(
     client: FlaskClient,
     mock_db: MagicMock,

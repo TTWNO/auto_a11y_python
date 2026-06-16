@@ -18,6 +18,15 @@ class FfmpegMissing(AudioPipelineError):
         self.searched = searched
 
 
+class ConfigurationError(AudioPipelineError):
+    """A required API key (Deepgram / Anthropic) is missing or blank.
+
+    Raised before any network call so a fresh install with no keys fails
+    fast with an actionable message instead of a cryptic
+    ``Illegal header value b'Token '`` from the HTTP client.
+    """
+
+
 class TranscriptionError(AudioPipelineError):
     """Wraps Deepgram failures after retries are exhausted."""
 

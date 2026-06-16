@@ -250,6 +250,9 @@ def mock_video_runner(app: Flask) -> Iterator[MagicMock]:
     """
     from auto_a11y.audio.runner import VideoRunner
     runner = MagicMock(spec=VideoRunner)
+    # Default to "all keys configured" so the process route's preflight
+    # guard is a no-op; the missing-keys test overrides this per-case.
+    runner.missing_api_keys.return_value = []
     setattr(app, 'video_runner', runner)
     yield runner
 

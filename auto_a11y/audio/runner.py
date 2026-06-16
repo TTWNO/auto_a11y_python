@@ -31,7 +31,7 @@ from datetime import datetime
 from auto_a11y.audio import __version__
 from auto_a11y.audio.analysis import Analyzer
 from auto_a11y.audio.config import AudioConfig
-from auto_a11y.audio.errors import CalloutsError
+from auto_a11y.audio.errors import CalloutsError, ConfigurationError
 from auto_a11y.audio.pipeline import PipelineConfig, run_pipeline
 from auto_a11y.audio.storage import AudioStorage
 from auto_a11y.audio.transcription import Transcriber
@@ -85,6 +85,14 @@ class VideoRunner:
         self._storage = storage
         self._config = config
 
+    def missing_api_keys(self) -> list[str]:
+        """Names of required API keys not configured (delegates to config).
+
+        The web layer calls this before submitting a job so it can refuse
+        to start a run that would only fail at transcription time.
+        """
+        return self._config.missing_api_keys()
+
     async def run(self, recording_id: str) -> None:
         """Process the Recording with ``recording_id`` end-to-end.
 
@@ -103,6 +111,29 @@ class VideoRunner:
             logger.error("VideoRunner: no Recording for id %s", recording_id)
             return
         slot = self._storage.get(recording_id)
+
+        # Fail fast on missing API keys: build no client and start no
+        # network call. An empty key would otherwise produce a cryptic
+        # ``Illegal header value b'Token '`` deep in httpx after 3 retries
+        # (see config.missing_api_keys). Record an actionable failure the
+        # detail page can show instead.
+        missing = self._config.missing_api_keys()
+        if missing:
+            joined = " and ".join(missing)
+            plural = len(missing) > 1
+            msg = (
+                f"{joined} API key{'s' if plural else ''} "
+                f"{'are' if plural else 'is'} not configured. Add "
+                f"{'them' if plural else 'it'} in Settings to process recordings."
+            )
+            logger.error(
+                "VideoRunner: %s (recording %s)", msg, recording_id
+            )
+            rec.status = "failed"
+            rec.error_message = msg
+            rec.finished_at = datetime.now()
+            self._db.update_recording(rec)
+            raise ConfigurationError(msg)
 
         anthropic_client = _make_anthropic_client(self._config.anthropic_api_key)
         deepgram_client = _make_deepgram_client(self._config.deepgram_api_key)

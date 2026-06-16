@@ -3,9 +3,9 @@
 
 # === Formulaire de téléversement ===
 audio-upload-heading                    = Téléverser une vidéo d'audit
-audio-upload-intro                      = Téléversez une vidéo MP4 d'un audit d'accessibilité manuel. Le pipeline extraira l'audio, le transcrira, identifiera les intervenants, exécutera l'analyse de Claude et importera les résultats sous forme de problèmes d'enregistrement.
-audio-upload-file-label                 = Fichier vidéo (MP4)
-audio-upload-file-help                  = Sélectionnez le MP4 de la session d'audit. Maximum { $max } Mo.
+audio-upload-intro                      = Téléversez une vidéo d'un audit d'accessibilité manuel. Le pipeline extraira l'audio, le transcrira, identifiera les intervenants, exécutera l'analyse de Claude et importera les résultats sous forme de problèmes d'enregistrement.
+audio-upload-file-label                 = Fichier vidéo
+audio-upload-file-help                  = Sélectionnez la vidéo de la session d'audit (MP4, MOV, WebM, etc.). Maximum { $max } Mo.
 audio-upload-project-label              = Projet
 audio-upload-project-help               = À quel projet cet enregistrement doit-il être associé ?
 audio-upload-title-label                = Titre de l'enregistrement
@@ -44,9 +44,9 @@ audio-cost-total                        = Total
 
 # === Erreurs ===
 audio-error-no-language                 = Sélectionnez au moins une langue.
-audio-error-file-required               = Choisissez un fichier MP4 à téléverser.
+audio-error-file-required               = Choisissez un fichier vidéo à téléverser.
 audio-error-file-too-large              = Vidéo trop volumineuse ; maximum { $max } Mo.
-audio-error-invalid-mp4                 = Le fichier n'est pas un MP4 valide.
+audio-error-invalid-mp4                 = Le fichier n'est pas une vidéo valide.
 audio-error-no-project                  = Le projet est obligatoire.
 audio-error-no-project-access           = Vous n'avez pas accès à ce projet.
 audio-error-runner-not-configured       = Le processus vidéo n'est pas configuré sur le serveur.

@@ -18,6 +18,7 @@ from flask.testing import FlaskClient
 
 
 _MP4_BYTES = b'fake mp4 content for testing'
+_MOV_BYTES = b'fake mov content for testing'
 
 
 def _make_recording_mock(
@@ -133,6 +134,104 @@ def test_mp4_upload_rejects_over_size_cap(
         app.app_config.AUDIO_MAX_SIZE_MB = original_max
 
     assert resp.status_code == 413
+    assert not mock_db.create_recording.called
+
+
+def test_mov_upload_is_accepted(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """A QuickTime ``.mov`` (the macOS default recording format) is accepted.
+
+    Regression test for the Mac-upload bug: the upload was hard-locked to
+    ``video/mp4`` / ``.mp4``, so a Mac colleague's ``.mov`` (MIME
+    ``video/quicktime``) was rejected with a 400 before it ever reached
+    ffprobe. The pipeline only needs the audio track, which ffmpeg reads
+    from any container, so any file ffprobe can parse must be accepted.
+    """
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        return_value=120.0,
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'title': 'Mac audit session',
+                'audit_context': 'audit',
+                'languages': ['en'],
+                'video_file': (
+                    io.BytesIO(_MOV_BYTES), 'audit.mov', 'video/quicktime',
+                ),
+            },
+            content_type='multipart/form-data',
+        )
+
+    assert resp.status_code == 200
+    assert mock_db.create_recording.called
+
+
+def test_arbitrary_video_container_is_accepted(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """Format is validated by ffprobe, not by the extension/MIME allowlist.
+
+    A ``.webm`` upload (neither ``.mp4`` nor ``.mov``) is accepted because
+    ffprobe can read it; this locks in the "accept any video, let ffprobe
+    be the gate" decision rather than a fixed container allowlist.
+    """
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        return_value=90.0,
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'audit_context': 'audit',
+                'languages': ['en'],
+                'video_file': (
+                    io.BytesIO(b'fake webm content'), 'audit.webm', 'video/webm',
+                ),
+            },
+            content_type='multipart/form-data',
+        )
+
+    assert resp.status_code == 200
+    assert mock_db.create_recording.called
+
+
+def test_upload_rejected_when_ffprobe_cannot_read_file(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """A file ffprobe can't parse → 400, no Recording row created.
+
+    ffprobe is the real gate now that the extension/MIME allowlist is
+    gone: an upload that isn't a readable media file must still be
+    refused, not persisted.
+    """
+    from auto_a11y.audio.errors import AudioPipelineError
+
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        side_effect=AudioPipelineError('unreadable'),
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'audit_context': 'audit',
+                'languages': ['en'],
+                'video_file': (
+                    io.BytesIO(b'this is not a video'), 'notes.txt', 'text/plain',
+                ),
+            },
+            content_type='multipart/form-data',
+        )
+
+    assert resp.status_code == 400
     assert not mock_db.create_recording.called
 
 

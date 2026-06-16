@@ -238,23 +238,23 @@ def view_combined_recordings(project_id: str) -> str | Response | WerkzeugRespon
         return redirect(url_for('projects.view_project', project_id=project_id))
 
 
-def _is_mp4_upload(file: FileStorage) -> bool:
-    """Return True iff ``file`` looks like an MP4 upload.
+def _is_video_upload(file: FileStorage) -> bool:
+    """Return True iff ``file`` is a real uploaded file (not a placeholder).
 
-    Checks both the MIME type the browser declared and the filename
-    extension; either is sufficient. Empty filename or zero-byte uploads
-    return False so we never branch into the video flow for the empty
-    placeholder files that browsers attach to unused ``<input type=file>``
-    elements.
+    We deliberately do **not** filter by extension or MIME type here. The
+    pipeline only consumes the audio track, which ffmpeg reads from any
+    container, so the real format gate is ffprobe in
+    :func:`_handle_video_upload` — a file ffprobe can't parse is rejected
+    there with a 400. Filtering on ``video/mp4`` / ``.mp4`` used to reject
+    the macOS default ``.mov`` (MIME ``video/quicktime``), silently
+    breaking uploads for Mac users.
+
+    The only thing screened out is the empty placeholder file that
+    browsers attach to an unused ``<input type=file>`` element: those
+    arrive with an empty filename, so an empty filename returns False and
+    we never branch into the video flow for them.
     """
-    filename = file.filename or ''
-    if not filename:
-        return False
-    if file.mimetype == 'video/mp4':
-        return True
-    if filename.lower().endswith('.mp4'):
-        return True
-    return False
+    return bool(file.filename)
 
 
 def _can_edit_project(project_id: str) -> bool:
@@ -308,13 +308,16 @@ def _error_response(message_id: str, status: int, **kwargs: object) -> Response:
 
 
 def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse:
-    """Handle an MP4 upload: validate, allocate storage, estimate cost.
+    """Handle a video upload: validate, allocate storage, estimate cost.
 
     Splits the video flow out of :func:`upload_recording` to keep the
-    existing JSON / HTML import path readable. On success renders
-    ``recordings/upload_confirm.html`` with the freshly-created
-    :class:`Recording`; on validation failure renders the upload form
-    with a flash + an appropriate HTTP status (400 / 413).
+    existing JSON / HTML import path readable. The uploaded file is saved
+    and then probed with ffprobe, which is the real format gate: any
+    container ffprobe can read (``.mp4``, ``.mov``, ``.webm``, ...) is
+    accepted, and a file it can't parse is refused with a 400. On success
+    renders ``recordings/upload_confirm.html`` with the freshly-created
+    :class:`Recording`; on validation failure renders the upload form with
+    a flash + an appropriate HTTP status (400 / 413).
     """
     cfg = get_app_config()
     max_mb = cfg.AUDIO_MAX_SIZE_MB
@@ -443,23 +446,25 @@ def upload_recording() -> WerkzeugResponse:
 @recordings_bp.route('/upload/video', methods=['GET', 'POST'])
 @login_required
 def upload_video() -> str | Response | WerkzeugResponse:
-    """Upload an MP4 audit video → audioA11y pipeline (cost-estimate confirm).
+    """Upload an audit video → audioA11y pipeline (cost-estimate confirm).
 
-    GET renders the minimal video form. POST locates the uploaded MP4 and
+    GET renders the minimal video form. POST locates the uploaded file and
     dispatches to :func:`_handle_video_upload`, which auto-generates a
     ``REC-YYYYMMDDHHMMSS-{6hex}`` id, allocates the per-recording directory
     tree under ``AUDIO_STORAGE_DIR``, probes the duration via ffprobe,
     computes a pre-flight cost estimate, and renders the confirm-step
     template. The user kicks off the actual pipeline by POSTing to
-    ``/recordings/<id>/process``. A missing or non-MP4 file is refused with
-    a 400 so the user picks the right file (or the JSON page).
+    ``/recordings/<id>/process``. Any container ffprobe can read is
+    accepted (e.g. ``.mp4``, the macOS-default ``.mov``, ``.webm``); a
+    missing file is refused with a 400, and a file ffprobe can't parse is
+    refused by :func:`_handle_video_upload`.
     """
     if request.method == 'GET':
         projects = get_db().get_all_projects()
         return render_template('recordings/upload_video.html', projects=projects)
 
     for upload in request.files.values():
-        if _is_mp4_upload(upload):
+        if _is_video_upload(upload):
             return _handle_video_upload(upload)
     return _error_response('audio-error-file-required', 400)
 

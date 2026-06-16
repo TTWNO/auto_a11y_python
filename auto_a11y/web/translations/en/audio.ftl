@@ -3,9 +3,9 @@
 
 # === Upload form ===
 audio-upload-heading                    = Upload audit video
-audio-upload-intro                      = Upload an MP4 video of a manual accessibility audit. The pipeline will extract audio, transcribe it, identify speakers, run Claude analysis, and import the findings as recording issues.
-audio-upload-file-label                 = Video file (MP4)
-audio-upload-file-help                  = Select the MP4 of the audit session. Max { $max } MB.
+audio-upload-intro                      = Upload a video of a manual accessibility audit. The pipeline will extract audio, transcribe it, identify speakers, run Claude analysis, and import the findings as recording issues.
+audio-upload-file-label                 = Video file
+audio-upload-file-help                  = Select the video of the audit session (MP4, MOV, WebM, …). Max { $max } MB.
 audio-upload-project-label              = Project
 audio-upload-project-help               = Which project should this recording be associated with?
 audio-upload-title-label                = Recording title
@@ -44,9 +44,9 @@ audio-cost-total                        = Total
 
 # === Errors ===
 audio-error-no-language                 = Select at least one language.
-audio-error-file-required               = Choose an MP4 file to upload.
+audio-error-file-required               = Choose a video file to upload.
 audio-error-file-too-large              = Video too large; max { $max } MB.
-audio-error-invalid-mp4                 = Not a valid MP4 file.
+audio-error-invalid-mp4                 = Not a valid video file.
 audio-error-no-project                  = Project is required.
 audio-error-no-project-access           = You do not have access to this project.
 audio-error-runner-not-configured       = Video runner is not configured on the server.

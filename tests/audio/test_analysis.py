@@ -43,6 +43,61 @@ def _client_returning(message_obj: object) -> MagicMock:
     return client
 
 
+def _client_returning_sequence(messages: list[object]) -> MagicMock:
+    """Client whose successive ``stream(...).get_final_message()`` calls
+    return each message in turn — one per analyze attempt — so the retry
+    path can be exercised.
+    """
+    client = MagicMock()
+    stream_ctx = MagicMock()
+    stream_ctx.__enter__.return_value.get_final_message.side_effect = list(messages)
+    client.messages.stream.return_value = stream_ctx
+    return client
+
+
+def test_analyzer_retries_on_malformed_json_then_succeeds() -> None:
+    """A complete-but-unparseable response is retried; a valid retry wins.
+
+    The dominant parse-failure cause (truncation) is handled separately;
+    this covers the residual flaky-generation case the production logs showed
+    ("Expecting ',' delimiter" on a non-truncated body).
+    """
+    bad = _fake_message('{"recording": "x", "issues": [}')  # complete, invalid
+    good = _fake_message(json.dumps({"recording": "x", "issues": []}))
+    client = _client_returning_sequence([bad, good])
+    analyzer = Analyzer(client=client, model="claude-opus-4-8")
+    result = analyzer.analyze(
+        vtt="W", context="audit", kind="issues", language="en", recording_id="REC-retry"
+    )
+    assert result.json_payload["recording"] == "x"
+    assert client.messages.stream.call_count == 2
+
+
+def test_analyzer_raises_after_exhausting_parse_retries() -> None:
+    """Every attempt malformed → AnalysisError after the retry budget."""
+    bad = '{"recording": "x", "issues": [}'
+    client = _client_returning_sequence([_fake_message(bad), _fake_message(bad)])
+    analyzer = Analyzer(client=client, model="claude-opus-4-8")
+    with pytest.raises(AnalysisError):
+        analyzer.analyze(
+            vtt="W", context="audit", kind="issues", language="en", recording_id="REC-bad"
+        )
+    assert client.messages.stream.call_count == 2
+
+
+def test_analyzer_does_not_retry_on_truncation() -> None:
+    """Truncation is not retryable — re-rolling would just truncate again."""
+    truncated = _fake_message('{"recording": "x"', stop_reason="max_tokens")
+    client = _client_returning_sequence([truncated, _fake_message("{}")])
+    analyzer = Analyzer(client=client, model="claude-opus-4-8")
+    with pytest.raises(AnalysisError) as excinfo:
+        analyzer.analyze(
+            vtt="W", context="audit", kind="issues", language="en", recording_id="REC-trunc"
+        )
+    assert "truncat" in str(excinfo.value).lower()
+    assert client.messages.stream.call_count == 1
+
+
 def test_analyzer_uses_correct_prompt_for_context() -> None:
     issues_payload = json.dumps({"recording": "REC-x", "issues": []})
     client = _client_returning(_fake_message(issues_payload))

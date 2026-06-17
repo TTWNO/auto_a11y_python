@@ -302,6 +302,24 @@ echo ""
 echo "--- Step 6: Copy application source ---"
 rsync -a --exclude='__pycache__' --exclude='*.pyc' --exclude='.git' \
     "$PROJECT_DIR/auto_a11y" "$BUILD_DIR/app/"
+
+# The callouts/branding stage reads this PNG at runtime — resolved relative
+# to auto_a11y/audio/callouts.py (_asset_path), NOT pip-installed, so it
+# ships only via the rsync above. A missing/empty copy makes the annotated
+# "callouts" video render without the AccessLabs title-card logo + watermark
+# (or abort the render entirely). Fail at copy time, not on the user's Mac.
+# Step 8 re-checks the same asset inside the finished DMG.
+_logo_asset="$BUILD_DIR/app/auto_a11y/audio/assets/accesslabs_logo.png"
+[ -s "$_logo_asset" ] \
+    || { echo "ERROR: callouts logo asset missing/empty after copy: $_logo_asset" >&2; exit 1; }
+
+# Stamp the git commit so the running app can report which build it is — the
+# bundle carries no .git, so auto_a11y/build_info.py reads this file. Falls
+# back to "unknown" if the build host isn't a git checkout.
+git -C "$PROJECT_DIR" rev-parse --short HEAD > "$BUILD_DIR/app/auto_a11y/BUILD_COMMIT" 2>/dev/null \
+    || echo "unknown" > "$BUILD_DIR/app/auto_a11y/BUILD_COMMIT"
+echo "Stamped build commit: $(cat "$BUILD_DIR/app/auto_a11y/BUILD_COMMIT")"
+
 rsync -a --exclude='__pycache__' --exclude='*.pyc' \
     "$PROJECT_DIR/Fixtures" "$BUILD_DIR/app/"
 
@@ -486,6 +504,18 @@ missing_paths=()
     || missing_paths+=("ffmpeg/bin/ffprobe")
 [ -d "$RESOURCES_IN_DMG/app/auto_a11y" ] \
     || missing_paths+=("app/auto_a11y/")
+# The callouts/branding stage (auto_a11y/audio/callouts.py) overlays this
+# PNG as the title-card logo and bottom-right watermark. It is the one
+# non-.py asset the app reads at runtime, resolved relative to the module
+# (_asset_path), NOT pip-installed — so it ships only by virtue of Step 6's
+# rsync of the source tree. The directory check above does NOT prove the
+# asset survived the copy, and a missing/empty logo aborts the entire
+# callouts render on the user's machine (CalloutsError) — silently, since
+# Stage F never fails the job. Assert it is present AND non-empty (-s) so a
+# dropped or truncated asset is a loud build failure here, not a
+# user-visible "video has no AccessLabs logo" defect.
+[ -s "$RESOURCES_IN_DMG/app/auto_a11y/audio/assets/accesslabs_logo.png" ] \
+    || missing_paths+=("app/auto_a11y/audio/assets/accesslabs_logo.png (callouts title-card / watermark logo)")
 [ -d "$RESOURCES_IN_DMG/python/lib/weasyprint_libs" ] \
     && [ -n "$(ls -A "$RESOURCES_IN_DMG/python/lib/weasyprint_libs" 2>/dev/null)" ] \
     || missing_paths+=("python/lib/weasyprint_libs/ (missing or empty)")

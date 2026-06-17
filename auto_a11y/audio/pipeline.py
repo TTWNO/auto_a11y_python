@@ -173,7 +173,19 @@ def run_pipeline(
     # === C — speaker_remap (optional) ==============================
     progress("speaker_remap", 3, total)
     mapping: SpeakerMapping | None = None
-    if config.speaker_remap_enabled:
+    if config.speaker_remap_enabled and not config.hf_token:
+        # Skip before importing/loading pyannote (and its torchcodec/libav
+        # native stack): with no token the gated model download is a
+        # guaranteed 401, and loading torchcodec emits an alarming
+        # dlopen-failure traceback for a feature we can't run anyway. The
+        # merged VTT keeps its per-segment speaker tags either way.
+        logger.info(
+            "speaker_remap is enabled but no Hugging Face token is configured; "
+            + "skipping speaker remap. Set HF_TOKEN (and accept the "
+            + "pyannote/embedding model terms) to enable it. The merged VTT will "
+            + "retain per-segment speaker tags."
+        )
+    elif config.speaker_remap_enabled:
         try:
             mapping = build_mapping(
                 segment_audio_paths=[slot.segment_m4a(s.index) for s in segments],

@@ -1,6 +1,10 @@
 # Python
 __pycache__/
 *.py[cod]
+
+# Build-time commit stamp (written into the staged app by build/*.sh;
+# never belongs in the repo — build_info.py falls back to git in dev).
+auto_a11y/BUILD_COMMIT
 *$py.class
 *.so
 .Python

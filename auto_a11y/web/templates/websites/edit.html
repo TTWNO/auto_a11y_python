@@ -234,6 +234,8 @@ document.getElementById('editWebsiteForm').addEventListener('submit', async func
                 follow_external: form.querySelector('#follow_external').checked,
                 include_subdomains: form.querySelector('#include_subdomains').checked,
                 respect_robots: form.querySelector('#respect_robots').checked,
+                spa_click_discovery: form.querySelector('#spa_click_discovery').checked,
+                spa_ready_selector: form.querySelector('#spa_ready_selector').value,
             },
         };
         await window.apiClient.patch('/websites/{{ website.id }}', body);

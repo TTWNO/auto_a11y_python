@@ -517,14 +517,12 @@
 // Build the /api/v1/projects/<id> PUT body from the form.
 //
 // NOTE (issue-21 cutover): `ProjectPatch` (see
-// auto_a11y/web/api/schemas/projects.py) accepts only:
-//   name, description, status, config
-// The legacy server-rendered POST handler also updated:
-//   drupal_audit_name
-// which is currently NOT modeled in `ProjectPatch`. That field is kept
-// visible for UX continuity (and the GET still populates it from the
-// project), but it is DROPPED from the PUT body. A future PR can add
-// `drupal_audit_name` to `ProjectPatch` and reinstate it here.
+// auto_a11y/web/api/schemas/projects.py) accepts:
+//   name, description, status, config, drupal_audit_name
+// `drupal_audit_name` is now modeled + applied by the PUT handler, so we
+// send it below (empty string clears the stored selection). Keep this body
+// in sync with `ProjectPatch` — fields not modeled there are silently
+// dropped by the StrictModel schema.
 function parseLengthLimit(raw) {
     // Legacy parity: int() with try/except, range-validated to [30, 120],
     // default 60 otherwise.
@@ -594,6 +592,7 @@ function buildEditProjectBody(form) {
         description: fd.get('description') || '',
         status: fd.get('status') || 'active',
         config: config,
+        drupal_audit_name: fd.get('drupal_audit_name') || '',
     };
 }
 

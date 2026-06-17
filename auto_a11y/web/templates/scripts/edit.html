@@ -5,6 +5,11 @@
 {% block extra_js %}
 {{ super() }}
 <script>
+// Make the shared create-form submit handler UPDATE this script (PUT
+// /api/v1/scripts/<id>) instead of creating a duplicate via POST. Set
+// before any submit can fire; the handler reads it at submit time.
+window.SCRIPT_EDIT_ID = {{ script.id | tojson }};
+
 // Pre-populate form with existing script data
 document.addEventListener('DOMContentLoaded', function() {
     // Set basic fields

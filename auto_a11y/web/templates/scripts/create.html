@@ -652,8 +652,14 @@ document.getElementById('script-form').addEventListener('submit', async function
     }
     try {
         const body = buildScriptPayload(form);
-        const created = await window.apiClient.post(SCRIPT_PARENT_PATH, body);
-        const scriptId = created && created.id;
+        // edit.html sets window.SCRIPT_EDIT_ID; when present we UPDATE the
+        // existing script (PUT) instead of creating a new one (POST). Read it
+        // at submit time so it reflects the value edit.html set after super().
+        const editId = window.SCRIPT_EDIT_ID || null;
+        const saved = editId
+            ? await window.apiClient.put('/scripts/' + encodeURIComponent(editId), body)
+            : await window.apiClient.post(SCRIPT_PARENT_PATH, body);
+        const scriptId = (saved && saved.id) || editId;
         if (scriptId) {
             location.assign('/scripts/' + encodeURIComponent(scriptId) + '/edit');
         } else {

@@ -16,6 +16,7 @@ from auto_a11y.models import (
     PageStatus,
     Project,
     ProjectStatus,
+    ProjectType,
     ScriptStateDefinition,
     TestResult,
     TestStateMatrix,
@@ -604,11 +605,21 @@ def create_project(body: ProjectIn) -> tuple[ProjectCreatedOut, int] | tuple[Res
     if existing:
         return jsonify({'error': f'Project {body.name} already exists'}), 409
 
+    try:
+        project_type = ProjectType(body.project_type) if body.project_type else ProjectType.WEBSITE
+    except ValueError:
+        project_type = ProjectType.WEBSITE
+
     project = Project(
         name=body.name,
         description=body.description if body.description is not None else '',
         status=ProjectStatus.ACTIVE,
         config=dict(body.config) if body.config is not None else {},
+        drupal_audit_name=(body.drupal_audit_name or '').strip() or None,
+        project_type=project_type,
+        app_identifier=(body.app_identifier or '').strip() or None,
+        device_model=(body.device_model or '').strip() or None,
+        location=(body.location or '').strip() or None,
     )
 
     project_id = get_db().create_project(project)
@@ -685,6 +696,9 @@ def update_project(
             return jsonify({'error': 'Invalid status value'}), 400
     if body.config is not None:
         project.config.update(body.config)
+    if body.drupal_audit_name is not None:
+        # Empty string clears the stored selection; a value sets it.
+        project.drupal_audit_name = body.drupal_audit_name.strip() or None
 
     if get_db().update_project(project):
         return MessageOut(message='Project updated successfully'), 200
@@ -2569,6 +2583,25 @@ def _scraping_config_from_model(
     return ScrapingConfig.from_dict(model.model_dump(exclude_none=True))
 
 
+def _merge_scraping_config(
+    existing: ScrapingConfig, patch: ScrapingConfigModel | None
+) -> ScrapingConfig:
+    """Merge a PATCH's ``scraping_config`` onto the existing config.
+
+    PATCH semantics: only the nested keys the client actually sent are
+    overridden; everything else is preserved. Rebuilding from defaults
+    (as create/PUT do) would silently reset fields the edit form doesn't
+    send — e.g. ``auto_fetch_pdfs``, ``allowed_paths``, ``excluded_paths``,
+    ``spa_*`` — on every save. ``exclude_unset=True`` yields only the
+    fields present on the wire.
+    """
+    if patch is None:
+        return existing
+    merged = existing.to_dict()
+    merged.update(patch.model_dump(exclude_unset=True))
+    return ScrapingConfig.from_dict(merged)
+
+
 def _website_from_in(project_id: str, body: WebsiteIn | WebsitePut) -> Website:
     """Construct a new :class:`Website` from a POST or PUT body.
 
@@ -2605,7 +2638,9 @@ def _apply_patch_pyd(website: Website, body: WebsitePatch) -> Website:
             else None
         )
     if "scraping_config" in fields_set:
-        website.scraping_config = _scraping_config_from_model(body.scraping_config)
+        website.scraping_config = _merge_scraping_config(
+            website.scraping_config, body.scraping_config
+        )
     return website
 
 
@@ -10547,8 +10582,12 @@ from auto_a11y.models.website_user import WebsiteUser  # noqa: E402
 # and website_user.AuthenticationMethod enums — they have identical
 # definitions but distinct types. We validate against the string values and
 # let each model's ``from_dict`` reconstruct the right enum on its side.
+# Must stay in sync with ``AuthenticationMethod`` (auto_a11y/models/project_user.py
+# and website_user.py). ``manual_login`` was previously omitted, so the
+# manual-login method the form offers (and its ``manual_login_wait_seconds``)
+# was rejected with a 400 on every save.
 _AUTH_METHOD_VALUES: frozenset[str] = frozenset(
-    {"form_login", "basic_auth", "oauth", "sso"}
+    {"form_login", "basic_auth", "manual_login", "oauth", "sso"}
 )
 
 
@@ -10615,6 +10654,12 @@ def _serialize_login_config_via_model(config: Any) -> LoginConfigOut:
         if isinstance(session_timeout_raw, int) and not isinstance(session_timeout_raw, bool)
         else 30
     )
+    wait_raw: object = raw.get("manual_login_wait_seconds", 120)
+    manual_login_wait = (
+        wait_raw
+        if isinstance(wait_raw, int) and not isinstance(wait_raw, bool)
+        else 120
+    )
 
     def _opt_str(value: object) -> str | None:
         return value if isinstance(value, str) else None
@@ -10633,6 +10678,7 @@ def _serialize_login_config_via_model(config: Any) -> LoginConfigOut:
         ),
         additional_steps=steps,
         session_timeout_minutes=session_timeout,
+        manual_login_wait_seconds=manual_login_wait,
     )
 
 
@@ -10756,6 +10802,13 @@ def _parse_login_config_dict(raw: Any, *, field: str) -> dict[str, Any]:
             errors=(_FieldError(field=f"{field}.session_timeout_minutes", code="invalid_type", message="must be integer"),),
         )
 
+    wait_raw: Any = raw_dict.get("manual_login_wait_seconds", 120)
+    if isinstance(wait_raw, bool) or not isinstance(wait_raw, int):
+        raise ValidationError(
+            f"{field}.manual_login_wait_seconds must be an integer",
+            errors=(_FieldError(field=f"{field}.manual_login_wait_seconds", code="invalid_type", message="must be integer"),),
+        )
+
     return {
         "authentication_method": auth_method_raw,
         "login_url": _opt_str("login_url"),
@@ -10768,6 +10821,7 @@ def _parse_login_config_dict(raw: Any, *, field: str) -> dict[str, Any]:
         "logout_success_indicator_selector": _opt_str("logout_success_indicator_selector"),
         "additional_steps": additional_steps,
         "session_timeout_minutes": int(session_timeout_raw),
+        "manual_login_wait_seconds": int(wait_raw),
     }
 
 
@@ -13587,6 +13641,8 @@ def auth_me_patch_rest(body: AuthMePatch) -> tuple[AppUserOut, int]:
                 ),
             )
         fresh.set_password(password)
+    if "password_hint" in fields_set:
+        fresh.password_hint = (body.password_hint or "").strip() or None
 
     if not get_db().update_app_user(fresh):
         # update_app_user returns False when nothing actually changed —
@@ -13700,6 +13756,8 @@ def create_user_rest(body: AppUserCreateIn) -> tuple[Response, int]:
     )
     if body.is_superadmin is True:
         new_user.is_superadmin = True
+    if body.password_hint is not None:
+        new_user.password_hint = body.password_hint.strip() or None
     new_user_id = get_db().create_app_user(new_user)
     persisted = get_db().get_app_user(new_user_id)
     if persisted is None:
@@ -13775,6 +13833,8 @@ def patch_user_rest(user_id: str, body: AppUserPatch) -> tuple[AppUserOut, int]:
                 ),
             )
         user.set_password(password)
+    if "password_hint" in fields_set:
+        user.password_hint = (body.password_hint or "").strip() or None
     if "role" in fields_set:
         role_raw = body.role
         if role_raw is None or role_raw not in _VALID_USER_ROLES:

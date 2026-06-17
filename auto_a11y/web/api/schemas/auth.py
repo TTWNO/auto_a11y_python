@@ -307,6 +307,9 @@ class AuthMePatch(StrictModel):
 
     display_name: Optional[str] = None
     password: Optional[str] = None
+    # Self-service password hint. The profile form offers it; without
+    # modeling it the StrictModel rejects the field and the hint is dropped.
+    password_hint: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -346,6 +349,9 @@ class AppUserCreateIn(StrictModel):
     display_name: Optional[str] = None
     role: Optional[str] = None
     is_superadmin: Optional[bool] = None
+    # Optional password hint the admin-create form offers; modeled here so
+    # StrictModel accepts it and the create handler can persist it.
+    password_hint: Optional[str] = None
 
 
 class AppUserPatch(StrictModel):
@@ -366,6 +372,9 @@ class AppUserPatch(StrictModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
     is_superadmin: Optional[bool] = None
+    # Admin-set password hint (reset-password form offers it); modeled so
+    # StrictModel accepts it and the patch handler can persist it.
+    password_hint: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

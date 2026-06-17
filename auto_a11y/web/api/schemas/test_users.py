@@ -133,14 +133,18 @@ class LoginConfigIn(StrictModel):
     logout_success_indicator_selector: Optional[str] = None
     additional_steps: Optional[list[dict[str, object]]] = None
     session_timeout_minutes: Optional[int] = None
+    # Per-attempt wait (seconds) the operator gets for the ``manual_login``
+    # method. The create/edit forms expose it; modeled here so StrictModel
+    # accepts it and the parser can persist it (default 120 when absent).
+    manual_login_wait_seconds: Optional[int] = None
 
 
 class LoginConfigOut(StrictModel):
     """Login-config object on a test-user response.
 
-    Mirrors :func:`_serialize_login_config_via_model` byte-for-byte.
-    11 fields. ``manual_login_wait_seconds`` is intentionally absent
-    — the legacy serialiser doesn't expose it.
+    Mirrors :func:`_serialize_login_config_via_model`.
+    ``manual_login_wait_seconds`` IS surfaced so the edit form can
+    pre-fill the operator's saved per-attempt wait for ``manual_login``.
 
     ``authentication_method`` is typed ``str`` (not a closed
     ``Literal``) for the same reason as :class:`LoginConfigIn`: the
@@ -161,6 +165,7 @@ class LoginConfigOut(StrictModel):
     logout_success_indicator_selector: Optional[str] = None
     additional_steps: list[dict[str, object]]
     session_timeout_minutes: int
+    manual_login_wait_seconds: int
 
 
 # ---------------------------------------------------------------------------

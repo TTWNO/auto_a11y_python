@@ -130,6 +130,13 @@ tests/audio/fixtures/*.mp4
 *.avi
 *.mkv
 
+# ...except bundled package assets that the app needs at runtime (e.g. the
+# CNIB AccessLabs logo rendered onto recording title cards / watermark).
+# These ship inside the macOS app bundle via the source rsync, so they
+# MUST be committed.
+!auto_a11y/audio/assets/
+!auto_a11y/audio/assets/*.png
+
 # Documentation drafts
 *_COMPLETE.md
 *_SUMMARY.md

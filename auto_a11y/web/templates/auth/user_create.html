@@ -68,6 +68,8 @@ document.getElementById('userCreateForm').addEventListener('submit', async funct
         };
         const displayName = form.querySelector('#display_name').value.trim();
         if (displayName) body.display_name = displayName;
+        const passwordHint = form.querySelector('#password_hint').value.trim();
+        if (passwordHint) body.password_hint = passwordHint;
         await window.apiClient.post('/users', body);
         location.assign({{ url_for('auth.user_list') | tojson }});
     } catch (err) {

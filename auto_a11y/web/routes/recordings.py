@@ -284,6 +284,23 @@ def _narrow_audit_context(raw: str) -> AuditContext:
     return 'audit'
 
 
+def _recording_type_for_context(context: AuditContext) -> RecordingType:
+    """Derive the display ``RecordingType`` from a video upload's audit context.
+
+    The video-upload form only captures the 3-way :data:`AuditContext`
+    (``audit`` / ``livedExperience`` / ``navilens``), while every label and
+    report reads :class:`RecordingType`. Without this mapping ``recording_type``
+    stays at its ``AUDIT`` default, so lived-experience and NaviLens uploads
+    are mislabelled as audits. ``navilens`` maps to the nav-and-wayfinding
+    lived-experience type; generic lived experience maps to the website type.
+    """
+    if context == 'livedExperience':
+        return RecordingType.LIVED_EXPERIENCE_WEBSITE
+    if context == 'navilens':
+        return RecordingType.LIVED_EXPERIENCE_NAV_AND_WAYFINDING
+    return RecordingType.AUDIT
+
+
 def _narrow_language(raw: str) -> AnalysisLanguage | None:
     if raw == 'en':
         return 'en'
@@ -383,6 +400,7 @@ def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse
         return _error_response('audio-error-invalid-mp4', 400)
 
     audit_context = _narrow_audit_context(request.form.get('audit_context', 'audit'))
+    recording_type = _recording_type_for_context(audit_context)
     extended_context = request.form.get('extended_context') == 'on'
     speaker_remap_enabled = request.form.get('speaker_remap_enabled') == 'on'
     callouts_requested = request.form.get('callouts_requested') == 'on'
@@ -403,6 +421,7 @@ def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse
         project_id=project_id,
         source_video_path=str(slot.source_mp4),
         audit_context=audit_context,
+        recording_type=recording_type,
         analysis_languages=selected,
         extended_context=extended_context,
         speaker_remap_enabled=speaker_remap_enabled,

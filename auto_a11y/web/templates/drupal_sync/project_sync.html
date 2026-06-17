@@ -441,11 +441,19 @@ function renderPushRecordingsList() {
         </div>
     `).join('');
 
-    document.getElementById('selectAllRecordings').onchange = function() {
-        document.querySelectorAll('.recording-checkbox').forEach(cb => {
-            cb.checked = this.checked;
-        });
+    // Reflect the actual child state on load: the master checkbox is rendered
+    // `checked` in HTML, but children are pre-checked only when `needs_sync`.
+    // Without this, the master looks "all selected" while already-synced
+    // recordings sit unchecked and are silently excluded from the push.
+    const selectAllRec = document.getElementById('selectAllRecordings');
+    const recBoxes = () => Array.from(document.querySelectorAll('.recording-checkbox'));
+    selectAllRec.checked = recBoxes().length > 0 && recBoxes().every(cb => cb.checked);
+    selectAllRec.onchange = function() {
+        recBoxes().forEach(cb => { cb.checked = this.checked; });
     };
+    recBoxes().forEach(cb => cb.addEventListener('change', () => {
+        selectAllRec.checked = recBoxes().every(c => c.checked);
+    }));
 }
 
 function refreshPushLists() {

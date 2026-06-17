@@ -16,6 +16,8 @@ from unittest.mock import MagicMock, patch
 from bson import ObjectId
 from flask.testing import FlaskClient
 
+from auto_a11y.models import RecordingType
+
 
 _MP4_BYTES = b'fake mp4 content for testing'
 _MOV_BYTES = b'fake mov content for testing'
@@ -82,6 +84,72 @@ def test_mp4_upload_creates_recording_and_renders_confirm(
     assert saved.callouts_requested is False
     assert saved.estimated_cost_usd is not None
     assert saved.estimated_cost_usd > 0
+
+
+def _upload_with_context(
+    client: FlaskClient,
+    mock_db: MagicMock,
+    audit_context: str,
+) -> Any:
+    """POST a minimal valid MP4 upload with the given audit context.
+
+    Returns the ``Recording`` passed to ``db.create_recording`` so callers
+    can assert on the derived ``recording_type``.
+    """
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        return_value=120.0,
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'title': f'{audit_context} session',
+                'audit_context': audit_context,
+                'languages': ['en'],
+                'video_file': (io.BytesIO(_MP4_BYTES), 'rec.mp4', 'video/mp4'),
+            },
+            content_type='multipart/form-data',
+        )
+    assert resp.status_code == 200
+    assert mock_db.create_recording.called
+    return mock_db.create_recording.call_args.args[0]
+
+
+def test_mp4_upload_audit_context_sets_audit_recording_type(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """``audit`` context → ``recording_type`` AUDIT (so reports read 'audit')."""
+    saved = _upload_with_context(client, mock_db, 'audit')
+    assert saved.audit_context == 'audit'
+    assert saved.recording_type == RecordingType.AUDIT
+
+
+def test_mp4_upload_lived_experience_sets_lived_experience_recording_type(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """``livedExperience`` context must NOT be mislabelled as an audit.
+
+    Regression for: lived-experience uploads always displayed as 'audit'
+    because the video flow only set ``audit_context`` and left
+    ``recording_type`` at its AUDIT default.
+    """
+    saved = _upload_with_context(client, mock_db, 'livedExperience')
+    assert saved.audit_context == 'livedExperience'
+    assert saved.recording_type != RecordingType.AUDIT
+    assert saved.recording_type == RecordingType.LIVED_EXPERIENCE_WEBSITE
+
+
+def test_mp4_upload_navilens_sets_nav_and_wayfinding_recording_type(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """``navilens`` context → the nav-and-wayfinding lived-experience type."""
+    saved = _upload_with_context(client, mock_db, 'navilens')
+    assert saved.audit_context == 'navilens'
+    assert saved.recording_type == RecordingType.LIVED_EXPERIENCE_NAV_AND_WAYFINDING
 
 
 def test_mp4_upload_rejects_when_no_language_selected(

@@ -240,8 +240,9 @@
             reenable(btn);
             return;
         }
+        const passwordHint = form.querySelector('#password_hint').value.trim();
         try {
-            await window.apiClient.patch('/users/' + encodeURIComponent(userId), { password: newPassword });
+            await window.apiClient.patch('/users/' + encodeURIComponent(userId), { password: newPassword, password_hint: passwordHint });
             window.apiClient.showSuccess({{ ftl('auth-password-reset-successfully') | tojson }});
             location.reload();
         } catch (err) {

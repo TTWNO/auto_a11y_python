@@ -115,15 +115,44 @@
         </a>
     </div>
     {% elif recording.callouts_status == 'failed' %}
-    <p class="text-muted mb-4">
-        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
-        {{ ftl('audio-callouts-failed') }}
-    </p>
+    <div class="alert alert-high mb-4">
+        <p class="mb-1">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            <strong>{{ ftl('audio-callouts-failed') }}</strong>
+        </p>
+        <p class="mb-2">{{ ftl('audio-callouts-failed-help') }}</p>
+        {% if recording.callouts_error %}
+        <details>
+            <summary>{{ ftl('audio-callouts-failed-details') }}</summary>
+            <pre class="mb-0 mt-2" style="white-space: pre-wrap; word-break: break-word;">{{ recording.callouts_error }}</pre>
+        </details>
+        {% endif %}
+    </div>
     {% elif recording.callouts_status == 'pending' and recording.status == 'processing' %}
     <p class="text-muted mb-4">
         <i class="bi bi-hourglass-split" aria-hidden="true"></i>
         {{ ftl('audio-callouts-pending') }}
     </p>
+    {% endif %}
+
+    {# Partial-analysis failures: the recording still completed, but some
+       analyses (e.g. issues / takeaways) could not be produced. #}
+    {% if recording.analysis_errors %}
+    <div class="alert alert-medium mb-4">
+        <p class="mb-1">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            <strong>{{ ftl('audio-analysis-partial-failed') }}</strong>
+        </p>
+        <p class="mb-2">{{ ftl('audio-analysis-partial-failed-help') }}</p>
+        <details>
+            <summary>{{ ftl('audio-analysis-partial-failed-details') }}</summary>
+            <ul class="mb-0 mt-2">
+                {% for err in recording.analysis_errors %}
+                <li>{{ err }}</li>
+                {% endfor %}
+            </ul>
+        </details>
+    </div>
     {% endif %}
 
     <!-- Recording Metadata -->

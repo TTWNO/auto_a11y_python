@@ -84,7 +84,12 @@ audio-detail-cost-estimated-was         = Estimated cost was
 # === Callouts video (Phase 9) ===
 audio-callouts-download                 = Download annotated video
 audio-callouts-failed                   = Annotated video rendering failed; the rest of the audit completed successfully.
+audio-callouts-failed-help              = The audit finished, but the branded video (title cards, CNIB AccessLabs logo, watermark, and callouts) could not be rendered. The technical reason is below and in the application log.
+audio-callouts-failed-details           = Show technical details
 audio-callouts-pending                  = Annotated video rendering in progress…
+audio-analysis-partial-failed           = Some analyses could not be generated
+audio-analysis-partial-failed-help      = The recording completed, but one or more AI analyses (e.g. issues, key takeaways) failed and were skipped. The rest of the recording is intact. The reasons are below and in the application log.
+audio-analysis-partial-failed-details   = Show which analyses failed
 
 # === Settings Recovery (Phase 10) ===
 recovery-title                          = Settings Recovery

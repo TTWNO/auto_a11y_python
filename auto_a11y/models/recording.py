@@ -182,6 +182,15 @@ class Recording:
     speaker_remap_enabled: bool = True
     callouts_requested: bool = False
     callouts_status: CalloutsStatus = "not-requested"
+    # When callouts/branding rendering fails (Stage F), the audit still
+    # completes but this carries the reason (ffmpeg stderr / CalloutsError
+    # message) so the UI can show it instead of a bare "failed" badge.
+    callouts_error: str | None = None
+    # Per-analysis failures (one entry per failed context×language×kind,
+    # e.g. a truncated Claude JSON). The recording still completes with the
+    # analyses that succeeded; these record what was lost so the UI/log can
+    # show it instead of failing the whole recording.
+    analysis_errors: list[str] = field(default_factory=lambda: [])
     status: RecordingStatus = "uploaded"
     progress: dict[str, object] | None = None
     estimated_cost_usd: float | None = None
@@ -293,6 +302,8 @@ class Recording:
             'speaker_remap_enabled': self.speaker_remap_enabled,
             'callouts_requested': self.callouts_requested,
             'callouts_status': self.callouts_status,
+            'callouts_error': self.callouts_error,
+            'analysis_errors': list(self.analysis_errors),
             'status': self.status,
             'progress': self.progress,
             'estimated_cost_usd': self.estimated_cost_usd,
@@ -418,6 +429,15 @@ class Recording:
             speaker_remap_enabled=bool(data.get('speaker_remap_enabled', True)),
             callouts_requested=bool(data.get('callouts_requested', False)),
             callouts_status=_narrow_callouts_status(callouts_status_raw),
+            callouts_error=(
+                data.get('callouts_error')
+                if isinstance(data.get('callouts_error'), str)
+                else None
+            ),
+            analysis_errors=[
+                item for item in data.get('analysis_errors', [])
+                if isinstance(item, str)
+            ] if isinstance(data.get('analysis_errors'), list) else [],
             status=_narrow_recording_status(status_raw),
             progress=progress_val,
             estimated_cost_usd=data.get('estimated_cost_usd'),

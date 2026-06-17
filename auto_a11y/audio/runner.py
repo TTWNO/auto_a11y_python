@@ -182,7 +182,7 @@ class VideoRunner:
 
         try:
             try:
-                run_pipeline(
+                pipeline_analysis_errors = run_pipeline(
                     slot=slot,
                     config=PipelineConfig(
                         contexts=[rec.audit_context],
@@ -207,17 +207,33 @@ class VideoRunner:
                 # Phase 9: Stage F failures NEVER fail the whole job.
                 # The audit's transcripts, issues, painpoints,
                 # takeaways, and assertions are all on disk already
-                # (Stage E ran before Stage F). Tag the recording so
-                # the UI can show a "rendering failed" badge, then
-                # fall through to Stage G ingestion + status=complete.
-                logger.warning(
-                    "VideoRunner: callouts rendering failed for %s: %s",
+                # (Stage E ran before Stage F). Tag the recording AND
+                # record the reason so the UI shows what went wrong
+                # (not just a bare "failed" badge), then fall through to
+                # Stage G ingestion + status=complete.
+                #
+                # Logged at ERROR with the full message (which includes the
+                # ffmpeg stderr tail) so it stands out in the desktop app's
+                # electron-log — branding/callout failures must be visible,
+                # not swallowed.
+                logger.error(
+                    "VideoRunner: callouts/branding rendering FAILED for "
+                    + "recording %s — %s",
                     recording_id, callouts_exc,
                 )
                 rec.callouts_status = "failed"
+                rec.callouts_error = str(callouts_exc)
+                # (analysis errors, if any, were already logged by
+                # run_pipeline; they aren't returned on the raising path —
+                # see the ``else`` branch for the normal capture.)
             else:
                 if rec.callouts_requested:
                     rec.callouts_status = "complete"
+                    rec.callouts_error = None
+                # Per-analysis failures (e.g. a truncated Claude JSON) are
+                # collected by run_pipeline rather than aborting the job;
+                # record them so the UI/log shows which analyses were lost.
+                rec.analysis_errors = pipeline_analysis_errors
 
             # === Stage G — Mongo ingestion ============================
             # The pipeline only writes JSON files; importing them into

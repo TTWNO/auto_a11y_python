@@ -84,7 +84,12 @@ audio-detail-cost-estimated-was         = Coût estimé initialement
 # === Vidéo avec annotations (phase 9) ===
 audio-callouts-download                 = Télécharger la vidéo annotée
 audio-callouts-failed                   = La génération de la vidéo annotée a échoué ; le reste de l'audit s'est terminé avec succès.
+audio-callouts-failed-help              = L'audit est terminé, mais la vidéo de marque (cartons de titre, logo Labos d'accessibilité INCA, filigrane et annotations) n'a pas pu être générée. La raison technique figure ci-dessous et dans le journal de l'application.
+audio-callouts-failed-details           = Afficher les détails techniques
 audio-callouts-pending                  = Génération de la vidéo annotée en cours…
+audio-analysis-partial-failed           = Certaines analyses n'ont pas pu être générées
+audio-analysis-partial-failed-help      = L'enregistrement est terminé, mais une ou plusieurs analyses par IA (p. ex. problèmes, points clés) ont échoué et ont été ignorées. Le reste de l'enregistrement est intact. Les raisons figurent ci-dessous et dans le journal de l'application.
+audio-analysis-partial-failed-details   = Afficher les analyses ayant échoué
 
 # === Récupération des paramètres (phase 10) ===
 recovery-title                          = Récupération des paramètres

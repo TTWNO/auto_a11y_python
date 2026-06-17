@@ -352,6 +352,9 @@ def test_runner_callouts_failure_marks_only_callouts_status_failed(
     assert rec.status == "complete"
     # Only the callouts video is marked failed.
     assert rec.callouts_status == "failed"
+    # The failure reason is surfaced (not swallowed) so the UI/log can show it.
+    assert rec.callouts_error is not None
+    assert "drawtext blew up" in rec.callouts_error
     # The Mongo ingestion still ran.
     import_mock.assert_called_once()
 
@@ -378,11 +381,47 @@ def test_runner_callouts_success_marks_callouts_status_complete(
          patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
          patch("auto_a11y.audio.runner.run_pipeline") as pipeline_mock, \
          patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
-        pipeline_mock.return_value = None
+        pipeline_mock.return_value = []
         asyncio.run(runner.run(recording_id))
 
     assert rec.status == "complete"
     assert rec.callouts_status == "complete"
+    # No error recorded on the success path.
+    assert rec.callouts_error is None
+    assert rec.analysis_errors == []
+
+
+def test_runner_records_partial_analysis_errors(
+    slot: AllocatedSlot, tmp_path: Path
+) -> None:
+    """Analysis failures returned by run_pipeline are recorded, not fatal.
+
+    A truncated/failed analysis kind no longer nukes the recording — the
+    job completes and ``rec.analysis_errors`` carries what was lost.
+    """
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+
+    db = MagicMock()
+    db.get_recording_by_recording_id.return_value = rec
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = _make_audio_config(tmp_path)
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    failures = ["issues (en/audit): Failed to parse JSON: truncated mid-object"]
+    with patch("auto_a11y.audio.runner._make_anthropic_client", return_value=object()), \
+         patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
+         patch("auto_a11y.audio.runner.run_pipeline", return_value=failures), \
+         patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
+        asyncio.run(runner.run(recording_id))
+
+    # The recording still completed despite the analysis failure.
+    assert rec.status == "complete"
+    assert rec.analysis_errors == failures
 
 
 def test_runner_callouts_not_requested_stays_not_requested(

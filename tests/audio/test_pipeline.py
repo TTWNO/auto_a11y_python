@@ -430,3 +430,97 @@ def test_callouts_error_bubbles_out_of_pipeline(slot: AllocatedSlot) -> None:
                 analyzer=analyzer,
                 progress=_noop_progress,
             )
+
+
+def test_analysis_error_does_not_abort_pipeline(slot: AllocatedSlot) -> None:
+    """A failed analysis unit is collected and skipped; the rest still run.
+
+    Regression: a truncated/malformed Claude JSON (``AnalysisError``) for
+    ONE kind used to propagate out of ``run_pipeline`` and fail the whole
+    recording. Now it's logged + returned, and the other analyses proceed.
+    """
+    from auto_a11y.audio.errors import AnalysisError
+
+    segments = [_seg(0, 0.0, 30.0)]
+    with patch("auto_a11y.audio.pipeline.split", return_value=segments), \
+         patch("auto_a11y.audio.pipeline.merge_segment_vtts") as merge_mock:
+        transcriber = MagicMock()
+        transcriber.transcribe.return_value = _stub_transcription_result()
+
+        def _analyze(
+            *, vtt: str, context: str, kind: str, language: str, recording_id: str
+        ) -> Any:
+            _ = (vtt, context, language, recording_id)
+            if kind == "issues":
+                raise AnalysisError("Failed to parse JSON: truncated mid-object")
+            return _stub_analysis_result({"recording": slot.recording_id, kind: []})
+
+        analyzer = MagicMock()
+        analyzer.analyze.side_effect = _analyze
+
+        def _do_merge(*, segment_paths: list[Path], segment_offsets_s: list[float], output: Path) -> None:
+            _ = (segment_paths, segment_offsets_s)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text("WEBVTT\n", encoding="utf-8")
+        merge_mock.side_effect = _do_merge
+
+        errors = run_pipeline(
+            slot=slot,
+            config=PipelineConfig(
+                contexts=["audit"],
+                languages=["en"],
+                extended_context=False,
+                speaker_remap_enabled=False,
+                callouts_requested=False,
+                hf_token=None,
+            ),
+            transcriber=transcriber,
+            analyzer=analyzer,
+            progress=_noop_progress,
+        )
+
+    # The failed 'issues' analysis is collected, not raised.
+    assert len(errors) == 1
+    assert "issues" in errors[0]
+    # The other analyses still ran and wrote their JSON.
+    assert slot.json_path(kind="painpoints", lang="en").exists()
+    assert slot.json_path(kind="takeaways", lang="en").exists()
+    assert slot.json_path(kind="assertions", lang="en").exists()
+    # The failed kind wrote nothing (import tolerates the missing file).
+    assert not slot.json_path(kind="issues", lang="en").exists()
+
+
+def test_pipeline_returns_empty_when_all_analyses_succeed(slot: AllocatedSlot) -> None:
+    """The happy path returns an empty analysis-error list."""
+    segments = [_seg(0, 0.0, 30.0)]
+    with patch("auto_a11y.audio.pipeline.split", return_value=segments), \
+         patch("auto_a11y.audio.pipeline.merge_segment_vtts") as merge_mock:
+        transcriber = MagicMock()
+        transcriber.transcribe.return_value = _stub_transcription_result()
+        analyzer = MagicMock()
+        analyzer.analyze.return_value = _stub_analysis_result(
+            {"recording": slot.recording_id, "issues": []}
+        )
+
+        def _do_merge(*, segment_paths: list[Path], segment_offsets_s: list[float], output: Path) -> None:
+            _ = (segment_paths, segment_offsets_s)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text("WEBVTT\n", encoding="utf-8")
+        merge_mock.side_effect = _do_merge
+
+        errors = run_pipeline(
+            slot=slot,
+            config=PipelineConfig(
+                contexts=["audit"],
+                languages=["en"],
+                extended_context=False,
+                speaker_remap_enabled=False,
+                callouts_requested=False,
+                hf_token=None,
+            ),
+            transcriber=transcriber,
+            analyzer=analyzer,
+            progress=_noop_progress,
+        )
+
+    assert errors == []

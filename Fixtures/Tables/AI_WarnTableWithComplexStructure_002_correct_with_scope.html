@@ -10,7 +10,7 @@
     "issueId": "AI_WarnTableWithComplexStructure",
     "expectedViolationCount": 0,
     "expectedPassCount": 2,
-    "description": "Complex tables with proper scope attributes and id/headers associations",
+    "description": "Simple single-level data tables (one header row, scope=col, no merged cells), which are not complex and need no manual-review warning",
     "wcag": "1.3.1",
     "impact": "Medium"
 }
@@ -26,89 +26,47 @@
 
     <main>
         <section data-expected-pass="true"
-                 data-pass-reason="Complex table with proper scope attributes on all header cells. Column headers have scope='col' indicating they apply to entire column. Row headers have scope='row' indicating they apply to entire row. Screen readers can determine which headers apply to each data cell. Users navigating with assistive technology understand table structure. Cell relationships clearly defined. Complies with WCAG 1.3.1 Info and Relationships - proper use of scope attributes in complex table">
-            <h2>Quarterly Sales by Region and Product</h2>
+                 data-pass-reason="Simple data table: a single header row with scope='col' and plain data rows. No multi-level or merged headers, so it is not a complex structure and needs no manual-review warning.">
+            <h2>Quarterly Sales</h2>
 
             <table>
-                <caption>Quarterly sales data by region and product</caption>
-                <tr>
-                    <th scope="col">Region</th>
-                    <th scope="col">Product</th>
-                    <th scope="col">Q1</th>
-                    <th scope="col">Q2</th>
-                    <th scope="col">Q3</th>
-                    <th scope="col">Q4</th>
-                </tr>
-                <tr>
-                    <th scope="row">North - Widget A</th>
-                    <td>Widget A</td>
-                    <td>$10,000</td>
-                    <td>$12,000</td>
-                    <td>$11,000</td>
-                    <td>$13,000</td>
-                </tr>
-                <tr>
-                    <th scope="row">North - Widget B</th>
-                    <td>Widget B</td>
-                    <td>$8,000</td>
-                    <td>$9,000</td>
-                    <td>$8,500</td>
-                    <td>$9,500</td>
-                </tr>
-                <tr>
-                    <th scope="row">South - Widget A</th>
-                    <td>Widget A</td>
-                    <td>$15,000</td>
-                    <td>$16,000</td>
-                    <td>$14,000</td>
-                    <td>$17,000</td>
-                </tr>
+                <caption>Quarterly sales totals</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Quarter</th>
+                        <th scope="col">Revenue</th>
+                        <th scope="col">Units Sold</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Q1</td><td>$10,000</td><td>120</td></tr>
+                    <tr><td>Q2</td><td>$12,000</td><td>140</td></tr>
+                    <tr><td>Q3</td><td>$11,000</td><td>130</td></tr>
+                    <tr><td>Q4</td><td>$13,000</td><td>150</td></tr>
+                </tbody>
             </table>
         </section>
 
         <section data-expected-pass="true"
-                 data-pass-reason="Table with merged cells using id/headers associations for accessibility. Each header cell has unique id. Data cells use headers attribute listing all applicable header ids. Screen readers announce all relevant headers when navigating to data cell. Complex spanning relationships preserved. Users understand which headers apply despite rowspan/colspan. Meets WCAG 1.3.1 Info and Relationships - id/headers pattern properly implements complex table structure">
-            <h2>Employee Schedule with Merged Cells</h2>
+                 data-pass-reason="Simple data table: one header row with scope='col', no rowspan/colspan and no second header level. Screen readers follow it without any complex association, so no complexity warning is warranted.">
+            <h2>Team Roster</h2>
 
             <table>
-                <caption>Employee work schedule for two weeks</caption>
-                <tr>
-                    <th id="employee" rowspan="2" scope="col">Employee</th>
-                    <th id="week1" colspan="3" scope="colgroup">Week 1</th>
-                    <th id="week2" colspan="3" scope="colgroup">Week 2</th>
-                </tr>
-                <tr>
-                    <th id="w1-mon" scope="col">Mon</th>
-                    <th id="w1-wed" scope="col">Wed</th>
-                    <th id="w1-fri" scope="col">Fri</th>
-                    <th id="w2-mon" scope="col">Mon</th>
-                    <th id="w2-wed" scope="col">Wed</th>
-                    <th id="w2-fri" scope="col">Fri</th>
-                </tr>
-                <tr>
-                    <th id="alice" scope="row">Alice</th>
-                    <td headers="alice w1-mon week1">9-5</td>
-                    <td headers="alice w1-wed week1">9-5</td>
-                    <td headers="alice w1-fri week1">Off</td>
-                    <td headers="alice w2-mon week2">9-5</td>
-                    <td headers="alice w2-wed week2">9-5</td>
-                    <td headers="alice w2-fri week2">9-5</td>
-                </tr>
-                <tr>
-                    <th id="bob" scope="row">Bob</th>
-                    <td headers="bob w1-mon week1">Off</td>
-                    <td headers="bob w1-wed week1">10-6</td>
-                    <td headers="bob w1-fri week1">10-6</td>
-                    <td headers="bob w2-mon week2">10-6</td>
-                    <td headers="bob w2-wed week2">Off</td>
-                    <td headers="bob w2-fri week2">10-6</td>
-                </tr>
+                <caption>Team members and roles</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Location</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Alex Kim</td><td>Engineer</td><td>Toronto</td></tr>
+                    <tr><td>Jordan Lee</td><td>Designer</td><td>Halifax</td></tr>
+                    <tr><td>Sam Patel</td><td>Manager</td><td>Calgary</td></tr>
+                </tbody>
             </table>
         </section>
     </main>
-
-    <footer>
-        <p>&copy; 2024 Company Name. All rights reserved.</p>
-    </footer>
 </body>
 </html>

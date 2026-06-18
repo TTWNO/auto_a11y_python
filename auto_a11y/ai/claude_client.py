@@ -31,10 +31,13 @@ logger = logging.getLogger(__name__)
 class ClaudeConfig:
     """Claude AI configuration"""
     api_key: str
-    model: str = "claude-opus-4-20250514"  # Opus 4 with extended thinking
+    model: str = "claude-opus-4-8"  # Opus 4.8 with adaptive thinking
     max_tokens: int = 16000
-    budget_tokens: int = 5000  # Thinking budget (must be less than max_tokens)
-    temperature: float = 1.0  # Must be 1.0 for extended thinking
+    # budget_tokens / temperature are retained for backward compatibility but are no
+    # longer sent: Opus 4.7+/4.8 use adaptive thinking and reject both a fixed thinking
+    # budget and any sampling parameter (temperature/top_p/top_k) with a 400.
+    budget_tokens: int = 5000
+    temperature: float = 1.0
     timeout: int = 120
     use_extended_thinking: bool = True
 
@@ -63,8 +66,10 @@ class ClaudeClient:
             config: Claude configuration
         """
         self.config: ClaudeConfig = config
-        # Initialize clients with beta headers for extended thinking, long context, and prompt caching
-        beta_features = "interleaved-thinking-2025-05-14,output-128k-2025-02-19,prompt-caching-2024-07-31"
+        # Prompt caching is still a beta header; interleaved-thinking and output-128k are
+        # no longer needed on Opus 4.7+/4.8 (adaptive thinking interleaves automatically,
+        # and 128k output is built in), so they are dropped to avoid sending stale betas.
+        beta_features = "prompt-caching-2024-07-31"
         # Let the SDK transparently retry transient failures (429/5xx/timeouts)
         # with exponential backoff so a single blip does not abort an analysis.
         max_retries: int = getattr(config, "max_retries", 3)
@@ -106,7 +111,7 @@ class ClaudeClient:
         """
         Send a streaming request to the Claude API.
 
-        Builds thinking / temperature / system params from ``self.config``
+        Builds thinking / system params from ``self.config``
         and streams the response, returning the concatenated text output
         and (optionally) the extended-thinking trace.
 
@@ -123,11 +128,10 @@ class ClaudeClient:
                 max_tokens=self.config.max_tokens,
                 messages=messages,
                 system=self.system_prompt,
-                thinking={
-                    "type": "enabled",
-                    "budget_tokens": self.config.budget_tokens,
-                },
-                temperature=1.0,
+                # Adaptive thinking: Opus 4.7+/4.8 reject the old
+                # {"type": "enabled", "budget_tokens": N} form and any sampling
+                # parameter (temperature/top_p/top_k) with a 400.
+                thinking={"type": "adaptive"},
             ) as stream:
                 async for event in stream:
                     if isinstance(event, RawContentBlockDeltaEvent):
@@ -144,7 +148,6 @@ class ClaudeClient:
                 model=self.config.model,
                 max_tokens=self.config.max_tokens,
                 messages=messages,
-                temperature=self.config.temperature,
                 system=self.system_prompt,
             )
             response_text = ""
@@ -376,7 +379,7 @@ class ClaudeClient:
 
             if self.config.use_extended_thinking:
                 logger.warning(
-                    f"Using extended thinking - max_tokens: {self.config.max_tokens}, budget_tokens: {self.config.budget_tokens}"
+                    f"Using adaptive thinking - max_tokens: {self.config.max_tokens}"
                 )
 
             response_text, thinking_text = await self._stream_response(

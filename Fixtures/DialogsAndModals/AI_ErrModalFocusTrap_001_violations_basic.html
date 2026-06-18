@@ -30,9 +30,10 @@
         <button onclick="openBrokenModal('edit')">Edit Settings</button>
     </main>
 
-    <!-- Modal without focus trap -->
+    <!-- Modal without focus trap (rendered OPEN on load so it is visible to the
+         screenshot-based analyzer; a hidden modal is never analyzed). -->
     <div id="confirm-modal"
-         class="modal"
+         class="modal show"
          role="dialog"
          aria-labelledby="confirm-title"
          data-expected-violation="true"

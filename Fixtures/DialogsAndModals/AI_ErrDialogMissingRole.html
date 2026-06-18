@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI_ErrDialogMissingRole Test Fixture</title>
+    <style>
+        body { font-family: sans-serif; }
+        .backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .dialog {
+            background: #ffffff; padding: 24px; border-radius: 8px;
+            max-width: 440px; width: 90%;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+        .dialog h2 { margin-top: 0; }
+        .dialog .actions { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+        button { padding: 8px 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Account Settings</h1>
+    <p>Manage your account preferences below.</p>
+
+    <!-- A modal dialog that is OPEN and visible on page load, but carries NO
+         dialog ARIA at all: no role="dialog"/"alertdialog", no aria-modal, and
+         no aria-label/aria-labelledby. A screen-reader user gets no indication
+         that a dialog has appeared or what it is. -->
+    <div class="backdrop">
+        <div class="dialog"
+             data-expected-violation="true"
+             data-violation-id="AI_ErrDialogMissingRole"
+             data-violation-reason="Visible modal dialog has no role=dialog, no aria-modal, and no accessible name">
+            <h2>Save changes?</h2>
+            <p>You have unsaved changes. Do you want to save them before leaving this page?</p>
+            <div class="actions">
+                <button>Don't save</button>
+                <button>Cancel</button>
+                <button>Save</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

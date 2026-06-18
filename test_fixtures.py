@@ -396,12 +396,24 @@ class FixtureTestRunner:
             # Otherwise default to AA level
             wcag_level = 'AAA' if 'AAA' in expected_code else 'AA'
 
-            # Create a temporary project and website for testing
+            # Create a temporary project and website for testing.
+            # AI analysis in test_runner is gated on the project config:
+            # run_ai_tests = project_config['enable_ai_testing'] (default False) and the
+            # per-analysis 'ai_tests' allow-list. Without these an AI_ fixture would run
+            # only the DOM tests and could never surface its AI code, so opt the temporary
+            # project into AI testing (all analyses) when the fixture is an AI one.
+            project_config: dict[str, Any] = {'wcag_level': wcag_level}
+            if expected_code.startswith('AI_'):
+                project_config['enable_ai_testing'] = True
+                project_config['ai_tests'] = [
+                    'headings', 'reading_order', 'modals', 'language', 'animations',
+                    'interactive', 'widgets', 'landmarks', 'media', 'live_regions', 'structure',
+                ]
             project = Project(
                 name=f"Fixture Test - {datetime.now().isoformat()}",
                 description=f"Testing fixture: {expected_code}",
                 status=ProjectStatus.ACTIVE,
-                config={'wcag_level': wcag_level}
+                config=project_config
             )
             project_id = self.db.create_project(project)
 
@@ -491,21 +503,30 @@ class FixtureTestRunner:
             #      ambient codes, leaving `produced_any` True yet dropping the very code
             #      under test. (AI and negative tests are excluded - AI is costly and
             #      non-deterministic, and a negative test asserts absence.)
-            timeout = 60.0 if run_ai else 30.0
+            # AI analysis runs ~11 analyzer modules sequentially, each a vision +
+            # extended-thinking call, so a full AI pass takes a couple of minutes —
+            # far longer than a DOM-only run. The old 60s ceiling timed out every AI
+            # fixture before it could finish (test_result came back None and the
+            # fixture was scored as "failed to run"). Give AI passes generous head-room.
+            timeout = 300.0 if run_ai else 30.0
             test_result: TestResult | None = None
             for attempt in range(2):
                 try:
+                    # AI analysis in test_runner is gated on screenshot_bytes being
+                    # present (it sends the screenshot to Claude). DOM-only fixtures
+                    # don't need one, so keep them fast by only capturing a screenshot
+                    # when AI analysis will actually run.
                     test_result = await asyncio.wait_for(
                         self.test_runner.test_page(
                             page=page_obj,
-                            take_screenshot=False,
+                            take_screenshot=run_ai,
                             run_ai_analysis=run_ai
                         ),
                         timeout=timeout
                     )
                 except asyncio.TimeoutError:
-                    print("   ⏱️  Test timed out after 30 seconds")
-                    notes.append("Test timed out after 30 seconds")
+                    print(f"   ⏱️  Test timed out after {timeout:.0f} seconds")
+                    notes.append(f"Test timed out after {timeout:.0f} seconds")
                     test_result = None
 
                 produced_any = bool(test_result and (

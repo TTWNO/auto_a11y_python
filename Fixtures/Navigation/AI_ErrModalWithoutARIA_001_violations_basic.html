@@ -29,8 +29,9 @@
         <button onclick="openModal('confirm')">Save Changes</button>
     </main>
 
-    <!-- Modal without ARIA attributes -->
-    <div id="delete-modal" class="modal"
+    <!-- Modal without ARIA attributes (rendered OPEN on load so the
+         screenshot-based analyzer can see it; a hidden modal is never analyzed) -->
+    <div id="delete-modal" class="modal show"
          data-expected-violation="true"
          data-violation-id="AI_ErrModalWithoutARIA"
          data-violation-reason="Modal lacks role='dialog', aria-modal='true', aria-labelledby, and focus management. Screen readers cannot identify this as a modal dialog or understand its purpose">

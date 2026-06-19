@@ -4,23 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVG Positive Tabindex Warning Test - WarnSvgPositiveTabindex</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnSvgPositiveTabindex",
+    "issueId": "WarnSvgPositiveTabindex",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 4,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "An svg element with a positive tabindex disrupts the natural tab order. Each svg element with tabindex greater than zero is warned.",
+    "wcag": "2.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>SVG Elements with Positive Tabindex</h1>
     
     <!-- SVG with positive tabindex -->
-    <svg width="100" height="100" tabindex="1">
+    <svg width="100" height="100" tabindex="1" data-expected-warning="true" data-warning-id="WarnSvgPositiveTabindex" data-warning-reason="svg has tabindex 1 which disrupts natural tab order">
         <circle cx="50" cy="50" r="40" fill="blue"/>
     </svg>
     
     <!-- Interactive SVG with high tabindex -->
-    <svg width="100" height="100" tabindex="5" role="button">
+    <svg width="100" height="100" tabindex="5" role="button" data-expected-warning="true" data-warning-id="WarnSvgPositiveTabindex" data-warning-reason="svg has tabindex 5 which disrupts natural tab order">
         <rect width="100" height="100" fill="green"/>
         <text x="50" y="50" text-anchor="middle">Button</text>
     </svg>
     
     <!-- SVG link with positive tabindex -->
-    <svg width="200" height="50" tabindex="3">
+    <svg width="200" height="50" tabindex="3" data-expected-warning="true" data-warning-id="WarnSvgPositiveTabindex" data-warning-reason="svg has tabindex 3 which disrupts natural tab order">
         <a href="page.html">
             <rect width="200" height="50" fill="orange"/>
             <text x="100" y="30" text-anchor="middle">Link</text>
@@ -28,7 +40,7 @@
     </svg>
     
     <!-- Multiple SVGs with positive tabindex -->
-    <svg width="50" height="50" tabindex="2">
+    <svg width="50" height="50" tabindex="2" data-expected-warning="true" data-warning-id="WarnSvgPositiveTabindex" data-warning-reason="svg has tabindex 2 which disrupts natural tab order">
         <rect width="50" height="50" fill="red"/>
     </svg>
     

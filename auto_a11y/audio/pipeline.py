@@ -63,7 +63,7 @@ from typing import Callable, Literal, TypeGuard
 
 from auto_a11y.audio.analysis import Analyzer
 from auto_a11y.audio.callouts import render_callouts_video
-from auto_a11y.audio.errors import CalloutsError
+from auto_a11y.audio.errors import AnalysisError, CalloutsError
 from auto_a11y.audio.prompts import Context, Kind
 from auto_a11y.audio.segmenter import Segment, split
 from auto_a11y.audio.speaker_identification import (
@@ -130,19 +130,30 @@ def run_pipeline(
     transcriber: Transcriber,
     analyzer: Analyzer,
     progress: ProgressCallback,
-) -> None:
+) -> list[str]:
     """Run stages A → G in order.
 
-    The callouts stage (F) is a no-op until Phase 9 lands; ``stage G``
-    (Mongo ingestion) is the runner's responsibility — this function
-    only writes JSON files to disk.
+    ``stage G`` (Mongo ingestion) is the runner's responsibility — this
+    function only writes JSON files to disk.
+
+    Stage E (analysis) is resilient: a failure on one analysis unit
+    (one context × language × kind, e.g. a truncated/malformed Claude
+    JSON) is logged and collected, and the remaining analyses still run.
+    A single bad analysis no longer nukes the whole recording — the
+    transcript, the other analyses, and the callouts video all survive.
+
+    Returns:
+        A list of human-readable analysis-failure messages (empty when
+        every analysis succeeded). The runner records these on the
+        recording so the UI/log can show what was lost.
 
     Raises:
-        Whatever ``segmenter`` / ``transcriber`` / ``analyzer`` raise.
-        The runner catches and translates these to ``Recording.status``
-        transitions.
+        :class:`TranscriptionError` (no transcript ⇒ no audit, fatal) and
+        :class:`CalloutsError` (Stage F; the runner catches it and marks
+        only ``callouts_status``). Other ``segmenter`` errors propagate.
     """
     total = len(STAGES)
+    analysis_errors: list[str] = []
 
     # === A — segmenting ============================================
     progress("segmenting", 1, total)
@@ -162,7 +173,19 @@ def run_pipeline(
     # === C — speaker_remap (optional) ==============================
     progress("speaker_remap", 3, total)
     mapping: SpeakerMapping | None = None
-    if config.speaker_remap_enabled:
+    if config.speaker_remap_enabled and not config.hf_token:
+        # Skip before importing/loading pyannote (and its torchcodec/libav
+        # native stack): with no token the gated model download is a
+        # guaranteed 401, and loading torchcodec emits an alarming
+        # dlopen-failure traceback for a feature we can't run anyway. The
+        # merged VTT keeps its per-segment speaker tags either way.
+        logger.info(
+            "speaker_remap is enabled but no Hugging Face token is configured; "
+            + "skipping speaker remap. Set HF_TOKEN (and accept the "
+            + "pyannote/embedding model terms) to enable it. The merged VTT will "
+            + "retain per-segment speaker tags."
+        )
+    elif config.speaker_remap_enabled:
         try:
             mapping = build_mapping(
                 segment_audio_paths=[slot.segment_m4a(s.index) for s in segments],
@@ -194,13 +217,27 @@ def run_pipeline(
     for ctx in config.contexts:
         for lang in config.languages:
             for kind in _ANALYSIS_KINDS:
-                analysis = analyzer.analyze(
-                    vtt=merged_text,
-                    context=ctx,
-                    kind=kind,
-                    language=lang,
-                    recording_id=slot.recording_id,
-                )
+                try:
+                    analysis = analyzer.analyze(
+                        vtt=merged_text,
+                        context=ctx,
+                        kind=kind,
+                        language=lang,
+                        recording_id=slot.recording_id,
+                    )
+                except AnalysisError as exc:
+                    # One bad analysis unit (e.g. a truncated/malformed
+                    # Claude JSON) must NOT sink the whole recording. Log
+                    # it loudly, record it, and carry on with the rest —
+                    # the import stage tolerates the missing JSON file.
+                    msg = f"{kind} ({lang}/{ctx}): {exc}"
+                    analysis_errors.append(msg)
+                    logger.error(
+                        "Analysis FAILED for recording %s — %s; "
+                        + "continuing with the remaining analyses.",
+                        slot.recording_id, msg,
+                    )
+                    continue
                 payload_bytes = json.dumps(
                     analysis.json_payload, indent=2, ensure_ascii=False
                 ).encode("utf-8")
@@ -218,6 +255,8 @@ def run_pipeline(
     progress("importing", 7, total)
     # Mongo ingestion lives in the runner; this stage only writes the
     # progress marker so callers know we've finished the disk work.
+
+    return analysis_errors
 
 
 def _is_str_obj_dict(val: object) -> TypeGuard[dict[str, object]]:

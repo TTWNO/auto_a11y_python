@@ -20,6 +20,18 @@ Each issue entry contains:
 
 ## All Issues (Alphabetical)
 
+ID: AI_ErrAccessibilityIssue
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: aria
+Description: AI visual analysis detected an accessibility issue for which no more specific code was returned
+Why it matters: A generic, AI-detected accessibility barrier still impedes some users even when its exact category is not classified
+Who it affects: Screen reader users, keyboard users, low-vision users
+How to fix: Review the AI analysis details for the flagged element and remediate per the underlying issue described in its metadata
+
+---
+
 ID: AI_ErrAccordionWithoutARIA
 Type: Error
 Impact: High
@@ -44,6 +56,18 @@ How to fix: Use descriptive link text that makes sense without context, or add a
 
 ---
 
+ID: AI_ErrAutoPlayingMedia
+Type: Error
+Impact: High
+WCAG: 1.4.2, 2.2.2
+Touchpoint: media
+Description: Auto-playing video or audio plays without controls to pause, stop, or mute it
+Why it matters: Media that starts automatically and cannot be stopped interferes with screen reader output and is distracting or disorienting
+Who it affects: Screen reader users, users with cognitive or attention disabilities, low-vision users
+How to fix: Avoid autoplay, or provide a visible, keyboard-operable control to pause/stop/mute media that plays longer than three seconds
+
+---
+
 ID: AI_ErrCarouselWithoutARIA
 Type: Error
 Impact: High
@@ -56,6 +80,18 @@ How to fix: Add role="region", aria-label, aria-live for updates, and accessible
 
 ---
 
+ID: AI_ErrClickableNotFocusable
+Type: Error
+Impact: High
+WCAG: 2.1.1
+Touchpoint: keyboard
+Description: Element has a click handler but no tabindex, so it cannot receive keyboard focus
+Why it matters: Mouse users can activate the control but keyboard users cannot reach or operate it at all
+Who it affects: Keyboard users, screen reader users, users with motor impairments
+How to fix: Use a native interactive element (button/a), or add tabindex="0" plus keyboard event handlers (Enter/Space) and an appropriate ARIA role
+
+---
+
 ID: AI_ErrClickableWithoutKeyboard
 Type: Error
 Impact: High
@@ -65,6 +101,54 @@ Description: Element with onclick handler is not keyboard accessible
 Why it matters: Keyboard users cannot activate this control
 Who it affects: Keyboard users, users who cannot use a mouse
 How to fix: Add tabindex="0" and implement onkeypress/onkeydown handlers for Enter and Space keys
+
+---
+
+ID: AI_ErrCustomControlNoARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2, 1.3.1
+Touchpoint: aria
+Description: Custom widget (tabs, accordion, dropdown) lacks the proper ARIA roles and states
+Why it matters: Without correct roles and states, assistive technology cannot convey what the control is or its current condition
+Who it affects: Screen reader users, keyboard users
+How to fix: Apply the ARIA Authoring Practices pattern for the widget, including the correct role and dynamic states such as aria-expanded, aria-selected, or aria-controls
+
+---
+
+ID: AI_ErrDialogMissingLabel
+Type: Error
+Impact: High
+WCAG: 4.1.2, 2.4.6
+Touchpoint: dialogs
+Description: Dialog has a dialog role but no aria-label or aria-labelledby to name it
+Why it matters: Screen reader users hear that a dialog opened but are not told its purpose
+Who it affects: Screen reader users
+How to fix: Add aria-labelledby pointing to the dialog's visible heading, or an aria-label that names the dialog's purpose
+
+---
+
+ID: AI_ErrDialogMissingRole
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: dialogs
+Description: A modal or dialog is visually present but lacks role="dialog" or role="alertdialog"
+Why it matters: Without the dialog role, assistive technology does not announce it as a modal and may not constrain interaction to it
+Who it affects: Screen reader users, keyboard users
+How to fix: Add role="dialog" (or role="alertdialog" for alerts) to the dialog container, or use the native <dialog> element, and manage focus appropriately
+
+---
+
+ID: AI_ErrDialogNoCloseButton
+Type: Error
+Impact: High
+WCAG: 2.1.1, 2.1.2
+Touchpoint: dialogs
+Description: Modal has no visible close mechanism such as a close button or X
+Why it matters: Users can become trapped in the modal with no clear, operable way to dismiss it
+Who it affects: Keyboard users, screen reader users, users with cognitive disabilities
+How to fix: Provide a visible, keyboard-operable close button and support dismissing the dialog with the Escape key
 
 ---
 
@@ -92,6 +176,30 @@ How to fix: Add aria-haspopup="true", aria-expanded state, and role="menu" with 
 
 ---
 
+ID: AI_ErrForeignTextUnmarked
+Type: Error
+Impact: High
+WCAG: 3.1.2
+Touchpoint: language
+Description: Foreign-language text appears without a lang attribute marking its language
+Why it matters: Screen readers will pronounce the text using the page's primary-language voice, making it unintelligible
+Who it affects: Screen reader users, users who rely on text-to-speech
+How to fix: Wrap the passage in an element with the correct lang attribute (for example lang="de") so assistive technology switches pronunciation
+
+---
+
+ID: AI_ErrHeadingIssue
+Type: Error
+Impact: High
+WCAG: 1.3.1, 2.4.6
+Touchpoint: headings
+Description: AI heading analysis detected a heading structure or markup problem
+Why it matters: Incorrect or missing heading semantics break the document outline that users rely on to understand and navigate the page
+Who it affects: Screen reader users, users who navigate by headings
+How to fix: Review the flagged heading and ensure visually prominent titles use real heading tags at a hierarchical, non-skipping level
+
+---
+
 ID: AI_ErrHeadingLevelMismatch
 Type: Error
 Impact: Medium
@@ -101,6 +209,18 @@ Description: Heading level {current_level} doesn't match visual hierarchy (shoul
 Why it matters: Incorrect heading levels create confusing document structure for screen reader users
 Who it affects: Screen reader users, users who navigate by headings
 How to fix: Adjust heading level to match the visual hierarchy of the page
+
+---
+
+ID: AI_ErrInfiniteAnimationNoPause
+Type: Error
+Impact: High
+WCAG: 2.2.2
+Touchpoint: animation
+Description: An infinite CSS animation runs without any control to pause or stop it
+Why it matters: Continuous motion that cannot be stopped distracts users and can make content impossible to read
+Who it affects: Users with cognitive, attention, or vestibular disorders, low-vision users
+How to fix: Provide a mechanism to pause, stop, or hide motion that lasts more than five seconds, and honour prefers-reduced-motion
 
 ---
 
@@ -188,6 +308,42 @@ How to fix: Replace {element_tag} with <button> element or add role="button" and
 
 ---
 
+ID: AI_ErrNonSemanticLink
+Type: Error
+Impact: High
+WCAG: 4.1.2, 2.1.1
+Touchpoint: links
+Description: Element looks like a link but uses a <div> or <span> instead of an <a>
+Why it matters: Non-semantic links are not announced as links, are often not keyboard focusable, and lack expected activation behaviour
+Who it affects: Screen reader users, keyboard users
+How to fix: Use a real <a href> element for navigation so the link role, focusability, and keyboard activation come for free
+
+---
+
+ID: AI_ErrPageLanguageMissing
+Type: Error
+Impact: High
+WCAG: 3.1.1
+Touchpoint: language
+Description: The <html> element has no lang attribute declaring the page's primary language
+Why it matters: Without a declared page language, screen readers cannot select the correct pronunciation rules and voice
+Who it affects: Screen reader users, users who rely on text-to-speech
+How to fix: Add a valid lang attribute to the <html> element (for example lang="en") matching the page's primary language
+
+---
+
+ID: AI_ErrPageLanguageWrong
+Type: Error
+Impact: High
+WCAG: 3.1.1
+Touchpoint: language
+Description: The page's lang attribute does not match the language of the visible content
+Why it matters: A mismatched language declaration causes screen readers to apply the wrong pronunciation rules to the whole page
+Who it affects: Screen reader users, users who rely on text-to-speech
+How to fix: Set the <html> lang attribute to the language code that actually matches the page's primary visible content
+
+---
+
 ID: AI_ErrReadingOrderMismatch
 Type: Error
 Impact: High
@@ -236,6 +392,18 @@ How to fix: Add aria-expanded="true/false" and update it when state changes
 
 ---
 
+ID: AI_ErrVisualGroupingBroken
+Type: Error
+Impact: High
+WCAG: 1.3.2
+Touchpoint: semantic_structure
+Description: Related content appears grouped visually but is separated or out of order in the DOM
+Why it matters: Screen reader and keyboard users encounter related items disconnected from each other, breaking comprehension of the relationship
+Who it affects: Screen reader users, keyboard users
+How to fix: Reorder or restructure the DOM so the markup order and grouping reflect the visual relationship, using semantic containers as needed
+
+---
+
 ID: AI_ErrVisualHeadingNotMarked
 Type: Error
 Impact: High
@@ -257,6 +425,30 @@ Description: Information conveyed only through visual cues (color, position, siz
 Why it matters: Users who can't perceive visual cues miss important information
 Who it affects: Blind users, colorblind users
 How to fix: Provide text alternatives or additional cues beyond just visual ones
+
+---
+
+ID: AI_WarnDialogBackgroundNotInert
+Type: Warning
+Impact: Medium
+WCAG: 2.4.3, 1.3.2
+Touchpoint: dialogs
+Description: Content behind an open modal appears to still be interactive rather than disabled
+Why it matters: Focus and screen reader navigation can drift into background content, confusing users about what is actually active
+Who it affects: Screen reader users, keyboard users
+How to fix: Apply the inert attribute or aria-hidden to background content while the modal is open, and trap focus within the dialog
+
+---
+
+ID: AI_WarnFocusIndicatorWeak
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: focus
+Description: The focus indicator on an interactive element appears too subtle or missing
+Why it matters: A weak focus indicator makes it hard to tell which element is focused when navigating by keyboard
+Who it affects: Keyboard users, low-vision users
+How to fix: Provide a clearly visible focus indicator with at least 3:1 contrast against adjacent colours, such as a thick outline or box-shadow
 
 ---
 
@@ -296,15 +488,39 @@ How to fix: Implement focus trap that keeps tab navigation within the modal
 
 ---
 
-ID: WarnProblematicAnimation
+ID: AI_WarnNoReducedMotion
 Type: Warning
 Impact: Medium
-WCAG: 2.2.2, 2.3.1
-Touchpoint: animations
-Description: Animation detected that may cause accessibility issues
-Why it matters: Animations can trigger seizures or make content difficult to read
-Who it affects: Users with vestibular disorders, photosensitive epilepsy, or cognitive disabilities
-How to fix: Provide pause/stop controls and respect prefers-reduced-motion preference
+WCAG: 2.3.3
+Touchpoint: animation
+Description: Animations do not respect the prefers-reduced-motion user setting
+Why it matters: Users who request reduced motion still see movement that can trigger discomfort or distraction
+Who it affects: Users with vestibular disorders, users with cognitive or attention disabilities
+How to fix: Add a @media (prefers-reduced-motion: reduce) rule that disables or substantially reduces non-essential animation and transition effects
+
+---
+
+ID: AI_WarnPotentialFlashing
+Type: Warning
+Impact: Medium
+WCAG: 2.3.1
+Touchpoint: animation
+Description: An animation may cause flashing that poses a seizure risk
+Why it matters: Content flashing more than three times per second can trigger photosensitive seizures
+Who it affects: Users with photosensitive epilepsy, users with vestibular disorders
+How to fix: Remove or slow the flashing so nothing flashes more than three times per second, and keep flashing area below the general/red flash thresholds
+
+---
+
+ID: DiscoAsideFound
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: landmarks
+Description: Complementary region detected (signature: {asideSignature}) - requires manual accessibility review
+Why it matters: Complementary regions (<aside> or role="complementary") provide supporting content related to the main content. They must be properly labeled when multiple exist, contain relevant supplementary information, and be distinguishable from main content for screen reader users who navigate by landmarks.
+Who it affects: Screen reader users who navigate by landmarks to find supporting content, users with cognitive disabilities who benefit from clear content organization and separation of main vs. supplementary information.
+How to fix: Verify the aside contains truly complementary content (related to but separate from main content). If multiple complementary regions exist on the page, ensure each has a unique accessible name using aria-label or aria-labelledby. Test with screen reader to confirm the region is announced correctly and its purpose is clear.
 
 ---
 
@@ -317,6 +533,18 @@ Description: Font '{found}' detected in use on the page for accessibility review
 Why it matters: Tracking font usage helps identify typography choices that may affect readability. This discovery item documents which fonts are in use so they can be evaluated for legibility, character distinction, and overall readability as part of a comprehensive accessibility review.
 Who it affects: Users with dyslexia and dyscalculia who benefit from clear readable fonts.
 How to fix: Consider current advice on what is considered an accessible font.
+
+---
+
+ID: DiscoFooterFound
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: landmarks
+Description: Contentinfo region detected (signature: {footerSignature}) - requires manual accessibility review
+Why it matters: Contentinfo landmarks (<footer> at top level or role="contentinfo") identify site-wide footer information such as copyright, privacy policy, and contact links. There should be only one contentinfo per page. It must contain site-level information rather than page-specific footers, and should not be nested inside other landmarks (which would prevent it from being contentinfo).
+Who it affects: Screen reader users who navigate by landmarks to quickly access site-wide footer information and legal links, keyboard users who use landmarks for efficient page navigation, users with cognitive disabilities who rely on consistent footer placement for finding important site information.
+How to fix: Verify there is only one contentinfo landmark per page (scoped to top-level <footer> or explicit role="contentinfo"). Ensure the footer contains site-level information (copyright, privacy, contact) rather than article-specific or section-specific footers. If multiple footers exist, ensure only the site-level one is contentinfo. Test with screen reader to confirm contentinfo is announced correctly.
 
 ---
 
@@ -380,42 +608,6 @@ How to fix: Verify the SVG with role="img" has appropriate accessible names thro
 
 ---
 
-ID: DiscoNavFound
-Type: Discovery
-Impact: N/A
-WCAG: N/A
-Touchpoint: navigation
-Description: Navigation region detected (signature: {navSignature}) - requires manual accessibility review
-Why it matters: Navigation regions are critical wayfinding tools that must be keyboard accessible, properly labeled, and work with screen readers. Each navigation area needs verification that links are organized logically, focus order is correct, current page indication is provided (aria-current="page"), and the navigation can be easily understood and operated by all users. Multiple navigation regions must be distinguishable via unique accessible names.
-Who it affects: Screen reader users who navigate by landmarks and need clear labels to distinguish navigation regions, keyboard users who must efficiently tab through navigation links, users with motor disabilities who need consistent and predictable navigation patterns, users with cognitive disabilities who benefit from clear, well-organized navigation structures.
-How to fix: Verify navigation has a clear accessible name (aria-label or aria-labelledby) if multiple nav regions exist. Test keyboard navigation through all links (Tab order should be logical). Ensure current page is indicated with aria-current="page". Verify focus indicators are visible. Test with screen reader to confirm navigation is announced correctly and links are understandable out of context.
-
----
-
-ID: DiscoAsideFound
-Type: Discovery
-Impact: N/A
-WCAG: N/A
-Touchpoint: landmarks
-Description: Complementary region detected (signature: {asideSignature}) - requires manual accessibility review
-Why it matters: Complementary regions (<aside> or role="complementary") provide supporting content related to the main content. They must be properly labeled when multiple exist, contain relevant supplementary information, and be distinguishable from main content for screen reader users who navigate by landmarks.
-Who it affects: Screen reader users who navigate by landmarks to find supporting content, users with cognitive disabilities who benefit from clear content organization and separation of main vs. supplementary information.
-How to fix: Verify the aside contains truly complementary content (related to but separate from main content). If multiple complementary regions exist on the page, ensure each has a unique accessible name using aria-label or aria-labelledby. Test with screen reader to confirm the region is announced correctly and its purpose is clear.
-
----
-
-ID: DiscoSectionFound
-Type: Discovery
-Impact: N/A
-WCAG: N/A
-Touchpoint: landmarks
-Description: Section region detected (signature: {sectionSignature}) - requires manual accessibility review
-Why it matters: Section elements with accessible names become region landmarks (<section> with aria-label/aria-labelledby or role="region"). They must have meaningful, unique labels to help screen reader users navigate between distinct areas of content. Sections without accessible names are not landmarks and won't appear in landmark navigation.
-Who it affects: Screen reader users who navigate by landmarks to jump between major page sections, users with cognitive disabilities who benefit from clearly labeled and organized content regions.
-How to fix: Verify each section has a descriptive, unique accessible name (aria-label or aria-labelledby) that clearly identifies its purpose. Ensure the label is concise and meaningful. If the section doesn't represent a significant region of content, consider if it should be a landmark at all. Test with screen reader to confirm the region is announced with its label.
-
----
-
 ID: DiscoHeaderFound
 Type: Discovery
 Impact: N/A
@@ -425,30 +617,6 @@ Description: Banner region detected (signature: {headerSignature}) - requires ma
 Why it matters: Banner landmarks (<header> at top level or role="banner") identify the main header of the page, typically containing site logo, main navigation, and site-wide utilities. There should be only one banner per page. It must be properly labeled if the site identity isn't obvious, and should not be nested inside other landmarks (which would prevent it from being a banner).
 Who it affects: Screen reader users who navigate by landmarks to quickly access site-wide navigation and branding, keyboard users who use landmarks for efficient page navigation, users with cognitive disabilities who rely on consistent banner placement for orientation.
 How to fix: Verify there is only one banner landmark per page (scoped to top-level <header> or explicit role="banner"). Ensure the banner contains site-level content (logo, main nav, site utilities) rather than page-specific content. If multiple headers exist, ensure only the site-level one is a banner. Test with screen reader to confirm banner is announced correctly.
-
----
-
-ID: DiscoFooterFound
-Type: Discovery
-Impact: N/A
-WCAG: N/A
-Touchpoint: landmarks
-Description: Contentinfo region detected (signature: {footerSignature}) - requires manual accessibility review
-Why it matters: Contentinfo landmarks (<footer> at top level or role="contentinfo") identify site-wide footer information such as copyright, privacy policy, and contact links. There should be only one contentinfo per page. It must contain site-level information rather than page-specific footers, and should not be nested inside other landmarks (which would prevent it from being contentinfo).
-Who it affects: Screen reader users who navigate by landmarks to quickly access site-wide footer information and legal links, keyboard users who use landmarks for efficient page navigation, users with cognitive disabilities who rely on consistent footer placement for finding important site information.
-How to fix: Verify there is only one contentinfo landmark per page (scoped to top-level <footer> or explicit role="contentinfo"). Ensure the footer contains site-level information (copyright, privacy, contact) rather than article-specific or section-specific footers. If multiple footers exist, ensure only the site-level one is contentinfo. Test with screen reader to confirm contentinfo is announced correctly.
-
----
-
-ID: DiscoSearchFound
-Type: Discovery
-Impact: N/A
-WCAG: N/A
-Touchpoint: landmarks
-Description: Search region detected (signature: {searchSignature}) - requires manual accessibility review
-Why it matters: Search landmarks (<search> or role="search") identify search functionality on the page. They help screen reader users quickly locate search features. The search region must have a clear accessible name if multiple search regions exist, contain appropriate search form controls, and be easily discoverable through landmark navigation.
-Who it affects: Screen reader users who navigate by landmarks to quickly find search functionality, keyboard users who use landmarks for efficient page navigation, users with cognitive disabilities who benefit from clearly marked search areas.
-How to fix: Verify the search region contains actual search functionality (typically a form with input and submit button). If multiple search regions exist, ensure each has a unique accessible name using aria-label or aria-labelledby. Ensure search form controls are properly labeled and keyboard accessible. Test with screen reader to confirm search region is announced correctly and search controls are accessible.
 
 ---
 
@@ -464,6 +632,54 @@ How to fix: Ensure that the ID attribute is referenced and its use is valid.
 
 ---
 
+ID: DiscoInteractiveSvg
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: images
+Description: Flags interactive SVG elements (those with event handlers, tabindex, focusable children, or interactive ARIA roles) for manual accessibility review.
+Why it matters: Interactive SVGs need keyboard access, focus management, and ARIA that automated tests cannot fully verify, so a human must confirm they are operable and announced correctly.
+Who it affects: Screen reader users and keyboard-only users who rely on interactive graphics being properly exposed and operable.
+How to fix: Manually verify the SVG is keyboard focusable and operable, has an accessible name and appropriate role, and exposes its interactive controls to assistive technology.
+
+---
+
+ID: DiscoMapFound
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: maps
+Description: A map element (iframe, div, web-component, or SVG) was detected on the page and reported with provider, interactivity, and naming metadata for manual review.
+Why it matters: Maps frequently present accessibility barriers (missing names, keyboard traps, hidden content) that automated tools cannot fully judge, so each one must be surfaced for human evaluation.
+Who it affects: Screen reader users, keyboard-only users, and low-vision users who interact with embedded maps.
+How to fix: No fix is required for the discovery itself; manually verify the map has an accessible name, keyboard operability, and a text alternative for the information it conveys.
+
+---
+
+ID: DiscoNavFound
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: navigation
+Description: Navigation region detected (signature: {navSignature}) - requires manual accessibility review
+Why it matters: Navigation regions are critical wayfinding tools that must be keyboard accessible, properly labeled, and work with screen readers. Each navigation area needs verification that links are organized logically, focus order is correct, current page indication is provided (aria-current="page"), and the navigation can be easily understood and operated by all users. Multiple navigation regions must be distinguishable via unique accessible names.
+Who it affects: Screen reader users who navigate by landmarks and need clear labels to distinguish navigation regions, keyboard users who must efficiently tab through navigation links, users with motor disabilities who need consistent and predictable navigation patterns, users with cognitive disabilities who benefit from clear, well-organized navigation structures.
+How to fix: Verify navigation has a clear accessible name (aria-label or aria-labelledby) if multiple nav regions exist. Test keyboard navigation through all links (Tab order should be logical). Ensure current page is indicated with aria-current="page". Verify focus indicators are visible. Test with screen reader to confirm navigation is announced correctly and links are understandable out of context.
+
+---
+
+ID: DiscoNoSubmitButton
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: forms
+Description: Discovers forms that have no visible submit button (no `<button>`, `button[type=submit]`, `input[type=submit]`, or `input[type=image]` that is rendered).
+Why it matters: Without an obvious submit control, users may not know how to complete and send the form, so the submission mechanism needs manual review to confirm it is discoverable and operable.
+Who it affects: Screen reader users, screen magnifier users, users with cognitive disabilities, and keyboard-only users who rely on a clear submit affordance.
+How to fix: Add a visible submit button, or if relying on implicit submission (Enter key) or auto-submit, clearly communicate the mechanism and verify it works for keyboard and assistive-technology users.
+
+---
+
 ID: DiscoPDFLinksFound
 Type: Discovery
 Impact: N/A
@@ -473,6 +689,42 @@ Description: Links to PDF documents detected on page
 Why it matters: PDF documents often have accessibility issues and may not be accessible to all users
 Who it affects: Screen reader users who have higher cognitive load when reading PDFs
 How to fix: Ensure PDFs are accessible (tagged, structured, with text content) or provide HTML alternatives. Ensure that the user knows the link is to a PDF. Ensure the attribute hreflang is provided if the PDF is in a different language to that of the current page and that the language of the PDF is indicated in the link text.
+
+---
+
+ID: DiscoResponsiveBreakpoints
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: page
+Description: The page defines responsive CSS breakpoints (min-width/max-width media queries), indicating it adapts its layout across viewport widths.
+Why it matters: Responsive layouts must be manually checked to confirm content reflows without loss of information or horizontal scrolling at narrow widths and high zoom.
+Who it affects: Low-vision users who zoom or use large text, and mobile/small-screen users relying on reflow.
+How to fix: No fix required; review each detected breakpoint to verify content reflows correctly at 320 CSS pixels and 200% zoom without two-dimensional scrolling.
+
+---
+
+ID: DiscoSearchFound
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: landmarks
+Description: Search region detected (signature: {searchSignature}) - requires manual accessibility review
+Why it matters: Search landmarks (<search> or role="search") identify search functionality on the page. They help screen reader users quickly locate search features. The search region must have a clear accessible name if multiple search regions exist, contain appropriate search form controls, and be easily discoverable through landmark navigation.
+Who it affects: Screen reader users who navigate by landmarks to quickly find search functionality, keyboard users who use landmarks for efficient page navigation, users with cognitive disabilities who benefit from clearly marked search areas.
+How to fix: Verify the search region contains actual search functionality (typically a form with input and submit button). If multiple search regions exist, ensure each has a unique accessible name using aria-label or aria-labelledby. Ensure search form controls are properly labeled and keyboard accessible. Test with screen reader to confirm search region is announced correctly and search controls are accessible.
+
+---
+
+ID: DiscoSectionFound
+Type: Discovery
+Impact: N/A
+WCAG: N/A
+Touchpoint: landmarks
+Description: Section region detected (signature: {sectionSignature}) - requires manual accessibility review
+Why it matters: Section elements with accessible names become region landmarks (<section> with aria-label/aria-labelledby or role="region"). They must have meaningful, unique labels to help screen reader users navigate between distinct areas of content. Sections without accessible names are not landmarks and won't appear in landmark navigation.
+Who it affects: Screen reader users who navigate by landmarks to jump between major page sections, users with cognitive disabilities who benefit from clearly labeled and organized content regions.
+How to fix: Verify each section has a descriptive, unique accessible name (aria-label or aria-labelledby) that clearly identifies its purpose. Ensure the label is concise and meaningful. If the section doesn't represent a significant region of content, consider if it should be a landmark at all. Test with screen reader to confirm the region is announced with its label.
 
 ---
 
@@ -500,6 +752,18 @@ How to fix: Consider external stylesheets
 
 ---
 
+ID: ErrAccordionWithoutARIA
+Type: Error
+Impact: High
+WCAG: 1.3.1, 4.1.2
+Touchpoint: aria
+Description: An accordion trigger (toggle button or accordion-header with an onclick toggle) lacks the aria-expanded attribute needed to convey its open/closed state.
+Why it matters: Without aria-expanded, assistive technology cannot tell the user whether the accordion section is currently expanded or collapsed.
+Who it affects: Screen reader users who depend on state announcements to understand and operate collapsible content.
+How to fix: Add aria-expanded (true/false, kept in sync with the visible state) to the accordion trigger, and use aria-controls to associate it with the panel it toggles.
+
+---
+
 ID: ErrAltOnElementThatDoesntTakeIt
 Type: Error
 Impact: Low
@@ -524,6 +788,18 @@ How to fix: Limit alt text to 150 characters maximum for concise descriptions. F
 
 ---
 
+ID: ErrAnchorTargetTabindex
+Type: Error
+Impact: Medium
+WCAG: 2.4.3
+Touchpoint: links
+Description: An in-page link target (the element an internal anchor points to) is missing `tabindex="-1"` or has a non-`-1` tabindex, so programmatic focus after the jump is not handled correctly.
+Why it matters: Without `tabindex="-1"` on the target, activating an in-page link may not move keyboard or screen reader focus to the destination, leaving users stranded at the top of the page.
+Who it affects: Keyboard-only users and screen reader users following skip links and in-page navigation.
+How to fix: Add `tabindex="-1"` to each element referenced by an in-page link so it can receive programmatic focus without entering the normal tab order.
+
+---
+
 ID: ErrAriaLabelMayNotBeFoundByVoiceControl
 Type: Error
 Impact: Medium
@@ -545,6 +821,18 @@ Description: Timer starts automatically without user control to pause or stop
 Why it matters: Auto-starting timers can create stress and barriers for users who need more time to complete tasks or read content.
 Who it affects: Users with cognitive disabilities, users with reading disabilities, users with motor impairments who need more time, screen reader users.
 How to fix: Provide controls to pause, stop, or extend time limits, avoid auto-starting timers unless essential, allow users to control timing of content updates.
+
+---
+
+ID: ErrAutoplayWithoutControls
+Type: Error
+Impact: High
+WCAG: 1.4.2, 2.2.2
+Touchpoint: media
+Description: A native `<video>` or `<audio>` element has the `autoplay` attribute but no `controls` attribute, so the auto-playing media cannot be paused, stopped, or hidden by the user.
+Why it matters: Auto-playing media with no controls interferes with screen reader output and gives users no way to stop distracting or competing audio/motion.
+Who it affects: Screen reader users, users with cognitive or attention disabilities, and users sensitive to motion or unexpected sound.
+How to fix: Add the `controls` attribute (and avoid `autoplay` where possible), or provide an explicit, keyboard-operable pause/stop control so users can halt the media within the first few seconds.
 
 ---
 
@@ -584,15 +872,15 @@ How to fix: Move banner to top level
 
 ---
 
-ID: ErrButtonOutlineNoneNoBoxShadow
+ID: ErrButtonClipPathWithOutline
 Type: Error
 Impact: High
-WCAG: 2.4.7 Focus Visible, 1.4.1 Use of Color
+WCAG: 2.4.7
 Touchpoint: buttons
-Description: Button has outline:none on focus with no box-shadow, relying only on color change which fails WCAG 1.4.1
-Why it matters: Relying solely on color change for focus indication fails WCAG 1.4.1 Use of Color. Users with color blindness, low vision, or monochrome displays cannot perceive focus state. Box-shadow or outline is required to provide a non-color visual indicator that wraps the element.
-Who it affects: Users with color blindness (8% of males, 0.5% of females), users with low vision, users on monochrome displays, keyboard navigation users
-How to fix: Add a box-shadow focus indicator (e.g., box-shadow: 0 0 0 3px rgba(0,102,204,0.5)) or use an outline with outline-offset of at least 2px. Do not rely on color change alone.
+Description: A non-rectangular button shaped with CSS clip-path relies on a focus outline, which renders as a rectangle that does not follow the clipped shape and can appear visually disconnected.
+Why it matters: The focus indicator may not clearly surround the actual button shape, leaving keyboard users unsure of which control is focused (and failing Conformance Requirement 5.2.4 for magnified views).
+Who it affects: Keyboard-only users and low-vision users using screen magnification.
+How to fix: Replace the outline with a focus indicator that follows the clipped shape, such as a box-shadow, a background/border change, or an SVG-based focus ring matching the button geometry.
 
 ---
 
@@ -608,15 +896,51 @@ How to fix: Choose an outline color with at least 3:1 contrast against the butto
 
 ---
 
-ID: ErrButtonOutlineWidthInsufficient
+ID: ErrButtonFocusObscured
 Type: Error
 Impact: High
-WCAG: 2.4.7 Focus Visible, 2.4.11 Focus Appearance
+WCAG: 2.4.7 Focus Visible
 Touchpoint: buttons
-Description: Button focus outline has outline-width less than 2px, making it too thin to be clearly visible
-Why it matters: Focus indicators must be thick enough to be clearly visible to keyboard users. Outlines thinner than 2px can be difficult or impossible to see, especially for users with low vision or on high-resolution displays. WCAG 2.4.11 Level AAA requires focus indicators to be at least 2 CSS pixels thick.
-Who it affects: Keyboard navigation users, users with low vision, users on high-DPI displays, users with cognitive disabilities
-How to fix: Set outline-width to at least 2px (e.g., outline: 2px solid #0066cc). For better visibility, consider 3px width. Test on various screen sizes and resolutions to ensure visibility.
+Description: Button focus indicator is partially or fully obscured by other elements due to z-index stacking
+Why it matters: If the focus indicator is hidden behind other elements, keyboard users cannot see which button has focus. This completely breaks keyboard navigation and makes the interface unusable for non-mouse users.
+Who it affects: Keyboard navigation users, screen magnifier users, users with motor disabilities, power users
+How to fix: Review z-index values and stacking contexts. Ensure focused buttons have appropriate z-index to keep focus indicators visible. Use isolation or adjust parent stacking contexts if needed. Test with actual keyboard navigation.
+
+---
+
+ID: ErrButtonNoVisibleFocus
+Type: Error
+Impact: High
+WCAG: 2.4.7
+Touchpoint: buttons
+Description: A button sets outline:none (or a transparent outline) and provides no alternative visible focus indicator such as box-shadow or a visible outline.
+Why it matters: Keyboard users cannot tell which button currently has focus, making the interface impossible to navigate reliably.
+Who it affects: Keyboard-only users and people with low vision or motor impairments who track focus visually.
+How to fix: Provide a clearly visible focus indicator on :focus / :focus-visible using a real outline or box-shadow that meets a 3:1 contrast ratio against the background.
+
+---
+
+ID: ErrButtonNoVisibleFocusRelyingOnColorOnly
+Type: Error
+Impact: High
+WCAG: 2.4.7, 1.4.1
+Touchpoint: buttons
+Description: A button removes its outline and provides no box-shadow, signalling focus only through a background or border color change.
+Why it matters: A color-only focus change is invisible to users who cannot perceive that color difference, leaving them unable to tell which control is focused.
+Who it affects: Keyboard users, and especially users with color vision deficiencies or low vision.
+How to fix: Add a non-color focus indicator such as a visible `outline` (2px or more) or a `box-shadow` ring in addition to or instead of any color change.
+
+---
+
+ID: ErrButtonOutlineNoneNoBoxShadow
+Type: Error
+Impact: High
+WCAG: 2.4.7 Focus Visible, 1.4.1 Use of Color
+Touchpoint: buttons
+Description: Button has outline:none on focus with no box-shadow, relying only on color change which fails WCAG 1.4.1
+Why it matters: Relying solely on color change for focus indication fails WCAG 1.4.1 Use of Color. Users with color blindness, low vision, or monochrome displays cannot perceive focus state. Box-shadow or outline is required to provide a non-color visual indicator that wraps the element.
+Who it affects: Users with color blindness (8% of males, 0.5% of females), users with low vision, users on monochrome displays, keyboard navigation users
+How to fix: Add a box-shadow focus indicator (e.g., box-shadow: 0 0 0 3px rgba(0,102,204,0.5)) or use an outline with outline-offset of at least 2px. Do not rely on color change alone.
 
 ---
 
@@ -632,63 +956,27 @@ How to fix: Set outline-offset to at least 2px (e.g., outline-offset: 2px) to cr
 
 ---
 
-ID: ErrButtonFocusObscured
+ID: ErrButtonOutlineWidthInsufficient
 Type: Error
 Impact: High
-WCAG: 2.4.7 Focus Visible
+WCAG: 2.4.7 Focus Visible, 2.4.11 Focus Appearance
 Touchpoint: buttons
-Description: Button focus indicator is partially or fully obscured by other elements due to z-index stacking
-Why it matters: If the focus indicator is hidden behind other elements, keyboard users cannot see which button has focus. This completely breaks keyboard navigation and makes the interface unusable for non-mouse users.
-Who it affects: Keyboard navigation users, screen magnifier users, users with motor disabilities, power users
-How to fix: Review z-index values and stacking contexts. Ensure focused buttons have appropriate z-index to keep focus indicators visible. Use isolation or adjust parent stacking contexts if needed. Test with actual keyboard navigation.
+Description: Button focus outline has outline-width less than 2px, making it too thin to be clearly visible
+Why it matters: Focus indicators must be thick enough to be clearly visible to keyboard users. Outlines thinner than 2px can be difficult or impossible to see, especially for users with low vision or on high-resolution displays. WCAG 2.4.11 Level AAA requires focus indicators to be at least 2 CSS pixels thick.
+Who it affects: Keyboard navigation users, users with low vision, users on high-DPI displays, users with cognitive disabilities
+How to fix: Set outline-width to at least 2px (e.g., outline: 2px solid #0066cc). For better visibility, consider 3px width. Test on various screen sizes and resolutions to ensure visibility.
 
 ---
 
-ID: WarnButtonOutlineNoneWithBoxShadow
-Type: Warning
-Impact: Medium
-WCAG: 2.4.7 Focus Visible
+ID: ErrButtonSingleSideBoxShadow
+Type: Error
+Impact: High
+WCAG: 2.4.7
 Touchpoint: buttons
-Description: Button uses outline:none with box-shadow for focus, which may not provide clear indication on all sides
-Why it matters: While box-shadow provides a focus indicator, it may not be visible on all sides of the button depending on shadow direction and spread. A clear outline on all four sides is preferred for maximum clarity. Box-shadow can also be harder to see in certain contexts.
-Who it affects: Keyboard navigation users, users with low vision, users with cognitive disabilities
-How to fix: Replace box-shadow with outline and outline-offset (e.g., outline: 2px solid #0066cc; outline-offset: 2px) to ensure a clear border on all sides of the focused button.
-
----
-
-ID: WarnButtonDefaultFocus
-Type: Warning
-Impact: Medium
-WCAG: 2.4.7 Focus Visible
-Touchpoint: buttons
-Description: Button uses browser default focus outline which may not meet contrast requirements on all backgrounds
-Why it matters: Browser default outlines (typically thin blue or dotted lines) often fail to meet 3:1 contrast requirements depending on the background. Different browsers use different default styles, leading to inconsistent and potentially inaccessible experiences.
-Who it affects: Keyboard navigation users, users with low vision, users on different browsers and operating systems
-How to fix: Define explicit focus styles with outline and outline-offset that meet 3:1 contrast ratio. Example: button:focus { outline: 2px solid #0066cc; outline-offset: 2px; }
-
----
-
-ID: WarnButtonFocusGradientBackground
-Type: Warning
-Impact: Medium
-WCAG: 2.4.7 Focus Visible, 1.4.11 Non-text Contrast
-Touchpoint: buttons
-Description: Button with gradient background has focus outline - contrast cannot be automatically verified against gradient
-Why it matters: CSS gradients have varying colors across the button, making it impossible to programmatically verify that the focus outline meets 3:1 contrast against all parts of the gradient. The outline may meet contrast at some points but fail at others.
-Who it affects: Keyboard navigation users, users with low vision, users with color vision deficiencies
-How to fix: Manually verify focus outline has at least 3:1 contrast against the lightest AND darkest colors in the gradient. Consider using a solid background color, or add outline-offset to separate the outline from the gradient. Use tools like WebAIM Contrast Checker for verification.
-
----
-
-ID: WarnButtonFocusImageBackground
-Type: Warning
-Impact: Medium
-WCAG: 2.4.7 Focus Visible, 1.4.11 Non-text Contrast
-Touchpoint: buttons
-Description: Button with background image has focus outline - contrast cannot be automatically verified against image
-Why it matters: Background images have varying colors and patterns, making it impossible to programmatically verify focus outline contrast. The outline may be invisible against certain parts of the image, creating unusable focus indicators for keyboard users.
-Who it affects: Keyboard navigation users, users with low vision, users with color vision deficiencies
-How to fix: Manually test focus visibility against all parts of the background image. Consider adding a semi-transparent overlay behind the outline, using outline-offset for separation, or avoiding background images on focusable buttons. Test with multiple users if possible.
+Description: A button sets `outline: none` on focus and substitutes a single-sided `box-shadow` that is only visible on one edge of the control.
+Why it matters: A focus indicator visible on only one side does not reliably surround the element, so keyboard users may fail to perceive which control currently has focus.
+Who it affects: Keyboard-only users and sighted users with low vision or cognitive disabilities who rely on a clear focus indicator.
+How to fix: Use a full outline or an all-around box-shadow (or another indicator enclosing the control) that meets the focus-visibility and 3:1 contrast requirements instead of a single-edge shadow.
 
 ---
 
@@ -701,6 +989,42 @@ Description: Button text has insufficient color contrast with button background
 Why it matters: Users with low vision, color blindness, or viewing the page in bright sunlight may not be able to read button labels if contrast is insufficient. This prevents users from understanding button purpose and can make critical functions inaccessible. Buttons are action triggers, so being unable to read them can prevent task completion.
 Who it affects: Users with low vision, color blindness, age-related vision changes, and anyone viewing content in poor lighting conditions or on low-quality displays
 How to fix: Ensure button text has at least 4.5:1 contrast ratio with the button background for normal text, or 3:1 for large text (18pt or 14pt bold). For Level AAA compliance, use 7:1 for normal text. Test in different states (hover, focus, active) as contrast requirements apply to all states. Avoid using color alone to indicate button state.
+
+---
+
+ID: ErrButtonTransparentOutline
+Type: Error
+Impact: High
+WCAG: 2.4.7, 1.4.11
+Touchpoint: buttons
+Description: A button's focus outline color is semi-transparent (alpha below 0.5), so its effective contrast against surrounding backgrounds cannot be guaranteed to meet 3:1.
+Why it matters: A faint, see-through focus ring may be invisible against some backgrounds, so keyboard users cannot reliably tell which control is focused.
+Who it affects: Keyboard-only users and low-vision users.
+How to fix: Use a fully opaque focus outline color (alpha 1.0) that maintains at least 3:1 contrast against the adjacent background.
+
+---
+
+ID: ErrCarouselWithoutARIA
+Type: Error
+Impact: High
+WCAG: 1.3.1, 2.1.1, 4.1.2
+Touchpoint: aria
+Description: A carousel/slider widget (with multiple slides or prev/next controls) lacks role="region" with an accessible name, and lacks a live region for slide changes.
+Why it matters: Without proper roles, a label, and live-region announcements, screen reader and keyboard users cannot identify the carousel, operate its controls, or know when the displayed slide changes.
+Who it affects: Screen reader users and keyboard-only users navigating rotating content.
+How to fix: Mark the carousel with role="region" and an aria-label, expose accessible prev/next/pause controls, and announce slide changes via an aria-live region.
+
+---
+
+ID: ErrClickableWithoutKeyboard
+Type: Error
+Impact: High
+WCAG: 2.1.1
+Touchpoint: keyboard
+Description: A non-semantic element (div, span, p, or img) has a click handler or pointer cursor but no role, no focusable tabindex, and no keyboard event handler.
+Why it matters: Functionality that only responds to mouse clicks cannot be reached or activated with a keyboard, blocking keyboard-dependent users entirely.
+Who it affects: Keyboard-only users, switch users, and screen reader users who rely on keyboard interaction.
+How to fix: Use a native `<button>`/`<a>`, or add `role="button"`, `tabindex="0"`, and keyboard handlers (Enter/Space) to the element.
 
 ---
 
@@ -776,7 +1100,31 @@ How to fix: Add navigation content or remove empty landmark
 
 ---
 
-ID: ErrContentInfoLandmarkAccessibleNameIsBlank
+ID: ErrContentObscuring
+Type: Error
+Impact: High
+WCAG: 2.4.3 Focus Order (Level A), 2.1.2 No Keyboard Trap (Level A)
+Touchpoint: focus_management
+Description: Content is obscured by other elements preventing interaction
+Why it matters: When content is covered by other elements, users cannot access or interact with it, creating complete barriers to functionality.
+Who it affects: All users, particularly keyboard users who cannot use mouse to work around layout issues, screen reader users who may not know content is obscured.
+How to fix: Fix z-index and positioning issues, ensure modals and overlays don't cover content inappropriately, test that all content remains accessible.
+
+---
+
+ID: ErrContentOutsideLandmarks
+Type: Error
+Impact: High
+WCAG: 1.3.1
+Touchpoint: landmarks
+Description: Page content (text and elements) is rendered outside of any landmark region rather than inside `<main>`, `<nav>`, `<header>`, `<footer>`, or another ARIA landmark.
+Why it matters: Content outside landmarks is skipped when assistive-technology users navigate by region, so meaningful content can be missed or hard to locate.
+Who it affects: Screen reader users who navigate by landmarks to orient themselves and jump between page regions.
+How to fix: Wrap all meaningful content in appropriate landmark regions (e.g., `<main>`, `<nav>`, `<header>`, `<footer>`); legitimate exceptions like skip links, hidden content, and scripts may remain outside.
+
+---
+
+ID: ErrContentinfoLandmarkAccessibleNameIsBlank
 Type: Error
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -788,7 +1136,7 @@ How to fix: Add meaningful label text
 
 ---
 
-ID: ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
+ID: ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
 Type: Error
 Impact: Medium
 WCAG: 4.1.2
@@ -797,18 +1145,6 @@ Description: Contentinfo landmark has both aria-label and aria-labelledby
 Why it matters: Conflicting labeling methods
 Who it affects: Screen reader users
 How to fix: Use only one labeling method
-
----
-
-ID: ErrContentObscuring
-Type: Error
-Impact: High
-WCAG: 2.4.3 Focus Order (Level A), 2.1.2 No Keyboard Trap (Level A)
-Touchpoint: focus_management
-Description: Content is obscured by other elements preventing interaction
-Why it matters: When content is covered by other elements, users cannot access or interact with it, creating complete barriers to functionality.
-Who it affects: All users, particularly keyboard users who cannot use mouse to work around layout issues, screen reader users who may not know content is obscured.
-How to fix: Fix z-index and positioning issues, ensure modals and overlays don't cover content inappropriately, test that all content remains accessible.
 
 ---
 
@@ -824,6 +1160,18 @@ How to fix: Move contentinfo to top level
 
 ---
 
+ID: ErrDialogMissingRole
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: interactive
+Description: An element styled as a dialog or modal (dialog/modal in its class or id) with an aria-labelledby reference lacks role="dialog" or role="alertdialog".
+Why it matters: Without the dialog role, assistive technologies do not announce the element as a dialog or apply dialog interaction conventions, so users do not understand the modal context.
+Who it affects: Screen reader users.
+How to fix: Add role="dialog" (or role="alertdialog" for alerts) to the dialog container, and pair it with aria-modal="true" and a programmatic label.
+
+---
+
 ID: ErrDivMapMissingAttributes
 Type: Error
 Impact: High
@@ -833,6 +1181,54 @@ Description: Map container div is missing required accessibility attributes
 Why it matters: Maps without proper accessibility attributes are completely inaccessible to screen reader users who cannot perceive the visual information.
 Who it affects: Blind and low vision users, users who rely on screen readers to understand map content and functionality.
 How to fix: Add appropriate ARIA labels and descriptions, provide text alternatives for map information, ensure all map controls are keyboard accessible.
+
+---
+
+ID: ErrDivMapMissingStructure
+Type: Error
+Impact: High
+WCAG: 1.3.1
+Touchpoint: maps
+Description: A div-based interactive map is neither inside a landmark region nor associated with a heading, leaving it with no programmatic structure.
+Why it matters: Without a landmark or heading, screen reader users have no way to locate, identify, or skip the map content.
+Who it affects: Screen reader users who navigate by landmarks and headings.
+How to fix: Wrap the map in a <section> (or role="region") with an aria-label, or precede it with a descriptive heading that names the map.
+
+---
+
+ID: ErrDocumentLinkMissingFileType
+Type: Error
+Impact: Medium
+WCAG: 2.4.4
+Touchpoint: documents
+Description: A link to a downloadable document (e.g. PDF, Word, Excel) does not indicate the file type in its accessible name (link text, aria-label, or title).
+Why it matters: Users cannot tell that the link opens or downloads a non-HTML document of a particular type, leading to unexpected behavior and orientation difficulties.
+Who it affects: Screen reader users, users on metered/mobile connections, and users who need software for specific file formats.
+How to fix: Include the file type (and ideally size) in the link's accessible name, e.g. "Annual report (PDF, 2 MB)".
+
+---
+
+ID: ErrDocumentLinkWrongLanguage
+Type: Error
+Impact: Medium
+WCAG: 3.1.2
+Touchpoint: documents
+Description: A link points to a document written in a language different from the page's language, but neither a `lang` attribute nor any language indication appears in the link text/accessible name.
+Why it matters: Assistive technologies announce the link in the page language and the target document in the wrong pronunciation, and users are not warned the content language changes.
+Who it affects: Screen reader users and multilingual users who need to know the target document's language before activating the link.
+How to fix: Add a `lang` attribute matching the document language and/or indicate the language in the link text (e.g., "Annual Report (French)").
+
+---
+
+ID: ErrDropdownWithoutARIA
+Type: Error
+Impact: High
+WCAG: 2.1.1, 4.1.2, 1.3.1
+Touchpoint: forms
+Description: A custom (non-native-select) dropdown/combobox widget lacks the required ARIA pattern, such as role="combobox"/"listbox" with aria-expanded, or role="menu" with aria-haspopup.
+Why it matters: Without proper roles and state, assistive technologies cannot convey that the control is a dropdown, whether it is open, or how to operate it, and it may be unreachable by keyboard.
+Who it affects: Screen reader users and keyboard-only users.
+How to fix: Implement an established ARIA pattern (combobox or listbox with aria-expanded, or a button with aria-haspopup controlling a role="menu"), with full keyboard support; or use a native select element.
 
 ---
 
@@ -956,6 +1352,18 @@ How to fix: Ensure all content is within appropriate landmarks
 
 ---
 
+ID: ErrElementPrimaryLangNotRecognized
+Type: Error
+Impact: Medium
+WCAG: 3.1.1, 3.1.2
+Touchpoint: language
+Description: An element's lang attribute is correctly formatted but its primary subtag is not a recognized language code.
+Why it matters: An unrecognized language code prevents assistive technology from selecting the correct pronunciation rules, so the content may be spoken with the wrong accent or phonetics.
+Who it affects: Screen reader users and users of text-to-speech and braille translation tools.
+How to fix: Replace the lang value with a valid ISO 639-1 (or otherwise registered BCP 47) language code that matches the actual content language.
+
+---
+
 ID: ErrElementRegionQualifierNotRecognized
 Type: Error
 Impact: Low
@@ -965,6 +1373,18 @@ Description: Element lang attribute has unrecognized region qualifier
 Why it matters: Invalid region codes may affect pronunciation
 Who it affects: Screen reader users
 How to fix: Use valid ISO 3166-1 region codes
+
+---
+
+ID: ErrEmptyAlt
+Type: Error
+Impact: High
+WCAG: 1.1.1
+Touchpoint: images
+Description: An informative image has an `alt` attribute that is present but empty, so it conveys no text alternative.
+Why it matters: An empty alt on an informative image hides its meaning from assistive technology, which treats the image as decorative and skips it.
+Who it affects: Screen reader users and users who cannot see the image.
+How to fix: Provide descriptive alt text that conveys the image's purpose; only use `alt=""` when the image is genuinely decorative.
 
 ---
 
@@ -1016,15 +1436,15 @@ How to fix: Add descriptive text to all label elements that clearly identifies t
 
 ---
 
-ID: ErrHtmlLangEmpty
+ID: ErrEmptyLanguageAttribute
 Type: Error
 Impact: High
-WCAG: 3.1.1 Language of Page (Level A)
+WCAG: 3.1.2 Language of Parts (Level AA)
 Touchpoint: language
-Description: HTML element has a lang attribute present but with no value (lang=""), preventing screen readers from determining the page language
-Why it matters: An empty lang attribute is worse than no lang attribute because it explicitly tells assistive technologies there's no language specified, potentially causing screen readers to use incorrect pronunciation rules or fail to switch language synthesizers. This can make content completely unintelligible when read aloud.
-Who it affects: Blind and low vision users using screen readers who need proper language identification for correct pronunciation, multilingual users who rely on automatic language switching in assistive technologies, users with dyslexia using reading tools that depend on language settings, and users of translation services
-How to fix: Add a valid language code to the lang attribute (e.g., lang="en" for English, lang="es" for Spanish, lang="fr" for French). Use the correct ISO 639-1 two-letter code or ISO 639-2 three-letter code. For the HTML element, always specify the primary document language. If the language is truly unknown, remove the lang attribute entirely rather than leaving it empty.
+Description: Element (non-HTML) has a lang attribute present but with no value (lang=""), preventing screen readers from determining language changes
+Why it matters: An empty lang attribute on elements prevents screen readers from properly switching pronunciation rules for content in different languages. Screen readers cannot adjust pronunciation rules for content sections in different languages. This can make multilingual content difficult or impossible to understand when read aloud.
+Who it affects: Screen reader users who need proper language identification for correct pronunciation, multilingual users relying on language switching, users of translation tools, and users with reading disabilities using text-to-speech
+How to fix: Add a valid language code to the lang attribute (e.g., lang="fr" for French, lang="es" for Spanish). Use the correct ISO 639-1 two-letter code or ISO 639-2 three-letter code. If the language matches the page language, remove the lang attribute entirely rather than leaving it empty.
 
 ---
 
@@ -1136,6 +1556,18 @@ How to fix: Fix the for/id relationship
 
 ---
 
+ID: ErrFocusBackgroundColorOnly
+Type: Error
+Impact: High
+WCAG: 2.4.7 Focus Visible (Level AA), 5.2.4 Accessible Documentation (Conformance Requirement)
+Touchpoint: focus
+Description: Interactive element's focus indicator relies solely on background-color changes without using CSS outline property, failing WCAG 2.4.7 and conformance requirement 5.2.4
+Why it matters: Focus indication through background-color alone is fundamentally inaccessible for multiple user groups and fails WCAG conformance requirements. Screen magnifier users at 200-400% zoom often see only a portion of an element (like just the text cursor in an input field, or just an icon within a button) and cannot see background color changes that require viewing the entire element surface. Users who briefly look away and return to the page cannot determine which element has focus without carefully examining all interactive elements. The CSS outline property is specifically designed to provide a persistent boundary marker that wraps element edges and remains visible at any magnification level. Background-color changes may be supplementary but cannot be the primary focus indicator. Common implementations include buttons with SVG icons where space between the icon and button border reveals background color changes, or form fields with subtle background tints - none of these meet WCAG requirements without an outline.
+Who it affects: Screen magnifier users who can only see portions of elements and miss background color changes, users with attention or memory disabilities who need persistent focus markers when returning attention to the page, users with low vision who cannot detect subtle background color shifts, keyboard-only users who need obvious focus indicators to navigate efficiently, users with color perception issues who may not detect color value changes, mobile users with small screens who need clear focus boundaries, users with cognitive disabilities who benefit from consistent, obvious focus patterns, and voice control users who need to verify focus location before issuing commands
+How to fix: Add CSS outline property to all :focus pseudo-class selectors for interactive elements (buttons, links, inputs, textareas, select elements). Use outline with at least 2px width and a color that contrasts with both the element and surrounding background (minimum 3:1 contrast ratio per WCAG 2.4.11). Consider using outline-offset to create space between the element edge and outline for better visibility. Example: button:focus { outline: 3px solid #ffffff; outline-offset: 2px; }. Background-color and border changes can supplement but never replace the outline property. Test with browser zoom at 200-400% to verify outline visibility at high magnification. The outline must wrap the element boundary to provide a persistent, obvious visual marker regardless of element size, zoom level, or user attention state.
+
+---
+
 ID: ErrFormAriaLabelledByIsBlank
 Type: Error
 Impact: High
@@ -1232,6 +1664,18 @@ How to fix: Use only one labeling method
 
 ---
 
+ID: ErrFormLandmarkMustHaveAccessibleName
+Type: Error
+Impact: Medium
+WCAG: 1.3.1, 2.4.6
+Touchpoint: forms
+Description: A `<form>` element or an element with `role="form"` that is intended to be a form landmark lacks an accessible name from `aria-label` or `aria-labelledby`.
+Why it matters: Without an accessible name, multiple form landmarks cannot be distinguished in a screen reader's landmark list, undermining navigation and orientation.
+Who it affects: Screen reader users who navigate by landmarks and need to tell forms apart.
+How to fix: Give the form landmark a descriptive accessible name via `aria-label` or `aria-labelledby` (e.g., labelling it "Search" or "Newsletter signup").
+
+---
+
 ID: ErrFormUsesAriaLabelInsteadOfVisibleElement
 Type: Error
 Impact: Medium
@@ -1292,6 +1736,30 @@ How to fix: Add scope="col" for column headers and scope="row" for row headers t
 
 ---
 
+ID: ErrHeadingAccessibleNameMismatch
+Type: Error
+Impact: High
+WCAG: 2.5.3
+Touchpoint: headings
+Description: Visible heading text doesn't match its accessible name
+Why it matters: Voice control users may not be able to reference the heading by its visible text
+Who it affects: Voice control users, screen reader users
+How to fix: Ensure visible text starts the accessible name (e.g., visible 'Support' should be at the start of aria-label, like 'Support: Customer Service')
+
+---
+
+ID: ErrHeadingOrder
+Type: Error
+Impact: High
+WCAG: 1.3.1 Info and Relationships
+Touchpoint: headings
+Description: Headings appear in illogical order - high-level headings (H1, H2) appear after lower-level headings (H3, H4, H5, H6)
+Why it matters: Document structure should be logical and predictable. When high-level headings like H1 or H2 appear after lower-level headings, it creates a backwards or inverted hierarchy. This is like reading a book where chapter titles appear after section headings, or where the main title appears at the end. Screen reader users navigating by headings expect the most important headings first, followed by progressively more detailed subsections. When headings appear out of logical order, users cannot understand the content structure, may miss important navigation landmarks, and cannot build an accurate mental model of how the page is organized.
+Who it affects: Screen reader users who rely on heading navigation and expect logical document structure, users with cognitive disabilities who need predictable content organization, users who generate document outlines from headings, and users who navigate by heading levels to understand content hierarchy
+How to fix: Restructure your content so that high-level headings (H1, H2) appear before lower-level headings. Start with H1 for the main page title, then H2 for major sections, then H3 for subsections within those. Headings should appear in a logical, top-down hierarchy that matches how users would naturally read and understand the content structure.
+
+---
+
 ID: ErrHreflangAttrEmpty
 Type: Error
 Impact: Low
@@ -1313,6 +1781,18 @@ Description: hreflang attribute on non-link element
 Why it matters: hreflang only works on links
 Who it affects: Screen reader users
 How to fix: Move hreflang to anchor elements only
+
+---
+
+ID: ErrHtmlLangEmpty
+Type: Error
+Impact: High
+WCAG: 3.1.1 Language of Page (Level A)
+Touchpoint: language
+Description: HTML element has a lang attribute present but with no value (lang=""), preventing screen readers from determining the page language
+Why it matters: An empty lang attribute is worse than no lang attribute because it explicitly tells assistive technologies there's no language specified, potentially causing screen readers to use incorrect pronunciation rules or fail to switch language synthesizers. This can make content completely unintelligible when read aloud.
+Who it affects: Blind and low vision users using screen readers who need proper language identification for correct pronunciation, multilingual users who rely on automatic language switching in assistive technologies, users with dyslexia using reading tools that depend on language settings, and users of translation services
+How to fix: Add a valid language code to the lang attribute (e.g., lang="en" for English, lang="es" for Spanish, lang="fr" for French). Use the correct ISO 639-1 two-letter code or ISO 639-2 three-letter code. For the HTML element, always specify the primary document language. If the language is truly unknown, remove the lang attribute entirely rather than leaving it empty.
 
 ---
 
@@ -1364,18 +1844,6 @@ How to fix: Replace the filename with descriptive text that conveys the image's 
 
 ---
 
-ID: ErrImageWithNoAlt
-Type: Error
-Impact: High
-WCAG: 1.1.1 Non-text Content (Level A)
-Touchpoint: Images
-Description: Images are missing alternative text attributes, preventing assistive technologies from conveying their content or purpose to users
-Why it matters: Screen readers cannot describe image content to users who are blind or have low vision, creating information barriers that may prevent understanding of essential content, navigation, or task completion. This also affects users with cognitive disabilities who benefit from text alternatives and users on slow connections where images fail to load.
-Who it affects: Blind users using screen readers, users with low vision using screen readers with magnification, users with cognitive disabilities who rely on text alternatives, voice control users who need text labels to reference elements, and users on slow internet connections
-How to fix: Add descriptive alt attributes for informative images (alt="Sales chart showing 40% increase"), use empty alt attributes for decorative images (alt=""), describe the function for interactive images (alt="Search" not alt="magnifying glass icon"), and provide detailed descriptions via aria-describedby for complex images like charts or diagrams.
-
----
-
 ID: ErrImageWithURLAsAlt
 Type: Error
 Impact: High
@@ -1397,6 +1865,18 @@ Description: Title attribute used in particularly problematic patterns (on non-f
 Why it matters: Title attributes fundamentally fail WCAG Conformance requirement 5.2.4 as they are inaccessible to screen magnifier users. At high magnification, tooltip content extends off-screen and disappears when mouse moves, making content completely inaccessible. This error flags specific patterns that are especially problematic: (1) title on non-focusable elements like div/span where users cannot even trigger the tooltip, and (2) redundant titles that duplicate visible text providing no value. These patterns demonstrate particularly poor understanding of accessibility requirements and should never be used
 Who it affects: Screen magnifier users at high magnification (tooltip goes off-screen and disappears), mobile and touch screen users (no hover capability), keyboard-only users (cannot trigger non-focusable element tooltips), screen reader users (inconsistent announcement), users with motor disabilities (tooltip disappears when mouse moves)
 How to fix: Never use title attributes on body elements. For non-focusable containers (div, span), remove the title entirely and make information visible. For redundant titles, simply remove the title attribute. Use visible text, proper label elements, aria-label for interactive elements, or visible helper text instead
+
+---
+
+ID: ErrInaccessibleFont
+Type: Error
+Impact: High
+WCAG: 1.4.8
+Touchpoint: fonts
+Description: The page uses a font family known to be difficult to read (for example overly decorative, script, or low-legibility typefaces).
+Why it matters: Hard-to-read typefaces increase reading effort and error rates, especially for people with dyslexia or low vision.
+Who it affects: Users with dyslexia, low vision, or other reading or cognitive disabilities.
+How to fix: Replace the inaccessible font with a clear, legible typeface (a well-formed sans-serif or serif), reserving decorative fonts for non-essential graphics only.
 
 ---
 
@@ -1448,6 +1928,78 @@ How to fix: Provide pause/stop controls for all animations, respect prefers-redu
 
 ---
 
+ID: ErrInputBorderChangeInsufficient
+Type: Error
+Impact: High
+WCAG: 2.4.7
+Touchpoint: forms
+Description: A form input relies on a focus border thickening of less than 1px (with no outline or box-shadow), which is too subtle to serve as a focus indicator.
+Why it matters: A sub-pixel border change is not perceivable enough to reliably show which field has keyboard focus.
+Who it affects: Keyboard users and people with low vision who track focus visually.
+How to fix: Provide a clearly perceivable focus indicator, such as a visible outline, a box-shadow, or a border change of at least 2px, meeting 3:1 contrast.
+
+---
+
+ID: ErrInputFocusColorChangeOnly
+Type: Error
+Impact: High
+WCAG: 2.4.7, 1.4.1
+Touchpoint: forms
+Description: A form input removes its outline on focus and signals focus only through a border color change, with no thickening, box-shadow, or other structural change.
+Why it matters: A color-only focus indicator is imperceptible to users who cannot distinguish the color shift, so they cannot tell which field is focused.
+Who it affects: Keyboard users and users with color vision deficiencies or low vision.
+How to fix: Add a structural focus indicator such as a visible outline, an increased border width (1px or more), or a box-shadow alongside any color change.
+
+---
+
+ID: ErrInputFocusContrastFail
+Type: Error
+Impact: High
+WCAG: 2.4.7, 1.4.11
+Touchpoint: forms
+Description: A form input's focus indicator (border, outline, or box-shadow) has insufficient contrast (below 3:1) against the input background, the normal border, or the surrounding background.
+Why it matters: A low-contrast focus indicator may be imperceptible, leaving keyboard users unable to see which field currently has focus.
+Who it affects: Keyboard-only users and users with low vision relying on a visible focus indicator.
+How to fix: Increase the focus indicator's color contrast to at least 3:1 against all adjacent colors, or use a thicker/more prominent indicator that meets the non-text contrast requirement.
+
+---
+
+ID: ErrInputNoVisibleFocus
+Type: Error
+Impact: High
+WCAG: 2.4.7
+Touchpoint: forms
+Description: A form input sets outline:none on focus and provides no alternative visible focus indicator (no border-color change, no border-width change, and no box-shadow).
+Why it matters: Keyboard users have no way to see which field currently has focus, making the form unusable without a mouse.
+Who it affects: Keyboard-only users and low-vision users.
+How to fix: Provide a clearly visible focus style on the input, such as a visible outline, a box-shadow ring, or a distinct border change meeting 3:1 contrast.
+
+---
+
+ID: ErrInputOutlineWidthInsufficient
+Type: Error
+Impact: High
+WCAG: 2.4.7, 2.4.11
+Touchpoint: forms
+Description: A form input's focus outline is thinner than 2px, below the width recommended for a clearly perceivable focus indicator.
+Why it matters: A very thin outline can be hard to see, weakening the focus indicator that keyboard users depend on.
+Who it affects: Keyboard users and people with low vision.
+How to fix: Increase the focus outline-width to at least 2px and ensure it meets a 3:1 contrast ratio against the adjacent background.
+
+---
+
+ID: ErrInputSingleSideBoxShadow
+Type: Error
+Impact: High
+WCAG: 2.4.7
+Touchpoint: forms
+Description: A form input uses a single-sided box-shadow (offset on only one axis) as its focus indicator, so the indicator appears on just one edge.
+Why it matters: A one-sided shadow is easy to miss and does not reliably surround the control, failing to clearly communicate focus.
+Who it affects: Keyboard users and low-vision users who depend on a clear, all-around focus indicator.
+How to fix: Use a symmetric, all-around focus indicator such as `outline` or a box-shadow with zero offsets and a visible spread on every side.
+
+---
+
 ID: ErrInsufficientContrast
 Type: Error
 Impact: High
@@ -1457,6 +2009,18 @@ Description: Text does not meet WCAG contrast ratio requirements
 Why it matters: Insufficient contrast makes text unreadable for users with low vision or in challenging lighting conditions.
 Who it affects: Users with low vision, users with color blindness, aging users, all users in bright sunlight or glare.
 How to fix: Ensure 4.5:1 contrast ratio for normal text, 3:1 for large text (18pt+), use color contrast analyzers to verify.
+
+---
+
+ID: ErrInteractiveElementIssue
+Type: Error
+Impact: High
+WCAG: 2.1.1, 4.1.2
+Touchpoint: interactive
+Description: A non-semantic element (`div`, `span`, or `img`) has a click handler (`onclick`, `ng-click`, `@click`) but lacks an interactive role or has a negative tabindex, so it is not exposed or reachable as a control.
+Why it matters: The element behaves as a control visually but exposes no role and is not keyboard-focusable, so assistive technologies and keyboard users cannot perceive or operate it.
+Who it affects: Keyboard-only users and screen reader users who cannot reach or identify the unmarked interactive element.
+How to fix: Use a native interactive element (`<button>`, `<a>`), or add the appropriate ARIA role, `tabindex="0"`, and keyboard event handlers so the element is announced and operable.
 
 ---
 
@@ -1481,6 +2045,18 @@ Description: Link text is generic and provides no information about destination
 Why it matters: Generic link text like "click here" provides no context when links are reviewed out of context.
 Who it affects: Screen reader users navigating by links, users with cognitive disabilities who need clear link purposes.
 How to fix: Use descriptive link text that explains the destination or action, avoid generic phrases like "click here" or "read more".
+
+---
+
+ID: ErrInvalidLangChange
+Type: Error
+Impact: High
+WCAG: 3.1.2
+Touchpoint: language
+Description: An element marking a language change carries a lang attribute whose value is not a recognizable, validly formatted language code.
+Why it matters: An invalid lang value prevents assistive technologies from switching to the correct pronunciation rules, so passages render with the wrong accent or are mispronounced.
+Who it affects: Screen reader users, particularly multilingual users.
+How to fix: Set the lang attribute to a valid BCP 47 / ISO 639-1 language subtag (for example lang="fr" or lang="es-MX") matching the content's language.
 
 ---
 
@@ -1556,6 +2132,78 @@ How to fix: Current contrast is {ratio}:1, but WCAG Level AAA requires at least 
 
 ---
 
+ID: ErrLinkAccessibleNameMismatch
+Type: Error
+Impact: High
+WCAG: 2.5.3 Label in Name, 2.4.6 Headings and Labels
+Touchpoint: links
+Description: Link's accessible name does not start with its visible text, preventing voice control users from activating it
+Why it matters: Voice control users (like those using Dragon NaturallySpeaking or Voice Control on iOS/Mac) activate links by saying the visible text they see on screen (e.g., "Click Read more"). If the accessible name doesn't start with the visible text, the voice command will fail. For example, a link showing "Read more" with aria-label="How Peer Support Groups Changed Hazel's Life" cannot be activated by saying "Click Read more" because the accessible name doesn't begin with "Read more". WCAG 2.5.3 requires that the visible text be included in the accessible name (preferably at the start), and 2.4.6 requires that labels accurately describe their purpose in a way that matches user expectations.
+Who it affects: Voice control users who cannot activate links, speech input users relying on visible labels to navigate, users with motor disabilities who use voice commands instead of mouse/touch, and users with cognitive disabilities who need consistency between what they see and what they can say
+How to fix: Ensure the accessible name starts with the visible text. For example: if visible text is "Read more", the aria-label should be "Read more about Peer Support Groups" not "How Peer Support Groups Changed Hazel's Life". This allows voice users to say "Click Read more" while still providing additional context for screen reader users. Alternatively, use visually-hidden text that starts with the visible text, or place the descriptive text before the link in the DOM structure.
+
+---
+
+ID: ErrLinkButtonMissingSpaceHandler
+Type: Error
+Impact: High
+WCAG: 2.1.1
+Touchpoint: links
+Description: An anchor element styled to look like a button does not implement a Space-key handler, so it cannot be activated with Space as a button would be.
+Why it matters: Keyboard users expect button-like controls to activate with Space; a link only responds to Enter, breaking the expected interaction.
+Who it affects: Keyboard-only users and screen reader users who rely on standard activation keys.
+How to fix: Use a native <button> for actions, or add a keydown handler that activates the control on the Space key (and keep link styling only for navigation).
+
+---
+
+ID: ErrLinkColorChangeOnly
+Type: Error
+Impact: High
+WCAG: 2.4.7, 1.4.1
+Touchpoint: links
+Description: A link sets `outline:none` on focus and indicates focus only through a color change, with no underline or box-shadow.
+Why it matters: A color-only focus cue cannot be perceived by users who do not distinguish the color, leaving the focused link unidentifiable.
+Who it affects: Keyboard users and users with color vision deficiencies or low vision.
+How to fix: Provide a non-color focus indicator such as an underline, a visible outline, or a box-shadow when the link is focused.
+
+---
+
+ID: ErrLinkContrast
+Type: Error
+Impact: High
+WCAG: 1.4.3
+Touchpoint: links
+Description: A hyperlink's text color has insufficient contrast (below the WCAG AA threshold) against its background color.
+Why it matters: Low-contrast link text is hard to read and hard to distinguish from surrounding content, especially for users with reduced vision.
+Who it affects: Users with low vision, color vision deficiencies, or who view the page in poor lighting conditions.
+How to fix: Adjust the link's text or background color so the contrast ratio meets at least 4.5:1 (3:1 for large text), and ensure links remain distinguishable from body text by more than color alone.
+
+---
+
+ID: ErrLinkFocusContrastFail
+Type: Error
+Impact: High
+WCAG: 2.4.7, 1.4.11
+Touchpoint: links
+Description: A link's focus outline has insufficient contrast (below 3:1) against the adjacent background.
+Why it matters: A low-contrast focus ring is hard or impossible to perceive, so keyboard users cannot tell which link is focused.
+Who it affects: Keyboard-only users and low-vision users.
+How to fix: Increase the focus outline color contrast to at least 3:1 against its background, or add a higher-contrast alternative such as a distinct underline or background change.
+
+---
+
+ID: ErrLinkImageNoFocusIndicator
+Type: Error
+Impact: High
+WCAG: 2.4.7
+Touchpoint: links
+Description: An image link provides no visible focus indicator on focus (no outline, border, or box-shadow).
+Why it matters: Keyboard users cannot tell when an image link has focus, making the link impossible to navigate to reliably.
+Who it affects: Keyboard-only users and people with low vision who track focus visually.
+How to fix: Add a visible :focus / :focus-visible indicator (outline, border, or box-shadow) with at least 3:1 contrast around the image link.
+
+---
+
 ID: ErrLinkOpensNewWindowNoWarning
 Type: Error
 Impact: Medium
@@ -1565,6 +2213,18 @@ Description: Link opens in new window/tab without warning users
 Why it matters: Unexpectedly opening new windows can disorient users, especially those using screen readers or magnification. Users may not realize a new window opened and become confused when the back button doesn't work. This is particularly problematic for users with cognitive disabilities or those unfamiliar with browser behaviors.
 Who it affects: Screen reader users who may not notice the context change, users with cognitive disabilities who may become disoriented, users with motor disabilities who have difficulty managing multiple windows, and novice computer users
 How to fix: Add visible text or an icon indicating the link opens in a new window. Include this information in the accessible name (e.g., "Annual report (opens in new window)"). Consider whether opening in a new window is necessary - often it's better to open in the same window and let users control this behavior.
+
+---
+
+ID: ErrLinkOutlineWidthInsufficient
+Type: Error
+Impact: High
+WCAG: 2.4.7, 2.4.11
+Touchpoint: links
+Description: A link's focus outline is thinner than 2px (including em/rem-resolved values) and the link has no underline to reinforce focus.
+Why it matters: A very thin focus outline is hard to see, so users may not be able to track the focused link.
+Who it affects: Keyboard users and low-vision users.
+How to fix: Increase the focus outline width to at least 2px, or add an underline, so the focus indicator is clearly perceivable.
 
 ---
 
@@ -1580,15 +2240,27 @@ How to fix: Write link text that describes the destination or action (e.g., "Dow
 
 ---
 
-ID: ErrLinkAccessibleNameMismatch
+ID: ErrListitemEmpty
+Type: Error
+Impact: Medium
+WCAG: 1.3.1, 4.1.2
+Touchpoint: lists
+Description: A list item (`<li>`) is empty or contains only whitespace, with no text content, `aria-label`, `aria-labelledby`, or visually hidden text.
+Why it matters: An empty list item adds a meaningless entry to the list structure, inflating the announced item count and confusing users navigating the list.
+Who it affects: Screen reader users who hear the empty item announced and may misjudge the list's length or content.
+How to fix: Remove the empty `<li>`, or give it meaningful content or an accessible name if it must remain in the list.
+
+---
+
+ID: ErrMainLandmarkAccessibleNameIsBlank
 Type: Error
 Impact: High
-WCAG: 2.5.3 Label in Name, 2.4.6 Headings and Labels
-Touchpoint: links
-Description: Link's accessible name does not start with its visible text, preventing voice control users from activating it
-Why it matters: Voice control users (like those using Dragon NaturallySpeaking or Voice Control on iOS/Mac) activate links by saying the visible text they see on screen (e.g., "Click Read more"). If the accessible name doesn't start with the visible text, the voice command will fail. For example, a link showing "Read more" with aria-label="How Peer Support Groups Changed Hazel's Life" cannot be activated by saying "Click Read more" because the accessible name doesn't begin with "Read more". WCAG 2.5.3 requires that the visible text be included in the accessible name (preferably at the start), and 2.4.6 requires that labels accurately describe their purpose in a way that matches user expectations.
-Who it affects: Voice control users who cannot activate links, speech input users relying on visible labels to navigate, users with motor disabilities who use voice commands instead of mouse/touch, and users with cognitive disabilities who need consistency between what they see and what they can say
-How to fix: Ensure the accessible name starts with the visible text. For example: if visible text is "Read more", the aria-label should be "Read more about Peer Support Groups" not "How Peer Support Groups Changed Hazel's Life". This allows voice users to say "Click Read more" while still providing additional context for screen reader users. Alternatively, use visually-hidden text that starts with the visible text, or place the descriptive text before the link in the DOM structure.
+WCAG: 1.3.1, 2.4.6
+Touchpoint: landmarks
+Description: The main landmark has an aria-label or aria-labelledby that resolves to an empty or whitespace-only accessible name
+Why it matters: An empty accessible name gives screen reader users no useful label for the page's primary content region
+Who it affects: Screen reader users who navigate by landmarks
+How to fix: Provide a meaningful non-empty aria-label, reference non-empty visible text via aria-labelledby, or remove the empty labelling attribute
 
 ---
 
@@ -1628,7 +2300,7 @@ How to fix: Ensure main landmark is visible or remove if not needed
 
 ---
 
-ID: ErrMainLandmarkMayNotbeChildOfAnotherLandmark
+ID: ErrMainLandmarkMayNotBeChildOfAnotherLandmark
 Type: Error
 Impact: High
 WCAG: 1.3.1
@@ -1652,6 +2324,18 @@ How to fix: Remove aria-hidden from maps, provide appropriate text alternatives 
 
 ---
 
+ID: ErrMapGenericName
+Type: Error
+Impact: High
+WCAG: 1.1.1
+Touchpoint: maps
+Description: An embedded map has an accessible name that is generic (for example "map") and does not describe what the map shows or its purpose.
+Why it matters: A non-descriptive name leaves assistive-technology users without any indication of what the map depicts or why it is on the page.
+Who it affects: Screen reader users.
+How to fix: Give the map a descriptive accessible name via aria-label, title, or alt that conveys its content and purpose (for example "Map of office locations in Toronto").
+
+---
+
 ID: ErrMapMissingTitle
 Type: Error
 Impact: Medium
@@ -1661,6 +2345,30 @@ Description: Map iframe missing title attribute
 Why it matters: Without titles, screen reader users don't know what the embedded map contains or represents.
 Who it affects: Screen reader users who need to understand embedded content purpose.
 How to fix: Add descriptive title attribute to map iframes (e.g., title="Map showing office location").
+
+---
+
+ID: ErrMapRolePresentation
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: maps
+Description: An interactive map carries role="presentation", which strips the semantics from its focusable elements.
+Why it matters: role="presentation" removes the roles and names of the map's interactive controls, so assistive technology cannot identify or operate them.
+Who it affects: Screen reader users interacting with the map's controls.
+How to fix: Remove role="presentation" from the interactive map and expose its controls with correct roles and accessible names.
+
+---
+
+ID: ErrMenuWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: interactive
+Description: A div-based menu pattern containing menu items lacks the required menu ARIA roles (`role="menubar"` or `role="menu"`).
+Why it matters: Without the correct menu roles, assistive technology cannot announce the widget as a menu or expose its expected keyboard interaction model.
+Who it affects: Screen reader users and keyboard users navigating custom menus.
+How to fix: Apply `role="menubar"` or `role="menu"` to the container and `role="menuitem"` to the items, and implement the WAI-ARIA menu keyboard pattern.
 
 ---
 
@@ -1697,6 +2405,18 @@ Description: HTML document missing DOCTYPE declaration
 Why it matters: Missing DOCTYPE can cause browsers to render in quirks mode, leading to unpredictable behavior and accessibility issues.
 Who it affects: All users due to potential rendering issues, assistive technology users affected by parsing errors.
 How to fix: Add <!DOCTYPE html> as the first line of all HTML documents.
+
+---
+
+ID: ErrMissingInteractiveRole
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: forms
+Description: A custom control (class-based `custom-checkbox`, `custom-radio`, `custom-switch`, or `custom-slider`) that is focusable via `tabindex` lacks the matching widget role (`checkbox`, `radio`, `switch`, or `slider`).
+Why it matters: Without the correct role the control's type and state are not conveyed programmatically, so assistive technologies cannot announce what the widget is or how to operate it.
+Who it affects: Screen reader users who depend on the role and state to understand and use the custom control.
+How to fix: Add the appropriate ARIA role and its associated state attributes (e.g., `role="checkbox"` with `aria-checked`), or replace the custom widget with the native form control.
 
 ---
 
@@ -1748,6 +2468,18 @@ How to fix: Add a heading (h1-h6) at the beginning of modal content that clearly
 
 ---
 
+ID: ErrModalNoHeading
+Type: Error
+Impact: High
+WCAG: 2.4.6, 1.3.1
+Touchpoint: dialogs
+Description: A visible modal or dialog contains no heading element to identify its purpose.
+Why it matters: Without a heading, users (especially screen reader users navigating by heading) cannot quickly determine what the dialog is for or label it programmatically.
+Who it affects: Screen reader users and users with cognitive disabilities.
+How to fix: Add a descriptive heading (preferably an h2) at the top of the dialog and reference it from the dialog with aria-labelledby.
+
+---
+
 ID: ErrModalWithoutEscape
 Type: Error
 Impact: High
@@ -1757,6 +2489,7 @@ Description: Modal cannot be closed using the Escape key
 Why it matters: Escape key is the expected keyboard shortcut for closing modals; without it, keyboard users may become trapped.
 Who it affects: Keyboard users who expect standard modal behavior, power users who rely on keyboard shortcuts.
 How to fix: Implement Escape key handler to close modals, ensure it works even when focus is within modal content.
+Detection limitation: Static DOM analysis flags a modal only when no Escape/keydown handler is in scope. A modal whose Escape behaviour is gated by runtime state — e.g. a single document-level keydown handler that closes only whichever modal is currently open — looks identical to a working handler at rest and is NOT flagged. The fixture Fixtures/DialogsAndModals/ErrModalWithoutEscape.html is a known un-analyzable case of this and is expected to fail static validation (the proper Modals/ErrModalWithoutEscape_001/_002 fixtures pass); reliable detection of this pattern requires behavioural/AI testing.
 
 ---
 
@@ -1772,30 +2505,6 @@ How to fix: Provide keyboard equivalents for all mouse interactions, use click e
 
 ---
 
-ID: WarnMouseHandlerKeyboardOnAncestor
-Type: Warning
-Impact: Medium
-WCAG: 2.1.1 Keyboard (Level A)
-Touchpoint: event_handling
-Description: Mouse handler delegates to ancestor keyboard handler — manual verification required
-Why it matters: Automated testing cannot verify whether the ancestor's keyboard handler actually triggers the same interaction as the element's mouse handler.
-Who it affects: Keyboard users, screen reader users, users with motor disabilities.
-How to fix: Add a keyboard handler directly on the element, or manually verify keyboard equivalence works through the ancestor.
-
----
-
-ID: WarnGlobalKeyboardHandlerPresent
-Type: Warning
-Impact: Medium
-WCAG: 2.1.1 Keyboard (Level A)
-Touchpoint: event_handling
-Description: Page-level keyboard handler detected — keyboard accessibility cannot be verified automatically
-Why it matters: This test looks for evidence of keyboard event handling at the document/window/body level but cannot verify whether those handlers provide keyboard equivalents for any specific mouse-driven interaction.
-Who it affects: Keyboard users, screen reader users, users with motor disabilities.
-How to fix: Manually test that every mouse-driven interaction on the page can be triggered using only the keyboard.
-
----
-
 ID: ErrMultipleBannerLandmarks
 Type: Error
 Impact: Medium
@@ -1805,6 +2514,30 @@ Description: Multiple banner landmarks found
 Why it matters: Multiple headers confuse page structure
 Who it affects: Screen reader users
 How to fix: Use only one banner landmark
+
+---
+
+ID: ErrMultipleBanners
+Type: Error
+Impact: High
+WCAG: 1.3.1
+Touchpoint: landmarks
+Description: The page contains more than one banner landmark (multiple <header>/role="banner" at the top-level scope).
+Why it matters: Multiple banner landmarks are ambiguous and violate the rule that the banner landmark should be unique per page, confusing landmark navigation.
+Who it affects: Screen reader users who navigate by landmarks.
+How to fix: Keep a single top-level banner landmark; scope any extra <header> elements within sectioning content or convert them so they are not exposed as banner.
+
+---
+
+ID: ErrMultipleContentinfo
+Type: Error
+Impact: Medium
+WCAG: 1.3.1
+Touchpoint: landmarks
+Description: The page contains more than one `contentinfo` (footer) landmark at the top level of the document.
+Why it matters: Multiple unlabelled contentinfo landmarks create ambiguity about which region is the page footer, confusing landmark-based navigation.
+Who it affects: Screen reader users who navigate by landmarks.
+How to fix: Use a single top-level `contentinfo`/`<footer>` landmark, or give each one a distinct accessible name via `aria-label`/`aria-labelledby` if multiple are genuinely required.
 
 ---
 
@@ -1964,6 +2697,42 @@ How to fix: Use the HTML5 <header> element for your site header (it has an impli
 
 ---
 
+ID: ErrNoCurrentPageIndicatorMagnification
+Type: Error
+Impact: High
+WCAG: 1.4.13, 2.4.8
+Touchpoint: navigation
+Description: A navigation region provides no visual indication (e.g., distinct styling or color difference) of which item represents the current page.
+Why it matters: Without a visible current-page indicator, screen magnifier users cannot tell where they are within the navigation without panning across the whole menu.
+Who it affects: Screen magnifier users and sighted users with low vision or cognitive disabilities who rely on a visible "you are here" cue.
+How to fix: Style the current navigation item distinctly (more than color alone) so its current state is visually obvious within the magnified viewport.
+
+---
+
+ID: ErrNoCurrentPageIndicatorScreenReader
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: navigation
+Description: A navigation menu with multiple links does not mark the current page using aria-current="page".
+Why it matters: Screen reader users cannot determine which navigation item corresponds to the page they are currently on, losing their sense of location within the site.
+Who it affects: Screen reader users.
+How to fix: Add aria-current="page" to the navigation link that represents the currently displayed page.
+
+---
+
+ID: ErrNoFieldset
+Type: Error
+Impact: High
+WCAG: 1.3.1
+Touchpoint: forms
+Description: A group of related radio buttons or checkboxes is not wrapped in a fieldset with a legend.
+Why it matters: Without a fieldset/legend the group has no programmatic name, so users cannot tell what question the individual options belong to.
+Who it affects: Screen reader users completing grouped form controls.
+How to fix: Wrap the related radio/checkbox controls in a <fieldset> and describe the group with a <legend>.
+
+---
+
 ID: ErrNoFocusIndicator
 Type: Error
 Impact: High
@@ -2096,6 +2865,18 @@ How to fix: Add for attribute pointing to field ID
 
 ---
 
+ID: ErrOrphanedMenuitem
+Type: Error
+Impact: Medium
+WCAG: 1.3.1, 4.1.2
+Touchpoint: interactive
+Description: An element with `role="menuitem"` is not contained within an ancestor that has `role="menu"` (or `menubar`).
+Why it matters: A menuitem outside a menu container is an invalid ARIA structure, so assistive technology cannot present the relationship or expected menu behavior.
+Who it affects: Screen reader users and keyboard users relying on correct ARIA menu semantics.
+How to fix: Place the menuitem inside a parent with `role="menu"` or `role="menubar"`, or remove the `role="menuitem"` if the element is not part of a menu.
+
+---
+
 ID: ErrOutlineIsNoneOnInteractiveElement
 Type: Error
 Impact: High
@@ -2105,6 +2886,30 @@ Description: Interactive element has CSS outline:none removing the default focus
 Why it matters: People with mobility disabilities use keyboard or keyboard-alternate devices to navigate rather than a mouse. Visible focus indicators are essential as they perform the same function as a mouse cursor. Without focus indicators, users cannot tell where they are on the page or when interactive elements are focused. This makes keyboard navigation impossible and can completely prevent access to functionality.
 Who it affects: Sighted users with motor disabilities navigating with keyboard or keyboard-alternate devices, users who prefer keyboard navigation for efficiency, users with temporary injuries preventing mouse use, and users of assistive technologies that rely on keyboard navigation
 How to fix: Never use outline:none without providing an alternative visible focus indicator. The focus indicator must be clearly visible with at least 3:1 contrast ratio with the background, be at least 2 pixels thick, and ideally be offset from the element to maximize visibility. Consider using CSS :focus-visible for better control over when focus indicators appear.
+
+---
+
+ID: ErrPartialTextContrastAA
+Type: Error
+Impact: High
+WCAG: 1.4.3
+Touchpoint: colors_contrast
+Description: Text fails the WCAG AA contrast requirement (below 4.5:1 for normal text or 3:1 for large text) where it can be measured, and additionally overflows its container into a region where contrast cannot be determined.
+Why it matters: The measurable portion already fails contrast and the overflowing portion is unverifiable, so some of the text is confirmed unreadable and the rest is at risk.
+Who it affects: Users with low vision, color vision deficiencies, or viewing in poor lighting.
+How to fix: Raise the text/background contrast to at least 4.5:1 (3:1 for large text) and fix the overflow so all text remains within a measurable, sufficiently contrasting container.
+
+---
+
+ID: ErrPartialTextContrastAAA
+Type: Error
+Impact: High
+WCAG: 1.4.6
+Touchpoint: colors_contrast
+Description: Text fails the WCAG AAA contrast requirement (7:1 for normal text, 4.5:1 for large text) where it is measurable, and additionally overflows its container into an area where contrast cannot be determined.
+Why it matters: The text is already below the AAA contrast threshold and the overflowing portion sits over an unknown background, so some of the content may be illegible.
+Who it affects: Low-vision users and users with reduced contrast sensitivity, on sites targeting AAA conformance.
+How to fix: Raise the text-to-background contrast to meet the AAA ratio and ensure the text stays within a container whose background contrast is controlled (prevent overflow or constrain the background).
 
 ---
 
@@ -2192,6 +2997,18 @@ How to fix: Remove "image of", "picture of", "graphic of" from alt text; describ
 
 ---
 
+ID: ErrRegionLandmarkAccessibleNameIsBlank
+Type: Error
+Impact: Medium
+WCAG: 1.3.1, 2.4.6
+Touchpoint: landmarks
+Description: Region landmark has blank accessible name
+Why it matters: Blank labels provide no information
+Who it affects: Screen reader users
+How to fix: Add meaningful label text
+
+---
+
 ID: ErrRegionLandmarkHasAriaLabelAndAriaLabelledByAttrs
 Type: Error
 Impact: Medium
@@ -2201,6 +3018,18 @@ Description: Region landmark has both aria-label and aria-labelledby
 Why it matters: Conflicting labeling methods
 Who it affects: Screen reader users
 How to fix: Use only one labeling method
+
+---
+
+ID: ErrRegionLandmarkMustHaveAccessibleName
+Type: Error
+Impact: High
+WCAG: 1.3.1
+Touchpoint: landmarks
+Description: A region landmark (role="region", or a <section> intended as a landmark) has no accessible name
+Why it matters: A <section> is only exposed as a region landmark when it has an accessible name; without one it is announced generically or not at all, defeating landmark navigation
+Who it affects: Screen reader users who navigate by landmarks
+How to fix: Add an aria-label or aria-labelledby that describes the region's purpose
 
 ---
 
@@ -2264,18 +3093,6 @@ How to fix: First, check the SVG's context. If the SVG is inside a link or butto
 
 ---
 
-ID: ErrHeadingOrder
-Type: Error
-Impact: High
-WCAG: 1.3.1 Info and Relationships
-Touchpoint: headings
-Description: Headings appear in illogical order - high-level headings (H1, H2) appear after lower-level headings (H3, H4, H5, H6)
-Why it matters: Document structure should be logical and predictable. When high-level headings like H1 or H2 appear after lower-level headings, it creates a backwards or inverted hierarchy. This is like reading a book where chapter titles appear after section headings, or where the main title appears at the end. Screen reader users navigating by headings expect the most important headings first, followed by progressively more detailed subsections. When headings appear out of logical order, users cannot understand the content structure, may miss important navigation landmarks, and cannot build an accurate mental model of how the page is organized.
-Who it affects: Screen reader users who rely on heading navigation and expect logical document structure, users with cognitive disabilities who need predictable content organization, users who generate document outlines from headings, and users who navigate by heading levels to understand content hierarchy
-How to fix: Restructure your content so that high-level headings (H1, H2) appear before lower-level headings. Start with H1 for the main page title, then H2 for major sections, then H3 for subsections within those. Headings should appear in a logical, top-down hierarchy that matches how users would naturally read and understand the content structure.
-
----
-
 ID: ErrSkippedHeadingLevel
 Type: Error
 Impact: Medium
@@ -2300,6 +3117,30 @@ How to fix: Use minimum 14px (preferably 16px) for body text, ensure text can be
 
 ---
 
+ID: ErrStyleAttrColorFont
+Type: Error
+Impact: High
+WCAG: 1.4.3, 1.4.8, 1.4.12
+Touchpoint: style
+Description: An element carries an inline style attribute that hard-codes color and/or font properties (CSS variables are permitted, but at least one hard-coded color/font property is present).
+Why it matters: Hard-coded inline color and font styles resist user style sheets and overrides, so users cannot adjust contrast, colors, spacing, or fonts to meet their needs.
+Who it affects: Users with low vision, dyslexia, or color sensitivity who rely on custom or overriding stylesheets.
+How to fix: Move color and font declarations into CSS classes (or design-token CSS variables) so they can be overridden, removing hard-coded color/font properties from the inline style attribute.
+
+---
+
+ID: ErrStyleTagColorFont
+Type: Error
+Impact: High
+WCAG: 1.4.3, 1.4.8, 1.4.12
+Touchpoint: style
+Description: A `<style>` element contains hard-coded color and/or font property declarations rather than relying on overridable stylesheets or design tokens.
+Why it matters: Color and font values baked into inline style blocks are hard for users to override and can break contrast, text spacing, and user-preference styling.
+Who it affects: Low-vision users, users with custom stylesheets, and users who adjust fonts or spacing for readability.
+How to fix: Move color and font declarations into external, overridable CSS using relative units and tokens, and ensure they respect user-stylesheet and text-spacing adjustments.
+
+---
+
 ID: ErrSvgImageNoLabel
 Type: Error
 Impact: High
@@ -2309,6 +3150,30 @@ Description: SVG image element lacks accessible text alternatives, making it inv
 Why it matters: SVG images without proper labeling are completely inaccessible to screen reader users - they are either skipped entirely or announced as "graphic" with no indication of what they represent. Unlike HTML img elements that can use alt attributes, SVGs require different techniques for accessibility. Without proper labeling, users miss important visual information, icons, charts, logos, or interactive graphics that may be essential for understanding or using the page.
 Who it affects: Blind and low vision users using screen readers who cannot perceive any information about unlabeled SVG content, users with cognitive disabilities who benefit from text descriptions of complex graphics, keyboard users who may encounter interactive SVGs without understanding their purpose, and users of assistive technologies that need text alternatives for all visual content
 How to fix: For simple SVGs, add role="img" and aria-label with descriptive text. For complex SVGs, use <title> as the first child element and reference it with aria-labelledby. For decorative SVGs, use aria-hidden="true" to hide from assistive technologies. For inline SVGs containing text, ensure text is in actual text elements not paths. For interactive SVGs, provide appropriate ARIA labels for all interactive elements. Always test with screen readers to verify SVGs are properly announced.
+
+---
+
+ID: ErrSvgMapMissingName
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: maps
+Description: An SVG-based map has no accessible name (no `<title>` element, `aria-label`, or `aria-labelledby`).
+Why it matters: Without an accessible name the map's purpose is not announced, so assistive-technology users cannot identify what the map represents.
+Who it affects: Screen reader users who rely on the accessible name to understand the map.
+How to fix: Add an accessible name via a `<title>` element, `aria-label`, or `aria-labelledby`, and give the SVG `role="img"` or `role="graphics-document"`.
+
+---
+
+ID: ErrSvgStaticWithoutRole
+Type: Error
+Impact: High
+WCAG: 1.1.1, 4.1.2
+Touchpoint: images
+Description: A static (non-interactive) SVG element is missing role="img", so assistive technologies do not expose it as a single graphic.
+Why it matters: Without role="img", screen readers may ignore the SVG or read its internal nodes inconsistently, so its meaning is lost or garbled.
+Who it affects: Screen reader users.
+How to fix: Add role="img" to the SVG and provide an accessible name via aria-label or a <title> element (or mark it aria-hidden="true" if purely decorative).
 
 ---
 
@@ -2333,6 +3198,18 @@ Description: Tab order does not follow logical reading order
 Why it matters: Illogical tab order confuses users and makes interfaces difficult to navigate efficiently.
 Who it affects: Keyboard users, screen reader users, users with cognitive disabilities.
 How to fix: Ensure DOM order matches visual order, avoid positive tabindex values, test tab order manually.
+
+---
+
+ID: ErrTabindexNoVisibleFocus
+Type: Error
+Impact: High
+WCAG: 2.4.7
+Touchpoint: focus
+Description: An element made focusable with an explicit tabindex has no visible focus indicator (no :focus outline, border, or box-shadow)
+Why it matters: An explicit tabindex deliberately places the element in the tab order, so keyboard users will land on it and must be able to see that it has focus
+Who it affects: Keyboard-only users and low-vision users who track focus visually
+How to fix: Add a visible :focus / :focus-visible style (outline or box-shadow meeting 3:1 contrast) to the focusable element, or remove the tabindex if it should not be focusable
 
 ---
 
@@ -2369,6 +3246,18 @@ Description: Data table has no column headers (th elements)
 Why it matters: Without headers, screen reader users cannot understand what each column represents when navigating cells.
 Who it affects: Screen reader users navigating tables, users who need to understand data relationships.
 How to fix: Use <th> elements for column headers in first row, add scope="col" to clarify header relationships.
+
+---
+
+ID: ErrTabpanelWithoutARIA
+Type: Error
+Impact: High
+WCAG: 1.3.1, 4.1.2
+Touchpoint: interactive
+Description: A tab interface lacks the required ARIA tab pattern (no role="tablist" on the container and/or no role="tab" on the tabs).
+Why it matters: Without the tab/tablist/tabpanel roles, assistive technology cannot convey that the controls are tabs or which panel they control.
+Who it affects: Screen reader users and keyboard users operating tabbed interfaces.
+How to fix: Apply role="tablist" to the container, role="tab" with aria-selected and aria-controls to each tab, and role="tabpanel" with aria-labelledby to each panel, plus arrow-key navigation.
 
 ---
 
@@ -2432,6 +3321,18 @@ How to fix: Never use title attributes. Use visible text, proper <label> element
 
 ---
 
+ID: ErrTooltipWithoutARIA
+Type: Error
+Impact: Medium
+WCAG: 4.1.2
+Touchpoint: interactive
+Description: A tooltip pattern lacks the required ARIA wiring — the trigger is missing `aria-describedby` and/or the tooltip element is missing `role="tooltip"`.
+Why it matters: Without the tooltip role and association, assistive technology does not announce the tooltip content when the trigger receives focus.
+Who it affects: Screen reader users and keyboard users who rely on tooltips for supplementary information.
+How to fix: Add `role="tooltip"` to the tooltip element and reference it from the trigger via `aria-describedby`, ensuring it is reachable on keyboard focus.
+
+---
+
 ID: ErrTransparentFocusIndicator
 Type: Error
 Impact: High
@@ -2441,18 +3342,6 @@ Description: Focus indicator uses transparent or nearly transparent color, makin
 Why it matters: A transparent focus indicator is functionally the same as no focus indicator - users cannot see where keyboard focus is located. This might occur from using rgba with 0 or very low alpha values, setting outline-color to transparent, or using colors that match the background. The focus indicator exists technically but provides no practical benefit to users trying to navigate.
 Who it affects: Keyboard users who need visible focus indicators to navigate, users with low vision who need clear visual cues, users with color blindness who may already struggle with certain color combinations, and users with cognitive disabilities who need obvious focus indicators
 How to fix: Use opaque colors with sufficient contrast for focus indicators. Replace transparent outlines with visible colors, ensure at least 3:1 contrast ratio between focus indicator and background, use solid colors or high alpha values (0.7 or higher) for rgba colors. Test focus indicators on different backgrounds across your site. Consider using box-shadow or background changes as additional focus indicators.
-
----
-
-ID: ErrFocusBackgroundColorOnly
-Type: Error
-Impact: High
-WCAG: 2.4.7 Focus Visible (Level AA), 5.2.4 Accessible Documentation (Conformance Requirement)
-Touchpoint: focus
-Description: Interactive element's focus indicator relies solely on background-color changes without using CSS outline property, failing WCAG 2.4.7 and conformance requirement 5.2.4
-Why it matters: Focus indication through background-color alone is fundamentally inaccessible for multiple user groups and fails WCAG conformance requirements. Screen magnifier users at 200-400% zoom often see only a portion of an element (like just the text cursor in an input field, or just an icon within a button) and cannot see background color changes that require viewing the entire element surface. Users who briefly look away and return to the page cannot determine which element has focus without carefully examining all interactive elements. The CSS outline property is specifically designed to provide a persistent boundary marker that wraps element edges and remains visible at any magnification level. Background-color changes may be supplementary but cannot be the primary focus indicator. Common implementations include buttons with SVG icons where space between the icon and button border reveals background color changes, or form fields with subtle background tints - none of these meet WCAG requirements without an outline.
-Who it affects: Screen magnifier users who can only see portions of elements and miss background color changes, users with attention or memory disabilities who need persistent focus markers when returning attention to the page, users with low vision who cannot detect subtle background color shifts, keyboard-only users who need obvious focus indicators to navigate efficiently, users with color perception issues who may not detect color value changes, mobile users with small screens who need clear focus boundaries, users with cognitive disabilities who benefit from consistent, obvious focus patterns, and voice control users who need to verify focus location before issuing commands
-How to fix: Add CSS outline property to all :focus pseudo-class selectors for interactive elements (buttons, links, inputs, textareas, select elements). Use outline with at least 2px width and a color that contrasts with both the element and surrounding background (minimum 3:1 contrast ratio per WCAG 2.4.11). Consider using outline-offset to create space between the element edge and outline for better visibility. Example: button:focus { outline: 3px solid #ffffff; outline-offset: 2px; }. Background-color and border changes can supplement but never replace the outline property. Test with browser zoom at 200-400% to verify outline visibility at high magnification. The outline must wrap the element boundary to provide a persistent, obvious visual marker regardless of element size, zoom level, or user attention state.
 
 ---
 
@@ -2540,27 +3429,15 @@ How to fix: Test site in high contrast mode, ensure it remains usable, consider 
 
 ---
 
-ID: RegionLandmarkAccessibleNameIsBlank
-Type: Error
+ID: WarnAmbiguousTabOrder
+Type: Warning
 Impact: Medium
-WCAG: 1.3.1, 2.4.6
-Touchpoint: landmarks
-Description: Region landmark has blank accessible name
-Why it matters: Blank labels provide no information
-Who it affects: Screen reader users
-How to fix: Add meaningful label text
-
----
-
-ID: ErrHeadingAccessibleNameMismatch
-Type: Error
-Impact: High
-WCAG: 2.5.3
-Touchpoint: headings
-Description: Visible heading text doesn't match its accessible name
-Why it matters: Voice control users may not be able to reference the heading by its visible text
-Who it affects: Voice control users, screen reader users
-How to fix: Ensure visible text starts the accessible name (e.g., visible 'Support' should be at the start of aria-label, like 'Support: Customer Service')
+WCAG: 2.4.3
+Touchpoint: focus
+Description: An element that appears visually to the left of its predecessor comes after it in the tab order, and the two elements overlap vertically enough that the intended reading/tab order is ambiguous.
+Why it matters: When focus order does not clearly follow the visual layout, keyboard users may be moved through controls in a confusing sequence.
+Who it affects: Keyboard-only users and screen reader users who depend on a logical, predictable focus order.
+How to fix: Verify the visual layout matches the intended tab order; adjust the DOM order or layout so focus moves in a sequence that preserves meaning and operability.
 
 ---
 
@@ -2576,6 +3453,18 @@ How to fix: Remove tabindex from elements that are only link targets, not intera
 
 ---
 
+ID: WarnAutoStartTimers
+Type: Warning
+Impact: Medium
+WCAG: 2.2.2
+Touchpoint: timing
+Description: The page starts JavaScript timers (setTimeout/setInterval) automatically on load, which may drive moving, blinking, or auto-updating content.
+Why it matters: Auto-starting timed behavior can create time pressure or distracting motion that some users cannot keep up with or control.
+Who it affects: Users with cognitive disabilities, low vision, and motion sensitivity.
+How to fix: Manually review each timer; for any auto-updating, moving, or time-limited content, provide a mechanism to pause, stop, hide, or extend it per WCAG 2.2.2.
+
+---
+
 ID: WarnBannerLandmarkAccessibleNameUsesBanner
 Type: Warning
 Impact: Low
@@ -2585,6 +3474,102 @@ Description: Banner landmark uses generic term "banner" in label
 Why it matters: Redundant labeling
 Who it affects: Screen reader users
 How to fix: Use descriptive label or rely on implicit role
+
+---
+
+ID: WarnButtonDefaultFocus
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7 Focus Visible
+Touchpoint: buttons
+Description: Button uses browser default focus outline which may not meet contrast requirements on all backgrounds
+Why it matters: Browser default outlines (typically thin blue or dotted lines) often fail to meet 3:1 contrast requirements depending on the background. Different browsers use different default styles, leading to inconsistent and potentially inaccessible experiences.
+Who it affects: Keyboard navigation users, users with low vision, users on different browsers and operating systems
+How to fix: Define explicit focus styles with outline and outline-offset that meet 3:1 contrast ratio. Example: button:focus { outline: 2px solid #0066cc; outline-offset: 2px; }
+
+---
+
+ID: WarnButtonFocusGradientBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7 Focus Visible, 1.4.11 Non-text Contrast
+Touchpoint: buttons
+Description: Button with gradient background has focus outline - contrast cannot be automatically verified against gradient
+Why it matters: CSS gradients have varying colors across the button, making it impossible to programmatically verify that the focus outline meets 3:1 contrast against all parts of the gradient. The outline may meet contrast at some points but fail at others.
+Who it affects: Keyboard navigation users, users with low vision, users with color vision deficiencies
+How to fix: Manually verify focus outline has at least 3:1 contrast against the lightest AND darkest colors in the gradient. Consider using a solid background color, or add outline-offset to separate the outline from the gradient. Use tools like WebAIM Contrast Checker for verification.
+
+---
+
+ID: WarnButtonFocusImageBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7 Focus Visible, 1.4.11 Non-text Contrast
+Touchpoint: buttons
+Description: Button with background image has focus outline - contrast cannot be automatically verified against image
+Why it matters: Background images have varying colors and patterns, making it impossible to programmatically verify focus outline contrast. The outline may be invisible against certain parts of the image, creating unusable focus indicators for keyboard users.
+Who it affects: Keyboard navigation users, users with low vision, users with color vision deficiencies
+How to fix: Manually test focus visibility against all parts of the background image. Consider adding a semi-transparent overlay behind the outline, using outline-offset for separation, or avoiding background images on focusable buttons. Test with multiple users if possible.
+
+---
+
+ID: WarnButtonFocusOutlineExceedsParent
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: buttons
+Description: A button's focus outline (offset plus width) extends beyond its parent container's bounds, so the background the outline sits against cannot be determined automatically.
+Why it matters: When the outline spills outside the parent, automated tools cannot verify it meets the 3:1 contrast requirement, leaving a possible invisible focus indicator.
+Who it affects: Keyboard users and people with low vision who depend on a visible focus indicator.
+How to fix: Manually verify the focus outline has at least 3:1 contrast against whatever background it overlaps, or constrain the outline within a container with a known background.
+
+---
+
+ID: WarnButtonFocusParentGradientBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: buttons
+Description: A button's focus outline sits outside the button (positive outline-offset) against a parent that has a gradient background, so its contrast cannot be automatically verified.
+Why it matters: A focus indicator placed over a gradient may have adequate contrast against some parts and insufficient contrast against others, potentially making focus invisible in places.
+Who it affects: Keyboard users and low-vision users.
+How to fix: Manually verify the outline meets 3:1 contrast against the lightest and darkest gradient colors, or place the focus indicator on a solid-colored area.
+
+---
+
+ID: WarnButtonFocusParentImageBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: buttons
+Description: A button uses a positive `outline-offset` so its focus outline sits over a parent/container that has a background image, making the outline's contrast impossible to verify automatically.
+Why it matters: A focus outline over a varying image background may fall below 3:1 contrast in some areas, leaving the focus state hard to perceive.
+Who it affects: Keyboard-only users and users with low vision who rely on a clearly visible focus indicator.
+How to fix: Manually verify the focus outline maintains at least 3:1 contrast against all parts of the background image, or use an indicator (e.g., solid backing or double outline) that guarantees contrast.
+
+---
+
+ID: WarnButtonFocusParentZIndexFloating
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: buttons
+Description: A button's focus outline sits outside the button (positive outline-offset) against a parent that establishes a z-index stacking context with no solid background, so the outline's contrast cannot be verified automatically.
+Why it matters: The outline may float over varying or transparent content, meaning its contrast (and therefore visibility) is unknown and could fail in some states.
+Who it affects: Keyboard-only users and low-vision users.
+How to fix: Manually verify the focus outline maintains at least 3:1 contrast against whatever it overlays, or give the parent a solid background, or move the outline onto the button itself.
+
+---
+
+ID: WarnButtonFocusZIndexFloating
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: buttons
+Description: A button is positioned with z-index so it may float over multiple elements with varying backgrounds, making its focus-outline contrast impossible to verify automatically.
+Why it matters: A focus outline that overlaps unpredictable backgrounds may fail the 3:1 contrast requirement in some positions, leaving focus invisible.
+Who it affects: Keyboard users and people with low vision who depend on a visible focus indicator.
+How to fix: Manually test the focus outline against every background the button can float over, ensuring at least 3:1 contrast in all cases.
 
 ---
 
@@ -2600,6 +3585,18 @@ How to fix: Use descriptive button text that explains the action (e.g., "Submit 
 
 ---
 
+ID: WarnButtonOutlineNoneWithBoxShadow
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7 Focus Visible
+Touchpoint: buttons
+Description: Button uses outline:none with box-shadow for focus, which may not provide clear indication on all sides
+Why it matters: While box-shadow provides a focus indicator, it may not be visible on all sides of the button depending on shadow direction and spread. A clear outline on all four sides is preferred for maximum clarity. Box-shadow can also be harder to see in certain contexts.
+Who it affects: Keyboard navigation users, users with low vision, users with cognitive disabilities
+How to fix: Replace box-shadow with outline and outline-offset (e.g., outline: 2px solid #0066cc; outline-offset: 2px) to ensure a clear border on all sides of the focused button.
+
+---
+
 ID: WarnColorOnlyLink
 Type: Warning
 Impact: Medium
@@ -2609,6 +3606,18 @@ Description: Link distinguished only by color without underline or other indicat
 Why it matters: Users who cannot perceive color differences cannot identify links in text.
 Who it affects: Colorblind users, users with low vision, users of monochrome displays.
 How to fix: Add underlines to links, use other visual indicators beyond color, ensure 3:1 contrast with surrounding text.
+
+---
+
+ID: WarnColorOnlyLinkWeakIndicator
+Type: Warning
+Impact: Medium
+WCAG: 1.4.1
+Touchpoint: links
+Description: A link within flowing text is distinguished only by subtle non-color cues (font-weight, bold, or text-shadow) rather than a clear indicator like an underline.
+Why it matters: Weak, subtle distinctions can be hard to recognize as links, especially when color perception is limited, leading users to miss them.
+Who it affects: Users with color vision deficiencies, low-vision users, and users with cognitive differences.
+How to fix: Add a clearer non-color indicator such as an underline or border to in-text links so they are unmistakably identifiable.
 
 ---
 
@@ -2660,18 +3669,6 @@ How to fix: Add aria-label or aria-labelledby to identify the purpose
 
 ---
 
-ID: WarnContentInfoLandmarkHasNoLabel
-Type: Warning
-Impact: Low
-WCAG: 1.3.1, 2.4.6
-Touchpoint: landmarks
-Description: Contentinfo landmark lacks a label
-Why it matters: May be harder to identify purpose
-Who it affects: Screen reader users
-How to fix: Add descriptive label if multiple contentinfo exist
-
----
-
 ID: WarnContentOutsideLandmarks
 Type: Warning
 Impact: Medium
@@ -2693,6 +3690,18 @@ Description: Contentinfo landmark uses generic term "contentinfo" in label
 Why it matters: Redundant labeling
 Who it affects: Screen reader users
 How to fix: Use descriptive label or rely on implicit role
+
+---
+
+ID: WarnContentinfoLandmarkHasNoLabel
+Type: Warning
+Impact: Low
+WCAG: 1.3.1, 2.4.6
+Touchpoint: landmarks
+Description: Contentinfo landmark lacks a label
+Why it matters: May be harder to identify purpose
+Who it affects: Screen reader users
+How to fix: Add descriptive label if multiple contentinfo exist
 
 ---
 
@@ -2720,6 +3729,18 @@ How to fix: Simplify list structure, consider alternative presentations for comp
 
 ---
 
+ID: WarnDivMapNoLandmark
+Type: Warning
+Impact: Medium
+WCAG: 1.3.1
+Touchpoint: maps
+Description: A `<div>`-based map is preceded by a heading but is not contained within a landmark region.
+Why it matters: Placing the map in a landmark makes it easier to locate and navigate to; without one, region-based navigation cannot jump directly to the map even though a heading exists.
+Who it affects: Screen reader users who navigate by landmarks to find page regions like maps.
+How to fix: As a best practice, wrap the map in a landmark region such as `<section aria-label="Map">` so it is exposed as a navigable region.
+
+---
+
 ID: WarnElementNotInLandmark
 Type: Warning
 Impact: Medium
@@ -2729,18 +3750,6 @@ Description: Important content found outside of any landmark region, making it h
 Why it matters: Landmarks create a navigable structure for your page, like a table of contents. Content outside landmarks is like having chapters missing from the table of contents - users may never find it when navigating by landmarks. Screen reader users often jump between landmarks to quickly scan page structure, and content outside landmarks requires them to read through the entire page linearly to discover it. This particularly affects users who are familiar with your site and want to quickly navigate to specific content areas.
 Who it affects: Screen reader users who navigate by landmarks to efficiently explore pages, keyboard users using browser extensions for landmark navigation, users with cognitive disabilities who rely on consistent page structure, and power users who use landmarks for quick navigation
 How to fix: Ensure all meaningful content is contained within appropriate landmark regions. Typically: use <header> or role="banner" for site headers, <nav> or role="navigation" for navigation menus, <main> or role="main" for primary content, <aside> or role="complementary" for sidebar content, <footer> or role="contentinfo" for footers. Decorative content or spacers can remain outside landmarks. Review your page structure to ensure no important content is orphaned outside the landmark structure.
-
----
-
-ID: ErrEmptyLanguageAttribute
-Type: Error
-Impact: High
-WCAG: 3.1.2 Language of Parts (Level AA)
-Touchpoint: language
-Description: Element (non-HTML) has a lang attribute present but with no value (lang=""), preventing screen readers from determining language changes
-Why it matters: An empty lang attribute on elements prevents screen readers from properly switching pronunciation rules for content in different languages. Screen readers cannot adjust pronunciation rules for content sections in different languages. This can make multilingual content difficult or impossible to understand when read aloud.
-Who it affects: Screen reader users who need proper language identification for correct pronunciation, multilingual users relying on language switching, users of translation tools, and users with reading disabilities using text-to-speech
-How to fix: Add a valid language code to the lang attribute (e.g., lang="fr" for French, lang="es" for Spanish). Use the correct ISO 639-1 two-letter code or ISO 639-2 three-letter code. If the language matches the page language, remove the lang attribute entirely rather than leaving it empty.
 
 ---
 
@@ -2876,6 +3885,18 @@ How to fix: Rewrite link text to be descriptive, or ensure surrounding text prov
 
 ---
 
+ID: WarnGlobalKeyboardHandlerPresent
+Type: Warning
+Impact: Medium
+WCAG: 2.1.1 Keyboard (Level A)
+Touchpoint: event_handling
+Description: Page-level keyboard handler detected — keyboard accessibility cannot be verified automatically
+Why it matters: This test looks for evidence of keyboard event handling at the document/window/body level but cannot verify whether those handlers provide keyboard equivalents for any specific mouse-driven interaction.
+Who it affects: Keyboard users, screen reader users, users with motor disabilities.
+How to fix: Manually test that every mouse-driven interaction on the page can be triggered using only the keyboard.
+
+---
+
 ID: WarnHeadingFoundInLandmarkButIsLabelledByAnAriaLabelledBy
 Type: Error
 Impact: Medium
@@ -2936,6 +3957,18 @@ How to fix: Remove positive tabindex values, restructure DOM for natural tab ord
 
 ---
 
+ID: WarnIconFontBulletsInList
+Type: Warning
+Impact: Low
+WCAG: 1.3.1
+Touchpoint: lists
+Description: List items in a proper semantic list use icon-font elements as bullets together with list-style:none, instead of the CSS list-style-type property.
+Why it matters: Icon-font bullets may be announced as stray characters or ignored, and rely on a fragile presentation technique rather than native list styling, though the list semantics remain intact.
+Who it affects: Screen reader users.
+How to fix: Use CSS list-style-type (or list-style-image) for bullet presentation, and ensure any decorative icon fonts are hidden from assistive technology with aria-hidden="true".
+
+---
+
 ID: WarnIframeTitleNotDescriptive
 Type: Warning
 Impact: Medium
@@ -2945,6 +3978,138 @@ Description: Iframe has a title attribute but it's generic or not descriptive (e
 Why it matters: Generic iframe titles like "iframe" or "embedded" provide no useful information about the embedded content. Screen reader users hear these unhelpful titles and must enter the iframe to understand what it contains. With multiple iframes, users cannot distinguish between them or determine which ones are worth exploring. This wastes time and creates confusion, especially if iframes contain important functionality like payment forms or videos.
 Who it affects: Screen reader users trying to understand and navigate between multiple iframes, keyboard users who encounter iframes in tab order, users with cognitive disabilities who need clear labeling of all content regions, and users trying to navigate efficiently through complex pages
 How to fix: Replace generic titles with descriptive ones that explain the iframe's content or purpose. Use specific descriptions like title="YouTube video: Product demo", title="Customer feedback form", title="Live chat support", or title="Interactive map of office locations". Each iframe title should be unique if there are multiple iframes. Avoid redundant words like "iframe" in the title since the element type is already announced.
+
+---
+
+ID: WarnInfiniteAnimationSpinner
+Type: Warning
+Impact: Medium
+WCAG: 2.2.2
+Touchpoint: animation
+Description: An element with an infinite CSS animation that appears to be a loading spinner runs with no pause/stop/hide control on the page.
+Why it matters: Even loading spinners are moving content that runs for more than five seconds, which can distract or disorient some users and should be reviewed for a stop mechanism.
+Who it affects: Users with vestibular disorders, attention-related disabilities, or cognitive disabilities affected by continuous motion.
+How to fix: Confirm the spinner is genuinely transient, or provide a mechanism to pause/stop/hide persistent animation and respect prefers-reduced-motion.
+
+---
+
+ID: WarnInputDefaultFocus
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7
+Touchpoint: forms
+Description: A form input defines no custom focus styles (no outline change, border color change, or box-shadow), so it relies entirely on the browser's default focus indicator.
+Why it matters: Default browser focus indicators vary across browsers and can be weak or inconsistent, so focus visibility is not guaranteed.
+Who it affects: Keyboard users and low-vision users.
+How to fix: Define an explicit, high-contrast focus style for the input rather than depending on browser defaults.
+
+---
+
+ID: WarnInputFocusGradientBackground
+Type: Warning
+Impact: High
+WCAG: 2.4.7
+Touchpoint: forms
+Description: A form input (or its parent) has a gradient background, so the contrast of its focus border or outline against that gradient cannot be verified automatically.
+Why it matters: A focus indicator over a gradient may meet contrast against the lightest stop but fail against the darkest (or vice versa), leaving the focus state hard to see in places.
+Who it affects: Keyboard-only users and users with low vision relying on a visible focus indicator.
+How to fix: Manually verify the focus indicator keeps at least 3:1 contrast against both the lightest and darkest gradient colors, or use an indicator that guarantees contrast regardless of the background.
+
+---
+
+ID: WarnInputFocusImageBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: forms
+Description: A form input (or its parent) has a background image, so the contrast of its focus border or outline against that image cannot be verified automatically.
+Why it matters: The focus indicator could blend into parts of the background image, leaving keyboard users unsure where focus is in some areas.
+Who it affects: Keyboard-only users and low-vision users.
+How to fix: Manually verify the focus indicator stays at least 3:1 contrast over every part of the background image, or use a solid background behind the focus indicator.
+
+---
+
+ID: WarnInputFocusOutlineExceedsParent
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: forms
+Description: A form input's focus outline (offset plus width) extends beyond its parent container's bounds, so the background it sits against cannot be determined automatically.
+Why it matters: When the outline spills outside the parent, automated tools cannot confirm it meets 3:1 contrast, leaving a possibly invisible focus indicator.
+Who it affects: Keyboard users and people with low vision who depend on a visible focus indicator.
+How to fix: Manually verify the focus outline has at least 3:1 contrast against whatever background it overlaps, or keep the outline within a container with a known background.
+
+---
+
+ID: WarnInputFocusParentGradientBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: forms
+Description: An input's focus outline sits outside the field (positive outline-offset) against a parent with a gradient background, preventing automatic contrast verification.
+Why it matters: The outline's contrast may be sufficient against some gradient regions but not others, so focus could become invisible in places.
+Who it affects: Keyboard users and low-vision users.
+How to fix: Manually confirm the focus outline meets 3:1 contrast against the gradient's lightest and darkest colors, or render it against a solid background.
+
+---
+
+ID: WarnInputFocusParentImageBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: forms
+Description: A form input's parent has a background image, so the contrast of the input's focus outline against that image cannot be verified automatically.
+Why it matters: A focus outline over a varying image background may drop below 3:1 contrast in some areas, making the focus state difficult to perceive.
+Who it affects: Keyboard-only users and users with low vision who rely on a visible focus indicator.
+How to fix: Manually verify the focus outline maintains at least 3:1 contrast against all parts of the background image, or use a focus indicator that guarantees contrast independent of the image.
+
+---
+
+ID: WarnInputFocusParentZIndexFloating
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: forms
+Description: A focused input's outline sits outside the field (positive outline-offset) against a parent that has a z-index stacking context but no solid background, so its contrast cannot be verified automatically.
+Why it matters: The outline may float over varying or transparent content, so its visibility against the actual background is unknown and could be insufficient.
+Who it affects: Keyboard-only users and low-vision users.
+How to fix: Manually confirm the outline keeps at least 3:1 contrast against what it overlays, give the parent a solid background, or place the focus indicator on the input itself.
+
+---
+
+ID: WarnInputFocusZIndexFloating
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: forms
+Description: A form input is positioned with z-index (with a positive outline-offset) so its focus outline may float over varying backgrounds, making contrast impossible to verify automatically.
+Why it matters: A focus outline overlapping unpredictable backgrounds may fail the 3:1 contrast requirement in some positions, leaving focus invisible.
+Who it affects: Keyboard users and people with low vision who depend on a visible focus indicator.
+How to fix: Manually test the focus outline against every background the input can float over, ensuring at least 3:1 contrast in all cases.
+
+---
+
+ID: WarnInputNoBorderOutline
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7
+Touchpoint: forms
+Description: A form input indicates focus only with an outline and changes neither its border nor adds a box-shadow, so there is no in-element comparison cue.
+Why it matters: Screen magnifier users who see only part of the field at high zoom may not perceive an outline that sits at the field's edge, missing the focus change.
+Who it affects: Low-vision users using screen magnification, and keyboard users.
+How to fix: Reinforce focus with an additional cue such as a border thickening or color change so the focused state is perceivable even when zoomed in.
+
+---
+
+ID: WarnInputTransparentFocus
+Type: Warning
+Impact: High
+WCAG: 2.4.7
+Touchpoint: forms
+Description: A form input's focus border, outline, or box-shadow color is semi-transparent (alpha below 0.5), so its effective visibility and contrast cannot be guaranteed.
+Why it matters: A semi-transparent focus indicator may blend with the underlying content and fail to be clearly visible, undermining the focus state.
+Who it affects: Keyboard-only users and users with low vision who rely on a clearly visible focus indicator.
+How to fix: Use an opaque focus indicator color (or composite it so the effective contrast is at least 3:1) so the focus state is reliably visible against the input and its surroundings.
 
 ---
 
@@ -2984,6 +4149,30 @@ How to fix: Use left-aligned text for body content, avoid full justification.
 
 ---
 
+ID: WarnLinkDefaultFocus
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7
+Touchpoint: links
+Description: A link defines no custom focus styles and relies entirely on the browser's default focus indicator.
+Why it matters: Default focus rings vary by browser and may not meet 3:1 contrast on every background, so focus could be hard to see in some contexts.
+Who it affects: Keyboard-only users and low-vision users.
+How to fix: Define an explicit, high-contrast focus style for links (a visible outline or box-shadow meeting 3:1 contrast) rather than depending on browser defaults.
+
+---
+
+ID: WarnLinkFocusGradientBackground
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: links
+Description: A link has a gradient background behind its focus outline, so the outline's contrast cannot be calculated automatically.
+Why it matters: A focus outline over a gradient may meet contrast against some gradient stops but not others, so it could be invisible in places.
+Who it affects: Keyboard users and people with low vision who depend on a visible focus indicator.
+How to fix: Manually verify the focus outline has at least 3:1 contrast against the lightest and darkest colors of the gradient, adjusting the indicator if needed.
+
+---
+
 ID: WarnLinkLooksLikeButton
 Type: Warning
 Impact: Low
@@ -2996,6 +4185,42 @@ How to fix: If the element performs an action (submit form, open dialog), use a 
 
 ---
 
+ID: WarnLinkOutlineOffsetTooLarge
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7
+Touchpoint: links
+Description: A focused link has both an underline and an outline-offset greater than 1px, creating a confusing visual gap between the underline and the outline ring.
+Why it matters: A large gap between focus indicators can look like separate or misaligned elements, making the focus state ambiguous.
+Who it affects: Keyboard users and low-vision users.
+How to fix: Reduce the outline-offset so the focus ring sits close to the link, keeping the focus indicator visually coherent with the underline.
+
+---
+
+ID: WarnLinkTransparentOutline
+Type: Warning
+Impact: Medium
+WCAG: 2.4.7, 1.4.11
+Touchpoint: links
+Description: A link's focus outline color is semi-transparent (alpha below 0.5), so its effective contrast and visibility against the background cannot be guaranteed.
+Why it matters: A semi-transparent outline may not provide sufficient visible contrast, leaving keyboard users unsure which link has focus.
+Who it affects: Keyboard-only users and users with low vision who rely on a visible focus indicator.
+How to fix: Use an opaque outline color (or one whose composited contrast is at least 3:1 against the background) so the link's focus state is clearly visible.
+
+---
+
+ID: WarnListRoleOnList
+Type: Warning
+Impact: Low
+WCAG: 4.1.2
+Touchpoint: lists
+Description: A native list element carries a redundant or inappropriate role="list" (redundant on ul/ol; harmful on dl where it obscures the term-definition relationship).
+Why it matters: Redundant roles add no value and on a dl can override the native description-list semantics, hiding the term/definition structure from assistive technology.
+Who it affects: Screen reader users.
+How to fix: Remove role="list" from ul and ol elements, and never apply it to dl; rely on the native list semantics instead.
+
+---
+
 ID: WarnLongAnimation
 Type: Warning
 Impact: Medium
@@ -3005,6 +4230,18 @@ Description: Animation duration exceeds 5 seconds
 Why it matters: Long animations can be distracting and may need user controls.
 Who it affects: Users with attention disorders, users with cognitive disabilities.
 How to fix: Shorten animation duration or provide pause/stop controls.
+
+---
+
+ID: WarnMapPotentialContentHiding
+Type: Warning
+Impact: Medium
+WCAG: 1.1.1
+Touchpoint: maps
+Description: An interactive map is hidden from assistive technology (aria-hidden="true" or role="presentation"), which may withhold its information from screen reader users.
+Why it matters: If the map conveys information and no equivalent text alternative exists, screen reader users lose access to that content; this cannot be verified automatically.
+Who it affects: Screen reader users who cannot perceive the visual map.
+How to fix: Manually confirm an equivalent text alternative for the map's information is provided elsewhere, or expose the map content accessibly instead of hiding it.
 
 ---
 
@@ -3104,18 +4341,6 @@ How to fix: Add aria-labelledby pointing to the modal's heading element.
 
 ---
 
-ID: WarnModalMissingAriaModal
-Type: Warning
-Impact: Medium
-WCAG: 4.1.2 Name, Role, Value (Level A)
-Touchpoint: dialogs
-Description: Modal dialog missing aria-modal attribute
-Why it matters: aria-modal helps assistive technologies understand modal boundaries.
-Who it affects: Screen reader users navigating modal content.
-How to fix: Add aria-modal="true" to modal containers.
-
----
-
 ID: WarnModalNoFocusableElements
 Type: Warning
 Impact: High
@@ -3125,6 +4350,18 @@ Description: Modal has no focusable elements
 Why it matters: Modals without focusable elements trap keyboard focus with no actions available.
 Who it affects: Keyboard users unable to interact with modal.
 How to fix: Ensure modals contain at least one focusable element (close button, form fields, etc.).
+
+---
+
+ID: WarnMouseHandlerKeyboardOnAncestor
+Type: Warning
+Impact: Medium
+WCAG: 2.1.1 Keyboard (Level A)
+Touchpoint: event_handling
+Description: Mouse handler delegates to ancestor keyboard handler — manual verification required
+Why it matters: Automated testing cannot verify whether the ancestor's keyboard handler actually triggers the same interaction as the element's mouse handler.
+Who it affects: Keyboard users, screen reader users, users with motor disabilities.
+How to fix: Add a keyboard handler directly on the element, or manually verify keyboard equivalence works through the ancestor.
 
 ---
 
@@ -3152,7 +4389,7 @@ How to fix: Ensure all complementary landmarks have unique labels
 
 ---
 
-ID: WarnMultipleContentInfoLandmarksButNotAllHaveLabels
+ID: WarnMultipleContentinfoLandmarksButNotAllHaveLabels
 Type: Warning
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -3236,6 +4473,18 @@ How to fix: Add descriptive aria-label
 
 ---
 
+ID: WarnNavMissingAccessibleName
+Type: Warning
+Impact: Low
+WCAG: 1.3.1
+Touchpoint: navigation
+Description: The page has a single `nav`/`navigation` landmark that has no accessible name via `aria-label` or `aria-labelledby`.
+Why it matters: A name helps screen reader users identify the navigation region's purpose; with only one nav it is a minor issue, but naming improves the landmarks list.
+Who it affects: Screen reader users navigating by landmarks.
+How to fix: Add a descriptive `aria-label` or `aria-labelledby` to the navigation landmark (e.g. "Main navigation").
+
+---
+
 ID: WarnNegativeTabindex
 Type: Warning
 Impact: Low
@@ -3260,6 +4509,18 @@ How to fix: Use the HTML5 <header> element at the page level (not within article
 
 ---
 
+ID: WarnNoColorSchemeSupport
+Type: Warning
+Impact: Medium
+WCAG: 1.4.3
+Touchpoint: color
+Description: The page does not include any `prefers-color-scheme` media query, so it does not adapt to a user's dark/light mode preference.
+Why it matters: Users who depend on a dark or light color scheme (for comfort, glare, or low vision) are not served their preferred presentation, which can reduce readability.
+Who it affects: Users with low vision, light sensitivity, or migraine/glare sensitivity who rely on their chosen OS color scheme.
+How to fix: Add `prefers-color-scheme` media queries that provide appropriate, sufficiently contrasting colors for both light and dark modes.
+
+---
+
 ID: WarnNoContentinfoLandmark
 Type: Warning
 Impact: Low
@@ -3269,6 +4530,18 @@ Description: Page is missing a contentinfo landmark to identify the footer regio
 Why it matters: The contentinfo landmark (typically a footer) contains important information about the page or site such as copyright notices, privacy policies, contact information, and site maps. Screen reader users rely on landmarks to quickly navigate to these common elements without having to read through the entire page. When the footer lacks proper landmark markup, users must search manually through the content to find this information, which is inefficient and may cause them to miss important legal notices or helpful links. The contentinfo landmark provides a consistent, predictable way to access this supplementary information across all pages.
 Who it affects: Screen reader users who navigate by landmarks to quickly find footer information, keyboard users who want to efficiently skip to footer content, users with cognitive disabilities who rely on consistent page structure, and users who need to frequently access footer links like privacy policies or contact information
 How to fix: Use the HTML5 <footer> element for your page footer (it has an implicit role of contentinfo when it's not nested inside article, aside, main, nav, or section elements). Alternatively, add role="contentinfo" to the container holding your footer content. Ensure there's only one contentinfo landmark per page at the top level. The footer should contain information about the page or site, not primary content.
+
+---
+
+ID: WarnNoContrastSupport
+Type: Warning
+Impact: Medium
+WCAG: 1.4.3
+Touchpoint: color
+Description: The page provides no prefers-contrast media query support to adapt its styling for users who request higher contrast.
+Why it matters: Without honoring the high-contrast preference, the page may remain hard to read for users who have explicitly requested increased contrast at the system level.
+Who it affects: Low-vision users and users with reduced contrast sensitivity who enable high-contrast mode.
+How to fix: Add @media (prefers-contrast: more) rules that increase text and UI contrast when the user requests it, and verify the high-contrast presentation meets contrast minimums.
 
 ---
 
@@ -3320,7 +4593,7 @@ How to fix: Add legend as first child of fieldset to label the group.
 
 ---
 
-ID: WarnNoNavigationLandmark
+ID: WarnNoNavLandmark
 Type: Warning
 Impact: Low
 WCAG: 1.3.1 Info and Relationships, 2.4.1 Bypass Blocks
@@ -3356,7 +4629,19 @@ How to fix: Expand "{found}" to be more descriptive by including the site name a
 
 ---
 
-ID: WarnRegionLandmarkAccessibleNameUsesNavigation
+ID: WarnProblematicAnimation
+Type: Warning
+Impact: Medium
+WCAG: 2.2.2, 2.3.1
+Touchpoint: animations
+Description: Animation detected that may cause accessibility issues
+Why it matters: Animations can trigger seizures or make content difficult to read
+Who it affects: Users with vestibular disorders, photosensitive epilepsy, or cognitive disabilities
+How to fix: Provide pause/stop controls and respect prefers-reduced-motion preference
+
+---
+
+ID: WarnRegionLandmarkAccessibleNameUsesRegion
 Type: Warning
 Impact: Low
 WCAG: 2.4.6
@@ -3404,6 +4689,18 @@ How to fix: Add role="img" for informative SVGs, use aria-hidden="true" for deco
 
 ---
 
+ID: WarnSliderWithoutARIA
+Type: Warning
+Impact: High
+WCAG: 1.3.1, 4.1.2
+Touchpoint: interactive
+Description: A custom slider control (slider-track/slider-container) has no element with role="slider", so its value is not exposed via ARIA.
+Why it matters: Without role="slider" and the aria-value* attributes, assistive technology cannot announce the slider's current, minimum, and maximum values.
+Who it affects: Screen reader users adjusting custom slider controls.
+How to fix: Apply role="slider" to the thumb/control with aria-valuenow, aria-valuemin, and aria-valuemax kept in sync, and ensure keyboard operability.
+
+---
+
 ID: WarnSmallLineHeight
 Type: Warning
 Impact: Medium
@@ -3413,6 +4710,30 @@ Description: Line height less than 1.5 times font size
 Why it matters: Tight line spacing makes text difficult to read and track.
 Who it affects: Users with dyslexia, users with low vision.
 How to fix: Set line-height to at least 1.5 for body text.
+
+---
+
+ID: WarnStyleAttrOther
+Type: Warning
+Impact: Low
+WCAG: 1.4.8
+Touchpoint: style
+Description: An element carries an inline `style` attribute containing layout-related (non-color, non-font) properties.
+Why it matters: Inline styles are harder for users to override with custom stylesheets and can interfere with user-preference adjustments, though layout-only properties are lower risk than color/font.
+Who it affects: Users with custom stylesheets and users who adjust presentation for readability.
+How to fix: Move presentational styles into external, overridable CSS rather than inline `style` attributes.
+
+---
+
+ID: WarnStyleTagOther
+Type: Warning
+Impact: Low
+WCAG: 1.4.8
+Touchpoint: style
+Description: A `<style>` tag contains layout-only CSS (no color or font definitions), flagged so that embedded styling can be reviewed.
+Why it matters: Styles embedded in the document rather than in author stylesheets can interfere with user style sheets and customization, though layout-only rules are lower risk than color/font rules.
+Who it affects: Users who apply custom style sheets or reading preferences, including users with low vision or cognitive disabilities.
+How to fix: Where practical, move embedded CSS into external stylesheets so users can more easily override presentation; no action is required if the embedded layout styles do not block customization.
 
 ---
 
@@ -3428,6 +4749,18 @@ How to fix: Remove tabindex from non-interactive SVGs, use tabindex="0" only for
 
 ---
 
+ID: WarnSwitchWithoutARIA
+Type: Warning
+Impact: High
+WCAG: 1.3.1, 4.1.2
+Touchpoint: interactive
+Description: A custom toggle switch control lacks the proper ARIA pattern (role="switch" together with an aria-checked state).
+Why it matters: Without role="switch" and aria-checked, assistive technologies cannot announce the control as a switch or convey its on/off state.
+Who it affects: Screen reader users.
+How to fix: Add role="switch" and a dynamically updated aria-checked attribute to the control, or use a native checkbox styled as a switch.
+
+---
+
 ID: WarnTableMissingThead
 Type: Warning
 Impact: Low
@@ -3437,6 +4770,30 @@ Description: Table missing thead element for headers
 Why it matters: Thead helps screen readers distinguish headers from data rows.
 Who it affects: Screen reader users navigating tables.
 How to fix: Wrap header rows in thead element, data rows in tbody.
+
+---
+
+ID: WarnTextContrastCannotCalculate
+Type: Warning
+Impact: Medium
+WCAG: 1.4.3
+Touchpoint: colors_contrast
+Description: Text contrast cannot be calculated automatically because the text sits on a gradient, image, transparent/undefined background, an animated element, or overflows its container.
+Why it matters: Where the effective background is indeterminate, the tool cannot confirm the text meets the 4.5:1 (or 3:1 for large text) contrast requirement, so a real failure may be hidden.
+Who it affects: Users with low vision or color vision deficiencies who depend on sufficient text contrast.
+How to fix: Manually measure the text contrast against the actual rendered background (including the lightest and darkest areas of gradients/images) and adjust colors to meet 4.5:1, or 3:1 for large text.
+
+---
+
+ID: WarnTreeviewWithoutARIA
+Type: Warning
+Impact: High
+WCAG: 1.3.1, 4.1.2
+Touchpoint: interactive
+Description: A `<ul>` styled as a tree view (tree class with tree-item children) lacks `role="tree"` and the associated tree ARIA pattern.
+Why it matters: Without the tree roles and states, assistive technology presents it as a plain list and cannot convey hierarchy, expansion state, or the expected keyboard model.
+Who it affects: Screen reader users and keyboard users navigating tree views.
+How to fix: Apply `role="tree"` to the container, `role="treeitem"` to items, and `aria-expanded` to parent nodes, and implement the WAI-ARIA tree keyboard interaction.
 
 ---
 
@@ -3485,6 +4842,18 @@ Description: Video set to autoplay which may distract users
 Why it matters: Autoplay video can be disruptive and use bandwidth unexpectedly.
 Who it affects: Users with cognitive disabilities, users on limited data plans.
 How to fix: Remove autoplay or mute autoplaying videos, provide clear play controls.
+
+---
+
+ID: WarnVideoMutedAutoplay
+Type: Warning
+Impact: Medium
+WCAG: 1.4.2
+Touchpoint: media
+Description: A video uses muted autoplay; this passes WCAG 1.4.2 (no audio) but the moving content can still distract users.
+Why it matters: Persistent auto-playing motion can pull focus and make it hard for some users to concentrate on the surrounding page content.
+Who it affects: Sighted users with attention, cognitive, or vestibular sensitivities who are distracted by automatic motion.
+How to fix: Avoid autoplay, or provide a clearly visible pause/stop control and respect `prefers-reduced-motion` so users can halt the moving content.
 
 ---
 
@@ -3650,16 +5019,6 @@ Description: Alt text contains image filename with file extension (e.g., "photo.
 Why it matters: Filenames rarely describe image content meaningfully and often contain technical identifiers, underscores, hyphens, or numbers that create a poor listening experience when announced by screen readers. Users hear cryptic strings like "DSC underscore zero zero four two dot jay peg" instead of learning what the image actually shows, forcing them to guess at important visual information or miss it entirely.
 Who it affects: Blind and low vision users using screen readers who need meaningful descriptions to understand visual content, users with cognitive disabilities who rely on clear, descriptive text to process information, users in low-bandwidth situations where images don't load and only alt text is displayed, and search engine users who rely on descriptive alt text for finding relevant content
 How to fix: Replace the filename with descriptive text that conveys the image's information or purpose (change alt="hero-banner-2.jpg" to alt="Students collaborating in the campus library"), focus on what the image communicates rather than technical details, ensure the description makes sense when read in context with surrounding content, and avoid including file extensions or technical metadata in alt attributes
-
-ID: ErrImageWithNoAlt
-Type: Error
-Impact: High
-WCAG: 1.1.1 Non-text Content (Level A)
-Touchpoint: Images
-Description: Images are missing alternative text attributes, preventing assistive technologies from conveying their content or purpose to users
-Why it matters: Screen readers cannot describe image content to users who are blind or have low vision, creating information barriers that may prevent understanding of essential content, navigation, or task completion. This also affects users with cognitive disabilities who benefit from text alternatives and users on slow connections where images fail to load.
-Who it affects: Blind users using screen readers, users with low vision using screen readers with magnification, users with cognitive disabilities who rely on text alternatives, voice control users who need text labels to reference elements, and users on slow internet connections
-How to fix: Add descriptive alt attributes for informative images (alt="Sales chart showing 40% increase"), use empty alt attributes for decorative images (alt=""), describe the function for interactive images (alt="Search" not alt="magnifying glass icon"), and provide detailed descriptions via aria-describedby for complex images like charts or diagrams.
 
 ID: ErrImageWithURLAsAlt
 Type: Error
@@ -3919,11 +5278,12 @@ ID: ErrModalWithoutEscape
 Type: Error
 Impact: High
 WCAG: 2.1.2 No Keyboard Trap (Level A)
-Touchpoint: headings
+Touchpoint: dialogs
 Description: Modal cannot be closed using the Escape key
 Why it matters: Escape key is the expected keyboard shortcut for closing modals; without it, keyboard users may become trapped.
 Who it affects: Keyboard users who expect standard modal behavior, power users who rely on keyboard shortcuts.
 How to fix: Implement Escape key handler to close modals, ensure it works even when focus is within modal content.
+Detection limitation: Static DOM analysis cannot detect runtime-state-gated Escape handlers; see the alphabetical entry above. Fixtures/DialogsAndModals/ErrModalWithoutEscape.html is a known un-analyzable case and is expected to fail static validation.
 
 ID: ErrMouseOnlyHandler
 Type: Error
@@ -4284,16 +5644,6 @@ Description: Modal lacks aria-labelledby pointing to its heading
 Why it matters: Screen readers need to announce the modal's title when it opens.
 Who it affects: Screen reader users who need modal context.
 How to fix: Add aria-labelledby pointing to the modal's heading element.
-
-ID: WarnModalMissingAriaModal
-Type: Warning
-Impact: Medium
-WCAG: 4.1.2 Name, Role, Value (Level A)
-Touchpoint: headings
-Description: Modal dialog missing aria-modal attribute
-Why it matters: aria-modal helps assistive technologies understand modal boundaries.
-Who it affects: Screen reader users navigating modal content.
-How to fix: Add aria-modal="true" to modal containers.
 
 ID: WarnModalNoFocusableElements
 Type: Warning
@@ -5545,7 +6895,7 @@ Why it matters: Empty navigation serves no purpose
 Who it affects: All users
 How to fix: Add navigation content or remove empty landmark
 
-ID: ErrContentInfoLandmarkAccessibleNameIsBlank
+ID: ErrContentinfoLandmarkAccessibleNameIsBlank
 Type: Error
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -5555,7 +6905,7 @@ Why it matters: Blank labels provide no information
 Who it affects: Screen reader users
 How to fix: Add meaningful label text
 
-ID: ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
+ID: ErrContentinfoLandmarkHasAriaLabelAndAriaLabelledByAttrs
 Type: Error
 Impact: Medium
 WCAG: 4.1.2
@@ -5735,7 +7085,7 @@ Why it matters: Hidden main content defeats the purpose of the landmark
 Who it affects: All users
 How to fix: Ensure main landmark is visible or remove if not needed
 
-ID: ErrMainLandmarkMayNotbeChildOfAnotherLandmark
+ID: ErrMainLandmarkMayNotBeChildOfAnotherLandmark
 Type: Error
 Impact: High
 WCAG: 1.3.1
@@ -5845,7 +7195,7 @@ Why it matters: Conflicting labeling methods
 Who it affects: Screen reader users
 How to fix: Use only one labeling method
 
-ID: RegionLandmarkAccessibleNameIsBlank
+ID: ErrRegionLandmarkAccessibleNameIsBlank
 Type: Error
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -5885,7 +7235,7 @@ Why it matters: Hard to distinguish multiple complementary sections
 Who it affects: Screen reader users
 How to fix: Add aria-label or aria-labelledby to identify the purpose
 
-ID: WarnContentInfoLandmarkHasNoLabel
+ID: WarnContentinfoLandmarkHasNoLabel
 Type: Warning
 Impact: Low
 WCAG: 1.3.1, 2.4.6
@@ -5955,7 +7305,7 @@ Why it matters: Inconsistent labeling makes navigation difficult
 Who it affects: Screen reader users
 How to fix: Ensure all complementary landmarks have unique labels
 
-ID: WarnMultipleContentInfoLandmarksButNotAllHaveLabels
+ID: WarnMultipleContentinfoLandmarksButNotAllHaveLabels
 Type: Warning
 Impact: Medium
 WCAG: 1.3.1, 2.4.6
@@ -6035,7 +7385,7 @@ Why it matters: The contentinfo landmark (typically a footer) contains important
 Who it affects: Screen reader users who navigate by landmarks to quickly find footer information, keyboard users who want to efficiently skip to footer content, users with cognitive disabilities who rely on consistent page structure, and users who need to frequently access footer links like privacy policies or contact information
 How to fix: Use the HTML5 <footer> element for your page footer (it has an implicit role of contentinfo when it's not nested inside article, aside, main, nav, or section elements). Alternatively, add role="contentinfo" to the container holding your footer content. Ensure there's only one contentinfo landmark per page at the top level. The footer should contain information about the page or site, not primary content.
 
-ID: WarnNoNavigationLandmark
+ID: WarnNoNavLandmark
 Type: Warning
 Impact: Low
 WCAG: 1.3.1 Info and Relationships, 2.4.1 Bypass Blocks
@@ -6045,7 +7395,7 @@ Why it matters: Navigation landmarks identify areas containing navigation links,
 Who it affects: Screen reader users who use landmarks to find navigation menus quickly, keyboard users navigating complex sites with multiple menus, users with cognitive disabilities who need clear identification of navigation areas, and users with motor disabilities who need to minimize unnecessary navigation
 How to fix: Wrap navigation areas in <nav> elements or add role="navigation" to containers with navigation links. If you have multiple navigation areas, label each one with aria-label to distinguish them (e.g., aria-label="Main navigation", aria-label="Footer links", aria-label="Breadcrumb"). Not every group of links needs to be a navigation landmark - use it for major navigation blocks that users would want to find quickly.
 
-ID: WarnRegionLandmarkAccessibleNameUsesNavigation
+ID: WarnRegionLandmarkAccessibleNameUsesRegion
 Type: Warning
 Impact: Low
 WCAG: 2.4.6
@@ -6549,3 +7899,567 @@ How to fix: Provide text alternatives or additional cues beyond just visual ones
 
 ---
 
+
+---
+
+ID: AI_ErrAlertWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.3
+Touchpoint: event_handling
+Description: A visual alert, banner, or status message is presented without role="alert", role="status", or an aria-live attribute, so assistive technology has no way to know it should be announced. The message appears styled as a success, error, or warning notice but is exposed to screen readers as ordinary text.
+Why it matters: Status messages that convey success, errors, or warnings must be programmatically determinable and announced without moving focus, per WCAG 4.1.3 Status Messages. Without an ARIA live region, screen reader users never hear that their changes were saved, that an error occurred, or that their session is about to expire.
+Who it affects: Screen reader users who are blind or have low vision, and anyone relying on assistive technology that announces page changes rather than visually scanning for new content.
+How to fix: Add role="alert" (with aria-live="assertive") to urgent error and warning messages, or role="status" (with aria-live="polite") to non-urgent success or progress messages; include aria-atomic="true" so the full message is read as a unit. Ensure the live-region container exists in the DOM before its content is inserted so the change is detected.
+
+---
+
+ID: AI_ErrAudioWithoutTranscript
+Type: Error
+Impact: High
+WCAG: 1.2.1
+Touchpoint: videos
+Description: The {element_tag} audio player presents spoken or other audio-only content but provides no accompanying text transcript, either inline or as a link. A short descriptive summary near the player is not an equivalent alternative to a full transcript.
+Why it matters: Without a transcript, people who cannot hear the audio have no way to access its information, which fails WCAG 1.2.1 Audio-only and Video-only (Prerecorded). A transcript must convey all spoken words and meaningful sounds so the content is available to everyone.
+Who it affects: Deaf and hard-of-hearing users, people in sound-sensitive or noisy environments who cannot play audio, and users who prefer or need to read rather than listen.
+How to fix: Provide a complete text transcript of all spoken words and significant sounds, either inline beneath the player (and optionally referenced with aria-describedby) or via a clearly labelled link such as "Read full transcript". Ensure the transcript captures the full content, not just a summary.
+
+---
+
+ID: AI_ErrAutocompleteWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: forms
+Description: A custom autocomplete/combobox built from a plain text input and a suggestions list exposes no ARIA, so the input lacks role=combobox, aria-autocomplete, aria-expanded and aria-controls, and the suggestions container and items lack role=listbox and role=option. Assistive technology cannot tell that the input controls a popup list or convey its expanded/collapsed state.
+Why it matters: WCAG 4.1.2 Name, Role, Value requires that the role, state and relationships of custom widgets be exposed to assistive technology. Without the combobox ARIA pattern, screen reader users are not told that suggestions exist, how many there are, or which one is active, and the list is not operable as a real combobox.
+Who it affects: Screen reader users and keyboard-only users who rely on programmatically exposed roles, states and the aria-activedescendant relationship to discover and navigate the suggestion list.
+How to fix: Apply the WAI-ARIA combobox pattern: add role=combobox, aria-autocomplete=list, aria-expanded (toggled true/false), and aria-controls referencing the list to the input; add role=listbox to the suggestions container and role=option with an id to each item; and set aria-activedescendant on the input to the id of the highlighted option during keyboard navigation.
+
+---
+
+ID: AI_ErrAutoplayMedia
+Type: Error
+Impact: High
+WCAG: 1.4.2
+Touchpoint: videos
+Description: A {element_tag} element starts playing audio automatically on page load with no way for the user to pause, stop, or mute it. Autoplaying video or background audio that lasts more than 3 seconds must provide a control to silence it.
+Why it matters: This violates WCAG 1.4.2 Audio Control. Unexpected sound that plays automatically interferes with screen reader speech, making the page unusable, and there is no mechanism to stop it independently of the system volume.
+Who it affects: Screen reader users whose assistive technology speech is masked by the audio, people with cognitive or attention-related disabilities who are distracted by unexpected sound, and users with low vision who rely on audio cues.
+How to fix: Remove the autoplay attribute so playback only starts when the user activates a control. Add the controls attribute to the audio or video element, or provide explicit play and pause buttons, so the user decides when media starts and can stop it.
+
+---
+
+ID: AI_ErrBreadcrumbsWithoutARIA
+Type: Error
+Impact: High
+WCAG: 2.4.8, 4.1.2
+Touchpoint: navigation
+Description: A visual breadcrumb trail is present but it is not wrapped in a <nav> element with aria-label="Breadcrumb", and the current page is not marked with aria-current="page". The markup uses a plain <ul>, <div>, or <span> structure, so assistive technologies cannot recognise it as a breadcrumb.
+Why it matters: Without the navigation landmark and breadcrumb label, screen reader users cannot identify the trail as breadcrumb navigation, find it via landmark navigation, or know which item represents the current page, weakening the location cues required by WCAG 2.4.8 Location and the name/role/value expectations of 4.1.2.
+Who it affects: Screen reader users and users of other assistive technology that relies on landmarks and roles to navigate and to understand where they are within a site's hierarchy.
+How to fix: Wrap the breadcrumb in a <nav aria-label="Breadcrumb"> element, mark up the trail as an ordered list (<ol> with <li> items) since the steps are sequential, and add aria-current="page" to the list item representing the current page.
+
+---
+
+ID: AI_ErrCardWithoutARIA
+Type: Error
+Impact: High
+WCAG: 1.3.1, 4.1.2
+Touchpoint: event_handling
+Description: A card component is assembled from plain <div> elements with no semantic markup or ARIA, so its structure is not exposed to assistive technology. When the whole card is clickable via an onclick handler, it also has no interactive role and cannot be reached or operated with the keyboard.
+Why it matters: Without semantic elements or ARIA, screen readers cannot identify the card as a distinct region, announce its title as a heading, or convey that a div-based card is actually a control, which violates WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value. Keyboard users cannot activate a click handler attached to a non-focusable div.
+Who it affects: Screen reader users, who lose the card's structure and the role of clickable cards; and keyboard-only and switch-device users, who cannot focus or activate div-based clickable cards.
+How to fix: Wrap each card in a semantic <article> element and use a real heading (e.g. <h2>) for the card title and an <img> with alt text instead of a CSS background image. For a card that is entirely clickable, wrap its content in an <a href> (or <button>) so it is keyboard focusable and operable, and give it an aria-label describing the destination or action; add aria-label to ambiguous values such as the price.
+
+---
+
+ID: AI_ErrCheckboxGroupWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: forms
+Description: A set of checkboxes is presented without the semantics assistive technology needs: custom div-based checkboxes have no role="checkbox", no aria-checked state, and the container has no role="group", or native checkboxes are not wrapped in a fieldset/legend and lack associated label elements.
+Why it matters: Without these roles, states, and grouping, screen readers cannot announce the elements as checkboxes, report whether each is checked, or convey the shared group label, so users cannot understand or operate the controls. This fails WCAG 4.1.2 Name, Role, Value.
+Who it affects: Screen reader users and other assistive technology users who rely on programmatic roles, states, and group context to perceive and operate checkboxes.
+How to fix: For custom checkboxes, give each control role="checkbox", aria-checked (kept in sync on toggle), an accessible name, and tabindex="0" with keyboard handling, and wrap them in a container with role="group" and aria-labelledby pointing to the group label; for native checkboxes, wrap the set in a fieldset with a legend and give each input an associated label via for/id.
+
+---
+
+ID: AI_ErrDatePickerWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: forms
+Description: A custom date-picker widget exposes no accessible structure: the pop-up calendar has no role="dialog", the calendar grid has no role="grid" and its date cells have no role="gridcell" or per-date aria-label, or the month/day/year dropdowns are not wrapped in a fieldset/legend with individual labels.
+Why it matters: Without these roles, labels, and grouping, a screen reader cannot announce that a calendar opened, cannot convey the grid structure or which date each cell represents, and cannot communicate that the separate dropdowns form one date, breaking WCAG 4.1.2 Name, Role, Value.
+Who it affects: Screen reader users (blind and low-vision), and keyboard-only users who rely on exposed roles and focus management to operate the calendar grid.
+How to fix: Give the trigger aria-haspopup="dialog" and aria-expanded; mark the calendar with role="dialog", aria-modal, and an aria-label; add role="grid" to the date container and role="gridcell" with a descriptive aria-label (e.g. "January 1, 2024") and roving tabindex to each date; for split inputs, wrap month/day/year selects in a fieldset with a legend and label each select.
+
+---
+
+ID: AI_ErrDisclosureWithoutARIA
+Type: Error
+Impact: Medium
+WCAG: 4.1.2, 2.1.1
+Touchpoint: event_handling
+Description: A show/hide disclosure control toggles content but has no aria-expanded state, and in some cases is built from a non-interactive element such as a div or span instead of a button. The expanded/collapsed state and the relationship to the controlled content are not exposed to assistive technologies.
+Why it matters: Without aria-expanded, screen reader users cannot tell whether the disclosure is open or closed, and without aria-controls they cannot find the content it reveals. When the trigger is a div or span rather than a button, it also has no role and is not reachable or operable by keyboard, breaking WCAG 4.1.2 Name, Role, Value and 2.1.1 Keyboard.
+Who it affects: Screen reader users, who get no announcement of the expanded/collapsed state or of the controlled region; and keyboard-only users, who cannot focus or activate disclosure triggers that are built from non-interactive div/span elements.
+How to fix: Use a native <button> for the trigger, add aria-expanded (toggled between "false" and "true" in script as the content shows/hides) and aria-controls pointing at the content's id; optionally give the revealed region role="region" with aria-labelledby referencing the button, and mark any decorative toggle icon aria-hidden="true".
+
+---
+
+ID: AI_ErrFeedWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: event_handling
+Description: A scrolling feed or stream of posts is built from plain container elements with no role="feed" on the wrapper and no role="article" on each item, and it omits aria-posinset, aria-setsize, and aria-busy. Nothing tells assistive technology that this is a dynamic, paginated feed.
+Why it matters: Without the feed pattern, a screen reader exposes the content as undifferentiated text, so users cannot recognize it as a feed, navigate article by article in reading mode, know their position in the set, or be told when new items are loading. This fails WCAG 4.1.2 Name, Role, Value because the component's role and state are not programmatically determinable.
+Who it affects: Screen reader users (e.g. JAWS, NVDA, VoiceOver) and other assistive-technology users who rely on programmatic roles and structure to navigate dynamic, infinitely scrolling content efficiently.
+How to fix: Add role="feed" with an accessible name (aria-label or aria-labelledby) and aria-busy on the container, give each item role="article" with a tabindex of 0, an aria-labelledby that names the item, and aria-posinset plus aria-setsize values; toggle aria-busy="true" while new items load and update aria-setsize as items are added.
+
+---
+
+ID: AI_ErrFlashingContent
+Type: Error
+Impact: High
+WCAG: 2.3.1
+Touchpoint: animation
+Description: An element flashes, strobes, or rapidly alternates between high-contrast colours more than three times per second. The detected content cycles fast enough (for example a 0.1s or 0.15s animation loop) to cross the general flash threshold.
+Why it matters: Flashing faster than three times per second can trigger seizures in people with photosensitive epilepsy, violating WCAG 2.3.1 Three Flashes or Below Threshold (Level A). High-contrast colour transitions, such as red-to-blue or black-to-yellow, are especially dangerous.
+Who it affects: People with photosensitive epilepsy and other seizure disorders, who can suffer a seizure from the flashing; users with vestibular disorders and migraine sensitivity are also affected.
+How to fix: Remove the rapid flashing or slow the animation so it flashes no more than three times per second (an interval of at least 0.34s; one flash per second is safe). Replace high-contrast colour strobes with low-contrast colour changes or a gentle opacity pulse, and keep flashing within the small safe area defined by WCAG 2.3.1.
+
+---
+
+ID: AI_ErrFormErrorNotAnnounced
+Type: Error
+Impact: High
+WCAG: 3.3.1, 4.1.3
+Touchpoint: forms
+Description: A form validation error is shown only visually (red text and a red border) but is not programmatically connected to its field or exposed to assistive technology. The input has no aria-invalid and no aria-describedby pointing at the message, and the message appears without any live region, so it is never announced.
+Why it matters: Screen reader users receive no indication that a field failed validation or why, leaving them unable to identify or correct the error. This fails WCAG 3.3.1 Error Identification and 4.1.3 Status Messages, because the error is neither programmatically associated with the field nor announced when it appears.
+Who it affects: Blind and low-vision people using screen readers, and people who do not perceive the colour and border cues used to flag the error visually.
+How to fix: Set aria-invalid='true' on the failing input and link it to its message with aria-describedby pointing to the message id; give each error message role='alert' (or place errors in an aria-live region / role='alert' error summary) so it is announced the moment it appears, and clear aria-invalid and the message once the field is valid.
+
+---
+
+ID: AI_ErrLandmarkWithoutLabel
+Type: Error
+Impact: High
+WCAG: 2.4.1, 4.1.2
+Touchpoint: landmarks
+Description: The page contains more than one landmark of the same type (for example two navigation or two complementary regions) and this {element_tag} landmark has no aria-label or aria-labelledby to tell it apart. Screen readers announce every one of them with the same generic name.
+Why it matters: When several same-type landmarks share an identical accessible name, assistive technology users navigating by landmark cannot tell which region is which, defeating the purpose of landmark navigation and failing WCAG 2.4.1 Bypass Blocks and 4.1.2 Name, Role, Value.
+Who it affects: Blind and low-vision people who rely on screen readers (JAWS, NVDA, VoiceOver) and use landmark navigation to jump between page regions.
+How to fix: Give each duplicated landmark a unique accessible name: add aria-label (e.g. aria-label="Main navigation" and aria-label="Utility navigation") or point aria-labelledby at a visible heading inside the region (e.g. aria-labelledby="updates-heading").
+
+---
+
+ID: AI_ErrLoadingStateNotAnnounced
+Type: Error
+Impact: High
+WCAG: 4.1.3
+Touchpoint: event_handling
+Description: A loading or progress indicator (such as a spinner or "Loading..." text) appears and disappears visually but is not exposed through a live region, so it is never announced to screen readers. Users cannot tell that content is loading or when it has finished.
+Why it matters: Without a status message in a live region, screen reader users receive no notification that an action is in progress or has completed, leaving them confused about whether the page is working. This violates WCAG 4.1.3 Status Messages, which requires that status changes be programmatically determinable and announced without moving focus.
+Who it affects: Blind and low-vision people using screen readers, and users of other assistive technologies that rely on programmatic status updates rather than visual cues.
+How to fix: Add a live region such as <div role="status" aria-live="polite" aria-atomic="true"> and update its text when loading starts (e.g. "Loading, please wait...") and ends (e.g. "Data loaded successfully"); mark the purely visual spinner aria-hidden="true", and connect the triggering control with aria-describedby pointing at the status region.
+
+---
+
+ID: AI_ErrMeterWithoutARIA
+Type: Error
+Impact: High
+WCAG: 1.3.1, 4.1.2
+Touchpoint: event_handling
+Description: A custom meter or gauge indicator (such as a CPU-usage or disk-space bar) is built from generic <div> elements with no role="meter", no aria-valuenow/aria-valuemin/aria-valuemax, and no accessible label, so its value and meaning exist only as visual styling.
+Why it matters: Screen readers cannot determine what the gauge measures, its current value, or its acceptable range, because the measurement is conveyed purely visually with no programmatic semantics (WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value).
+Who it affects: Screen reader users who are blind or have low vision, and anyone relying on assistive technology to read measurement values that are not exposed in text.
+How to fix: Use the native HTML <meter> element with value/min/max plus an associated <label>, or add role="meter" (or role="progressbar") to the container along with aria-valuenow, aria-valuemin, aria-valuemax, an accessible name via aria-label or aria-labelledby, and aria-valuetext for a human-readable reading; hide any duplicated visual value text with aria-hidden="true".
+
+---
+
+ID: AI_ErrMissingLiveRegion
+Type: Error
+Impact: High
+WCAG: 4.1.3
+Touchpoint: event_handling
+Description: A region such as a status message, cart count, or notification is updated dynamically with JavaScript but has no aria-live attribute or live-region role, so the change is not conveyed to assistive technology.
+Why it matters: Screen reader users receive no announcement when the content changes, so they miss status confirmations, quantity updates, and time-sensitive alerts. This fails WCAG 4.1.3 Status Messages, which requires programmatically determinable status updates that do not require focus.
+Who it affects: Blind and low-vision people using screen readers, who cannot see visual updates and rely on spoken announcements to know that content changed.
+How to fix: Wrap the updating region in an element with an appropriate live-region role and aria-live value: use role="status" with aria-live="polite" for non-urgent updates (confirmations, counts) and role="alert" with aria-live="assertive" for critical, time-sensitive messages; add aria-atomic="true" so the full message is read.
+
+---
+
+ID: AI_ErrMissingSkipLink
+Type: Error
+Impact: High
+WCAG: 2.4.1
+Touchpoint: navigation
+Description: The page presents large blocks of navigation (a main menu and a sidebar) before the main content, but offers no skip link to jump past them. Keyboard users must tab through every navigation item on every page load to reach the content.
+Why it matters: This fails WCAG 2.4.1 Bypass Blocks. A mechanism must be available to bypass blocks of content that are repeated on multiple pages, such as navigation; without one, keyboard and screen reader users are forced to wade through dozens of repeated links before they can use the page.
+Who it affects: Keyboard-only users, switch-device users, and screen reader users who navigate sequentially and cannot skip past repeated navigation blocks with a pointer.
+How to fix: Add a skip link as the first focusable element on the page, e.g. <a href="#main-content" class="skip-link">Skip to main content</a>, give the main content a matching target (<main id="main-content" tabindex="-1">), and style the link so it is visually hidden until it receives keyboard focus; add additional skip links for other large blocks such as a sidebar.
+
+---
+
+ID: AI_ErrModalWithoutARIA
+Type: Error
+Impact: High
+WCAG: 2.1.1, 4.1.2, 2.4.3
+Touchpoint: dialogs
+Description: A modal dialog is built with a plain container (such as a {element_tag}) that has no role="dialog", aria-modal="true", or accessible name, and it does not move or trap keyboard focus when it opens. Assistive technology cannot tell that a dialog has appeared, what it is for, or that the background is inert.
+Why it matters: Without role="dialog" and aria-modal="true" a screen reader never announces the modal or its purpose (SC 4.1.2 Name, Role, Value), and with no focus move or focus trap keyboard and screen-reader users keep tabbing into the obscured page behind the overlay, losing their place (SC 2.1.1 Keyboard, SC 2.4.3 Focus Order).
+Who it affects: Screen reader users, who receive no announcement that a modal opened or what it asks; keyboard-only and switch users, whose focus escapes the dialog into the inert background; and users with cognitive disabilities, who are left without a clear, contained context.
+How to fix: Add role="dialog" and aria-modal="true" to the modal container, give it an accessible name with aria-labelledby pointing to the heading (and aria-describedby for the body text), then on open move focus to the first control inside the dialog, trap Tab/Shift+Tab within it, support Escape to close, and return focus to the triggering element on close.
+
+---
+
+ID: AI_ErrMotionWithoutControl
+Type: Error
+Impact: High
+WCAG: 2.2.2, 2.3.3
+Touchpoint: animation
+Description: Auto-rotating or moving content such as an automatic carousel or a parallax scrolling effect runs continuously with no way for the user to pause, stop, or disable it, and it does not respect the prefers-reduced-motion setting.
+Why it matters: WCAG 2.2.2 (Pause, Stop, Hide) requires a mechanism to pause, stop, or hide motion that starts automatically and lasts more than five seconds, and WCAG 2.3.3 (Animation from Interactions) requires non-essential motion to be disableable; without these controls the movement is distracting and can prevent people from reading the content.
+Who it affects: People with vestibular disorders who experience dizziness or nausea from motion, people with attention or cognitive disabilities who are distracted by movement, people with photosensitivity, and screen magnifier users for whom moving content is hard to track.
+How to fix: Provide a visible, keyboard-operable pause/stop button (for example a <button> with aria-label='Pause carousel' that toggles the animation) for any content that auto-rotates longer than five seconds, and add a @media (prefers-reduced-motion: reduce) rule that disables the animation and replaces parallax background-attachment: fixed with scroll.
+
+---
+
+ID: AI_ErrNotificationWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.3
+Touchpoint: event_handling
+Description: A notification (such as a success, error, or informational message) appears dynamically without role="status", role="alert", or an aria-live region, so its content is never conveyed to assistive technology when it is shown.
+Why it matters: Because the message is inserted or revealed without a live region, screen readers do not announce it, leaving non-sighted users unaware that a status update, confirmation, or error occurred. This violates WCAG 4.1.3 Status Messages, which requires programmatically determinable, automatically announced status messages.
+Who it affects: Blind and low-vision people using screen readers, who never hear the notification and miss confirmations, errors, or updates that sighted users see appear on screen.
+How to fix: Add a live region to each notification: use role="status" with aria-live="polite" for non-critical confirmations and informational updates, and role="alert" with aria-live="assertive" for errors that must interrupt the user; add aria-atomic="true" so the whole message is announced as a unit.
+
+---
+
+ID: AI_ErrPaginationWithoutARIA
+Type: Error
+Impact: High
+WCAG: 2.4.8, 4.1.2
+Touchpoint: navigation
+Description: A set of pagination controls is not wrapped in a <nav> element with an aria-label, and the current page is not marked with aria-current="page". Assistive technologies cannot identify the control as pagination navigation or determine which page is currently active.
+Why it matters: Without a labelled navigation landmark, screen reader users cannot find or recognize the pagination region, and without aria-current="page" they cannot tell which page they are on. This breaks WCAG 2.4.8 Location (users lose their place within the result set) and 4.1.2 Name, Role, Value (the control's role and state are not exposed to assistive technology).
+Who it affects: Screen reader users, and people using other assistive technologies that rely on landmarks and ARIA states to navigate and to know their current position within paged results.
+How to fix: Wrap the pagination links in a <nav> element with a descriptive aria-label (e.g. aria-label="Pagination"), mark the current page with aria-current="page", and give each page link a clear accessible name such as aria-label="Go to page 3" or "Go to next page".
+
+---
+
+ID: AI_ErrProgressBarWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: event_handling
+Description: A visual progress or loading indicator is built from styled elements with no role="progressbar" and none of the aria-valuenow/aria-valuemin/aria-valuemax attributes (or aria-busy for an indeterminate state), so its status is conveyed only visually.
+Why it matters: Without the progressbar role and value attributes, assistive technology cannot identify the element as a progress indicator or announce how much of the task is complete, violating WCAG 4.1.2 Name, Role, Value because the control exposes no programmatic role or value.
+Who it affects: Screen reader users, and people who rely on assistive technology to know that a process is running and how far along it is.
+How to fix: Add role="progressbar" to the indicator with aria-valuenow, aria-valuemin (0) and aria-valuemax (100) plus an accessible name via aria-labelledby or aria-label, updating aria-valuenow as progress changes; for an indeterminate/loading state omit aria-valuenow and set aria-busy="true", and announce changes with an aria-live region or role="status".
+
+---
+
+ID: AI_ErrRadioGroupWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2, 1.3.1
+Touchpoint: forms
+Description: A set of mutually exclusive choices is presented as a radio group, but it lacks the markup screen readers need: a custom group built from generic <div> elements has no role="radiogroup", no role="radio" on the options, and no aria-checked state, while native radio inputs are not wrapped in a fieldset/legend and have no associated labels.
+Why it matters: Without these roles, states, and grouping, assistive technology cannot announce the control as a radio group, cannot tell the user which option is selected, and cannot convey the shared question the options answer, so the control's name, role, and value are not exposed (WCAG 4.1.2) and the group relationship is lost (WCAG 1.3.1).
+Who it affects: Screen reader users and other assistive-technology users, who rely on programmatic roles, states, and grouping to understand and operate the control; keyboard-only users when the custom group also lacks roving focus and arrow-key navigation.
+How to fix: For custom radio groups, add role="radiogroup" with an accessible name (aria-labelledby or aria-label) to the container, role="radio" plus aria-checked="true|false" on each option, and manage tabindex (0 on the selected/first option, -1 on the rest) with arrow-key navigation. For native inputs, wrap them in a <fieldset> with a <legend> describing the question and give each <input type="radio"> an associated <label for>.
+
+---
+
+ID: AI_ErrSearchWithoutARIA
+Type: Error
+Impact: Medium
+WCAG: 4.1.2
+Touchpoint: forms
+Description: A search feature is present but is not wrapped in a search landmark (role="search" or the HTML <search> element), and its input and button lack accessible names. In some cases the search control is built from a <div> with an onclick handler instead of a real form and button.
+Why it matters: Without a search landmark and accessible names, assistive technologies cannot identify the controls as site search, expose them in the landmark/region list, or announce what the field and button do, which violates WCAG 4.1.2 Name, Role, Value.
+Who it affects: Screen reader users who navigate by landmarks and rely on announced names and roles; keyboard-only users who depend on real semantic form controls rather than div-based click handlers.
+How to fix: Wrap the search controls in a search landmark using <search> (or a container with role="search"), use a real <form> with <input type="search"> and a <button type="submit">, give the input an accessible name via a <label> or aria-label, and add an aria-label to the button (especially when its content is an icon).
+
+---
+
+ID: AI_ErrSliderWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2, 2.1.1
+Touchpoint: forms
+Description: A slider control does not expose the slider role or the value attributes (aria-valuenow, aria-valuemin, aria-valuemax) and accessible name that assistive technology needs. This affects both custom div-based sliders missing role='slider' and native range inputs missing a programmatic label or value description.
+Why it matters: Without the slider role, current value, range bounds, and an accessible name, screen readers announce nothing meaningful (or a generic 'slider' with no context), and a custom slider without keyboard handling cannot be operated at all. This breaks WCAG 4.1.2 Name, Role, Value and, for custom sliders, 2.1.1 Keyboard.
+Who it affects: Screen reader users, who hear no name, role, or current value; and keyboard-only users, who cannot move a custom slider that handles only mouse drag.
+How to fix: For a custom slider, give the thumb role='slider', tabindex='0', an accessible name (aria-label or aria-labelledby), and aria-valuenow, aria-valuemin, aria-valuemax (plus aria-valuetext for non-numeric values), then implement arrow/Home/End key handling that updates aria-valuenow. For a native range input, associate a visible <label for> or add aria-labelledby/aria-label, and use aria-valuetext when the displayed value needs a unit or description.
+
+---
+
+ID: AI_ErrSpinbuttonWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2
+Touchpoint: forms
+Description: The {element_tag} element "{element_text}" works as a spinbutton (increment/decrement number control) but is missing role="spinbutton", the aria-valuenow/aria-valuemin/aria-valuemax value attributes, or an accessible label.
+Why it matters: Without these attributes, screen readers cannot announce the control type, its current value, or its allowed range, leaving the user unable to understand or operate it; this breaks WCAG 4.1.2 Name, Role, Value.
+Who it affects: Screen reader users, and keyboard users who rely on programmatic role and value information to operate the control.
+How to fix: For a custom widget, add role="spinbutton", aria-valuenow, aria-valuemin, aria-valuemax, an accessible name via aria-label or aria-labelledby, tabindex="0", and ArrowUp/ArrowDown keyboard handling that updates aria-valuenow; for a native <input type="number">, associate a <label for> (or aria-label) and keep min/max so the range is announced.
+
+---
+
+ID: AI_ErrTimeLimitNoWarning
+Type: Error
+Impact: High
+WCAG: 2.2.1
+Touchpoint: timers
+Description: The page enforces a session or task time limit (for example a 60-second countdown) that logs the user out or redirects them when it expires, without warning them in advance or giving them a way to turn off, adjust, or extend the time.
+Why it matters: WCAG 2.2.1 (Timing Adjustable) requires that users be able to turn off, adjust, or extend a time limit before it expires. A countdown that ends in a logout or redirect with no advance warning causes users to lose their work and be unable to complete the task.
+Who it affects: People who read or type slowly, including those with cognitive, learning, motor, or vision disabilities, and screen reader or switch users who need more time to navigate and complete forms.
+How to fix: Warn the user before the limit is reached (for example 20 seconds in advance) using a role="alertdialog" with an accessible name and description, and provide a clearly labelled control to extend or reset the session (an "Extend Session" button). Move focus to the dialog when it appears, and allow at least the option to turn off or lengthen the limit.
+
+---
+
+ID: AI_ErrToggleWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2, 2.1.1
+Touchpoint: event_handling
+Description: A toggle switch was identified visually, but its markup is missing role="switch" and the aria-checked attribute, and it is often not reachable by keyboard.
+Why it matters: Without role="switch" and aria-checked, screen readers cannot identify the control as a toggle or announce whether it is on or off, breaking WCAG 4.1.2 Name, Role, Value; missing keyboard access also breaks WCAG 2.1.1 Keyboard.
+Who it affects: Screen reader users, keyboard-only users
+How to fix: Add role="switch" and aria-checked="true/false" (updated on change) plus an accessible name via aria-label or aria-labelledby, and make it keyboard operable with tabindex="0" and Space/Enter handling, or use a native <button>.
+
+---
+
+ID: AI_ErrTreeViewWithoutARIA
+Type: Error
+Impact: High
+WCAG: 4.1.2, 2.1.1
+Touchpoint: event_handling
+Description: A hierarchical tree view (such as a file browser) is built from nested lists with click handlers but has no role="tree", role="treeitem", or role="group", no aria-expanded state on expandable nodes, and no keyboard navigation.
+Why it matters: Without these roles and states, assistive technology cannot convey that the widget is a tree, which nodes are expandable, their expanded/collapsed state, or their nesting level, and the tree cannot be operated by keyboard, violating WCAG 4.1.2 Name, Role, Value and 2.1.1 Keyboard.
+Who it affects: Screen reader users, who lose the structure, state, and navigation cues of the tree, and keyboard-only users, who cannot move through or expand and collapse nodes without a pointer.
+How to fix: Add role="tree" with an accessible name (aria-label) to the container, role="treeitem" to each node, role="group" to each nested child list, and aria-expanded="true/false" to every expandable node; then implement roving tabindex and arrow-key navigation (Up/Down to move, Left/Right to collapse/expand, Enter or Space to activate).
+
+---
+
+ID: AI_ErrVideoWithoutCaptions
+Type: Error
+Impact: High
+WCAG: 1.2.2
+Touchpoint: videos
+Description: A video plays audio content but provides no captions. The {element_tag} element has no caption track (and embedded iframe videos expose no caption mechanism), so spoken dialogue, narration, and meaningful sounds are inaccessible to anyone who cannot hear the audio.
+Why it matters: Without captions, deaf and hard-of-hearing users cannot access the dialogue, narration, and significant non-speech sounds carried in the video's audio. This fails WCAG 1.2.2 Captions (Prerecorded), which requires synchronized captions for all prerecorded audio content in synchronized media.
+Who it affects: People who are deaf or hard of hearing; users in sound-off environments (open offices, public transit) and anyone watching without working audio.
+How to fix: Add a <track kind="captions"> element pointing to a WebVTT caption file inside the <video>, e.g. <track kind="captions" src="video-en.vtt" srclang="en" label="English" default>; provide additional caption tracks for other languages as needed. For iframe-embedded videos, enable captions on the hosting platform or link to a captioned version. Captions must convey dialogue and important sounds, not just translate speech (subtitles alone are not enough).
+
+---
+
+ID: AI_InfoContentOrder
+Type: Info
+Impact: Low
+WCAG: 1.3.2
+Touchpoint: headings
+Description: CSS layout techniques such as flex-direction: column-reverse, CSS grid placement, floats, or absolute positioning appear to present content in a different order than its DOM source sequence. This is surfaced for manual confirmation rather than flagged as a definite failure.
+Why it matters: Screen readers and keyboard navigation follow the DOM source order, not the visual layout, so any divergence risks content being read or tabbed through in an illogical sequence (WCAG 1.3.2 Meaningful Sequence). As an informational note it points reviewers to a spot that needs a human to confirm the reading order still makes sense.
+Who it affects: Screen reader users, keyboard-only users, users with cognitive disabilities
+How to fix: Manually confirm the DOM source order matches the intended reading flow; if it does not, reorder the underlying HTML so the source sequence reads logically and reserve CSS order/flex/grid/float/absolute positioning for purely visual adjustments that do not change meaning.
+
+---
+
+ID: AI_WarnBannerRoleOnHeader
+Type: Warning
+Impact: Medium
+WCAG: 4.1.2
+Touchpoint: landmarks
+Description: A <header> element carries an explicit role="banner". When the header is a direct child of <body> the banner role duplicates the semantics HTML already provides, and when the header is nested inside an <article> or <section> the banner role is simply wrong because that header scopes its section rather than the page.
+Why it matters: Redundant or incorrect ARIA roles add no information and can mislead developers and assistive technology, weakening the reliable role exposure required by WCAG 4.1.2 Name, Role, Value; a banner role applied to a section-scoped header can also produce multiple banner landmarks, which confuses screen reader users navigating by region.
+Who it affects: Screen reader and other assistive technology users who navigate by landmarks and rely on accurate, non-duplicated region roles, as well as developers maintaining the markup.
+How to fix: Remove role="banner" from the <header> element. A <header> that is a direct child of <body> automatically exposes the banner landmark, so no ARIA is needed; a <header> nested inside an <article> or <section> must not have a banner role at all because it provides sectioning context, not a page banner.
+
+---
+
+ID: AI_WarnComplementaryRoleOnAside
+Type: Warning
+Impact: Medium
+WCAG: 4.1.2
+Touchpoint: landmarks
+Description: The <aside> element has an explicit role="complementary", but <aside> already maps to the complementary landmark role natively in HTML5, so the ARIA attribute is redundant.
+Why it matters: Native HTML semantics should be preferred over explicit ARIA (WCAG 4.1.2 Name, Role, Value). Redundant roles add clutter, increase maintenance risk, and can mask or conflict with implicit semantics; relying on the native element keeps the role exposed correctly to assistive technology.
+Who it affects: Developers maintaining the markup, and indirectly screen reader users who rely on the complementary landmark being announced consistently and correctly.
+How to fix: Remove the role="complementary" attribute from the <aside> element and rely on its implicit complementary landmark role; only add an explicit role when an element other than <aside> needs that semantic.
+
+---
+
+ID: AI_WarnContentinfoRoleOnFooter
+Type: Warning
+Impact: Low
+WCAG: 4.1.2
+Touchpoint: landmarks
+Description: A footer element carries an explicit role="contentinfo". When the footer is a direct child of body, this role is redundant because the native element already exposes the contentinfo landmark; when the footer is nested inside an article or section, the role is incorrect and creates an extra, out-of-place contentinfo landmark.
+Why it matters: Redundant ARIA adds clutter and a misplaced contentinfo creates a second page-level landmark where only one is expected, confusing screen reader users who navigate by landmarks and weakening the programmatic name/role mapping required by WCAG 4.1.2 Name, Role, Value.
+Who it affects: Screen reader and other assistive technology users who navigate by landmark regions, who may encounter duplicate or unexpected contentinfo landmarks.
+How to fix: Remove role="contentinfo" from the footer. A top-level footer (direct child of body) already exposes the contentinfo landmark natively, and a footer nested inside an article or section should provide only sectioning context, not a contentinfo landmark.
+
+---
+
+ID: AI_WarnFormRoleOnForm
+Type: Warning
+Impact: Low
+WCAG: 4.1.2
+Touchpoint: landmarks
+Description: A native HTML <form> element carries an explicit role="form", which is redundant because a labelled <form> already exposes the form landmark role implicitly. The extra ARIA adds no semantics and only clutters the markup.
+Why it matters: WCAG 4.1.2 (Name, Role, Value) calls for correct, non-conflicting roles and favours native semantics over duplicated ARIA. A labelled <form> already announces itself as a form region, so the explicit role is unnecessary; native semantics are more robust and easier to maintain than redundant ARIA.
+Who it affects: Primarily affects developers and maintainers through code clutter; while screen reader users are not blocked, redundant ARIA increases the risk of future role conflicts that could degrade their experience.
+How to fix: Remove the role="form" attribute from the <form> element and rely on its native semantics: keep the accessible name (via aria-label or aria-labelledby) so the form is still announced as a labelled form region.
+
+---
+
+ID: AI_WarnMainRoleOnMain
+Type: Warning
+Impact: Medium
+WCAG: 4.1.2
+Touchpoint: landmarks
+Description: The <main> element has an explicit role="main" attribute, which is redundant because the native HTML5 <main> element already exposes the main landmark role automatically. The duplicate ARIA role adds no semantics and only clutters the markup.
+Why it matters: Redundant ARIA roles violate WCAG 4.1.2 (Name, Role, Value) by overriding native semantics with an identical explicit role rather than relying on the browser's built-in mapping. While it usually does not break assistive technology, it signals improper ARIA use, increases maintenance burden, and risks masking real problems where native and ARIA roles diverge.
+Who it affects: Primarily developers and maintainers; screen reader users benefit indirectly because clean, native semantics are more reliably and consistently exposed across browsers and assistive technologies than duplicated ARIA.
+How to fix: Remove the role="main" attribute from the <main> element. The native <main> element already provides the main landmark, so simply use <main>...</main> with no explicit role.
+
+---
+
+ID: AI_WarnNavigationRoleOnNav
+Type: Warning
+Impact: Medium
+WCAG: 4.1.2
+Touchpoint: landmarks
+Description: A <nav> element carries an explicit role="navigation" attribute, but the native HTML5 <nav> element already exposes the navigation landmark role, so the ARIA role is redundant.
+Why it matters: Native HTML semantics should be preferred over explicit ARIA (WCAG 4.1.2 Name, Role, Value). The redundant role adds no information for assistive technology, clutters the markup, and increases the chance of the role drifting out of sync with the element.
+Who it affects: Developers and maintainers primarily; while it does not break screen reader users, redundant ARIA raises the long-term risk of mismatched or conflicting roles that would affect them.
+How to fix: Remove the role="navigation" attribute from the <nav> element and rely on its implicit navigation landmark role; keep the aria-label to distinguish multiple navigation regions.
+
+---
+
+ID: AI_WarnPossibleReadingOrderIssue
+Type: Warning
+Impact: Medium
+WCAG: 1.3.2, 2.4.3
+Touchpoint: headings
+Description: A visual layout was detected (multi-column CSS, flexbox/grid order reordering, or a layout table) where the on-screen reading sequence may not match the DOM source order that screen readers and keyboard users follow.
+Why it matters: Screen readers and keyboard navigation follow DOM order, so when CSS columns, the flex/grid order property, or layout tables rearrange content visually, the announced or focus sequence can become illogical, breaking WCAG 1.3.2 Meaningful Sequence and 2.4.3 Focus Order.
+Who it affects: Screen reader users, keyboard-only users, and users of assistive technology that relies on DOM and focus order
+How to fix: Verify the DOM order already reflects the intended reading sequence; avoid using the CSS order property or column-count to reorder meaningful content, and do not use tables for layout (use semantic markup or CSS grid/flexbox with matching source order instead).
+
+---
+
+ID: AI_WarnRegionWithoutLabel
+Type: Warning
+Impact: Medium
+WCAG: 2.4.1, 4.1.2
+Touchpoint: landmarks
+Description: An element with role="region" has no accessible name because it lacks both aria-label and aria-labelledby. The region becomes a landmark but cannot be identified or distinguished from other regions.
+Why it matters: A region role creates a navigation landmark, but without a name a screen reader simply announces "region" with no identifying information, so it provides no useful way to skip to or recognise the content. This breaks WCAG 2.4.1 Bypass Blocks and 4.1.2 Name, Role, Value.
+Who it affects: Screen reader users who navigate by landmarks, and keyboard users relying on landmark-based navigation to move efficiently through the page.
+How to fix: Give every role="region" an accessible name with aria-label (e.g. aria-label="Product features") or aria-labelledby pointing to the id of a visible heading, or remove role="region" if the section does not need to be a landmark.
+
+---
+
+ID: AI_WarnSearchRoleOnForm
+Type: Warning
+Impact: Low
+WCAG: 4.1.2
+Touchpoint: forms
+Description: The role="search" landmark is set directly on a <form> element, which overrides the element's native form semantics instead of being placed on a wrapping container. This combines two roles on one element and can prevent assistive technologies from recognising it as a form.
+Why it matters: ARIA role="search" replaces the implicit form role, so screen readers may announce the region only as a search landmark and lose the form identity, weakening Name, Role, Value (WCAG 4.1.2). The recommended pattern keeps both semantics by putting role="search" on a wrapper.
+Who it affects: Screen reader users and others relying on assistive technology that depends on accurate landmark and form role announcements to understand and navigate the page.
+How to fix: Remove role="search" from the <form> element and instead wrap the form in a container with the landmark, e.g. <div role="search"><form action="/search" method="get">...</form></div>; keep any aria-label on the wrapper so the form retains its native semantics inside the search landmark.
+
+---
+
+ID: AI_WarnTableWithComplexStructure
+Type: Warning
+Impact: Medium
+WCAG: 1.3.1
+Touchpoint: tables
+Description: This table has a complex structure (multiple header levels, or cells merged with rowspan/colspan) but does not associate its data cells with their header cells using scope attributes or id/headers references. As a result the relationships between headers and data cannot be programmatically determined.
+Why it matters: Screen readers rely on scope or id/headers to announce which row and column headers apply to each data cell. Without them, users navigating cell by cell hear values with no context and cannot understand the table, breaking WCAG 1.3.1 Info and Relationships.
+Who it affects: Blind and low-vision people using screen readers, and people with cognitive disabilities who depend on clearly conveyed structure to interpret tabular data.
+How to fix: Add scope='col' to column headers and scope='row' to row headers; for headers that span groups use scope='colgroup' or scope='rowgroup'. For tables with merged cells, give each header an id and list the applicable ids in each data cell's headers attribute (e.g. headers='alice w1-mon week1'). Add a caption describing the table.
+
+---
+
+ID: AI_WarnVideoWithoutCaptions
+Type: Warning
+Impact: Medium
+WCAG: 1.2.2
+Touchpoint: videos
+Description: This video element plays spoken audio but provides no caption track, so its dialogue and important sounds are presented only as audio. No <track kind="captions"> element accompanies the video sources.
+Why it matters: Without synchronized captions, people who are deaf or hard of hearing cannot access the spoken content, and no one can turn captions on even if they want to. This fails WCAG 1.2.2 Captions (Prerecorded), which requires captions for all prerecorded audio in synchronized media.
+Who it affects: People who are deaf or hard of hearing, and anyone watching in a sound-off or noisy environment where audio cannot be heard.
+How to fix: Add a captioned text alternative: include a <track kind="captions" srclang="en" src="captions.vtt" label="English captions" default> element inside the <video>, with a WebVTT file that transcribes all dialogue and meaningful sound effects in sync with the timeline. Provide a separate track per language as needed.
+
+---
+
+ID: AI_WarnVideoWithoutTranscript
+Type: Warning
+Impact: Medium
+WCAG: 1.2.3, 1.2.8
+Touchpoint: videos
+Description: A video with audio and visual content is presented without an accompanying text transcript. Captions may be present, but no full text alternative covering the spoken dialogue and visual information is provided.
+Why it matters: A transcript is the only fully accessible alternative for people who cannot use captions or audio, and it lets anyone read, search, skim, and reference the content. Without one, WCAG 1.2.3 (Audio Description or Media Alternative) and 1.2.8 (Media Alternative, Prerecorded) are not met.
+Who it affects: Deaf-blind users who rely on a braille display and cannot access captions or audio, people who are deaf or hard of hearing, users on slow connections or who prefer reading over watching, and anyone who needs to search or quote the content.
+How to fix: Provide a complete text transcript of all spoken dialogue and significant visual information, placed near the video (for example in a heading-labelled section) or as a clearly linked downloadable file; include timestamps so the transcript can be cross-referenced with the video.
+
+---
+
+ID: ErrOrientationLocked
+Type: Error
+Impact: High
+WCAG: 1.3.4
+Touchpoint: page
+Description: CSS hides primary content in one orientation (for example @media (orientation: portrait) { body { display: none } }), forcing the user to rotate the device to access the page.
+Why it matters: Restricting content to one orientation excludes users who cannot rotate their device, failing WCAG 1.3.4 Orientation.
+Who it affects: Users with devices mounted in a fixed position (e.g. on a wheelchair), and users with motor disabilities who cannot easily rotate a device.
+How to fix: Support both portrait and landscape orientations. Do not hide or disable content based on orientation unless a specific orientation is essential; instead use responsive CSS so the layout adapts to either orientation.
+
+---
+
+ID: ErrTargetSizeTooSmall
+Type: Error
+Impact: High
+WCAG: 2.5.8
+Touchpoint: page
+Description: A button, link, or other interactive control renders smaller than 24 by 24 CSS pixels, below the WCAG 2.5.8 minimum target size.
+Why it matters: Small targets are hard to activate accurately, failing WCAG 2.5.8 Target Size (Minimum) and causing mis-taps for users with limited dexterity or on touch screens.
+Who it affects: Users with motor or dexterity impairments, users with tremors, and anyone using a touch screen.
+How to fix: Make interactive targets at least 24x24 CSS pixels (ideally 44x44), or leave at least 24px of spacing between adjacent small targets. Increase padding or min-width/min-height on buttons, icons, and links.
+
+---
+
+ID: ErrTextSpacingRestricted
+Type: Error
+Impact: Medium
+WCAG: 1.4.12
+Touchpoint: fonts
+Description: Text uses negative letter or word spacing, or sits in a fixed-height container with overflow:hidden, so increasing text spacing clips or breaks the content.
+Why it matters: When users override spacing for readability (line height 1.5, letter spacing 0.12em, word spacing 0.16em), content must not be lost or overlapped, per WCAG 1.4.12 Text Spacing.
+Who it affects: People with dyslexia and low vision who increase text spacing to read more comfortably.
+How to fix: Avoid negative letter-spacing and word-spacing. Use min-height instead of a fixed height on text containers and avoid overflow:hidden on text, so the layout expands when users increase spacing.
+
+---
+
+ID: ErrViewportZoomDisabled
+Type: Error
+Impact: High
+WCAG: 1.4.4, 1.4.10
+Touchpoint: page
+Description: The <meta name="viewport"> tag uses user-scalable=no or a maximum-scale below 2, which prevents or limits the browser's pinch-to-zoom and page-zoom.
+Why it matters: Blocking zoom stops people with low vision from enlarging text and content to a readable size, failing WCAG 1.4.4 Resize Text and 1.4.10 Reflow.
+Who it affects: People with low vision who rely on browser zoom or pinch-to-zoom to read content, and users on small touch screens.
+How to fix: Remove user-scalable=no and any maximum-scale below 2 (or 5) from the viewport meta tag. Use content="width=device-width, initial-scale=1" and let users zoom freely up to at least 200%.

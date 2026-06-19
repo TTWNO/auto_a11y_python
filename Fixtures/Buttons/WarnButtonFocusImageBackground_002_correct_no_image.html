@@ -6,6 +6,7 @@
     <title>WarnButtonFocusImageBackground - Correct Implementation</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnButtonFocusImageBackground_002_correct_no_image",
     "issueId": "WarnButtonFocusImageBackground",
     "expectedViolationCount": 0,
@@ -17,12 +18,25 @@
 }
     </script>
     <style>
+        /* The focus outline uses a positive outline-offset, so it is drawn in the gap
+           OUTSIDE the button and is therefore rendered against the *container's* background,
+           not the button's own background. Each button is wrapped in a padded container with
+           a solid background that the outline contrasts against >= 3:1, so the engine can
+           auto-verify focus contrast (WCAG 1.4.11) and the ring is never clipped by the parent. */
+        .focus-container {
+            display: inline-block;
+            padding: 20px;
+        }
+        .container-light { background: #ffffff; }
+        .container-blue  { background: #1a5490; }
+
         .solid-button {
             padding: 10px 20px;
             background: #e0e0e0;
             border: 1px solid #999;
         }
         .solid-button:focus {
+            /* dark blue ring over the white container background - 5.6:1 */
             outline: 2px solid #0066cc;
             outline-offset: 2px;
         }
@@ -33,6 +47,7 @@
             border: 2px solid #0066cc;
         }
         .no-background:focus {
+            /* magenta ring over the white container background - 5.6:1 */
             outline: 2px solid #cc0066;
             outline-offset: 2px;
         }
@@ -44,6 +59,7 @@
             border: none;
         }
         .colored-button:focus {
+            /* white ring over the dark-blue container background - 7.8:1 */
             outline: 2px solid #ffffff;
             outline-offset: 2px;
         }
@@ -52,34 +68,44 @@
 <body>
     <h1>Test: Buttons Without Background Images</h1>
 
-    <p>These buttons use solid colors or no background, allowing automated verification
-       that focus outlines have sufficient contrast.</p>
+    <p>These buttons use solid colours or no background. The focus outline uses a positive
+       <code>outline-offset</code>, so it is drawn in the gap just outside the button, over the
+       container's solid background. Because that background is a known solid colour, the
+       focus-outline contrast (WCAG 1.4.11) can be verified automatically.</p>
 
     <section>
         <h2>Solid Background (No Image)</h2>
-        <button class="solid-button"
-                data-expected-pass="true">
-            Submit Form
-        </button>
-        <p>Simple solid color background - contrast is verifiable.</p>
+        <div class="focus-container container-light">
+            <button class="solid-button"
+                    data-expected-pass="true">
+                Submit Form
+            </button>
+        </div>
+        <p>Dark blue outline (#0066cc) sits over the white container background - 5.6:1 contrast.</p>
     </section>
 
     <section>
         <h2>Transparent Background (No Image)</h2>
-        <button class="no-background"
-                data-expected-pass="true">
-            Save Changes
-        </button>
-        <p>Transparent button inherits page background - contrast is verifiable.</p>
+        <div class="focus-container container-light">
+            <button class="no-background"
+                    data-expected-pass="true">
+                Save Changes
+            </button>
+        </div>
+        <p>Transparent button inherits the white container background; magenta outline (#cc0066)
+           sits over that white background - 5.6:1 contrast.</p>
     </section>
 
     <section>
         <h2>Colored Background (No Image)</h2>
-        <button class="colored-button"
-                data-expected-pass="true">
-            Delete Item
-        </button>
-        <p>Solid blue background - contrast is verifiable.</p>
+        <div class="focus-container container-blue">
+            <button class="colored-button"
+                    data-expected-pass="true">
+                Delete Item
+            </button>
+        </div>
+        <p>White outline (#ffffff) sits over the blue container background - 7.8:1 contrast.
+           The focus ring lands on the blue area, not the white page, so it stays visible.</p>
     </section>
 </body>
 </html>

@@ -4,32 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Missing Tabindex Test - ErrMissingTabindex</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrMissingTabindex",
+    "issueId": "ErrMissingTabindex",
+    "expectedViolationCount": 5,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Custom interactive widgets (ARIA roles button, link, menuitem, checkbox, slider) that have a click handler or interactive role but lack a tabindex attribute, so keyboard users cannot focus them. Each case is validated individually.",
+    "wcag": "2.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Interactive Elements Missing Tabindex</h1>
     
     <!-- Custom button without tabindex -->
-    <div role="button" onclick="doAction()">
+    <div role="button" onclick="doAction()" data-expected-violation="true" data-violation-id="ErrMissingTabindex" data-violation-reason="role=button with onclick but no tabindex - not keyboard focusable">
         Custom Button (not keyboard accessible)
     </div>
     
     <!-- Custom link without tabindex -->
-    <span role="link" onclick="navigate()">
+    <span role="link" onclick="navigate()" data-expected-violation="true" data-violation-id="ErrMissingTabindex" data-violation-reason="role=link with onclick but no tabindex - cannot tab to it">
         Custom Link (can't tab to it)
     </span>
     
     <!-- Interactive div without tabindex -->
-    <div onclick="toggleMenu()" role="menuitem">
+    <div onclick="toggleMenu()" role="menuitem" data-expected-violation="true" data-violation-id="ErrMissingTabindex" data-violation-reason="role=menuitem with onclick but no tabindex - not focusable">
         Menu Item (not focusable)
     </div>
     
     <!-- Custom checkbox without tabindex -->
-    <div role="checkbox" aria-checked="false" onclick="toggle()">
+    <div role="checkbox" aria-checked="false" onclick="toggle()" data-expected-violation="true" data-violation-id="ErrMissingTabindex" data-violation-reason="role=checkbox with onclick but no tabindex - not focusable">
         Custom Checkbox
     </div>
     
     <!-- Custom slider without tabindex -->
-    <div role="slider" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+    <div role="slider" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" data-expected-violation="true" data-violation-id="ErrMissingTabindex" data-violation-reason="role=slider but no tabindex - not focusable">
         Custom Slider Control
     </div>
     

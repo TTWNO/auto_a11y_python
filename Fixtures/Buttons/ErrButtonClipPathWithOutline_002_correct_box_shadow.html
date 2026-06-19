@@ -6,11 +6,12 @@
     <title>ErrButtonClipPathWithOutline - Correct Implementation</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrButtonClipPathWithOutline_002_correct_box_shadow",
     "issueId": "ErrButtonClipPathWithOutline",
     "expectedViolationCount": 0,
     "expectedPassCount": 4,
-    "description": "Non-rectangular buttons using box-shadow or border (follows shape) or rectangular buttons with outline",
+    "description": "Non-rectangular buttons with focus indicators that actually follow the shape: border-radius circle with box-shadow, rotated-square diamond with box-shadow, plus border-radius/rectangular buttons with outline",
     "wcag": "2.4.7",
     "impact": "N/A"
 }
@@ -25,22 +26,40 @@
             font-size: 16px;
         }
 
-        /* Circular button with box-shadow (follows shape) */
+        /* Circular button via border-radius (NOT clip-path) so the focus ring is not clipped.
+           box-shadow respects border-radius, so the ring follows the circle. */
         .circle-correct {
-            clip-path: circle(50%);
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+            padding: 0;
         }
         .circle-correct:focus {
-            box-shadow: 0 0 0 3px #ff6b6b;
+            /* box-shadow has no outline-offset, so layer a 2px gap (page colour) under the
+               3px ring to match the 2px outline-offset on the rectangular buttons */
+            box-shadow: 0 0 0 2px #fff, 0 0 0 5px #ff6b6b;
         }
 
-        /* Polygon button with border (follows shape) */
+        /* Diamond made by rotating a square 45deg (NOT clip-path). A transform rotates the whole
+           element layer - including its box-shadow - so the focus ring follows the diamond and is
+           never clipped. (clip-path would clip outline, box-shadow, border AND filter on the same
+           element, so a clipped element cannot carry a shape-following focus ring.) The label is
+           counter-rotated to stay upright. */
         .polygon-correct {
-            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-            border: 2px solid transparent;
+            width: 60px;
+            height: 60px;
+            margin: 24px;
+            padding: 0;
+            transform: rotate(45deg);
+        }
+        .polygon-correct .diamond-label {
+            display: inline-block;
+            transform: rotate(-45deg);
         }
         .polygon-correct:focus {
-            border-color: #ff6b6b;
-            box-shadow: 0 0 0 2px #ff9999;
+            /* Same 2px-gap + 3px-ring offset; both layers rotate with the square so the
+               offset ring follows the diamond */
+            box-shadow: 0 0 0 2px #fff, 0 0 0 5px #ff6b6b;
         }
 
         /* Rounded rectangle (border-radius) with outline - OK */
@@ -69,21 +88,23 @@
        the focus indicator stays connected to the button even at high magnification.</p>
 
     <section>
-        <h2>Circular Button with Box-Shadow (Follows Shape)</h2>
+        <h2>Circular Button (border-radius) with Box-Shadow</h2>
         <button class="circle-correct"
                 data-expected-pass="true">
-            Click Me
+            OK
         </button>
-        <p>Circular button with box-shadow - follows the circular shape perfectly.</p>
+        <p>Circle made with border-radius (not clip-path), so the box-shadow ring is not clipped
+           and follows the circular shape.</p>
     </section>
 
     <section>
-        <h2>Diamond Button with Border + Box-Shadow</h2>
+        <h2>Diamond Button (rotated square) with Box-Shadow</h2>
         <button class="polygon-correct"
                 data-expected-pass="true">
-            Submit
+            <span class="diamond-label">Go</span>
         </button>
-        <p>Diamond button with border and box-shadow - both follow the diamond shape.</p>
+        <p>Diamond made by rotating a square 45° (not clip-path), so the box-shadow ring rotates
+           with the element and follows the diamond. The label is counter-rotated to stay upright.</p>
     </section>
 
     <section>
@@ -104,7 +125,10 @@
         <p>Standard rectangular button with outline - the recommended approach.</p>
     </section>
 
-    <p><strong>Best Practice:</strong> For non-rectangular buttons, use box-shadow or border
-       instead of outline. These CSS properties follow the element's actual shape.</p>
+    <p><strong>Best Practice:</strong> A focus indicator must follow the button's actual shape.
+       <code>clip-path</code> clips outline, box-shadow, border and even filter on the same element,
+       so a clipped element cannot carry a shape-following focus ring. Build non-rectangular buttons
+       with <code>border-radius</code> (circle) or <code>transform: rotate()</code> (diamond)
+       instead — the ring is then part of the transformed element and follows the shape.</p>
 </body>
 </html>

@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang=""
+      data-expected-violation="true"
+      data-violation-id="ErrEmptyXmlLangAttr"
+      data-violation-reason="xml:lang attribute is empty, providing no language information for XML/XHTML parsers">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>XHTML Document - Empty xml:lang</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrEmptyXmlLangAttr_001_violations_basic",
     "issueId": "ErrEmptyXmlLangAttr",
     "expectedViolationCount": 1,
@@ -16,9 +20,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrEmptyXmlLangAttr"
-      data-violation-reason="xml:lang attribute is empty, providing no language information for XML/XHTML parsers">
+<body>
     <h1>Technical Documentation</h1>
 
     <p>This XHTML document has an empty xml:lang attribute on the html element.

@@ -58,6 +58,18 @@
             padding: 0 10px;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "DiscoFormOnPage",
+    "issueId": "DiscoFormOnPage",
+    "expectedViolationCount": 0,
+    "expectedDiscoveryCount": 5,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Five distinct forms on the page (contact, login, search, survey, upload); each form element is discovered individually.",
+    "wcag": "N/A"
+}
+    </script>
 </head>
 <body>
     <h1>Form Discovery Test Fixture</h1>
@@ -66,7 +78,7 @@
     <!-- Contact Form with Various Input Types -->
     <div class="form-section">
         <h2>Contact Form</h2>
-        <form id="contact-form" action="/submit-contact" method="post">
+        <form id="contact-form" action="/submit-contact" method="post" data-expected-discovery="true" data-discovery-id="DiscoFormOnPage" data-discovery-reason="Contact form element discovered on page">
             <div class="form-group">
                 <label for="name">Full Name *</label>
                 <input type="text" id="name" name="name" required aria-describedby="name-error">
@@ -133,7 +145,7 @@
     <!-- Login Form -->
     <div class="form-section">
         <h2>Login Form</h2>
-        <form id="login-form" action="/login" method="post">
+        <form id="login-form" action="/login" method="post" data-expected-discovery="true" data-discovery-id="DiscoFormOnPage" data-discovery-reason="Login form element discovered on page">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" autocomplete="username" required>
@@ -157,7 +169,7 @@
     <!-- Search Form -->
     <div class="form-section">
         <h2>Search</h2>
-        <form id="search-form" role="search" action="/search" method="get">
+        <form id="search-form" role="search" action="/search" method="get" data-expected-discovery="true" data-discovery-id="DiscoFormOnPage" data-discovery-reason="Search form element discovered on page">
             <div class="form-group">
                 <label for="search-query">Search our site</label>
                 <input type="search" id="search-query" name="q" placeholder="Enter search terms..." 
@@ -182,7 +194,7 @@
     <!-- Survey Form with Complex Elements -->
     <div class="form-section">
         <h2>Customer Survey</h2>
-        <form id="survey-form" action="/survey" method="post">
+        <form id="survey-form" action="/survey" method="post" data-expected-discovery="true" data-discovery-id="DiscoFormOnPage" data-discovery-reason="Survey form element discovered on page">
             <fieldset>
                 <legend>Rate Our Service</legend>
                 <div class="form-group">
@@ -249,7 +261,7 @@
     <!-- File Upload Form -->
     <div class="form-section">
         <h2>Document Upload</h2>
-        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data" data-expected-discovery="true" data-discovery-id="DiscoFormOnPage" data-discovery-reason="Upload form element discovered on page">
             <div class="form-group">
                 <label for="document">Choose document to upload</label>
                 <input type="file" id="document" name="document" 

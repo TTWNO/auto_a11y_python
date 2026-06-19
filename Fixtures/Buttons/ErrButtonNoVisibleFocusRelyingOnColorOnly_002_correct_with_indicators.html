@@ -10,7 +10,8 @@
     "issueId": "ErrButtonNoVisibleFocusRelyingOnColorOnly",
     "expectedViolationCount": 0,
     "expectedPassCount": 3,
-    "description": "Buttons with proper structural focus indicators (outline or box-shadow) in addition to color changes",
+    "enforceElementExpectations": true,
+    "description": "Buttons with proper structural focus indicators (outline or box-shadow) in addition to color changes. Each button is validated individually: it must NOT be flagged for ErrButtonNoVisibleFocusRelyingOnColorOnly.",
     "wcag": "2.4.7, 1.4.1",
     "impact": "High"
 }
@@ -67,7 +68,8 @@
         <section>
             <h2>Button with Outline and Color Change (Correct)</h2>
             <button class="good-outline"
-                    data-expected-violation="false">
+                    data-expected-pass="true"
+                    data-pass-reason="Focus shows a structural outline in addition to a colour change, so it is not flagged for relying on colour alone.">
                 Submit Form
             </button>
             <p>This button has a proper outline focus indicator in addition to color change.</p>
@@ -76,7 +78,8 @@
         <section>
             <h2>Button with Box-Shadow and Color Change (Correct)</h2>
             <button class="good-box-shadow"
-                    data-expected-violation="false">
+                    data-expected-pass="true"
+                    data-pass-reason="Focus shows a structural box-shadow in addition to a colour change, so it is not flagged for relying on colour alone.">
                 Save Changes
             </button>
             <p>This button uses box-shadow as a structural focus indicator in addition to color change.</p>
@@ -85,7 +88,8 @@
         <section>
             <h2>Button with Multiple Structural Indicators (Correct)</h2>
             <button class="good-both"
-                    data-expected-violation="false">
+                    data-expected-pass="true"
+                    data-pass-reason="Focus shows both an outline and a box-shadow in addition to colour, so it is not flagged for relying on colour alone.">
                 Delete Item
             </button>
             <p>This button has both outline and box-shadow, plus color changes. Maximum accessibility!</p>

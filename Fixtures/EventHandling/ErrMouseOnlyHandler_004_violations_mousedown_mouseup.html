@@ -6,6 +6,7 @@
     <title>ErrMouseOnlyHandler - onmousedown/onmouseup Without Keyboard</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrMouseOnlyHandler_004_violations_mousedown_mouseup",
     "issueId": "ErrMouseOnlyHandler",
     "expectedViolationCount": 3,
@@ -53,5 +54,23 @@
             </div>
         </section>
     </main>
+
+    <script>
+        function startDrag(event) {
+            console.log('Drag started');
+        }
+
+        function endDrag(event) {
+            console.log('Drag ended');
+        }
+
+        function startAction() {
+            console.log('Action started');
+        }
+
+        function performAction() {
+            console.log('Action performed');
+        }
+    </script>
 </body>
 </html>

@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tab Order Violation Test - ErrTabOrderViolation</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrTabOrderViolation",
+    "issueId": "ErrTabOrderViolation",
+    "expectedViolationCount": 8,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Positive tabindex values create a tab order that does not match the visual or DOM order across a flex form, absolutely positioned buttons, and a CSS grid with reordered areas. Each flagged element is validated individually.",
+    "wcag": "2.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Tab Order Violations</h1>
@@ -13,26 +25,26 @@
         <!-- Tab order: Email (1), Submit (2), Name (3) -->
         
         <label for="name">Name:</label>
-        <input id="name" type="text" tabindex="3">
+        <input id="name" type="text" tabindex="3" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="tabindex 3 on Name input puts it last though it is first visually">
         
         <label for="email">Email:</label>
-        <input id="email" type="email" tabindex="1">
+        <input id="email" type="email" tabindex="1" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="tabindex 1 on Email input jumps it ahead of the Name input above it">
         
-        <button tabindex="2">Submit</button>
+        <button tabindex="2" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="tabindex 2 on Submit places it before the Name input that precedes it visually">Submit</button>
     </div>
     
     <!-- Floating elements with wrong tab order -->
     <div style="position: relative; height: 200px;">
-        <button style="position: absolute; right: 0;" tabindex="1">Right Button</button>
-        <button style="position: absolute; left: 0;" tabindex="2">Left Button</button>
+        <button style="position: absolute; right: 0;" tabindex="1" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="tabindex 1 on the right-positioned button focuses it before the left button">Right Button</button>
+        <button style="position: absolute; left: 0;" tabindex="2" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="tabindex 2 on the left-positioned button focuses it after the right button">Left Button</button>
     </div>
     
     <!-- CSS Grid with visual/tab order mismatch -->
     <div style="display: grid; grid-template-areas: 'b a' 'd c';">
-        <input style="grid-area: a;" placeholder="Second visually" tabindex="1">
-        <input style="grid-area: b;" placeholder="First visually" tabindex="2">
+        <input style="grid-area: a;" placeholder="Second visually" tabindex="1" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="grid-area a input has tabindex 1 but is second visually">
+        <input style="grid-area: b;" placeholder="First visually" tabindex="2" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="grid-area b input has tabindex 2 but is first visually">
         <input style="grid-area: c;" placeholder="Fourth visually" tabindex="3">
-        <input style="grid-area: d;" placeholder="Third visually" tabindex="4">
+        <input style="grid-area: d;" placeholder="Third visually" tabindex="4" data-expected-violation="true" data-violation-id="ErrTabOrderViolation" data-violation-reason="grid-area d input has tabindex 4 but is third visually">
     </div>
     
     <p>Tab order doesn't match visual/logical order.</p>

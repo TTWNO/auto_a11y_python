@@ -63,8 +63,7 @@ TOUCHPOINT_TEST_MAPPING: dict[str, list[str]] = {
         'WarnNoLegend',
         'ErrFormLandmarkMustHaveAccessibleName',
         'DiscoNoSubmitButton',
-        'WarnGenericButtonText',
-        'WarnRequiredNotIndicated',
+        'WarnButtonGenericText',
     ],
     
     'buttons': [
@@ -202,6 +201,7 @@ TOUCHPOINT_TEST_MAPPING: dict[str, list[str]] = {
         'DiscoFontFound',
         'ErrSmallText',
         'ErrInaccessibleFont',
+        'ErrTextSpacingRestricted',
         'WarnItalicText',
         'WarnJustifiedText',
         'WarnRightAlignedText',
@@ -304,6 +304,9 @@ TOUCHPOINT_TEST_MAPPING: dict[str, list[str]] = {
         'ErrEmptyPageTitle',
         'ErrMultiplePageTitles',
         'ErrNoPageTitle',
+        'ErrOrientationLocked',
+        'ErrTargetSizeTooSmall',
+        'ErrViewportZoomDisabled',
         'WarnMultipleTitleElements',  # Deprecated - use ErrMultiplePageTitles
         'WarnPageTitleTooLong',
         'WarnPageTitleTooShort',

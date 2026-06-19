@@ -6,7 +6,8 @@
     <title>User Settings - Dropdown Without ARIA</title>
     <script type="application/json" id="test-metadata">
 {
-    "id": "AI_ErrDropdownWithoutARIA_001_violations_basic",
+    "enforceElementExpectations": true,
+    "id": "ErrDropdownWithoutARIA_001_violations_basic",
     "issueId": "ErrDropdownWithoutARIA",
     "expectedViolationCount": 2,
     "expectedPassCount": 0,
@@ -31,7 +32,7 @@
 
     <div class="dropdown"
          data-expected-violation="true"
-         data-violation-id="AI_ErrDropdownWithoutARIA"
+         data-violation-id="ErrDropdownWithoutARIA"
          data-violation-reason="Dropdown button lacks aria-haspopup, aria-expanded, and menu items lack proper roles">
         <button class="dropdown-button" onclick="toggleMenu('theme')">
             Theme: Light
@@ -45,7 +46,7 @@
 
     <div class="dropdown"
          data-expected-violation="true"
-         data-violation-id="AI_ErrDropdownWithoutARIA"
+         data-violation-id="ErrDropdownWithoutARIA"
          data-violation-reason="Language dropdown lacks aria-expanded state and menu structure roles">
         <button class="dropdown-button" onclick="toggleMenu('language')">
             Language: English

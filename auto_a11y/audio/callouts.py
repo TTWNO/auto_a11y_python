@@ -2,28 +2,36 @@
 
 Optional Stage F of the audioA11y pipeline. Takes the ``issues`` JSON
 payload (Claude's analyze output) and the source MP4, produces an
-annotated MP4 at ``slot.callouts_mp4`` with text overlays at each
-issue's timecode range and (best-effort) chapter markers.
+annotated MP4 at ``slot.callouts_mp4`` with: a CNIB-yellow start title
+card (AccessLabs logo + copyright), the source video carrying callout
+text overlays plus a persistent bottom-right logo watermark, an identical
+end title card, and (best-effort) chapter markers.
 
 Failure NEVER fails the whole job — the runner catches
 :class:`CalloutsError` raised here and sets
 ``Recording.callouts_status = "failed"`` while the rest of the audit
 completes normally. See ``auto_a11y/audio/runner.py``.
 
-Ported (loosely) from ``pythonAudioA11y/video_processor.py``. We
-deliberately keep the implementation much smaller than the source:
+Ported from ``pythonAudioA11y/video_processor.py`` (the original
+"Dictaphone"), but with two deliberate differences that make it work
+inside the packaged macOS ``.app``:
 
-- No watermark, no title page, no two-pass re-encode.
-- Chapters embedded via ffmpeg's ``-map_chapters`` from a temp
-  metadata file (MP4Box fallback is documented as future work; the
-  binary is not commonly installed on the deployment targets).
-- Text wrapping / overlap-avoidance are NOT implemented here — the
-  drawtext expression simply renders ``short_title`` in the same
-  position for the full timecode range. If a future iteration wants
-  the visually-rich layout from the source, the pure-function helpers
-  below give it a clean starting point.
+- The logo is a pre-rasterised PNG shipped in ``assets/`` and resolved
+  relative to this module (``_asset_path``), NOT a CWD-relative SVG. The
+  bundled static ffmpeg can't decode SVG and the app doesn't bundle
+  rsvg-convert/ImageMagick, so the original's approach silently produced
+  no logo in the build. See the title-card constants below.
+- Title cards + watermark + callouts are composed in a single
+  ``-filter_complex`` pass (concat filter), avoiding the original's
+  fragile render-then-concat-demuxer step that requires codec/resolution
+  matching across separately-encoded clips.
 
-The two public pure functions are unit-tested in isolation; the
+Text wrapping / overlap-avoidance are still NOT implemented — the
+drawtext expression renders ``short_title`` in a fixed position for the
+full timecode range.
+
+The pure helpers (``build_drawtext_filter``, ``build_full_filtergraph``,
+``build_chapters_metadata`` …) are unit-tested in isolation; the
 subprocess-touching :func:`render_callouts_video` is covered by
 mocked-``subprocess.run`` tests that assert the argv layout.
 """
@@ -34,13 +42,43 @@ import os
 import subprocess
 import tempfile
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import TypeGuard
 
 from auto_a11y.audio.errors import CalloutsError
-from auto_a11y.audio.ffmpeg import detect_ffmpeg
+from auto_a11y.audio.ffmpeg import detect_ffmpeg, detect_ffprobe
 
 logger = logging.getLogger(__name__)
+
+# --- title-card / watermark constants -----------------------------------
+#
+# Ported from ``pythonAudioA11y/video_processor.py`` (the original
+# "Dictaphone"), which rendered a CNIB-yellow start title page with the
+# AccessLabs logo + copyright line and a persistent bottom-right logo
+# watermark. We render an identical card at BOTH the start and end of the
+# annotated video, plus the watermark over the main content.
+#
+# The logo is shipped as a pre-rasterised PNG inside this package
+# (``assets/accesslabs_logo.png``) rather than the SVG the original used:
+# the bundled static ffmpeg cannot decode SVG (no librsvg) and the macOS
+# app does not bundle rsvg-convert / ImageMagick, so a committed PNG
+# resolved relative to this module is the only thing that works inside
+# the packaged ``.app`` (CWD-relative paths do NOT — that was the bug).
+
+TITLE_CARD_DURATION_S: float = 3.0
+_TITLE_CARD_BG_COLOR = "0xFFF000"  # CNIB yellow
+_CARD_LOGO_WIDTH_FRAC = 0.8        # title-card logo width as a fraction of frame width
+_WATERMARK_WIDTH_FRAC = 0.12       # corner-watermark logo width as a fraction of frame width
+_WATERMARK_MARGIN_PX = 15          # bottom-right inset, matches the original
+_COPYRIGHT_FONT_FRAC = 0.04        # copyright font size as a fraction of frame height
+_LOGO_ASSET_NAME = "accesslabs_logo.png"
+
+# Callouts re-encode the full video with libx264, so this is the slowest
+# ffmpeg pass in the pipeline. The timeout is generous, but a process that
+# blows past it is hung — abort with a CalloutsError rather than block the
+# job forever (Stage F never fails the whole job on a callouts error).
+RENDER_TIMEOUT_SECONDS = 3600
 
 
 def _is_str_obj_dict(val: object) -> TypeGuard[dict[str, object]]:
@@ -248,19 +286,44 @@ def build_drawtext_filter(
     return ",".join(parts)
 
 
-def build_chapters_metadata(callouts: list[Callout]) -> str:
+def build_chapters_metadata(
+    callouts: list[Callout],
+    *,
+    offset_s: float = 0.0,
+    add_title_chapter: bool = False,
+) -> str:
     """Build an ffmpeg ``FFMETADATA1`` chapter file body.
 
     Each callout becomes one chapter spanning its timecode range. We
     bump duplicate start times by 1 ms so the chapter list is strictly
     monotonic (ffmpeg drops chapters with non-monotonic boundaries).
+
+    Args:
+        offset_s: Seconds to add to every callout timestamp. Use this
+            when a start title card of duration ``offset_s`` is prepended
+            to the video so the chapters still line up with the content.
+        add_title_chapter: When True, prepend a "Video Start" chapter at
+            0:00 spanning the title card (``[0, offset_s)``), matching the
+            original Dictaphone behaviour.
     """
     lines: list[str] = [";FFMETADATA1"]
-    sorted_callouts = sorted(callouts, key=lambda c: c.start_s)
+    offset_ms = int(offset_s * 1000)
     seen_starts_ms: set[int] = set()
+
+    if add_title_chapter:
+        title_end_ms = offset_ms if offset_ms > 0 else 1
+        seen_starts_ms.add(0)
+        lines.append("[CHAPTER]")
+        lines.append("TIMEBASE=1/1000")
+        lines.append("START=0")
+        lines.append(f"END={title_end_ms}")
+        lines.append("title=Video Start")
+        lines.append("")
+
+    sorted_callouts = sorted(callouts, key=lambda c: c.start_s)
     for c in sorted_callouts:
-        start_ms = int(c.start_s * 1000)
-        end_ms = int(c.end_s * 1000)
+        start_ms = int(c.start_s * 1000) + offset_ms
+        end_ms = int(c.end_s * 1000) + offset_ms
         while start_ms in seen_starts_ms:
             start_ms += 1
         seen_starts_ms.add(start_ms)
@@ -274,6 +337,152 @@ def build_chapters_metadata(callouts: list[Callout]) -> str:
         lines.append(f"title={title}")
         lines.append("")
     return "\n".join(lines) + "\n"
+
+
+def build_copyright_text(year: int) -> str:
+    """Return the title-card copyright line, matching the original card."""
+    return f"Copyright © {year} CNIB"
+
+
+def _asset_path(name: str) -> Path:
+    """Resolve a bundled asset path relative to THIS module.
+
+    Anchored to ``__file__`` (not the process CWD) so it resolves both in
+    a dev checkout and inside the packaged macOS ``.app``, where the
+    Python tree is rsync'd to ``Resources/app`` and the working directory
+    is not the app dir. This is the fix for the original's CWD-relative
+    ``'accesslabs_logo.svg'`` lookup that silently failed in the bundle.
+    """
+    return Path(__file__).resolve().parent / "assets" / name
+
+
+def build_full_filtergraph(
+    callouts: list[Callout],
+    *,
+    width: int,
+    height: int,
+    year: int,
+    logo_input_index: int = 1,
+    title_duration: float = TITLE_CARD_DURATION_S,
+    font_size: int = _DEFAULT_FONT_SIZE,
+    fps: str = "30/1",
+) -> str:
+    """Build the ffmpeg ``-filter_complex`` graph for the annotated video.
+
+    Concatenates three segments into ``[outv]`` / ``[outa]``:
+
+    1. A start title card: CNIB-yellow background, centred AccessLabs
+       logo, copyright line.
+    2. The source video (input 0) with callout overlays plus a persistent
+       bottom-right logo watermark.
+    3. An end title card identical to the start card.
+
+    The logo at ``[{logo_input_index}:v]`` is split and scaled into the
+    two card copies and the watermark copy (an ffmpeg link label can only
+    be consumed once, hence the ``split`` filters). All three video
+    segments are normalised to ``yuv420p`` / square pixels / ``fps`` and
+    all audio to stereo 44.1 kHz so the ``concat`` filter accepts them.
+    """
+    li = logo_input_index
+    card_logo_w = max(1, int(width * _CARD_LOGO_WIDTH_FRAC))
+    wm_logo_w = max(1, int(width * _WATERMARK_WIDTH_FRAC))
+    copyright_fs = max(12, int(height * _COPYRIGHT_FONT_FRAC))
+    logo_y_off = int(height * 0.1)
+    copyright_y = int(height * 0.85)
+    dur = f"{title_duration:.3f}"
+    copyright_text = _escape_drawtext_text(build_copyright_text(year))
+
+    chains: list[str] = []
+
+    # Split + scale the logo: two card copies (start/end) + one watermark.
+    chains.append(f"[{li}:v]split=2[logo_cards][logo_wm]")
+    chains.append(f"[logo_cards]scale={card_logo_w}:-1,split=2[clogo_s][clogo_e]")
+    chains.append(f"[logo_wm]scale={wm_logo_w}:-1[wlogo]")
+
+    # Start + end cards (identical layout).
+    for tag, logo_lbl, v_out in (
+        ("s", "clogo_s", "startv"),
+        ("e", "clogo_e", "endv"),
+    ):
+        chains.append(
+            f"color=c={_TITLE_CARD_BG_COLOR}:s={width}x{height}:r={fps}:d={dur}[bg_{tag}]"
+        )
+        chains.append(
+            f"[bg_{tag}][{logo_lbl}]overlay=(W-w)/2:(H-h)/2-{logo_y_off}[ov_{tag}]"
+        )
+        chains.append(
+            f"[ov_{tag}]drawtext=text='{copyright_text}':fontsize={copyright_fs}:"
+            + f"fontcolor=black:x=(w-text_w)/2:y={copyright_y},"
+            + f"format=yuv420p,setsar=1[{v_out}]"
+        )
+
+    # Main video: callout overlays, then the persistent bottom-right watermark.
+    main_drawtext = build_drawtext_filter(callouts, font_size=font_size)
+    chains.append(f"[0:v]{main_drawtext}[main_dt]")
+    chains.append(
+        f"[main_dt][wlogo]overlay=W-w-{_WATERMARK_MARGIN_PX}:H-h-{_WATERMARK_MARGIN_PX},"
+        + "format=yuv420p,setsar=1[mainv]"
+    )
+
+    # Audio: bounded silence for the cards + normalised source audio.
+    chains.append(f"anullsrc=channel_layout=stereo:sample_rate=44100:d={dur}[starta]")
+    chains.append(f"anullsrc=channel_layout=stereo:sample_rate=44100:d={dur}[enda]")
+    chains.append("[0:a]aformat=sample_rates=44100:channel_layouts=stereo[maina]")
+
+    # Concatenate start + main + end (video + audio together).
+    chains.append(
+        "[startv][starta][mainv][maina][endv][enda]concat=n=3:v=1:a=1[outv][outa]"
+    )
+
+    return ";".join(chains)
+
+
+def _probe_video_dimensions(source_mp4: Path) -> tuple[int, int, str]:
+    """Probe ``source_mp4`` for ``(width, height, fps)`` via ffprobe.
+
+    ``fps`` is returned as an ffmpeg rate string (e.g. ``"30/1"``) so the
+    generated title cards share the source's frame rate — the ``concat``
+    filter needs matching frame rates across segments. Raises
+    :class:`CalloutsError` if ffprobe is missing, fails, or returns
+    unparseable output.
+    """
+    ffprobe = detect_ffprobe()
+    if ffprobe is None:
+        raise CalloutsError("ffprobe not on PATH; cannot probe video dimensions")
+    cmd = [
+        ffprobe,
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height,r_frame_rate",
+        "-of", "csv=s=,:p=0",
+        str(source_mp4),
+    ]
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, timeout=60
+        )
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise CalloutsError(f"ffprobe invocation failed: {e}") from e
+    if result.returncode != 0:
+        stderr_tail = result.stderr.strip()[:500] if result.stderr else ""
+        raise CalloutsError(
+            f"ffprobe failed to read {source_mp4}: {stderr_tail}"
+        )
+    parts = result.stdout.strip().split(",")
+    if len(parts) < 2:
+        raise CalloutsError(
+            f"ffprobe returned no dimensions for {source_mp4}: {result.stdout!r}"
+        )
+    try:
+        probed_width = int(parts[0])
+        probed_height = int(parts[1])
+    except ValueError as e:
+        raise CalloutsError(
+            f"ffprobe returned non-integer dimensions: {result.stdout!r}"
+        ) from e
+    raw_fps = parts[2] if len(parts) >= 3 else ""
+    fps = raw_fps if raw_fps and raw_fps != "0/0" else "30/1"
+    return probed_width, probed_height, fps
 
 
 # --- subprocess + chapter embedding -------------------------------------
@@ -295,25 +504,30 @@ def render_callouts_video(
     issues: list[dict[str, object]],
     output_mp4: Path,
     mp4box_path: str | None = None,
+    year: int | None = None,
 ) -> None:
-    """Render an annotated MP4 with text overlays at each issue's timecodes.
+    """Render an annotated MP4 with title cards, callouts, and a watermark.
 
-    1. Parse the issues list into :class:`Callout` records.
-    2. Build the ``drawtext`` filter expression for the ``-vf`` arg.
-    3. Write a temporary ``FFMETADATA1`` chapter file.
-    4. Shell out to ffmpeg: re-encode video with libx264 + the
-       drawtext filter, stream-copy audio, embed chapters via
-       ``-map_chapters``.
+    1. Probe the source dimensions / frame rate (ffprobe).
+    2. Parse the issues list into :class:`Callout` records.
+    3. Build the ``-filter_complex`` graph: a CNIB-yellow start title
+       card, the source video with callout overlays + a bottom-right logo
+       watermark, and an identical end title card, concatenated together.
+    4. Write a temporary ``FFMETADATA1`` chapter file (callout chapters
+       shifted past the start card, plus a "Video Start" chapter).
+    5. Shell out to ffmpeg: re-encode video with libx264 (and audio to
+       AAC, since the synthesised card audio must match the source for
+       ``concat``), embedding chapters via ``-map_chapters``.
 
     ``mp4box_path`` is accepted but currently unused — see the module
-    docstring for the rationale. The signature is kept stable so a
-    future iteration can plug MP4Box in without churning callers.
+    docstring for the rationale. ``year`` defaults to the current year
+    (for the copyright line on the title cards).
 
     Raises:
-        :class:`CalloutsError` on any subprocess failure (ffmpeg
-        binary missing, non-zero exit, output not produced). Stage F
-        in :mod:`auto_a11y.audio.pipeline` wraps this in a try/except
-        so the whole job doesn't fail.
+        :class:`CalloutsError` on any subprocess failure (ffmpeg/ffprobe
+        binary missing, logo asset missing, non-zero exit, output not
+        produced). Stage F in :mod:`auto_a11y.audio.pipeline` wraps this
+        in a try/except so the whole job doesn't fail.
     """
     _ = mp4box_path  # see module docstring — reserved for future use.
 
@@ -321,15 +535,38 @@ def render_callouts_video(
     if ffmpeg is None:
         raise CalloutsError("ffmpeg not on PATH; cannot render callouts")
 
+    logo_path = _asset_path(_LOGO_ASSET_NAME)
+    if not logo_path.exists():
+        raise CalloutsError(
+            f"title/watermark logo asset missing: {logo_path}"
+        )
+
+    width, height, fps = _probe_video_dimensions(source_mp4)
+
+    if year is None:
+        year = datetime.now().year
+
     callouts = parse_issues_to_callouts(_coerce_issues_to_payload(issues))
-    drawtext_filter = build_drawtext_filter(callouts)
-    chapters_body = build_chapters_metadata(callouts)
+    filtergraph = build_full_filtergraph(
+        callouts,
+        width=width,
+        height=height,
+        year=year,
+        logo_input_index=1,
+        fps=fps,
+    )
+    chapters_body = build_chapters_metadata(
+        callouts,
+        offset_s=TITLE_CARD_DURATION_S,
+        add_title_chapter=True,
+    )
 
     output_mp4.parent.mkdir(parents=True, exist_ok=True)
 
     # Write chapters to a temp file so ffmpeg's ``-i metadata`` flag
     # can pick them up. We clean it up in ``finally`` regardless of
-    # subprocess outcome.
+    # subprocess outcome. The chapter file is input index 2 (after the
+    # source video and the logo PNG).
     chapter_fd, chapter_path_str = tempfile.mkstemp(
         suffix=".txt", prefix="callouts_chapters_"
     )
@@ -342,15 +579,19 @@ def render_callouts_video(
             ffmpeg,
             "-y",
             "-i", str(source_mp4),
+            "-i", str(logo_path),
             "-i", str(chapter_path),
-            "-map_metadata", "1",
-            "-map_chapters", "1",
-            "-vf", drawtext_filter,
+            "-filter_complex", filtergraph,
+            "-map", "[outv]",
+            "-map", "[outa]",
+            "-map_metadata", "2",
+            "-map_chapters", "2",
             "-c:v", "libx264",
             "-preset", "medium",
             "-crf", "23",
             "-pix_fmt", "yuv420p",
-            "-c:a", "copy",
+            "-c:a", "aac",
+            "-b:a", "128k",
             "-movflags", "+faststart",
             str(output_mp4),
         ]
@@ -361,7 +602,13 @@ def render_callouts_video(
                 capture_output=True,
                 text=True,
                 check=False,
+                timeout=RENDER_TIMEOUT_SECONDS,
             )
+        except subprocess.TimeoutExpired as e:
+            raise CalloutsError(
+                f"ffmpeg timed out after {RENDER_TIMEOUT_SECONDS}s "
+                + "rendering callouts; source may be corrupt or the encode hung"
+            ) from e
         except OSError as e:
             raise CalloutsError(
                 f"ffmpeg invocation failed: {e}"

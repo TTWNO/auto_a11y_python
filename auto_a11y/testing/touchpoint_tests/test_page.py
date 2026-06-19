@@ -16,8 +16,8 @@ TEST_DOCUMENTATION = {
     "testName": "Page-Level Accessibility Tests",
     "touchpoint": "page",
     "description": "Tests page-level accessibility including page titles, responsive breakpoints, and other page-wide concerns.",
-    "version": "2.0.0",
-    "wcagCriteria": ["2.4.2", "1.4.10"],
+    "version": "2.1.0",
+    "wcagCriteria": ["2.4.2", "1.4.10", "1.4.4", "1.3.4", "2.5.8", "1.4.12"],
     "tests": [
         {
             "id": "page-title",
@@ -32,6 +32,34 @@ TEST_DOCUMENTATION = {
             "description": "Identifies responsive breakpoints defined in CSS @media rules to guide testing at different viewport widths.",
             "impact": "info",
             "wcagCriteria": ["1.4.10"],
+        },
+        {
+            "id": "viewport-zoom",
+            "name": "Viewport Zoom Disabled",
+            "description": "Detects a viewport meta tag that disables or restricts pinch/zoom (user-scalable=no or maximum-scale<2).",
+            "impact": "high",
+            "wcagCriteria": ["1.4.4", "1.4.10"],
+        },
+        {
+            "id": "orientation-locked",
+            "name": "Orientation Locked",
+            "description": "Detects CSS that hides primary content in one orientation, locking the page to a single orientation.",
+            "impact": "high",
+            "wcagCriteria": ["1.3.4"],
+        },
+        {
+            "id": "target-size",
+            "name": "Target Size Too Small",
+            "description": "Detects interactive targets rendered smaller than the 24x24 CSS pixel minimum.",
+            "impact": "high",
+            "wcagCriteria": ["2.5.8"],
+        },
+        {
+            "id": "text-spacing",
+            "name": "Text Spacing Restricted",
+            "description": "Detects negative letter/word spacing or clipped fixed-height text that breaks user text-spacing adjustments.",
+            "impact": "medium",
+            "wcagCriteria": ["1.4.12"],
         }
     ]
 }
@@ -66,8 +94,10 @@ async def test_page(page: Page) -> dict[str, Any]:
             config_limit = await page.evaluate('() => window.a11yConfig && window.a11yConfig.titleLengthLimit')
             if config_limit:
                 title_length_limit = config_limit
-        except:
-            pass
+        except Exception as config_error:
+            # Narrow to Exception so KeyboardInterrupt/SystemExit are not
+            # swallowed; fall back to the default title-length limit.
+            logger.debug(f"Could not read titleLengthLimit from page config: {config_error}")
 
         # Execute JavaScript to get page title info
         title_data = await page.evaluate('''
@@ -124,7 +154,17 @@ async def test_page(page: Page) -> dict[str, Any]:
                 'found': title_data['titleText'],
                 'length': len(title_data['titleText'])
             })
-            results['elements_failed'] += 1
+            # A present-but-short title is the same situation as a present-but-long
+            # title (Test 4): the element exists, so count it as passed for both
+            # branches to keep pass/fail accounting consistent.
+            results['elements_passed'] += 1
+            results['passes'].append({
+                'check': 'page_title',
+                'title': title_data['titleText'],
+                'xpath': '/html/head/title',
+                'wcag': ['2.4.2'],
+                'reason': 'Page has title (but too short)'
+            })
 
         # Test 4: WarnPageTitleTooLong - Title too long
         elif len(title_data['titleText']) > title_length_limit:
@@ -229,6 +269,180 @@ async def test_page(page: Page) -> dict[str, Any]:
                     'maxBreakpoint': breakpoint_data[-1]
                 }
             })
+
+        # Test: ErrViewportZoomDisabled (WCAG 1.4.4 Resize Text, 1.4.10 Reflow)
+        # A viewport meta that disables pinch/zoom prevents low-vision users from enlarging content.
+        zoom_data: dict[str, Any] = await page.evaluate('''
+            () => {
+                const meta = document.querySelector('meta[name="viewport"]');
+                if (!meta) return {disabled: false};
+                const content = (meta.getAttribute('content') || '');
+                const lc = content.toLowerCase();
+                const reasons = [];
+                if (/user-scalable\\s*=\\s*(no|0)\\b/.test(lc)) reasons.push('user-scalable=no');
+                const ms = lc.match(/maximum-scale\\s*=\\s*([0-9.]+)/);
+                if (ms && parseFloat(ms[1]) < 2) reasons.push('maximum-scale=' + ms[1]);
+                return {disabled: reasons.length > 0, reason: reasons.join(', '), content: content};
+            }
+        ''')
+        if zoom_data.get('disabled'):
+            results['errors'].append({
+                'err': 'ErrViewportZoomDisabled',
+                'type': 'err',
+                'cat': 'page',
+                'element': 'meta',
+                'xpath': '/html/head/meta[@name="viewport"]',
+                'html': f'<meta name="viewport" content="{zoom_data.get("content", "")[:120]}">',
+                'description': f'Viewport meta tag disables or restricts zoom ({zoom_data.get("reason", "")})',
+            })
+            results['elements_failed'] += 1
+
+        # Test: ErrOrientationLocked (WCAG 1.3.4 Orientation)
+        # CSS that hides primary content in one orientation locks the page to a single orientation.
+        orientation_data: dict[str, Any] = await page.evaluate('''
+            () => {
+                function hidesContent(styleRule) {
+                    const sel = (styleRule.selectorText || '').toLowerCase();
+                    const targetsRoot = /(^|[\\s,>+~])(\\*|html|body|main|:root)\\b/.test(sel)
+                        || sel.includes('[role="main"]');
+                    if (!targetsRoot) return false;
+                    const d = (styleRule.style.display || '').toLowerCase();
+                    const v = (styleRule.style.visibility || '').toLowerCase();
+                    return d === 'none' || v === 'hidden';
+                }
+                for (const sheet of document.styleSheets) {
+                    try {
+                        for (const rule of (sheet.cssRules || [])) {
+                            if (rule instanceof CSSMediaRule && /orientation/i.test(rule.media.mediaText)) {
+                                for (const inner of (rule.cssRules || [])) {
+                                    if (inner instanceof CSSStyleRule && hidesContent(inner)) {
+                                        return {locked: true, media: rule.media.mediaText, selector: inner.selectorText};
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) { /* CORS-restricted sheet */ }
+                }
+                return {locked: false};
+            }
+        ''')
+        if orientation_data.get('locked'):
+            results['errors'].append({
+                'err': 'ErrOrientationLocked',
+                'type': 'err',
+                'cat': 'page',
+                'element': 'body',
+                'xpath': '/html/body',
+                'html': '<body>',
+                'description': (
+                    "Content is hidden in one orientation via "
+                    f"@media ({orientation_data.get('media', '')}) -> {orientation_data.get('selector', '')}; "
+                    "the page is effectively locked to a single orientation"
+                ),
+            })
+            results['elements_failed'] += 1
+
+        # Test: ErrTargetSizeTooSmall (WCAG 2.5.8 Target Size (Minimum), 24x24 CSS px)
+        small_targets: list[dict[str, Any]] = await page.evaluate('''
+            () => {
+                const MIN = 24;
+                function xpath(el) {
+                    if (el.id) return "//*[@id='" + el.id + "']";
+                    const parts = [];
+                    while (el && el.nodeType === 1 && el.tagName.toLowerCase() !== 'html') {
+                        let ix = 1, sib = el.previousElementSibling;
+                        while (sib) { if (sib.tagName === el.tagName) ix++; sib = sib.previousElementSibling; }
+                        parts.unshift(el.tagName.toLowerCase() + '[' + ix + ']');
+                        el = el.parentElement;
+                    }
+                    return '/html/' + parts.join('/');
+                }
+                const sel = 'a[href], button, input:not([type="hidden"]), select, textarea,'
+                          + '[role="button"], [role="link"], [onclick], [tabindex]:not([tabindex="-1"])';
+                const out = [];
+                document.querySelectorAll(sel).forEach(el => {
+                    const cs = getComputedStyle(el);
+                    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+                    const r = el.getBoundingClientRect();
+                    if (r.width === 0 && r.height === 0) return;
+                    if (r.width < MIN || r.height < MIN) {
+                        out.push({
+                            tag: el.tagName.toLowerCase(),
+                            w: Math.round(r.width), h: Math.round(r.height),
+                            xpath: xpath(el),
+                            text: (el.textContent || '').trim().slice(0, 40)
+                        });
+                    }
+                });
+                return out;
+            }
+        ''')
+        for tgt in small_targets:
+            results['errors'].append({
+                'err': 'ErrTargetSizeTooSmall',
+                'type': 'err',
+                'cat': 'page',
+                'element': tgt.get('tag', 'element'),
+                'xpath': tgt.get('xpath', ''),
+                'html': f'<{tgt.get("tag", "element")}>{tgt.get("text", "")}</{tgt.get("tag", "element")}>',
+                'description': (
+                    f'Interactive target is {tgt.get("w", 0)}x{tgt.get("h", 0)}px, '
+                    'below the 24x24px minimum (WCAG 2.5.8)'
+                ),
+            })
+            results['elements_failed'] += 1
+
+        # Test: ErrTextSpacingRestricted (WCAG 1.4.12 Text Spacing) -- grouped under the fonts touchpoint
+        # Negative letter/word spacing or clipped fixed-height text breaks user spacing adjustments.
+        spacing_issues: list[dict[str, Any]] = await page.evaluate('''
+            () => {
+                function xpath(el) {
+                    if (el.id) return "//*[@id='" + el.id + "']";
+                    const parts = [];
+                    while (el && el.nodeType === 1 && el.tagName.toLowerCase() !== 'html') {
+                        let ix = 1, sib = el.previousElementSibling;
+                        while (sib) { if (sib.tagName === el.tagName) ix++; sib = sib.previousElementSibling; }
+                        parts.unshift(el.tagName.toLowerCase() + '[' + ix + ']');
+                        el = el.parentElement;
+                    }
+                    return '/html/' + parts.join('/');
+                }
+                const out = [];
+                document.querySelectorAll('body *').forEach(el => {
+                    if (!(el.textContent || '').trim()) return;
+                    const cs = getComputedStyle(el);
+                    const ls = parseFloat(cs.letterSpacing);
+                    const ws = parseFloat(cs.wordSpacing);
+                    if ((!isNaN(ls) && ls < 0) || (!isNaN(ws) && ws < 0)) {
+                        out.push({tag: el.tagName.toLowerCase(), xpath: xpath(el),
+                                  reason: 'negative letter/word spacing prevents user spacing overrides'});
+                        return;
+                    }
+                    const overflow = (cs.overflow + ' ' + cs.overflowY).toLowerCase();
+                    if (/hidden|clip/.test(overflow) && el.clientHeight > 0 && el.scrollHeight > el.clientHeight + 2) {
+                        out.push({tag: el.tagName.toLowerCase(), xpath: xpath(el),
+                                  reason: 'fixed height with overflow:hidden clips text when spacing increases'});
+                    }
+                });
+                return out;
+            }
+        ''')
+        seen_spacing: set[str] = set()
+        for issue in spacing_issues:
+            key = issue.get('xpath', '')
+            if key in seen_spacing:
+                continue
+            seen_spacing.add(key)
+            results['errors'].append({
+                'err': 'ErrTextSpacingRestricted',
+                'type': 'err',
+                'cat': 'fonts',
+                'element': issue.get('tag', 'element'),
+                'xpath': issue.get('xpath', ''),
+                'html': f'<{issue.get("tag", "element")}>',
+                'description': f'Text spacing cannot be adjusted: {issue.get("reason", "")}',
+            })
+            results['elements_failed'] += 1
 
         return results
 

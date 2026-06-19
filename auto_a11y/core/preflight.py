@@ -32,11 +32,20 @@ class CheckOutcome:
 
 @dataclass(frozen=True)
 class Check:
-    """A startup check: name, human description, and a zero-arg callable."""
+    """A startup check: name, human description, and a zero-arg callable.
+
+    ``required`` controls whether a failure blocks startup. A required
+    check that fails sends the app into Settings Recovery mode; an
+    optional check that fails is logged and surfaced in the settings UI
+    but lets the app boot normally (e.g. a missing API key for a paid,
+    opt-in feature). Defaults to ``True`` so existing checks keep their
+    current blocking behaviour.
+    """
 
     name: str
     description: str
     run: Callable[[], CheckOutcome]
+    required: bool = True
 
 
 @dataclass(frozen=True)
@@ -47,6 +56,7 @@ class CheckResult:
     description: str
     passed: bool
     remediation: str
+    required: bool = True
 
 
 @dataclass(frozen=True)
@@ -62,6 +72,16 @@ class PreflightResult:
     @property
     def failures(self) -> list[CheckResult]:
         return [r for r in self.results if not r.passed]
+
+    @property
+    def blocking_failures(self) -> list[CheckResult]:
+        """Failures that must force Settings Recovery mode (required checks)."""
+        return [r for r in self.results if not r.passed and r.required]
+
+    @property
+    def optional_failures(self) -> list[CheckResult]:
+        """Failures of opt-in capabilities that should NOT block startup."""
+        return [r for r in self.results if not r.passed and not r.required]
 
 
 class PreflightRegistry:
@@ -105,6 +125,7 @@ class PreflightRegistry:
                     description=check.description,
                     passed=outcome.ok_,
                     remediation=outcome.remediation,
+                    required=check.required,
                 ))
             except Exception:
                 logger.exception(
@@ -118,6 +139,7 @@ class PreflightRegistry:
                         f"Preflight check '{check.name}' raised an internal error; "
                         "see application logs for details."
                     ),
+                    required=check.required,
                 ))
         return PreflightResult(results=results)
 

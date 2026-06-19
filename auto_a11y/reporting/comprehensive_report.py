@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 from collections import defaultdict, Counter
 from datetime import datetime
+import html
 import json
 import logging
 from auto_a11y.web.fluent import ftl, force_locale
@@ -99,12 +100,12 @@ class ComprehensiveReportGenerator:
                 ai_summary_en = None
                 ai_summary_fr = None
         
-        html = f"""<!DOCTYPE html>
+        out_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprehensive Accessibility Report - {data.get('project', {}).get('name', 'Project')}</title>
+    <title>Comprehensive Accessibility Report - {html.escape(str(data.get('project', {}).get('name', 'Project')))}</title>
     {self._get_enhanced_css()}
     {self._get_chart_scripts()}
 </head>
@@ -125,7 +126,7 @@ class ComprehensiveReportGenerator:
     {self._get_chart_initialization_script(analytics)}
 </body>
 </html>"""
-        return html
+        return out_html
 
     def generate_bilingual_standalone_html(self, data: dict[str, Any], output_path: str, include_ai_summary: bool = True) -> str:
         """
@@ -582,7 +583,7 @@ class ComprehensiveReportGenerator:
                 multi_state_note = f"""
                     <div class="metadata-item">
                         <span class="label">Page State Tested:</span>
-                        <span class="value">{state_desc}</span>
+                        <span class="value">{html.escape(state_desc)}</span>
                     </div>
                 """
 
@@ -591,8 +592,8 @@ class ComprehensiveReportGenerator:
             <div class="header-content">
                 <h1>Accessibility Compliance Report</h1>
                 <div class="project-info">
-                    <h2>{project.get('name', 'Project')}</h2>
-                    <p class="description">{project.get('description', '')}</p>
+                    <h2>{html.escape(str(project.get('name', 'Project')))}</h2>
+                    <p class="description">{html.escape(str(project.get('description', '')))}</p>
                 </div>
                 <div class="report-metadata">
                     <div class="metadata-item">
@@ -630,10 +631,9 @@ class ComprehensiveReportGenerator:
         total_tests = total_passes + total_violations
         compliance_score = (total_passes / total_tests * 100) if total_tests > 0 else 0
 
-        # Debug logging and print to help troubleshoot
+        # Debug logging to help troubleshoot compliance calculation
         logger.info(f"COMPLIANCE CALCULATION: passes={total_passes}, errors={total_errors}, warnings={total_warnings}, total_violations={total_violations}, total_tests={total_tests}, score={compliance_score:.1f}%")
-        print(f"DEBUG COMPLIANCE: passes={total_passes}, errors={total_errors}, warnings={total_warnings}, total_violations={total_violations}, total_tests={total_tests}, score={compliance_score:.1f}%")
-        print(f"DEBUG STATS DICT: {stats}")
+        logger.debug(f"STATS DICT: {stats}")
 
         return f"""
         <section class="executive-summary">
@@ -977,28 +977,28 @@ class ComprehensiveReportGenerator:
     
     def _generate_page_by_page_analysis(self, data: dict[str, Any]) -> str:
         """Generate page-by-page detailed analysis"""
-        html = """
+        out_html = """
         <section class="page-analysis">
             <h2>Page-by-Page Analysis</h2>
         """
-        
+
         for website_data in data.get('websites', []):
             website = website_data.get('website', {})
-            html += f"""
+            out_html += f"""
             <div class="website-section">
-                <h3>{website.get('name', 'Unknown Website')}</h3>
-                <p class="website-url">{website.get('url', '')}</p>
+                <h3>{html.escape(str(website.get('name', 'Unknown Website')))}</h3>
+                <p class="website-url">{html.escape(str(website.get('url', '')))}</p>
             """
-            
+
             for page_data in website_data.get('pages', []):
                 page = page_data.get('page', {})
                 test_result = page_data.get('test_result')
-                
+
                 if test_result and hasattr(test_result, 'violations'):
-                    html += f"""
+                    out_html += f"""
                     <div class="page-detail">
-                        <h4>{page.get('title', 'Untitled Page')}</h4>
-                        <p class="page-url">{page.get('url', '')}</p>
+                        <h4>{html.escape(str(page.get('title', 'Untitled Page')))}</h4>
+                        <p class="page-url">{html.escape(str(page.get('url', '')))}</p>
                         <div class="page-metrics">
                             <span class="metric">Errors: {len(test_result.violations)}</span>
                             <span class="metric">Warnings: {len(test_result.warnings)}</span>
@@ -1007,11 +1007,11 @@ class ComprehensiveReportGenerator:
                         </div>
                     </div>
                     """
-            
-            html += "</div>"
-        
-        html += "</section>"
-        return html
+
+            out_html += "</div>"
+
+        out_html += "</section>"
+        return out_html
     
     def _generate_recommendations(self, analytics: dict[str, Any]) -> str:
         """Generate implementation roadmap section"""
@@ -1674,119 +1674,119 @@ class ComprehensiveReportGenerator:
             explanation = assessment.get('explanation', '')
             
             # Use AI-generated content for a more comprehensive summary
-            html = f"""
+            summary_html = f"""
                     <div class="assessment-overview">
-                        <h3>Assessment: <span style="color: {self._get_rating_color(rating)}">{rating}</span></h3>
-                        <p>{explanation}</p>
+                        <h3>Assessment: <span style="color: {self._get_rating_color(rating)}">{html.escape(str(rating))}</span></h3>
+                        <p>{html.escape(str(explanation))}</p>
                     </div>
-                    
+
                     <p class="lead">
-                        This accessibility audit evaluated <strong>{stats.get('total_pages', 0)} pages</strong> across 
-                        <strong>{stats.get('total_websites', 0)} websites</strong> in the {data.get('project', {}).get('name', 'project')}.
+                        This accessibility audit evaluated <strong>{stats.get('total_pages', 0)} pages</strong> across
+                        <strong>{stats.get('total_websites', 0)} websites</strong> in the {html.escape(str(data.get('project', {}).get('name', 'project')))}.
                     </p>
                     """
-            
+
             # Add key strengths if available - show ALL of them
             strengths = ai_summary.get('key_strengths', [])
             if strengths:
-                html += """
+                summary_html += """
                     <div class="key-strengths">
                         <h3>Key Strengths</h3>
                         <ul>"""
                 for strength in strengths:
-                    html += f"<li>{strength}</li>"
-                html += """
+                    summary_html += f"<li>{html.escape(str(strength))}</li>"
+                summary_html += """
                         </ul>
                     </div>"""
-            
+
             # Add critical risks - show ALL of them
             risks = ai_summary.get('critical_risks', [])
             if risks:
-                html += """
+                summary_html += """
                     <div class="critical-risks">
                         <h3>Critical Risk Areas</h3>
                         <ul>"""
                 for risk in risks:
-                    html += f"<li>{risk}</li>"
-                html += """
+                    summary_html += f"<li>{html.escape(str(risk))}</li>"
+                summary_html += """
                         </ul>
                     </div>"""
-            
+
             # Add show stoppers if present
             show_stoppers = ai_summary.get('show_stoppers', [])
             if show_stoppers:
-                html += """
+                summary_html += """
                     <div class="show-stoppers-alert" style="background: #fdedec; border: 2px solid #922b21; border-radius: 8px; padding: 1.5rem; margin: 2rem 0;">
                         <h3 style="color: #922b21;">🚫 Show Stoppers - Immediate Action Required</h3>
                         <ul>"""
                 for stopper in show_stoppers:
-                    html += f"<li>{stopper}</li>"
-                html += """
+                    summary_html += f"<li>{html.escape(str(stopper))}</li>"
+                summary_html += """
                         </ul>
                     </div>"""
-            
+
             # Add maturity assessment with visual scale
             maturity = ai_summary.get('maturity_assessment', {})
             if maturity.get('level'):
                 maturity_levels = ['Just Starting', 'Developing', 'Maturing', 'Advanced', 'Leading']
                 current_level = maturity.get('level', 'Unknown')
-                html += f"""
+                summary_html += f"""
                     <div class="maturity-section" style="margin: 2rem 0; padding: 1.5rem; background: #f8f9fa; border-radius: 8px;">
                         <h3>Accessibility Maturity Level</h3>
                         <div class="maturity-scale" style="display: flex; justify-content: space-between; padding: 1rem; background: white; border-radius: 4px; margin: 1rem 0;">"""
-                
+
                 for level in maturity_levels:
                     active_style = 'background: #1a5276; color: white; font-weight: bold;' if level == current_level else 'color: #4a4a4a;'
-                    html += f'<span style="padding: 0.5rem 1rem; border-radius: 4px; {active_style}">{level}</span>'
-                
-                html += f"""
+                    summary_html += f'<span style="padding: 0.5rem 1rem; border-radius: 4px; {active_style}">{html.escape(str(level))}</span>'
+
+                summary_html += f"""
                         </div>
-                        <p>{maturity.get('description', '')}</p>
+                        <p>{html.escape(str(maturity.get('description', '')))}</p>
                     </div>"""
             
             # Add user impact analysis with icons
             user_impact = ai_summary.get('user_impact', {})
             if user_impact:
-                html += """
+                summary_html += """
                     <div class="user-impact-section" style="margin: 2rem 0;">
                         <h3>User Impact Analysis</h3>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">"""
-                
+
                 impact_icons = {
                     'vision': '👁️',
                     'motor': '✋',
                     'hearing': '👂',
                     'cognitive': '🧠'
                 }
-                
+
                 for impact_type, impact_desc in user_impact.items():
                     icon = impact_icons.get(impact_type, '👤')
-                    html += f"""
+                    summary_html += f"""
                         <div style="display: flex; align-items: start; gap: 1rem; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #dee2e6;">
                             <span style="font-size: 2rem;">{icon}</span>
                             <div>
-                                <strong>{impact_type.title()} Impairments</strong>
-                                <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">{impact_desc}</p>
+                                <strong>{html.escape(str(impact_type).title())} Impairments</strong>
+                                <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">{html.escape(str(impact_desc))}</p>
                             </div>
                         </div>"""
-                
-                html += """
+
+                summary_html += """
                         </div>
                     </div>"""
-            
+
             # Add legal risk assessment
             legal_risk = ai_summary.get('legal_risk', {})
             if legal_risk.get('level'):
                 risk_color = self._get_risk_color(legal_risk.get('level', 'Unknown'))
-                html += f"""
+                summary_html += f"""
                     <div class="legal-risk-section" style="background: white; border: 2px solid {risk_color}; border-radius: 8px; padding: 1.5rem; margin: 2rem 0;">
                         <h3>Legal & Compliance Risk</h3>
                         <div style="margin: 1rem 0;">
                             <span style="background: {risk_color}; color: white; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold;">
-                                {legal_risk.get('level', 'Unknown')} Risk
+                                {html.escape(str(legal_risk.get('level', 'Unknown')))} Risk
                             </span>
                         </div>
-                        <p>{legal_risk.get('explanation', '')}</p>
+                        <p>{html.escape(str(legal_risk.get('explanation', '')))}</p>
                     </div>"""
             
             # Add unified action plan that combines prioritization and recommendations
@@ -1795,90 +1795,91 @@ class ComprehensiveReportGenerator:
             
             # Only show if we have content
             if prioritization or recommendations:
-                html += """
+                summary_html += """
                     <div class="action-plan-section" style="margin: 2rem 0; padding: 1.5rem; background: #f0f8ff; border-radius: 8px;">
                         <h3>Recommended Action Plan</h3>"""
-                
+
                 # Quick wins/Immediate actions
                 quick_wins = recommendations.get('quick_wins', [])
                 if quick_wins:
-                    html += """
+                    summary_html += """
                         <div style="margin: 1.5rem 0;">
                             <h4>🎯 Immediate Actions (Do Now)</h4>
                             <ul style="line-height: 1.8;">"""
                     for action in quick_wins:
-                        html += f"<li>{action}</li>"
-                    html += """
+                        summary_html += f"<li>{html.escape(str(action))}</li>"
+                    summary_html += """
                             </ul>
                         </div>"""
-                
+
                 # Short-term goals
                 short_term = recommendations.get('short_term', [])
                 if short_term:
-                    html += """
+                    summary_html += """
                         <div style="margin: 1.5rem 0;">
                             <h4>📅 Short-term Goals (1-3 months)</h4>
                             <ul style="line-height: 1.8;">"""
                     for goal in short_term:
-                        html += f"<li>{goal}</li>"
-                    html += """
+                        summary_html += f"<li>{html.escape(str(goal))}</li>"
+                    summary_html += """
                             </ul>
                         </div>"""
-                
+
                 # Long-term strategy
                 long_term = recommendations.get('long_term', [])
                 if long_term:
-                    html += """
+                    summary_html += """
                         <div style="margin: 1.5rem 0;">
                             <h4>🎯 Long-term Strategy (3-12 months)</h4>
                             <ul style="line-height: 1.8;">"""
                     for strategy in long_term:
-                        html += f"<li>{strategy}</li>"
-                    html += """
+                        summary_html += f"<li>{html.escape(str(strategy))}</li>"
+                    summary_html += """
                             </ul>
                         </div>"""
-                
+
                 # If we have prioritization items but no structured recommendations, show them
                 elif prioritization:
-                    html += """
+                    summary_html += """
                         <ol style="line-height: 1.8; margin-top: 1rem;">"""
                     for priority in prioritization:
-                        html += f"<li>{priority}</li>"
-                    html += """
+                        summary_html += f"<li>{html.escape(str(priority))}</li>"
+                    summary_html += """
                         </ol>"""
-                
-                html += """
+
+                summary_html += """
                     </div>"""
-            
+
             # Add training needs
             training_needs = ai_summary.get('training_needs', [])
             if training_needs:
-                html += """
+                summary_html += """
                     <div class="training-section" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
                         <h3>Recommended Training</h3>
                         <ul>"""
                 for training in training_needs:
-                    html += f"<li>{training}</li>"
-                html += """
+                    summary_html += f"<li>{html.escape(str(training))}</li>"
+                summary_html += """
                         </ul>
                     </div>"""
-            
-            return html
+
+            return summary_html
         else:
             # Fallback to standard summary without AI insights
+            common_types = ', '.join(list(analytics.get('by_touchpoint', {}).keys())[:3]) or 'None'
             return f"""
                     <p class="lead">
-                        This accessibility audit evaluated <strong>{stats.get('total_pages', 0)} pages</strong> across 
-                        <strong>{stats.get('total_websites', 0)} websites</strong> in the {data.get('project', {}).get('name', 'project')}.
+                        This accessibility audit evaluated <strong>{stats.get('total_pages', 0)} pages</strong> across
+                        <strong>{stats.get('total_websites', 0)} websites</strong> in the {html.escape(str(data.get('project', {}).get('name', 'project')))}.
                     </p>
-                    
+
                     <div class="key-findings">
                         <h3>Key Findings</h3>
                         <ul>
                             <li>Identified <strong>{total_violations} accessibility violations</strong> requiring attention</li>
                             <li><strong>{critical_issues} high-impact issues</strong> that significantly affect user experience</li>
                             <li><strong>{len(analytics['pages_with_most_issues'])} pages</strong> contain the majority of issues</li>
-                            <li>Most common issue types: {', '.join(list(analytics['by_category'].keys())[:3]) if analytics['by_category'] else 'None'}</li>
+                            <li>Most common issue types: {html.escape(common_types)}</li>
                         </ul>
                     </div>
                     
@@ -1928,52 +1929,52 @@ class ComprehensiveReportGenerator:
             '4.1.2': 'Name, Role, Value'
         }
         
-        html = ""
+        out_html = ""
         for criterion, data in wcag_sorted:
-            html += f"""
+            out_html += f"""
             <tr>
-                <td>{criterion}</td>
+                <td>{html.escape(str(criterion))}</td>
                 <td>{wcag_descriptions.get(criterion, 'Unknown Criterion')}</td>
                 <td>{data['count']}</td>
                 <td>{'A' if criterion.endswith('.1') else 'AA'}</td>
             </tr>
             """
-        return html
+        return out_html
     
     def _generate_top_issues_rows(self, top_issues: list[dict[str, Any]], data: dict[str, Any]) -> str:
         """Generate top issues table rows"""
-        html = ""
+        out_html = ""
         for issue in top_issues[:5]:
             details = issue.get('details', {})
             impact = details.get('impact', 'unknown')
-            
+
             # Format impact value
             if hasattr(impact, 'value'):
                 impact_str = impact.value
             else:
                 impact_str = str(impact).lower() if impact else 'medium'
-            
+
             # Format WCAG criteria
             wcag_criteria = details.get('wcag_criteria', [])
             if wcag_criteria:
                 wcag_str = ', '.join(wcag_criteria[:3])  # Show first 3
             else:
                 wcag_str = 'N/A'
-            
+
             # Get remediation text based on issue ID
             remediation = self._get_remediation_text(issue['id'], details)
-            
-            html += f"""
+
+            out_html += f"""
             <tr>
-                <td>{issue['id']}</td>
+                <td>{html.escape(str(issue['id']))}</td>
                 <td>{issue['count']}</td>
-                <td><span class="impact-badge {impact_str}">{impact_str.title()}</span></td>
-                <td>{wcag_str}</td>
+                <td><span class="impact-badge {html.escape(str(impact_str), quote=True)}">{html.escape(str(impact_str).title())}</span></td>
+                <td>{html.escape(str(wcag_str))}</td>
                 <td>{issue.get('unique_pages', 1)}</td>
-                <td>{remediation}</td>
+                <td>{html.escape(str(remediation))}</td>
             </tr>
             """
-        return html
+        return out_html
     
     def _get_remediation_text(self, issue_id: str, details: dict[str, Any]) -> str:
         """Get brief remediation text for common issues"""
@@ -2009,11 +2010,11 @@ class ComprehensiveReportGenerator:
     
     def _generate_page_issues_rows(self, pages: list[dict[str, Any]]) -> str:
         """Generate page issues table rows"""
-        html = ""
+        out_html = ""
         for page in pages[:10]:
-            html += f"""
+            out_html += f"""
             <tr>
-                <td>{page['url'][:50]}...</td>
+                <td>{html.escape(str(page['url'])[:50])}...</td>
                 <td>{page['total']}</td>
                 <td>{page['breakdown'].get('error', 0)}</td>
                 <td>{page['breakdown'].get('warning', 0)}</td>
@@ -2024,7 +2025,7 @@ class ComprehensiveReportGenerator:
                 </span></td>
             </tr>
             """
-        return html
+        return out_html
 
     def _generate_color_contrast_breakdown(self, data: dict[str, Any]) -> str:
         """Generate color contrast breakdown by breakpoint and instance"""
@@ -2074,7 +2075,7 @@ class ComprehensiveReportGenerator:
             return ""
 
         # Generate HTML
-        html = """
+        out_html = """
             <div class="color-contrast-breakdown" style="margin-top: 2rem;">
                 <h3>Color Contrast Issues by Breakpoint</h3>
                 <p class="text-muted">Color contrast violations organized by responsive breakpoint and instance</p>
@@ -2094,10 +2095,10 @@ class ComprehensiveReportGenerator:
             issues = contrast_by_breakpoint[breakpoint]
             breakpoint_display = f"{breakpoint}px" if breakpoint != 'default' else 'Default (no breakpoint)'
 
-            html += f"""
+            out_html += f"""
                 <details class="breakpoint-section" style="margin-bottom: 1rem; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 1rem;">
                     <summary style="cursor: pointer; font-weight: bold; margin-bottom: 0.5rem;">
-                        <span style="color: #0066cc;">{breakpoint_display}</span>
+                        <span style="color: #0066cc;">{html.escape(str(breakpoint_display))}</span>
                         <span class="badge" style="background-color: #fdedec; color: #922b21; border: 1px solid #922b21; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.875rem;">{len(issues)} instances</span>
                     </summary>
                     <table class="contrast-table" style="width: 100%; margin-top: 1rem; border-collapse: collapse;">
@@ -2114,22 +2115,23 @@ class ComprehensiveReportGenerator:
             """
 
             for issue in issues[:20]:  # Limit to 20 instances per breakpoint
-                element_str = issue.get('element', 'unknown')
-                pseudoclass_str = issue.get('pseudoclass', '')
-                pseudoclass_display = f'<code style="background-color: #f8f9fa; padding: 0.125rem 0.25rem; border-radius: 0.125rem;">{pseudoclass_str}</code>' if pseudoclass_str else '-'
+                element_str = str(issue.get('element', 'unknown'))
+                pseudoclass_str = str(issue.get('pseudoclass', ''))
+                pseudoclass_display = f'<code style="background-color: #f8f9fa; padding: 0.125rem 0.25rem; border-radius: 0.125rem;">{html.escape(pseudoclass_str)}</code>' if pseudoclass_str else '-'
+                impact_value = str(issue['impact'])
 
-                html += f"""
+                out_html += f"""
                             <tr style="border-bottom: 1px solid #dee2e6;">
-                                <td style="padding: 0.75rem; font-size: 0.875rem;">{issue['page_url'][:50]}...</td>
-                                <td style="padding: 0.75rem;"><code style="background-color: #f8f9fa; padding: 0.125rem 0.25rem; border-radius: 0.125rem;">{element_str}</code></td>
+                                <td style="padding: 0.75rem; font-size: 0.875rem;">{html.escape(str(issue['page_url'])[:50])}...</td>
+                                <td style="padding: 0.75rem;"><code style="background-color: #f8f9fa; padding: 0.125rem 0.25rem; border-radius: 0.125rem;">{html.escape(element_str)}</code></td>
                                 <td style="padding: 0.75rem;">{pseudoclass_display}</td>
-                                <td style="padding: 0.75rem; font-size: 0.875rem;">{issue['description'][:80]}...</td>
-                                <td style="padding: 0.75rem;"><span class="impact-badge {issue['impact'].lower()}">{issue['impact'].title()}</span></td>
+                                <td style="padding: 0.75rem; font-size: 0.875rem;">{html.escape(str(issue['description'])[:80])}...</td>
+                                <td style="padding: 0.75rem;"><span class="impact-badge {html.escape(impact_value.lower(), quote=True)}">{html.escape(impact_value.title())}</span></td>
                             </tr>
                 """
 
             if len(issues) > 20:
-                html += f"""
+                out_html += f"""
                             <tr>
                                 <td colspan="5" style="padding: 0.75rem; text-align: center; font-style: italic; color: #4a4a4a;">
                                     ... and {len(issues) - 20} more instances
@@ -2137,11 +2139,11 @@ class ComprehensiveReportGenerator:
                             </tr>
                 """
 
-            html += """
+            out_html += """
                         </tbody>
                     </table>
                 </details>
             """
 
-        html += "</div>"
-        return html
+        out_html += "</div>"
+        return out_html

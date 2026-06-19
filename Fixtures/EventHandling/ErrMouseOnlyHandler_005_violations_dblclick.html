@@ -6,6 +6,7 @@
     <title>ErrMouseOnlyHandler - ondblclick Without Keyboard</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrMouseOnlyHandler_005_violations_dblclick",
     "issueId": "ErrMouseOnlyHandler",
     "expectedViolationCount": 3,
@@ -52,5 +53,19 @@
             </span>
         </section>
     </main>
+
+    <script>
+        function editText() {
+            console.log('Editing text');
+        }
+
+        function openFile() {
+            console.log('Opening file');
+        }
+
+        function expandSection() {
+            console.log('Expanding section');
+        }
+    </script>
 </body>
 </html>

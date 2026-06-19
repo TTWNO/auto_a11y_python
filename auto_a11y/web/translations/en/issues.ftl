@@ -2324,13 +2324,6 @@ WarnGenericAccessibleName =
     .who = Screen reader users, voice control users.
     .remediation = Provide descriptive accessible names that explain the element's specific purpose.
 
-WarnGenericButtonText =
-    .title = Button has generic text "{"{"}text{"}"}"
-    .what = A button's accessible name resolves to a generic value "{"{"}text{"}"}" (e.g., "button", "action"). The name should describe what the button does, not what it is.
-    .why = The button text "{"{"}text{"}"}" doesn't describe what the button does. When screen reader users navigate by buttons or hear buttons out of context, "{"{"}text{"}"}" provides no information about the button's purpose or action.
-    .who = Screen reader users navigating by buttons who hear "{"{"}text{"}"}" without context, users with cognitive disabilities who need clear action labels
-    .remediation = Change "{"{"}text{"}"}" to describe the specific action, like "Submit registration", "Save changes", or "Search products" instead of just "{"{"}text{"}"}"
-
 WarnGenericDocumentLinkText =
     .title = Document link uses generic text like "PDF" without describing content
     .what = A link to a document (e.g., a PDF) uses generic text such as "PDF", "download", or "document" without describing the document's contents.
@@ -2561,13 +2554,6 @@ WarnModalMissingAriaLabelledby =
     .who = Screen reader users who need modal context, users with cognitive disabilities who benefit from consistent labeling, users who rely on visual and auditory information matching.
     .remediation = If a visible heading exists in the modal, add aria-labelledby pointing to that heading's ID: <div role="dialog" aria-labelledby="modal-title"><h2 id="modal-title">Modal Title</h2>...</div>. This is preferred over aria-label because it ensures the programmatic name matches the visible label. If using aria-label, ensure the text exactly matches the visible heading to avoid confusion.
 
-WarnModalMissingAriaModal =
-    .title = Modal dialog missing aria-modal attribute
-    .what = A modal dialog overlay is showing but its container is missing aria-modal="true". Some assistive tech may continue to surface background content as a result.
-    .why = aria-modal helps assistive technologies understand modal boundaries.
-    .who = Screen reader users navigating modal content.
-    .remediation = Add aria-modal="true" to modal containers.
-
 WarnModalNoFocusableElements =
     .title = Modal has no focusable elements
     .what = A modal/dialog is open but contains no focusable elements at all — no buttons, no links, no inputs. Keyboard users cannot move focus inside the dialog.
@@ -2775,13 +2761,6 @@ WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark =
     .who = Screen reader users
     .remediation = Add aria-label or aria-labelledby, or use a different landmark type
 
-WarnRequiredNotIndicated =
-    .title = Required field not clearly indicated
-    .what = A field is required (e.g., the page submits an error when it is empty), but the markup does not declare it as required via the required attribute, aria-required, or a visible cue.
-    .why = Users don't know which fields are mandatory
-    .who = All users, especially those with cognitive disabilities
-    .remediation = Add required attribute and visual indication
-
 WarnRightAlignedText =
     .title = Body text is right-aligned affecting readability
     .what = Body text in a primarily left-to-right page is rendered with text-align: right, which disrupts the expected reading flow.
@@ -2933,3 +2912,378 @@ WarnZeroOutlineOffset =
 #     .who = [affected user groups]
 #     .remediation = [remediation steps]
 
+AI_ErrAlertWithoutARIA =
+    .title = Alert message {"{"}element_text{"}"} is missing ARIA live-region markup
+    .what = A visual alert, banner, or status message is presented without role="alert", role="status", or an aria-live attribute, so assistive technology has no way to know it should be announced. The message appears styled as a success, error, or warning notice but is exposed to screen readers as ordinary text.
+    .why = Status messages that convey success, errors, or warnings must be programmatically determinable and announced without moving focus, per WCAG 4.1.3 Status Messages. Without an ARIA live region, screen reader users never hear that their changes were saved, that an error occurred, or that their session is about to expire.
+    .who = Screen reader users who are blind or have low vision, and anyone relying on assistive technology that announces page changes rather than visually scanning for new content.
+    .remediation = Add role="alert" (with aria-live="assertive") to urgent error and warning messages, or role="status" (with aria-live="polite") to non-urgent success or progress messages; include aria-atomic="true" so the full message is read as a unit. Ensure the live-region container exists in the DOM before its content is inserted so the change is detected.
+    .what-generic = An alert or status message lacks the ARIA role or aria-live attribute needed for screen readers to announce it.
+
+AI_ErrAudioWithoutTranscript =
+    .title = Audio content has no text transcript
+    .what = The {"{"}element_tag{"}"} audio player presents spoken or other audio-only content but provides no accompanying text transcript, either inline or as a link. A short descriptive summary near the player is not an equivalent alternative to a full transcript.
+    .why = Without a transcript, people who cannot hear the audio have no way to access its information, which fails WCAG 1.2.1 Audio-only and Video-only (Prerecorded). A transcript must convey all spoken words and meaningful sounds so the content is available to everyone.
+    .who = Deaf and hard-of-hearing users, people in sound-sensitive or noisy environments who cannot play audio, and users who prefer or need to read rather than listen.
+    .remediation = Provide a complete text transcript of all spoken words and significant sounds, either inline beneath the player (and optionally referenced with aria-describedby) or via a clearly labelled link such as "Read full transcript". Ensure the transcript captures the full content, not just a summary.
+    .what-generic = Audio-only content is provided without an equivalent text transcript.
+
+AI_ErrAutocompleteWithoutARIA =
+    .title = Autocomplete widget missing combobox ARIA markup
+    .what = A custom autocomplete/combobox built from a plain text input and a suggestions list exposes no ARIA, so the input lacks role=combobox, aria-autocomplete, aria-expanded and aria-controls, and the suggestions container and items lack role=listbox and role=option. Assistive technology cannot tell that the input controls a popup list or convey its expanded/collapsed state.
+    .why = WCAG 4.1.2 Name, Role, Value requires that the role, state and relationships of custom widgets be exposed to assistive technology. Without the combobox ARIA pattern, screen reader users are not told that suggestions exist, how many there are, or which one is active, and the list is not operable as a real combobox.
+    .who = Screen reader users and keyboard-only users who rely on programmatically exposed roles, states and the aria-activedescendant relationship to discover and navigate the suggestion list.
+    .remediation = Apply the WAI-ARIA combobox pattern: add role=combobox, aria-autocomplete=list, aria-expanded (toggled true/false), and aria-controls referencing the list to the input; add role=listbox to the suggestions container and role=option with an id to each item; and set aria-activedescendant on the input to the id of the highlighted option during keyboard navigation.
+    .what-generic = A custom autocomplete widget lacks the ARIA combobox markup needed for assistive technology to understand and operate it.
+
+AI_ErrAutoplayMedia =
+    .title = Media autoplays without user control
+    .what = A {"{"}element_tag{"}"} element starts playing audio automatically on page load with no way for the user to pause, stop, or mute it. Autoplaying video or background audio that lasts more than 3 seconds must provide a control to silence it.
+    .why = This violates WCAG 1.4.2 Audio Control. Unexpected sound that plays automatically interferes with screen reader speech, making the page unusable, and there is no mechanism to stop it independently of the system volume.
+    .who = Screen reader users whose assistive technology speech is masked by the audio, people with cognitive or attention-related disabilities who are distracted by unexpected sound, and users with low vision who rely on audio cues.
+    .remediation = Remove the autoplay attribute so playback only starts when the user activates a control. Add the controls attribute to the audio or video element, or provide explicit play and pause buttons, so the user decides when media starts and can stop it.
+    .what-generic = Audio or video autoplays on page load with no user control to pause, stop, or mute it.
+
+AI_ErrBreadcrumbsWithoutARIA =
+    .title = Breadcrumb trail is not marked up as breadcrumb navigation
+    .what = A visual breadcrumb trail is present but it is not wrapped in a <nav> element with aria-label="Breadcrumb", and the current page is not marked with aria-current="page". The markup uses a plain <ul>, <div>, or <span> structure, so assistive technologies cannot recognise it as a breadcrumb.
+    .why = Without the navigation landmark and breadcrumb label, screen reader users cannot identify the trail as breadcrumb navigation, find it via landmark navigation, or know which item represents the current page, weakening the location cues required by WCAG 2.4.8 Location and the name/role/value expectations of 4.1.2.
+    .who = Screen reader users and users of other assistive technology that relies on landmarks and roles to navigate and to understand where they are within a site's hierarchy.
+    .remediation = Wrap the breadcrumb in a <nav aria-label="Breadcrumb"> element, mark up the trail as an ordered list (<ol> with <li> items) since the steps are sequential, and add aria-current="page" to the list item representing the current page.
+    .what-generic = Breadcrumb navigation lacks a nav element with aria-label="Breadcrumb" and an aria-current marker, so assistive technologies cannot identify it as a breadcrumb trail.
+
+AI_ErrCardWithoutARIA =
+    .title = Card component built from generic divs without semantic structure or ARIA
+    .what = A card component is assembled from plain <div> elements with no semantic markup or ARIA, so its structure is not exposed to assistive technology. When the whole card is clickable via an onclick handler, it also has no interactive role and cannot be reached or operated with the keyboard.
+    .why = Without semantic elements or ARIA, screen readers cannot identify the card as a distinct region, announce its title as a heading, or convey that a div-based card is actually a control, which violates WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value. Keyboard users cannot activate a click handler attached to a non-focusable div.
+    .who = Screen reader users, who lose the card's structure and the role of clickable cards; and keyboard-only and switch-device users, who cannot focus or activate div-based clickable cards.
+    .remediation = Wrap each card in a semantic <article> element and use a real heading (e.g. <h2>) for the card title and an <img> with alt text instead of a CSS background image. For a card that is entirely clickable, wrap its content in an <a href> (or <button>) so it is keyboard focusable and operable, and give it an aria-label describing the destination or action; add aria-label to ambiguous values such as the price.
+    .what-generic = A card component is built from generic divs without semantic HTML or ARIA, and clickable cards lack an interactive role and keyboard support.
+
+AI_ErrCheckboxGroupWithoutARIA =
+    .title = Checkbox group lacks proper ARIA roles, states, or grouping semantics
+    .what = A set of checkboxes is presented without the semantics assistive technology needs: custom div-based checkboxes have no role="checkbox", no aria-checked state, and the container has no role="group", or native checkboxes are not wrapped in a fieldset/legend and lack associated label elements.
+    .why = Without these roles, states, and grouping, screen readers cannot announce the elements as checkboxes, report whether each is checked, or convey the shared group label, so users cannot understand or operate the controls. This fails WCAG 4.1.2 Name, Role, Value.
+    .who = Screen reader users and other assistive technology users who rely on programmatic roles, states, and group context to perceive and operate checkboxes.
+    .remediation = For custom checkboxes, give each control role="checkbox", aria-checked (kept in sync on toggle), an accessible name, and tabindex="0" with keyboard handling, and wrap them in a container with role="group" and aria-labelledby pointing to the group label; for native checkboxes, wrap the set in a fieldset with a legend and give each input an associated label via for/id.
+    .what-generic = A group of checkboxes lacks the ARIA roles, checked states, or fieldset/legend and label grouping needed for assistive technology to identify and operate them.
+
+AI_ErrDatePickerWithoutARIA =
+    .title = Date picker built without ARIA roles or grouping
+    .what = A custom date-picker widget exposes no accessible structure: the pop-up calendar has no role="dialog", the calendar grid has no role="grid" and its date cells have no role="gridcell" or per-date aria-label, or the month/day/year dropdowns are not wrapped in a fieldset/legend with individual labels.
+    .why = Without these roles, labels, and grouping, a screen reader cannot announce that a calendar opened, cannot convey the grid structure or which date each cell represents, and cannot communicate that the separate dropdowns form one date, breaking WCAG 4.1.2 Name, Role, Value.
+    .who = Screen reader users (blind and low-vision), and keyboard-only users who rely on exposed roles and focus management to operate the calendar grid.
+    .remediation = Give the trigger aria-haspopup="dialog" and aria-expanded; mark the calendar with role="dialog", aria-modal, and an aria-label; add role="grid" to the date container and role="gridcell" with a descriptive aria-label (e.g. "January 1, 2024") and roving tabindex to each date; for split inputs, wrap month/day/year selects in a fieldset with a legend and label each select.
+    .what-generic = A custom date picker is missing the ARIA roles, labels, and grouping needed for assistive technology to interpret and operate it.
+
+AI_ErrDisclosureWithoutARIA =
+    .title = Disclosure widget "{"{"}element_text{"}"}" is missing required ARIA markup
+    .what = A show/hide disclosure control toggles content but has no aria-expanded state, and in some cases is built from a non-interactive element such as a div or span instead of a button. The expanded/collapsed state and the relationship to the controlled content are not exposed to assistive technologies.
+    .why = Without aria-expanded, screen reader users cannot tell whether the disclosure is open or closed, and without aria-controls they cannot find the content it reveals. When the trigger is a div or span rather than a button, it also has no role and is not reachable or operable by keyboard, breaking WCAG 4.1.2 Name, Role, Value and 2.1.1 Keyboard.
+    .who = Screen reader users, who get no announcement of the expanded/collapsed state or of the controlled region; and keyboard-only users, who cannot focus or activate disclosure triggers that are built from non-interactive div/span elements.
+    .remediation = Use a native <button> for the trigger, add aria-expanded (toggled between "false" and "true" in script as the content shows/hides) and aria-controls pointing at the content's id; optionally give the revealed region role="region" with aria-labelledby referencing the button, and mark any decorative toggle icon aria-hidden="true".
+    .what-generic = A show/hide disclosure control lacks the aria-expanded state and button semantics needed for assistive technologies to announce and operate it.
+
+AI_ErrFeedWithoutARIA =
+    .title = Feed component is missing the ARIA feed pattern
+    .what = A scrolling feed or stream of posts is built from plain container elements with no role="feed" on the wrapper and no role="article" on each item, and it omits aria-posinset, aria-setsize, and aria-busy. Nothing tells assistive technology that this is a dynamic, paginated feed.
+    .why = Without the feed pattern, a screen reader exposes the content as undifferentiated text, so users cannot recognize it as a feed, navigate article by article in reading mode, know their position in the set, or be told when new items are loading. This fails WCAG 4.1.2 Name, Role, Value because the component's role and state are not programmatically determinable.
+    .who = Screen reader users (e.g. JAWS, NVDA, VoiceOver) and other assistive-technology users who rely on programmatic roles and structure to navigate dynamic, infinitely scrolling content efficiently.
+    .remediation = Add role="feed" with an accessible name (aria-label or aria-labelledby) and aria-busy on the container, give each item role="article" with a tabindex of 0, an aria-labelledby that names the item, and aria-posinset plus aria-setsize values; toggle aria-busy="true" while new items load and update aria-setsize as items are added.
+    .what-generic = A dynamic feed or stream of items does not use the ARIA feed pattern (role="feed", role="article", aria-posinset, aria-setsize, aria-busy).
+
+AI_ErrFlashingContent =
+    .title = Content flashes more than three times per second
+    .what = An element flashes, strobes, or rapidly alternates between high-contrast colours more than three times per second. The detected content cycles fast enough (for example a 0.1s or 0.15s animation loop) to cross the general flash threshold.
+    .why = Flashing faster than three times per second can trigger seizures in people with photosensitive epilepsy, violating WCAG 2.3.1 Three Flashes or Below Threshold (Level A). High-contrast colour transitions, such as red-to-blue or black-to-yellow, are especially dangerous.
+    .who = People with photosensitive epilepsy and other seizure disorders, who can suffer a seizure from the flashing; users with vestibular disorders and migraine sensitivity are also affected.
+    .remediation = Remove the rapid flashing or slow the animation so it flashes no more than three times per second (an interval of at least 0.34s; one flash per second is safe). Replace high-contrast colour strobes with low-contrast colour changes or a gentle opacity pulse, and keep flashing within the small safe area defined by WCAG 2.3.1.
+    .what-generic = Content flashes more than three times per second, which can trigger photosensitive seizures.
+
+AI_ErrFormErrorNotAnnounced =
+    .title = Form validation error is not announced to screen readers
+    .what = A form validation error is shown only visually (red text and a red border) but is not programmatically connected to its field or exposed to assistive technology. The input has no aria-invalid and no aria-describedby pointing at the message, and the message appears without any live region, so it is never announced.
+    .why = Screen reader users receive no indication that a field failed validation or why, leaving them unable to identify or correct the error. This fails WCAG 3.3.1 Error Identification and 4.1.3 Status Messages, because the error is neither programmatically associated with the field nor announced when it appears.
+    .who = Blind and low-vision people using screen readers, and people who do not perceive the colour and border cues used to flag the error visually.
+    .remediation = Set aria-invalid='true' on the failing input and link it to its message with aria-describedby pointing to the message id; give each error message role='alert' (or place errors in an aria-live region / role='alert' error summary) so it is announced the moment it appears, and clear aria-invalid and the message once the field is valid.
+    .what-generic = A form validation error is shown only visually and is not programmatically associated with its field or announced to assistive technology.
+
+AI_ErrLandmarkWithoutLabel =
+    .title = Duplicate {"{"}element_tag{"}"} landmark has no distinguishing label
+    .what = The page contains more than one landmark of the same type (for example two navigation or two complementary regions) and this {"{"}element_tag{"}"} landmark has no aria-label or aria-labelledby to tell it apart. Screen readers announce every one of them with the same generic name.
+    .why = When several same-type landmarks share an identical accessible name, assistive technology users navigating by landmark cannot tell which region is which, defeating the purpose of landmark navigation and failing WCAG 2.4.1 Bypass Blocks and 4.1.2 Name, Role, Value.
+    .who = Blind and low-vision people who rely on screen readers (JAWS, NVDA, VoiceOver) and use landmark navigation to jump between page regions.
+    .remediation = Give each duplicated landmark a unique accessible name: add aria-label (e.g. aria-label="Main navigation" and aria-label="Utility navigation") or point aria-labelledby at a visible heading inside the region (e.g. aria-labelledby="updates-heading").
+    .what-generic = A page has multiple landmarks of the same type but they lack distinguishing accessible labels.
+
+AI_ErrLoadingStateNotAnnounced =
+    .title = Loading state is not announced to assistive technology
+    .what = A loading or progress indicator (such as a spinner or "Loading..." text) appears and disappears visually but is not exposed through a live region, so it is never announced to screen readers. Users cannot tell that content is loading or when it has finished.
+    .why = Without a status message in a live region, screen reader users receive no notification that an action is in progress or has completed, leaving them confused about whether the page is working. This violates WCAG 4.1.3 Status Messages, which requires that status changes be programmatically determinable and announced without moving focus.
+    .who = Blind and low-vision people using screen readers, and users of other assistive technologies that rely on programmatic status updates rather than visual cues.
+    .remediation = Add a live region such as <div role="status" aria-live="polite" aria-atomic="true"> and update its text when loading starts (e.g. "Loading, please wait...") and ends (e.g. "Data loaded successfully"); mark the purely visual spinner aria-hidden="true", and connect the triggering control with aria-describedby pointing at the status region.
+    .what-generic = A visual loading or progress indicator is not exposed to assistive technology through a live region, so its status changes are never announced.
+
+AI_ErrMeterWithoutARIA =
+    .title = Meter or gauge without accessible ARIA markup
+    .what = A custom meter or gauge indicator (such as a CPU-usage or disk-space bar) is built from generic <div> elements with no role="meter", no aria-valuenow/aria-valuemin/aria-valuemax, and no accessible label, so its value and meaning exist only as visual styling.
+    .why = Screen readers cannot determine what the gauge measures, its current value, or its acceptable range, because the measurement is conveyed purely visually with no programmatic semantics (WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value).
+    .who = Screen reader users who are blind or have low vision, and anyone relying on assistive technology to read measurement values that are not exposed in text.
+    .remediation = Use the native HTML <meter> element with value/min/max plus an associated <label>, or add role="meter" (or role="progressbar") to the container along with aria-valuenow, aria-valuemin, aria-valuemax, an accessible name via aria-label or aria-labelledby, and aria-valuetext for a human-readable reading; hide any duplicated visual value text with aria-hidden="true".
+    .what-generic = A custom meter or gauge lacks the ARIA role and value properties (or a native meter element) needed to expose its measurement to assistive technology.
+
+AI_ErrMissingLiveRegion =
+    .title = Dynamically updated content has no ARIA live region
+    .what = A region such as a status message, cart count, or notification is updated dynamically with JavaScript but has no aria-live attribute or live-region role, so the change is not conveyed to assistive technology.
+    .why = Screen reader users receive no announcement when the content changes, so they miss status confirmations, quantity updates, and time-sensitive alerts. This fails WCAG 4.1.3 Status Messages, which requires programmatically determinable status updates that do not require focus.
+    .who = Blind and low-vision people using screen readers, who cannot see visual updates and rely on spoken announcements to know that content changed.
+    .remediation = Wrap the updating region in an element with an appropriate live-region role and aria-live value: use role="status" with aria-live="polite" for non-urgent updates (confirmations, counts) and role="alert" with aria-live="assertive" for critical, time-sensitive messages; add aria-atomic="true" so the full message is read.
+    .what-generic = Content that updates dynamically lacks an ARIA live region, so screen readers do not announce the change.
+
+AI_ErrMissingSkipLink =
+    .title = No skip link to bypass navigation
+    .what = The page presents large blocks of navigation (a main menu and a sidebar) before the main content, but offers no skip link to jump past them. Keyboard users must tab through every navigation item on every page load to reach the content.
+    .why = This fails WCAG 2.4.1 Bypass Blocks. A mechanism must be available to bypass blocks of content that are repeated on multiple pages, such as navigation; without one, keyboard and screen reader users are forced to wade through dozens of repeated links before they can use the page.
+    .who = Keyboard-only users, switch-device users, and screen reader users who navigate sequentially and cannot skip past repeated navigation blocks with a pointer.
+    .remediation = Add a skip link as the first focusable element on the page, e.g. <a href="#main-content" class="skip-link">Skip to main content</a>, give the main content a matching target (<main id="main-content" tabindex="-1">), and style the link so it is visually hidden until it receives keyboard focus; add additional skip links for other large blocks such as a sidebar.
+    .what-generic = The page has repeated navigation blocks but no skip link letting keyboard users bypass them to reach the main content.
+
+AI_ErrModalWithoutARIA =
+    .title = Modal dialog missing ARIA dialog semantics and focus management
+    .what = A modal dialog is built with a plain container (such as a {"{"}element_tag{"}"}) that has no role="dialog", aria-modal="true", or accessible name, and it does not move or trap keyboard focus when it opens. Assistive technology cannot tell that a dialog has appeared, what it is for, or that the background is inert.
+    .why = Without role="dialog" and aria-modal="true" a screen reader never announces the modal or its purpose (SC 4.1.2 Name, Role, Value), and with no focus move or focus trap keyboard and screen-reader users keep tabbing into the obscured page behind the overlay, losing their place (SC 2.1.1 Keyboard, SC 2.4.3 Focus Order).
+    .who = Screen reader users, who receive no announcement that a modal opened or what it asks; keyboard-only and switch users, whose focus escapes the dialog into the inert background; and users with cognitive disabilities, who are left without a clear, contained context.
+    .remediation = Add role="dialog" and aria-modal="true" to the modal container, give it an accessible name with aria-labelledby pointing to the heading (and aria-describedby for the body text), then on open move focus to the first control inside the dialog, trap Tab/Shift+Tab within it, support Escape to close, and return focus to the triggering element on close.
+    .what-generic = A modal dialog lacks role="dialog", aria-modal="true", an accessible name, and proper focus management.
+
+AI_ErrMotionWithoutControl =
+    .title = Moving content has no pause, stop, or hide control
+    .what = Auto-rotating or moving content such as an automatic carousel or a parallax scrolling effect runs continuously with no way for the user to pause, stop, or disable it, and it does not respect the prefers-reduced-motion setting.
+    .why = WCAG 2.2.2 (Pause, Stop, Hide) requires a mechanism to pause, stop, or hide motion that starts automatically and lasts more than five seconds, and WCAG 2.3.3 (Animation from Interactions) requires non-essential motion to be disableable; without these controls the movement is distracting and can prevent people from reading the content.
+    .who = People with vestibular disorders who experience dizziness or nausea from motion, people with attention or cognitive disabilities who are distracted by movement, people with photosensitivity, and screen magnifier users for whom moving content is hard to track.
+    .remediation = Provide a visible, keyboard-operable pause/stop button (for example a <button> with aria-label='Pause carousel' that toggles the animation) for any content that auto-rotates longer than five seconds, and add a @media (prefers-reduced-motion: reduce) rule that disables the animation and replaces parallax background-attachment: fixed with scroll.
+    .what-generic = Automatically moving content runs without any control to pause, stop, or hide it and ignores reduced-motion preferences.
+
+AI_ErrNotificationWithoutARIA =
+    .title = Notification appears without a live region or status/alert role
+    .what = A notification (such as a success, error, or informational message) appears dynamically without role="status", role="alert", or an aria-live region, so its content is never conveyed to assistive technology when it is shown.
+    .why = Because the message is inserted or revealed without a live region, screen readers do not announce it, leaving non-sighted users unaware that a status update, confirmation, or error occurred. This violates WCAG 4.1.3 Status Messages, which requires programmatically determinable, automatically announced status messages.
+    .who = Blind and low-vision people using screen readers, who never hear the notification and miss confirmations, errors, or updates that sighted users see appear on screen.
+    .remediation = Add a live region to each notification: use role="status" with aria-live="polite" for non-critical confirmations and informational updates, and role="alert" with aria-live="assertive" for errors that must interrupt the user; add aria-atomic="true" so the whole message is announced as a unit.
+    .what-generic = A dynamic notification is shown without a status/alert role or aria-live region, so screen readers never announce it.
+
+AI_ErrPaginationWithoutARIA =
+    .title = Pagination controls lack ARIA navigation markup
+    .what = A set of pagination controls is not wrapped in a <nav> element with an aria-label, and the current page is not marked with aria-current="page". Assistive technologies cannot identify the control as pagination navigation or determine which page is currently active.
+    .why = Without a labelled navigation landmark, screen reader users cannot find or recognize the pagination region, and without aria-current="page" they cannot tell which page they are on. This breaks WCAG 2.4.8 Location (users lose their place within the result set) and 4.1.2 Name, Role, Value (the control's role and state are not exposed to assistive technology).
+    .who = Screen reader users, and people using other assistive technologies that rely on landmarks and ARIA states to navigate and to know their current position within paged results.
+    .remediation = Wrap the pagination links in a <nav> element with a descriptive aria-label (e.g. aria-label="Pagination"), mark the current page with aria-current="page", and give each page link a clear accessible name such as aria-label="Go to page 3" or "Go to next page".
+    .what-generic = Pagination controls are missing a labelled nav landmark and an aria-current marker for the current page.
+
+AI_ErrProgressBarWithoutARIA =
+    .title = Progress indicator lacks progressbar role and ARIA value attributes
+    .what = A visual progress or loading indicator is built from styled elements with no role="progressbar" and none of the aria-valuenow/aria-valuemin/aria-valuemax attributes (or aria-busy for an indeterminate state), so its status is conveyed only visually.
+    .why = Without the progressbar role and value attributes, assistive technology cannot identify the element as a progress indicator or announce how much of the task is complete, violating WCAG 4.1.2 Name, Role, Value because the control exposes no programmatic role or value.
+    .who = Screen reader users, and people who rely on assistive technology to know that a process is running and how far along it is.
+    .remediation = Add role="progressbar" to the indicator with aria-valuenow, aria-valuemin (0) and aria-valuemax (100) plus an accessible name via aria-labelledby or aria-label, updating aria-valuenow as progress changes; for an indeterminate/loading state omit aria-valuenow and set aria-busy="true", and announce changes with an aria-live region or role="status".
+    .what-generic = A visual progress or loading indicator has no progressbar role or ARIA value attributes, so its status is not exposed to assistive technology.
+
+AI_ErrRadioGroupWithoutARIA =
+    .title = Radio button group lacks required ARIA grouping and state
+    .what = A set of mutually exclusive choices is presented as a radio group, but it lacks the markup screen readers need: a custom group built from generic <div> elements has no role="radiogroup", no role="radio" on the options, and no aria-checked state, while native radio inputs are not wrapped in a fieldset/legend and have no associated labels.
+    .why = Without these roles, states, and grouping, assistive technology cannot announce the control as a radio group, cannot tell the user which option is selected, and cannot convey the shared question the options answer, so the control's name, role, and value are not exposed (WCAG 4.1.2) and the group relationship is lost (WCAG 1.3.1).
+    .who = Screen reader users and other assistive-technology users, who rely on programmatic roles, states, and grouping to understand and operate the control; keyboard-only users when the custom group also lacks roving focus and arrow-key navigation.
+    .remediation = For custom radio groups, add role="radiogroup" with an accessible name (aria-labelledby or aria-label) to the container, role="radio" plus aria-checked="true|false" on each option, and manage tabindex (0 on the selected/first option, -1 on the rest) with arrow-key navigation. For native inputs, wrap them in a <fieldset> with a <legend> describing the question and give each <input type="radio"> an associated <label for>.
+    .what-generic = A radio button group is missing the ARIA roles, selection state, and grouping that screen readers need to identify and operate it.
+
+AI_ErrSearchWithoutARIA =
+    .title = Search functionality missing search landmark and labels
+    .what = A search feature is present but is not wrapped in a search landmark (role="search" or the HTML <search> element), and its input and button lack accessible names. In some cases the search control is built from a <div> with an onclick handler instead of a real form and button.
+    .why = Without a search landmark and accessible names, assistive technologies cannot identify the controls as site search, expose them in the landmark/region list, or announce what the field and button do, which violates WCAG 4.1.2 Name, Role, Value.
+    .who = Screen reader users who navigate by landmarks and rely on announced names and roles; keyboard-only users who depend on real semantic form controls rather than div-based click handlers.
+    .remediation = Wrap the search controls in a search landmark using <search> (or a container with role="search"), use a real <form> with <input type="search"> and a <button type="submit">, give the input an accessible name via a <label> or aria-label, and add an aria-label to the button (especially when its content is an icon).
+    .what-generic = Search functionality is missing a search landmark and accessible names on its input and button.
+
+AI_ErrSliderWithoutARIA =
+    .title = Slider control lacks required ARIA role and value attributes
+    .what = A slider control does not expose the slider role or the value attributes (aria-valuenow, aria-valuemin, aria-valuemax) and accessible name that assistive technology needs. This affects both custom div-based sliders missing role='slider' and native range inputs missing a programmatic label or value description.
+    .why = Without the slider role, current value, range bounds, and an accessible name, screen readers announce nothing meaningful (or a generic 'slider' with no context), and a custom slider without keyboard handling cannot be operated at all. This breaks WCAG 4.1.2 Name, Role, Value and, for custom sliders, 2.1.1 Keyboard.
+    .who = Screen reader users, who hear no name, role, or current value; and keyboard-only users, who cannot move a custom slider that handles only mouse drag.
+    .remediation = For a custom slider, give the thumb role='slider', tabindex='0', an accessible name (aria-label or aria-labelledby), and aria-valuenow, aria-valuemin, aria-valuemax (plus aria-valuetext for non-numeric values), then implement arrow/Home/End key handling that updates aria-valuenow. For a native range input, associate a visible <label for> or add aria-labelledby/aria-label, and use aria-valuetext when the displayed value needs a unit or description.
+    .what-generic = A slider control is missing the slider role, value attributes, or accessible name required by assistive technology.
+
+AI_ErrSpinbuttonWithoutARIA =
+    .title = Spinbutton/number control lacks proper ARIA markup
+    .what = The {"{"}element_tag{"}"} element "{"{"}element_text{"}"}" works as a spinbutton (increment/decrement number control) but is missing role="spinbutton", the aria-valuenow/aria-valuemin/aria-valuemax value attributes, or an accessible label.
+    .why = Without these attributes, screen readers cannot announce the control type, its current value, or its allowed range, leaving the user unable to understand or operate it; this breaks WCAG 4.1.2 Name, Role, Value.
+    .who = Screen reader users, and keyboard users who rely on programmatic role and value information to operate the control.
+    .remediation = For a custom widget, add role="spinbutton", aria-valuenow, aria-valuemin, aria-valuemax, an accessible name via aria-label or aria-labelledby, tabindex="0", and ArrowUp/ArrowDown keyboard handling that updates aria-valuenow; for a native <input type="number">, associate a <label for> (or aria-label) and keep min/max so the range is announced.
+    .what-generic = A spinbutton or number control is missing the role, value attributes, or accessible label that screen readers need.
+
+AI_ErrTimeLimitNoWarning =
+    .title = Time limit expires without warning or a way to extend it
+    .what = The page enforces a session or task time limit (for example a 60-second countdown) that logs the user out or redirects them when it expires, without warning them in advance or giving them a way to turn off, adjust, or extend the time.
+    .why = WCAG 2.2.1 (Timing Adjustable) requires that users be able to turn off, adjust, or extend a time limit before it expires. A countdown that ends in a logout or redirect with no advance warning causes users to lose their work and be unable to complete the task.
+    .who = People who read or type slowly, including those with cognitive, learning, motor, or vision disabilities, and screen reader or switch users who need more time to navigate and complete forms.
+    .remediation = Warn the user before the limit is reached (for example 20 seconds in advance) using a role="alertdialog" with an accessible name and description, and provide a clearly labelled control to extend or reset the session (an "Extend Session" button). Move focus to the dialog when it appears, and allow at least the option to turn off or lengthen the limit.
+    .what-generic = A time limit expires and logs the user out or redirects them without any advance warning or option to extend the time.
+
+AI_ErrToggleWithoutARIA =
+    .title = Toggle switch "{"{"}element_text{"}"}" lacks role="switch" and aria-checked state
+    .what = A toggle switch was identified visually, but its markup is missing role="switch" and the aria-checked attribute, and it is often not reachable by keyboard.
+    .why = Without role="switch" and aria-checked, screen readers cannot identify the control as a toggle or announce whether it is on or off, breaking WCAG 4.1.2 Name, Role, Value; missing keyboard access also breaks WCAG 2.1.1 Keyboard.
+    .who = Screen reader users, keyboard-only users
+    .remediation = Add role="switch" and aria-checked="true/false" (updated on change) plus an accessible name via aria-label or aria-labelledby, and make it keyboard operable with tabindex="0" and Space/Enter handling, or use a native <button>.
+    .what-generic = Toggle switch lacks role="switch" and aria-checked state.
+
+AI_ErrTreeViewWithoutARIA =
+    .title = Tree view lacks ARIA roles and keyboard support
+    .what = A hierarchical tree view (such as a file browser) is built from nested lists with click handlers but has no role="tree", role="treeitem", or role="group", no aria-expanded state on expandable nodes, and no keyboard navigation.
+    .why = Without these roles and states, assistive technology cannot convey that the widget is a tree, which nodes are expandable, their expanded/collapsed state, or their nesting level, and the tree cannot be operated by keyboard, violating WCAG 4.1.2 Name, Role, Value and 2.1.1 Keyboard.
+    .who = Screen reader users, who lose the structure, state, and navigation cues of the tree, and keyboard-only users, who cannot move through or expand and collapse nodes without a pointer.
+    .remediation = Add role="tree" with an accessible name (aria-label) to the container, role="treeitem" to each node, role="group" to each nested child list, and aria-expanded="true/false" to every expandable node; then implement roving tabindex and arrow-key navigation (Up/Down to move, Left/Right to collapse/expand, Enter or Space to activate).
+    .what-generic = An interactive tree view is missing the ARIA tree roles, expanded-state, and keyboard support that assistive technology needs to convey and operate its hierarchy.
+
+AI_ErrVideoWithoutCaptions =
+    .title = Video has no captions
+    .what = A video plays audio content but provides no captions. The {"{"}element_tag{"}"} element has no caption track (and embedded iframe videos expose no caption mechanism), so spoken dialogue, narration, and meaningful sounds are inaccessible to anyone who cannot hear the audio.
+    .why = Without captions, deaf and hard-of-hearing users cannot access the dialogue, narration, and significant non-speech sounds carried in the video's audio. This fails WCAG 1.2.2 Captions (Prerecorded), which requires synchronized captions for all prerecorded audio content in synchronized media.
+    .who = People who are deaf or hard of hearing; users in sound-off environments (open offices, public transit) and anyone watching without working audio.
+    .remediation = Add a <track kind="captions"> element pointing to a WebVTT caption file inside the <video>, e.g. <track kind="captions" src="video-en.vtt" srclang="en" label="English" default>; provide additional caption tracks for other languages as needed. For iframe-embedded videos, enable captions on the hosting platform or link to a captioned version. Captions must convey dialogue and important sounds, not just translate speech (subtitles alone are not enough).
+    .what-generic = Video content is provided without captions for its audio.
+
+AI_InfoContentOrder =
+    .title = Content order worth confirming - visual layout may reorder content away from DOM sequence
+    .what = CSS layout techniques such as flex-direction: column-reverse, CSS grid placement, floats, or absolute positioning appear to present content in a different order than its DOM source sequence. This is surfaced for manual confirmation rather than flagged as a definite failure.
+    .why = Screen readers and keyboard navigation follow the DOM source order, not the visual layout, so any divergence risks content being read or tabbed through in an illogical sequence (WCAG 1.3.2 Meaningful Sequence). As an informational note it points reviewers to a spot that needs a human to confirm the reading order still makes sense.
+    .who = Screen reader users, keyboard-only users, users with cognitive disabilities
+    .remediation = Manually confirm the DOM source order matches the intended reading flow; if it does not, reorder the underlying HTML so the source sequence reads logically and reserve CSS order/flex/grid/float/absolute positioning for purely visual adjustments that do not change meaning.
+    .what-generic = Visual layout may present content in a different order than the DOM source sequence.
+
+AI_WarnBannerRoleOnHeader =
+    .title = Explicit role="banner" on a <header> element is redundant or misplaced
+    .what = A <header> element carries an explicit role="banner". When the header is a direct child of <body> the banner role duplicates the semantics HTML already provides, and when the header is nested inside an <article> or <section> the banner role is simply wrong because that header scopes its section rather than the page.
+    .why = Redundant or incorrect ARIA roles add no information and can mislead developers and assistive technology, weakening the reliable role exposure required by WCAG 4.1.2 Name, Role, Value; a banner role applied to a section-scoped header can also produce multiple banner landmarks, which confuses screen reader users navigating by region.
+    .who = Screen reader and other assistive technology users who navigate by landmarks and rely on accurate, non-duplicated region roles, as well as developers maintaining the markup.
+    .remediation = Remove role="banner" from the <header> element. A <header> that is a direct child of <body> automatically exposes the banner landmark, so no ARIA is needed; a <header> nested inside an <article> or <section> must not have a banner role at all because it provides sectioning context, not a page banner.
+    .what-generic = A <header> element has an explicit role="banner" that is redundant on a top-level header or incorrect on a section-scoped header.
+
+AI_WarnComplementaryRoleOnAside =
+    .title = Redundant role="complementary" on <aside> element
+    .what = The <aside> element has an explicit role="complementary", but <aside> already maps to the complementary landmark role natively in HTML5, so the ARIA attribute is redundant.
+    .why = Native HTML semantics should be preferred over explicit ARIA (WCAG 4.1.2 Name, Role, Value). Redundant roles add clutter, increase maintenance risk, and can mask or conflict with implicit semantics; relying on the native element keeps the role exposed correctly to assistive technology.
+    .who = Developers maintaining the markup, and indirectly screen reader users who rely on the complementary landmark being announced consistently and correctly.
+    .remediation = Remove the role="complementary" attribute from the <aside> element and rely on its implicit complementary landmark role; only add an explicit role when an element other than <aside> needs that semantic.
+    .what-generic = An aside element carries a redundant role="complementary" that duplicates its native HTML5 landmark semantics.
+
+AI_WarnContentinfoRoleOnFooter =
+    .title = Redundant or misplaced role="contentinfo" on a {"{"}element_tag{"}"} element
+    .what = A footer element carries an explicit role="contentinfo". When the footer is a direct child of body, this role is redundant because the native element already exposes the contentinfo landmark; when the footer is nested inside an article or section, the role is incorrect and creates an extra, out-of-place contentinfo landmark.
+    .why = Redundant ARIA adds clutter and a misplaced contentinfo creates a second page-level landmark where only one is expected, confusing screen reader users who navigate by landmarks and weakening the programmatic name/role mapping required by WCAG 4.1.2 Name, Role, Value.
+    .who = Screen reader and other assistive technology users who navigate by landmark regions, who may encounter duplicate or unexpected contentinfo landmarks.
+    .remediation = Remove role="contentinfo" from the footer. A top-level footer (direct child of body) already exposes the contentinfo landmark natively, and a footer nested inside an article or section should provide only sectioning context, not a contentinfo landmark.
+    .what-generic = A footer element has an explicit role="contentinfo" that is either redundant with native HTML semantics or incorrectly applied to a nested footer.
+
+AI_WarnFormRoleOnForm =
+    .title = Redundant role="form" on a native <form> element
+    .what = A native HTML <form> element carries an explicit role="form", which is redundant because a labelled <form> already exposes the form landmark role implicitly. The extra ARIA adds no semantics and only clutters the markup.
+    .why = WCAG 4.1.2 (Name, Role, Value) calls for correct, non-conflicting roles and favours native semantics over duplicated ARIA. A labelled <form> already announces itself as a form region, so the explicit role is unnecessary; native semantics are more robust and easier to maintain than redundant ARIA.
+    .who = Primarily affects developers and maintainers through code clutter; while screen reader users are not blocked, redundant ARIA increases the risk of future role conflicts that could degrade their experience.
+    .remediation = Remove the role="form" attribute from the <form> element and rely on its native semantics: keep the accessible name (via aria-label or aria-labelledby) so the form is still announced as a labelled form region.
+    .what-generic = A native form element has a redundant explicit role="form" that duplicates its implicit semantics.
+
+AI_WarnMainRoleOnMain =
+    .title = Redundant role="main" on a <main> element
+    .what = The <main> element has an explicit role="main" attribute, which is redundant because the native HTML5 <main> element already exposes the main landmark role automatically. The duplicate ARIA role adds no semantics and only clutters the markup.
+    .why = Redundant ARIA roles violate WCAG 4.1.2 (Name, Role, Value) by overriding native semantics with an identical explicit role rather than relying on the browser's built-in mapping. While it usually does not break assistive technology, it signals improper ARIA use, increases maintenance burden, and risks masking real problems where native and ARIA roles diverge.
+    .who = Primarily developers and maintainers; screen reader users benefit indirectly because clean, native semantics are more reliably and consistently exposed across browsers and assistive technologies than duplicated ARIA.
+    .remediation = Remove the role="main" attribute from the <main> element. The native <main> element already provides the main landmark, so simply use <main>...</main> with no explicit role.
+    .what-generic = An HTML element carries an explicit ARIA role that duplicates the role it already has natively.
+
+AI_WarnNavigationRoleOnNav =
+    .title = Redundant role="navigation" on a <nav> element
+    .what = A <nav> element carries an explicit role="navigation" attribute, but the native HTML5 <nav> element already exposes the navigation landmark role, so the ARIA role is redundant.
+    .why = Native HTML semantics should be preferred over explicit ARIA (WCAG 4.1.2 Name, Role, Value). The redundant role adds no information for assistive technology, clutters the markup, and increases the chance of the role drifting out of sync with the element.
+    .who = Developers and maintainers primarily; while it does not break screen reader users, redundant ARIA raises the long-term risk of mismatched or conflicting roles that would affect them.
+    .remediation = Remove the role="navigation" attribute from the <nav> element and rely on its implicit navigation landmark role; keep the aria-label to distinguish multiple navigation regions.
+    .what-generic = A native HTML element has been given an ARIA role that duplicates the role it already provides implicitly.
+
+AI_WarnPossibleReadingOrderIssue =
+    .title = Layout may cause a reading order that differs from DOM order
+    .what = A visual layout was detected (multi-column CSS, flexbox/grid order reordering, or a layout table) where the on-screen reading sequence may not match the DOM source order that screen readers and keyboard users follow.
+    .why = Screen readers and keyboard navigation follow DOM order, so when CSS columns, the flex/grid order property, or layout tables rearrange content visually, the announced or focus sequence can become illogical, breaking WCAG 1.3.2 Meaningful Sequence and 2.4.3 Focus Order.
+    .who = Screen reader users, keyboard-only users, and users of assistive technology that relies on DOM and focus order
+    .remediation = Verify the DOM order already reflects the intended reading sequence; avoid using the CSS order property or column-count to reorder meaningful content, and do not use tables for layout (use semantic markup or CSS grid/flexbox with matching source order instead).
+    .what-generic = The visual layout may produce a reading order that differs from the DOM source order followed by assistive technology.
+
+AI_WarnRegionWithoutLabel =
+    .title = Region landmark <{"{"}element_tag{"}"}> has no accessible name
+    .what = An element with role="region" has no accessible name because it lacks both aria-label and aria-labelledby. The region becomes a landmark but cannot be identified or distinguished from other regions.
+    .why = A region role creates a navigation landmark, but without a name a screen reader simply announces "region" with no identifying information, so it provides no useful way to skip to or recognise the content. This breaks WCAG 2.4.1 Bypass Blocks and 4.1.2 Name, Role, Value.
+    .who = Screen reader users who navigate by landmarks, and keyboard users relying on landmark-based navigation to move efficiently through the page.
+    .remediation = Give every role="region" an accessible name with aria-label (e.g. aria-label="Product features") or aria-labelledby pointing to the id of a visible heading, or remove role="region" if the section does not need to be a landmark.
+    .what-generic = A region landmark has no accessible name, so it cannot be identified during landmark navigation.
+
+AI_WarnSearchRoleOnForm =
+    .title = role="search" applied directly to a <form> element
+    .what = The role="search" landmark is set directly on a <form> element, which overrides the element's native form semantics instead of being placed on a wrapping container. This combines two roles on one element and can prevent assistive technologies from recognising it as a form.
+    .why = ARIA role="search" replaces the implicit form role, so screen readers may announce the region only as a search landmark and lose the form identity, weakening Name, Role, Value (WCAG 4.1.2). The recommended pattern keeps both semantics by putting role="search" on a wrapper.
+    .who = Screen reader users and others relying on assistive technology that depends on accurate landmark and form role announcements to understand and navigate the page.
+    .remediation = Remove role="search" from the <form> element and instead wrap the form in a container with the landmark, e.g. <div role="search"><form action="/search" method="get">...</form></div>; keep any aria-label on the wrapper so the form retains its native semantics inside the search landmark.
+    .what-generic = A search landmark role is placed directly on a form element instead of on a wrapping container, overriding the form's native semantics.
+
+AI_WarnTableWithComplexStructure =
+    .title = Complex table lacks header associations
+    .what = This table has a complex structure (multiple header levels, or cells merged with rowspan/colspan) but does not associate its data cells with their header cells using scope attributes or id/headers references. As a result the relationships between headers and data cannot be programmatically determined.
+    .why = Screen readers rely on scope or id/headers to announce which row and column headers apply to each data cell. Without them, users navigating cell by cell hear values with no context and cannot understand the table, breaking WCAG 1.3.1 Info and Relationships.
+    .who = Blind and low-vision people using screen readers, and people with cognitive disabilities who depend on clearly conveyed structure to interpret tabular data.
+    .remediation = Add scope='col' to column headers and scope='row' to row headers; for headers that span groups use scope='colgroup' or scope='rowgroup'. For tables with merged cells, give each header an id and list the applicable ids in each data cell's headers attribute (e.g. headers='alice w1-mon week1'). Add a caption describing the table.
+    .what-generic = A complex table does not associate its data cells with their headers using scope or id/headers attributes.
+
+AI_WarnVideoWithoutCaptions =
+    .title = Video appears to have no captions
+    .what = This video element plays spoken audio but provides no caption track, so its dialogue and important sounds are presented only as audio. No <track kind="captions"> element accompanies the video sources.
+    .why = Without synchronized captions, people who are deaf or hard of hearing cannot access the spoken content, and no one can turn captions on even if they want to. This fails WCAG 1.2.2 Captions (Prerecorded), which requires captions for all prerecorded audio in synchronized media.
+    .who = People who are deaf or hard of hearing, and anyone watching in a sound-off or noisy environment where audio cannot be heard.
+    .remediation = Add a captioned text alternative: include a <track kind="captions" srclang="en" src="captions.vtt" label="English captions" default> element inside the <video>, with a WebVTT file that transcribes all dialogue and meaningful sound effects in sync with the timeline. Provide a separate track per language as needed.
+    .what-generic = A video with spoken audio provides no synchronized caption track.
+
+AI_WarnVideoWithoutTranscript =
+    .title = Video has no text transcript
+    .what = A video with audio and visual content is presented without an accompanying text transcript. Captions may be present, but no full text alternative covering the spoken dialogue and visual information is provided.
+    .why = A transcript is the only fully accessible alternative for people who cannot use captions or audio, and it lets anyone read, search, skim, and reference the content. Without one, WCAG 1.2.3 (Audio Description or Media Alternative) and 1.2.8 (Media Alternative, Prerecorded) are not met.
+    .who = Deaf-blind users who rely on a braille display and cannot access captions or audio, people who are deaf or hard of hearing, users on slow connections or who prefer reading over watching, and anyone who needs to search or quote the content.
+    .remediation = Provide a complete text transcript of all spoken dialogue and significant visual information, placed near the video (for example in a heading-labelled section) or as a clearly linked downloadable file; include timestamps so the transcript can be cross-referenced with the video.
+    .what-generic = Video content is presented without a text transcript alternative.
+
+ErrOrientationLocked =
+    .title = Content is locked to a single screen orientation
+    .what = CSS hides primary content in one orientation (for example @media (orientation: portrait) {"{"} body {"{"} display: none {"}"} {"}"}), forcing the user to rotate the device to access the page.
+    .why = Restricting content to one orientation excludes users who cannot rotate their device, failing WCAG 1.3.4 Orientation.
+    .who = Users with devices mounted in a fixed position (e.g. on a wheelchair), and users with motor disabilities who cannot easily rotate a device.
+    .remediation = Support both portrait and landscape orientations. Do not hide or disable content based on orientation unless a specific orientation is essential; instead use responsive CSS so the layout adapts to either orientation.
+    .what-generic = The page hides content in one orientation, locking it to portrait or landscape.
+
+ErrTargetSizeTooSmall =
+    .title = Interactive target is smaller than the 24x24 pixel minimum
+    .what = A button, link, or other interactive control renders smaller than 24 by 24 CSS pixels, below the WCAG 2.5.8 minimum target size.
+    .why = Small targets are hard to activate accurately, failing WCAG 2.5.8 Target Size (Minimum) and causing mis-taps for users with limited dexterity or on touch screens.
+    .who = Users with motor or dexterity impairments, users with tremors, and anyone using a touch screen.
+    .remediation = Make interactive targets at least 24x24 CSS pixels (ideally 44x44), or leave at least 24px of spacing between adjacent small targets. Increase padding or min-width/min-height on buttons, icons, and links.
+    .what-generic = An interactive target is smaller than the minimum 24x24 pixel size.
+
+ErrTextSpacingRestricted =
+    .title = Text spacing cannot be adjusted without losing content
+    .what = Text uses negative letter or word spacing, or sits in a fixed-height container with overflow:hidden, so increasing text spacing clips or breaks the content.
+    .why = When users override spacing for readability (line height 1.5, letter spacing 0.12em, word spacing 0.16em), content must not be lost or overlapped, per WCAG 1.4.12 Text Spacing.
+    .who = People with dyslexia and low vision who increase text spacing to read more comfortably.
+    .remediation = Avoid negative letter-spacing and word-spacing. Use min-height instead of a fixed height on text containers and avoid overflow:hidden on text, so the layout expands when users increase spacing.
+    .what-generic = Text spacing is restricted, so adjusting it clips or breaks content.
+
+ErrViewportZoomDisabled =
+    .title = Viewport meta tag disables or restricts zoom
+    .what = The <meta name="viewport"> tag uses user-scalable=no or a maximum-scale below 2, which prevents or limits the browser's pinch-to-zoom and page-zoom.
+    .why = Blocking zoom stops people with low vision from enlarging text and content to a readable size, failing WCAG 1.4.4 Resize Text and 1.4.10 Reflow.
+    .who = People with low vision who rely on browser zoom or pinch-to-zoom to read content, and users on small touch screens.
+    .remediation = Remove user-scalable=no and any maximum-scale below 2 (or 5) from the viewport meta tag. Use content="width=device-width, initial-scale=1" and let users zoom freely up to at least 200%.
+    .what-generic = The viewport meta tag prevents users from zooming the page.

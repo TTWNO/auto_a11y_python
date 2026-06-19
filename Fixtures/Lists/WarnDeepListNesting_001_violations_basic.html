@@ -6,6 +6,7 @@
     <title>WarnDeepListNesting - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnDeepListNesting_001_violations_basic",
     "issueId": "WarnDeepListNesting",
     "expectedViolationCount": 1,
@@ -22,9 +23,8 @@
     <main>
         <section>
             <h2>List Nested 5 Levels Deep</h2>
-            <ul data-expected-violation="true"
-                data-violation-id="WarnDeepListNesting"
-                data-violation-reason="List structure nested 5 levels deep, exceeds recommended 3 level maximum">
+            <!-- The engine flags the innermost list (the one with more than 3 list ancestors) -->
+            <ul>
                 <li>Level 1 Item
                     <ul>
                         <li>Level 2 Item
@@ -32,7 +32,9 @@
                                 <li>Level 3 Item
                                     <ul>
                                         <li>Level 4 Item
-                                            <ul>
+                                            <ul data-expected-violation="true"
+                                                data-violation-id="WarnDeepListNesting"
+                                                data-violation-reason="Fifth-level list has 4 list ancestors, exceeding the recommended 3 level maximum">
                                                 <li>Level 5 Item (Too deep!)</li>
                                             </ul>
                                         </li>

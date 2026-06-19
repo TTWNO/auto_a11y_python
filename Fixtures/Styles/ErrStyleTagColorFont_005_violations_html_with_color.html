@@ -6,22 +6,27 @@
     <title>Style Tag with HTML Hard-Coded Colors - Violation</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrStyleTagColorFont_005_violations_html_with_color",
     "issueId": "ErrStyleTagColorFont",
-    "expectedViolationCount": 1,
+    "expectedViolationCount": 2,
     "expectedPassCount": 0,
-    "description": "Style tag targeting html element with hard-coded color properties - SHOULD be flagged as a violation",
+    "description": "Style tag targeting html element with hard-coded color properties - SHOULD be flagged as a violation. The decorative second style tag also contains color/font properties and is independently flagged",
     "wcag": ["1.4.3", "1.4.8", "1.4.12"],
     "impact": "High"
 }
     </script>
-    <style>
+    <style data-expected-violation="true"
+           data-violation-id="ErrStyleTagColorFont"
+           data-violation-reason="The first <style> tag sets background-color and color properties directly on the html element. These are hard-coded colors that prevent users from customizing their visual experience. Unlike CSS variables or color-scheme, these actual color properties should be flagged as violations.">
         html {
             background-color: #f5f5f5;
             color: #333333;
         }
     </style>
-    <style>
+    <style data-expected-violation="true"
+           data-violation-id="ErrStyleTagColorFont"
+           data-violation-reason="The second (decorative page-styling) <style> tag also declares font-family and background-color, so it is independently flagged.">
         body {
             font-family: system-ui, -apple-system, sans-serif;
             max-width: 800px;
@@ -37,10 +42,7 @@
         }
     </style>
 </head>
-<body data-expected-violation="true"
-      data-violation-xpath="/html[1]/head[1]/style[1]"
-      data-violation-id="ErrStyleTagColorFont"
-      data-violation-reason="The first <style> tag sets background-color and color properties directly on the html element. These are hard-coded colors that prevent users from customizing their visual experience. Unlike CSS variables or color-scheme, these actual color properties should be flagged as violations.">
+<body>
     <h1>Hard-Coded HTML Colors in Style Tag</h1>
 
     <main>

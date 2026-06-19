@@ -6,11 +6,12 @@
     <title>DiscoStyleAttrOnElements - Correct Usage</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "DiscoStyleAttrOnElements_002_correct_external",
     "issueId": "DiscoStyleAttrOnElements",
     "expectedViolationCount": 0,
-    "expectedPassCount": 3,
-    "description": "Elements styled with CSS classes instead of inline styles",
+    "expectedPassCount": 1,
+    "description": "Elements styled with CSS classes instead of inline styles; the three minimal inline style attributes that remain are still reported by the always-positive discovery check",
     "wcag": "N/A",
     "impact": "N/A"
 }
@@ -76,10 +77,9 @@
     <main>
         <!-- Minimal inline styles for dynamic content - acceptable pattern -->
         <div class="product-card" style="order: 1;"
-             data-expected-pass="true"
-             data-pass-reason="Minimal inline style for dynamic ordering. Used only for runtime-determined positioning that can't be pre-defined in CSS. Users can still override with custom stylesheets using !important"
-             data-expected-pass="true"
-             data-pass-reason="Product card uses CSS classes for styling. Users can apply custom stylesheets for better readability. Styles can be overridden for high contrast or user preferences. Responsive design and user customization work properly">
+             data-expected-discovery="true"
+             data-discovery-id="DiscoStyleAttrOnElements"
+             data-discovery-reason="Discovery is always reported for any inline style attribute, even a minimal one used for runtime-determined ordering. The finding is informational, not a violation">
             <h2 class="product-title">Premium Widget</h2>
             <p class="product-description">The best widget money can buy with advanced features.</p>
             <p class="product-price">$99.99</p>
@@ -88,17 +88,22 @@
 
         <!-- Alert with minimal inline style for visibility state -->
         <div class="alert-banner" style="display: block;"
-             data-expected-pass="true"
-             data-pass-reason="Minimal inline style for dynamic visibility. Used for runtime show/hide state that JavaScript toggles. Users can still override visibility with custom stylesheets">
+             data-expected-discovery="true"
+             data-discovery-id="DiscoStyleAttrOnElements"
+             data-discovery-reason="Discovery is always reported for any inline style attribute, including a runtime show/hide state toggle. The finding is informational, not a violation">
             <p class="alert-text">Special Offer: Free shipping on orders over $50!</p>
         </div>
 
         <!-- Navigation with minimal inline style for emphasis -->
         <nav class="main-nav">
             <a href="/" class="nav-link" style="font-weight: bold;"
+               data-expected-discovery="true"
+               data-discovery-id="DiscoStyleAttrOnElements"
+               data-discovery-reason="Discovery is always reported for any inline style attribute, including current-page emphasis applied dynamically. The finding is informational, not a violation">Home</a>
+            <a href="/products" class="nav-link"
                data-expected-pass="true"
-               data-pass-reason="Minimal inline style for current page emphasis. Used to highlight active navigation item dynamically. Users can override with custom stylesheets for their preferred indication method">Home</a>
-            <a href="/products" class="nav-link">Products</a>
+               data-pass-id="DiscoStyleAttrOnElements"
+               data-pass-reason="Link styled entirely with CSS classes and no inline style attribute, so no discovery finding is reported here. Users can apply custom stylesheets for better readability">Products</a>
             <a href="/about" class="nav-link">About</a>
         </nav>
     </main>

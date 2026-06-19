@@ -30,6 +30,18 @@
             font-weight: bold;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrTitleAsOnlyLabel",
+    "issueId": "ErrTitleAsOnlyLabel",
+    "expectedViolationCount": 20,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Form fields whose only labelling is the title attribute. Each case is validated individually.",
+    "wcag": "3.3.2"
+}
+    </script>
 </head>
 <body>
     <h1>ErrTitleAsOnlyLabel Test Fixture</h1>
@@ -41,17 +53,17 @@
         
         <!-- Text input with only title -->
         <div class="form-group">
-            <input type="text" id="email-title-only" title="Enter your email address">
+            <input type="text" id="email-title-only" title="Enter your email address" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- Password input with only title -->
         <div class="form-group">
-            <input type="password" id="password-title-only" title="Enter your password (minimum 8 characters)">
+            <input type="password" id="password-title-only" title="Enter your password (minimum 8 characters)" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- Select with only title -->
         <div class="form-group">
-            <select id="country-title-only" title="Select your country">
+            <select id="country-title-only" title="Select your country" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
                 <option value="">Choose...</option>
                 <option value="us">United States</option>
                 <option value="ca">Canada</option>
@@ -61,38 +73,38 @@
         
         <!-- Textarea with only title -->
         <div class="form-group">
-            <textarea id="comments-title-only" title="Please enter your comments or feedback" rows="3" cols="40"></textarea>
+            <textarea id="comments-title-only" title="Please enter your comments or feedback" rows="3" cols="40" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case"></textarea>
         </div>
         
         <!-- Checkbox with only title -->
         <div class="form-group">
-            <input type="checkbox" id="newsletter-title-only" title="Subscribe to our newsletter">
+            <input type="checkbox" id="newsletter-title-only" title="Subscribe to our newsletter" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- Radio buttons with only title -->
         <div class="form-group">
-            <input type="radio" id="contact-email-title-only" name="contact-method-title" title="Contact me by email" value="email">
-            <input type="radio" id="contact-phone-title-only" name="contact-method-title" title="Contact me by phone" value="phone">
+            <input type="radio" id="contact-email-title-only" name="contact-method-title" title="Contact me by email" value="email" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
+            <input type="radio" id="contact-phone-title-only" name="contact-method-title" title="Contact me by phone" value="phone" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- Number input with only title -->
         <div class="form-group">
-            <input type="number" id="age-title-only" title="Enter your age" min="13" max="120">
+            <input type="number" id="age-title-only" title="Enter your age" min="13" max="120" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- Date input with only title -->
         <div class="form-group">
-            <input type="date" id="birthdate-title-only" title="Select your birth date">
+            <input type="date" id="birthdate-title-only" title="Select your birth date" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- File input with only title -->
         <div class="form-group">
-            <input type="file" id="document-title-only" title="Upload your resume or CV">
+            <input type="file" id="document-title-only" title="Upload your resume or CV" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- Range input with only title -->
         <div class="form-group">
-            <input type="range" id="satisfaction-title-only" title="Rate your satisfaction from 1 to 10" min="1" max="10">
+            <input type="range" id="satisfaction-title-only" title="Rate your satisfaction from 1 to 10" min="1" max="10" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
     </div>
 
@@ -114,13 +126,13 @@
         
         <!-- Title with placeholder but no proper label -->
         <div class="form-group">
-            <input type="email" id="placeholder-title-only" title="Your email address" placeholder="email@example.com">
+            <input type="email" id="placeholder-title-only" title="Your email address" placeholder="email@example.com" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
         
         <!-- Multiple elements sharing same title-only labeling -->
         <div class="form-group">
-            <input type="text" id="first-name-title" title="First Name">
-            <input type="text" id="last-name-title" title="Last Name">
+            <input type="text" id="first-name-title" title="First Name" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
+            <input type="text" id="last-name-title" title="Last Name" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
         </div>
     </div>
 
@@ -169,16 +181,16 @@
         <h3>❌ ERROR: Complete form with title-only labeling</h3>
         <form>
             <h4>Registration Form (Inaccessible Version)</h4>
-            <input type="text" title="Full Name" placeholder="John Doe">
-            <input type="email" title="Email Address" placeholder="john@example.com">
-            <input type="tel" title="Phone Number" placeholder="555-123-4567">
-            <select title="Country">
+            <input type="text" title="Full Name" placeholder="John Doe" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
+            <input type="email" title="Email Address" placeholder="john@example.com" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
+            <input type="tel" title="Phone Number" placeholder="555-123-4567" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
+            <select title="Country" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
                 <option value="">Select Country</option>
                 <option value="us">United States</option>
                 <option value="ca">Canada</option>
             </select>
-            <textarea title="Additional Comments" placeholder="Any special requests?"></textarea>
-            <input type="checkbox" title="I agree to the terms and conditions">
+            <textarea title="Additional Comments" placeholder="Any special requests?" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case"></textarea>
+            <input type="checkbox" title="I agree to the terms and conditions" data-expected-violation="true" data-violation-id="ErrTitleAsOnlyLabel" data-violation-reason="ErrTitleAsOnlyLabel case">
             <button type="submit">Submit Registration</button>
         </form>
     </div>

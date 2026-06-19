@@ -3,81 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Region Landmark Proper Accessible Names - Correct</title>
+    <title>RegionLandmarkAccessibleNameIsBlank - Correct Usage</title>
     <script type="application/json" id="test-metadata">
-    {
-        "id": "ErrRegionLandmarkAccessibleNameIsBlank_002_correct_with_labels",
-        "issueId": "ErrRegionLandmarkAccessibleNameIsBlank",
-        "expectedViolationCount": 0,
-        "expectedPassCount": 4,
-        "description": "Region landmarks with proper accessible names for proper landmark exposure",
-        "wcag": "1.3.1, 2.4.6",
-        "impact": "High"
-    }
+{
+    "enforceElementExpectations": true,
+    "id": "RegionLandmarkAccessibleNameIsBlank_002_correct_with_labels",
+    "issueId": "ErrRegionLandmarkAccessibleNameIsBlank",
+    "expectedViolationCount": 0,
+    "expectedPassCount": 3,
+    "description": "Region landmarks with meaningful accessible names",
+    "wcag": "1.3.1, 2.4.6",
+    "impact": "Medium"
+}
     </script>
 </head>
 <body>
-    <header>
-        <h1>Region Landmark Proper Accessible Names - Correct</h1>
-    </header>
+    <h1>Region Landmarks with Meaningful Names - Correct Usage</h1>
 
     <main>
-        <article>
-            <h2>Understanding Region Landmarks</h2>
-            <p>Region landmarks are special - they require accessible names to be exposed as landmarks to assistive technology.</p>
-        </article>
+        <h2>Main Content</h2>
 
+        <!-- Region with descriptive aria-label - CORRECT -->
         <div role="region"
-             aria-label="Important announcements"
+             aria-label="Featured articles"
              data-expected-pass="true"
-             data-pass-reason="Region landmark has descriptive aria-label, screen readers expose this as a landmark and announce 'Important announcements region'">
-            <h3>Site Maintenance Notice</h3>
-            <p>Our website will undergo scheduled maintenance on Saturday, March 15th from 2:00 AM to 6:00 AM EST.</p>
-            <p>Please plan accordingly and save your work before this time.</p>
+             data-pass-reason="Region landmark has meaningful aria-label attribute. Region landmarks require descriptive accessible names to help users understand their purpose">
+            <h3>Featured Content</h3>
+            <p>This region has a clear, descriptive label.</p>
         </div>
 
+        <!-- Region with aria-labelledby referencing meaningful heading - CORRECT -->
         <section role="region"
-                 aria-labelledby="features-heading"
+                 aria-labelledby="resources-heading"
                  data-expected-pass="true"
-                 data-pass-reason="Region landmark references meaningful heading via aria-labelledby, providing clear accessible name and landmark exposure">
-            <h3 id="features-heading">Key Features</h3>
-            <ul>
-                <li>Real-time collaboration</li>
-                <li>Cloud storage integration</li>
-                <li>Advanced security features</li>
-                <li>24/7 customer support</li>
-            </ul>
+                 data-pass-reason="Region landmark references element with meaningful text via aria-labelledby, providing clear accessible name">
+            <h3 id="resources-heading">Important Resources</h3>
+            <p>Important information with proper heading reference.</p>
         </section>
 
+        <!-- Region with descriptive title attribute - CORRECT -->
         <div role="region"
-             aria-label="Special promotions"
+             aria-label="Customer testimonials"
              data-expected-pass="true"
-             data-pass-reason="Region landmark has specific aria-label, properly exposed as landmark and helps users quickly navigate to promotional content">
-            <h3>Limited Time Offers</h3>
-            <p>Save up to 50% on selected items this week only!</p>
-            <button>Shop Now</button>
-            <button>View All Deals</button>
+             data-pass-reason="Region landmark has descriptive aria-label that clearly identifies the section's purpose for screen reader users">
+            <h3>Special Section</h3>
+            <p>This region has a meaningful label describing its content.</p>
         </div>
-
-        <section role="region"
-                 aria-labelledby="testimonials-heading"
-                 data-expected-pass="true"
-                 data-pass-reason="Region landmark with aria-labelledby referencing heading, properly exposed as landmark with clear purpose">
-            <h3 id="testimonials-heading">Customer Testimonials</h3>
-            <blockquote>
-                <p>"This product has transformed how we work. Highly recommended!"</p>
-                <cite>- Jane Smith, CEO</cite>
-            </blockquote>
-            <blockquote>
-                <p>"Excellent customer service and great value for money."</p>
-                <cite>- John Doe, Manager</cite>
-            </blockquote>
-        </section>
     </main>
 
-    <footer>
-        <p>© 2025 Example Corporation. All rights reserved.</p>
-        <p><strong>Critical:</strong> Region landmarks are ONLY exposed as landmarks when they have an accessible name (via aria-label or aria-labelledby). This makes proper labeling essential - without it, the region won't appear in landmark navigation at all.</p>
+    <footer role="contentinfo">
+        <p>&copy; 2024 Company</p>
     </footer>
 </body>
 </html>

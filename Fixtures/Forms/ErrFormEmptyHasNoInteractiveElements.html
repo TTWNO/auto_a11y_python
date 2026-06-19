@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Form Empty Interactive Elements Test Fixture</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFormEmptyHasNoInteractiveElements",
+    "issueId": "ErrFormEmptyHasNoInteractiveElements",
+    "expectedViolationCount": 7,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 3,
+    "enforceElementExpectations": true,
+    "description": "Forms that contain child nodes but no usable interactive controls (text/markup only, labels without inputs, only disabled controls, only hidden controls, fake/pseudo-interactive divs, whitespace-only, nested non-interactive markup) trigger ErrFormEmptyHasNoInteractiveElements. Forms containing real interactive controls pass.",
+    "wcag": "1.3.1, 4.1.2",
+    "impact": "High"
+}
+    </script>
 </head>
 <body>
     <h1>Form Interactive Elements Test Cases</h1>
@@ -11,7 +24,7 @@
     <!-- FAILING CASES: Forms with content but no interactive elements -->
     
     <!-- Test Case 1: Form with only text content -->
-    <form id="form-text-only">
+    <form id="form-text-only" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoInteractiveElements" data-violation-reason="form has only text/markup, no interactive controls">
         <h2>Contact Information</h2>
         <p>Please provide your contact details below.</p>
         <div>Name: </div>
@@ -20,7 +33,7 @@
     </form>
     
     <!-- Test Case 2: Form with labels but no associated inputs -->
-    <form id="form-labels-only">
+    <form id="form-labels-only" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoInteractiveElements" data-violation-reason="form has labels but no associated input controls">
         <fieldset>
             <legend>User Registration</legend>
             <label>Username</label>
@@ -30,14 +43,14 @@
     </form>
     
     <!-- Test Case 3: Form with disabled interactive elements only -->
-    <form id="form-disabled-only">
+    <form id="form-disabled-only" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoInteractiveElements" data-violation-reason="form has only disabled controls, none operable">
         <h3>Subscription Form</h3>
         <input type="text" placeholder="Email" disabled>
         <button type="submit" disabled>Subscribe</button>
     </form>
     
     <!-- Test Case 4: Form with hidden interactive elements only -->
-    <form id="form-hidden-only">
+    <form id="form-hidden-only" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoInteractiveElements" data-violation-reason="form has only hidden controls, none usable">
         <h3>Survey Form</h3>
         <p>Please complete the survey below:</p>
         <input type="text" name="question1" style="display: none;">
@@ -46,7 +59,7 @@
     </form>
     
     <!-- Test Case 5: Form with non-interactive elements that look interactive -->
-    <form id="form-pseudo-interactive">
+    <form id="form-pseudo-interactive" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoInteractiveElements" data-violation-reason="form has only fake (non-interactive) div/span elements styled to look interactive">
         <h3>Feedback Form</h3>
         <div class="fake-input">Enter your name here</div>
         <div class="fake-button">Submit Feedback</div>
@@ -61,11 +74,11 @@
     </form>
     
     <!-- Test Case 7: Empty form with no content at all -->
-    <form id="form-completely-empty">
+    <form id="form-completely-empty" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoInteractiveElements" data-violation-reason="form contains only whitespace text node, no interactive controls">
     </form>
     
     <!-- Test Case 8: Form with nested elements but no interactive content -->
-    <form id="form-nested-non-interactive">
+    <form id="form-nested-non-interactive" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoInteractiveElements" data-violation-reason="form has nested div/span structure but no interactive controls">
         <div class="form-section">
             <div class="form-group">
                 <span class="label-text">First Name:</span>
@@ -81,7 +94,7 @@
     <!-- PASSING CASES: Properly functioning forms with interactive elements -->
     
     <!-- Test Case 9: Valid form with interactive elements -->
-    <form id="form-valid-interactive">
+    <form id="form-valid-interactive" data-expected-pass="true" data-pass-reason="form contains real text inputs and a submit button">
         <h3>Working Contact Form</h3>
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" required>
@@ -93,7 +106,7 @@
     </form>
     
     <!-- Test Case 10: Form with various interactive element types -->
-    <form id="form-multiple-interactive">
+    <form id="form-multiple-interactive" data-expected-pass="true" data-pass-reason="form contains inputs, select, textarea, checkboxes, radios and submit">
         <fieldset>
             <legend>Comprehensive Form</legend>
             
@@ -121,7 +134,7 @@
     </form>
     
     <!-- Test Case 11: Form with mix of interactive and non-interactive elements -->
-    <form id="form-mixed-content">
+    <form id="form-mixed-content" data-expected-pass="true" data-pass-reason="form mixes static text with a real input and submit button">
         <h3>Mixed Content Form</h3>
         <p>This form has both interactive and non-interactive content.</p>
         

@@ -6,6 +6,7 @@
     <title>ErrCompletelyEmptyNavLandmark - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrCompletelyEmptyNavLandmark_001_violations_basic",
     "issueId": "ErrCompletelyEmptyNavLandmark",
     "expectedViolationCount": 4,
@@ -22,15 +23,13 @@
     <!-- Empty nav element with no content at all -->
     <nav data-expected-violation="true"
          data-violation-id="ErrCompletelyEmptyNavLandmark"
-         data-violation-reason="Navigation landmark is completely empty with no child elements or text content. Empty landmarks serve no purpose and confuse screen readers">
-    </nav>
+         data-violation-reason="Navigation landmark is completely empty with no child elements or text content. Empty landmarks serve no purpose and confuse screen readers"></nav>
 
     <!-- Empty nav element with aria-label but no content -->
     <nav aria-label="Main navigation"
          data-expected-violation="true"
          data-violation-id="ErrCompletelyEmptyNavLandmark"
-         data-violation-reason="Navigation landmark has a label but contains no navigation content. Even with aria-label, empty navigation is invalid">
-    </nav>
+         data-violation-reason="Navigation landmark has a label but contains no navigation content. Even with aria-label, empty navigation is invalid"></nav>
 
     <main>
         <h2>Content Section</h2>
@@ -42,8 +41,7 @@
          aria-label="Secondary navigation"
          data-expected-violation="true"
          data-violation-id="ErrCompletelyEmptyNavLandmark"
-         data-violation-reason="Element with navigation role is completely empty. ARIA navigation role requires actual navigation content">
-    </div>
+         data-violation-reason="Element with navigation role is completely empty. ARIA navigation role requires actual navigation content"></div>
 
     <!-- Self-closing nav in HTML5 style with no content -->
     <nav data-expected-violation="true"

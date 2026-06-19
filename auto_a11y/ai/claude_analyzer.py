@@ -17,6 +17,11 @@ from auto_a11y.ai.analysis_modules import (
     LanguageAnalyzer,
     AnimationAnalyzer,
     InteractiveAnalyzer,
+    WidgetARIAAnalyzer,
+    LandmarkAIAnalyzer,
+    MediaAnalyzer,
+    LiveRegionAnalyzer,
+    StructuralAnalyzer,
     generate_xpath,
     find_element_xpath_by_text,
 )
@@ -47,7 +52,7 @@ class ClaudeAnalyzer:
         try:
             from config import config as app_config
             if model is None:
-                resolved_model = str(getattr(app_config, 'CLAUDE_MODEL', 'claude-opus-4-20250514'))
+                resolved_model = str(getattr(app_config, 'CLAUDE_MODEL', 'claude-opus-4-8'))
             else:
                 resolved_model = model
             max_tokens = int(getattr(app_config, 'CLAUDE_MAX_TOKENS', 16000))
@@ -55,11 +60,21 @@ class ClaudeAnalyzer:
             use_thinking = bool(getattr(app_config, 'CLAUDE_USE_THINKING', True))
             logger.info(f"Using CLAUDE_MODEL from config: {resolved_model}, thinking: {use_thinking}")
         except Exception:
-            resolved_model = model if model is not None else 'claude-opus-4-20250514'
+            resolved_model = model if model is not None else 'claude-opus-4-8'
             max_tokens = 16000
             budget_tokens = 10000
             use_thinking = True
             logger.warning(f"Could not get Claude config, using defaults: {resolved_model}")
+
+        # The Anthropic extended-thinking API requires budget_tokens strictly
+        # less than max_tokens. Clamp to preserve that invariant regardless of
+        # how the two values were configured (avoids a runtime request error).
+        if budget_tokens >= max_tokens:
+            clamped = max(1, max_tokens - 1)
+            logger.warning(
+                f"CLAUDE_BUDGET_TOKENS ({budget_tokens}) must be less than CLAUDE_MAX_TOKENS ({max_tokens}); clamping budget to {clamped}"
+            )
+            budget_tokens = clamped
 
         # Initialize client with extended thinking support
         config = ClaudeConfig(
@@ -78,6 +93,11 @@ class ClaudeAnalyzer:
         self.language_analyzer: LanguageAnalyzer = LanguageAnalyzer(self.client)
         self.animation_analyzer: AnimationAnalyzer = AnimationAnalyzer(self.client)
         self.interactive_analyzer: InteractiveAnalyzer = InteractiveAnalyzer(self.client)
+        self.widget_aria_analyzer: WidgetARIAAnalyzer = WidgetARIAAnalyzer(self.client)
+        self.landmark_ai_analyzer: LandmarkAIAnalyzer = LandmarkAIAnalyzer(self.client)
+        self.media_analyzer: MediaAnalyzer = MediaAnalyzer(self.client)
+        self.live_region_analyzer: LiveRegionAnalyzer = LiveRegionAnalyzer(self.client)
+        self.structural_analyzer: StructuralAnalyzer = StructuralAnalyzer(self.client)
 
         logger.info(f"Claude analyzer initialized with model: {resolved_model}")
 
@@ -118,7 +138,10 @@ class ClaudeAnalyzer:
 
         # Filter analyses based on configuration
         if analyses is None:
-            analyses = ['headings', 'reading_order', 'language', 'interactive']
+            analyses = [
+                'headings', 'reading_order', 'modals', 'language', 'animations',
+                'interactive', 'widgets', 'landmarks', 'media', 'live_regions', 'structure',
+            ]
 
         # Filter based on configuration
         enabled_analyses: list[str] = []
@@ -157,6 +180,21 @@ class ClaudeAnalyzer:
 
         if 'interactive' in analyses:
             tasks.append(('interactive', self.interactive_analyzer.analyze(screenshot, html)))
+
+        if 'widgets' in analyses:
+            tasks.append(('widgets', self.widget_aria_analyzer.analyze(screenshot, html)))
+
+        if 'landmarks' in analyses:
+            tasks.append(('landmarks', self.landmark_ai_analyzer.analyze(screenshot, html)))
+
+        if 'media' in analyses:
+            tasks.append(('media', self.media_analyzer.analyze(screenshot, html)))
+
+        if 'live_regions' in analyses:
+            tasks.append(('live_regions', self.live_region_analyzer.analyze(screenshot, html)))
+
+        if 'structure' in analyses:
+            tasks.append(('structure', self.structural_analyzer.analyze(screenshot, html)))
 
         # Run analyses in parallel
         for name, task in tasks:
@@ -297,6 +335,11 @@ class ClaudeAnalyzer:
                     'language': 'AI_ErrForeignTextUnmarked',
                     'animations': 'AI_WarnNoReducedMotion',
                     'interactive': 'AI_ErrNonSemanticButton',
+                    'widgets': 'AI_ErrCustomControlNoARIA',
+                    'landmarks': 'AI_ErrLandmarkWithoutLabel',
+                    'media': 'AI_ErrVideoWithoutCaptions',
+                    'live_regions': 'AI_ErrMissingLiveRegion',
+                    'structure': 'AI_ErrMissingSkipLink',
                 }
                 issue_code = fallback_codes.get(analysis_type, 'AI_ErrAccessibilityIssue')
 
@@ -351,8 +394,12 @@ class ClaudeAnalyzer:
                     use_text=bool(text_sample and not element_class and not element_id),
                 )
 
-            # Map analysis type to touchpoint
-            from auto_a11y.core.touchpoints import TouchpointID
+            # Resolve touchpoint per CODE first (single source of truth in
+            # core.touchpoints.ERROR_CODE_TO_TOUCHPOINT), since one analyzer can emit codes
+            # spanning several touchpoints (e.g. the widget analyzer covers event_handling,
+            # forms, and navigation). Fall back to a per-analysis-type map only when the code
+            # has no per-code entry.
+            from auto_a11y.core.touchpoints import TouchpointID, TouchpointMapper
             ai_to_touchpoint_map: dict[str, TouchpointID] = {
                 'headings': TouchpointID.HEADINGS,
                 'reading_order': TouchpointID.FOCUS_MANAGEMENT,
@@ -360,9 +407,14 @@ class ClaudeAnalyzer:
                 'language': TouchpointID.LANGUAGE,
                 'animations': TouchpointID.ANIMATION,
                 'interactive': TouchpointID.EVENT_HANDLING,
+                'widgets': TouchpointID.EVENT_HANDLING,
+                'landmarks': TouchpointID.LANDMARKS,
+                'media': TouchpointID.VIDEOS,
+                'live_regions': TouchpointID.EVENT_HANDLING,
+                'structure': TouchpointID.NAVIGATION,
             }
 
-            touchpoint_id = ai_to_touchpoint_map.get(analysis_type)
+            touchpoint_id = TouchpointMapper.get_touchpoint_for_error_code(issue_code) or ai_to_touchpoint_map.get(analysis_type)
             touchpoint_value: str = touchpoint_id.value if touchpoint_id else analysis_type
 
             violation = Violation(
@@ -414,10 +466,19 @@ class ClaudeAnalyzer:
         }
 
     def _count_by_type(self, findings: list[Violation]) -> dict[str, int]:
-        """Count findings by type"""
+        """Count findings by AI analysis type (e.g. 'reading_order', 'modals').
+
+        Groups on ``metadata['ai_analysis_type']`` — the analyzer that produced
+        the finding — rather than the mapped touchpoint, so distinct analysis
+        types that share a touchpoint (e.g. reading_order and modals both under
+        focus-management) are counted separately. Falls back to the touchpoint
+        when no analysis type was recorded (e.g. manually constructed findings).
+        """
         counts: dict[str, int] = {}
         for finding in findings:
-            base_type = finding.touchpoint  # Get analyzer name
+            base_type = str(
+                finding.metadata.get('ai_analysis_type') or finding.touchpoint
+            )
             counts[base_type] = counts.get(base_type, 0) + 1
         return counts
 

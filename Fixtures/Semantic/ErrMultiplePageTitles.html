@@ -1,11 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head data-expected-violation="true" data-violation-id="ErrMultiplePageTitles" data-violation-reason="head contains three title elements; there must be exactly one">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>First Title</title>
     <title>Second Title</title>
     <title>Third Title</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrMultiplePageTitles",
+    "issueId": "ErrMultiplePageTitles",
+    "expectedViolationCount": 1,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "The head contains more than one title element, which is ambiguous about which is authoritative. Reported on the head element.",
+    "wcag": "2.4.2"
+}
+    </script>
 </head>
 <body>
     <h1>Page With Multiple Title Elements</h1>

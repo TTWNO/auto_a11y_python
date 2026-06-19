@@ -1,9 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-expected-violation="true" data-violation-id="ErrNoH1" data-violation-reason="page has no h1 element; flagged at page level">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No H1 Test - ErrNoH1</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrNoH1",
+    "issueId": "ErrNoH1",
+    "expectedViolationCount": 1,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Page is missing an h1 element entirely; it starts at h2. This is a page-level violation reported on the page (html) node.",
+    "wcag": "1.3.1"
+}
+    </script>
 </head>
 <body>
     <!-- Page starts with h2, no h1 present -->

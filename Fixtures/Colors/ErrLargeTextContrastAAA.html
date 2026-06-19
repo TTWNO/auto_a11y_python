@@ -55,7 +55,7 @@
         /* Test Case 4: Large text on colored background failing AAA */
         .large-text-colored-bg-fail {
             font-size: 26px;
-            color: #6a5acd; /* SlateBlue - contrast ratio ~3.2:1 with light gray */
+            color: #7060d3; /* Lightened SlateBlue - contrast ratio ~4.48:1 with light gray, fails AAA 4.5:1 */
             background-color: #f5f5f5;
             padding: 10px;
             margin: 10px 0;
@@ -108,6 +108,17 @@
             border: 2px solid green;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrLargeTextContrastAAA",
+    "issueId": "ErrLargeTextContrastAAA",
+    "expectedViolationCount": 14,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Large text (>=24px or >=18.66px bold) failing the WCAG AAA 4.5:1 large-text contrast threshold against white, light-gray, dark-gray and cream backgrounds, plus inline-styled heading/span/blockquote/div/table-cell/list cases. Each case is validated individually; one comparison case at 4.54:1 passes.",
+    "wcag": "1.4.6"
+}
+    </script>
 </head>
 <body>
     <h1>Large Text Contrast AAA Test Fixture</h1>
@@ -118,7 +129,7 @@
         <div class="test-description">
             <strong>Test Case 1:</strong> Large text (24px) with ~3.0:1 contrast ratio - should fail AAA
         </div>
-        <div class="large-text-fail-24px">
+        <div class="large-text-fail-24px" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="24px #9d9d9d on white = 2.71:1 fails AAA 4.5:1">
             This is 24px text that fails WCAG AAA contrast requirements. The contrast ratio is approximately 3.0:1, which is below the 4.5:1 threshold required for large text at AAA level.
         </div>
     </div>
@@ -127,7 +138,7 @@
         <div class="test-description">
             <strong>Test Case 2:</strong> Large text (30px) with ~2.5:1 contrast ratio - should fail AAA
         </div>
-        <div class="large-text-fail-30px">
+        <div class="large-text-fail-30px" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="30px #b3b3b3 on white = 2.10:1 fails AAA 4.5:1">
             This is 30px text with poor contrast ratio of approximately 2.5:1, failing AAA requirements.
         </div>
     </div>
@@ -136,7 +147,7 @@
         <div class="test-description">
             <strong>Test Case 3:</strong> Bold large text (19px bold) with ~4.0:1 contrast ratio - should fail AAA
         </div>
-        <div class="large-bold-text-fail">
+        <div class="large-bold-text-fail" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="19px bold #888888 on white = 3.55:1 fails AAA 4.5:1">
             This is 19px bold text with 4.0:1 contrast ratio. Bold text 18.66px+ is considered large but still fails AAA requirements.
         </div>
     </div>
@@ -145,7 +156,7 @@
         <div class="test-description">
             <strong>Test Case 4:</strong> Large text (26px) on colored background with ~3.2:1 contrast - should fail AAA
         </div>
-        <div class="large-text-colored-bg-fail">
+        <div class="large-text-colored-bg-fail" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="26px #7060d3 on #f5f5f5 = 4.48:1 fails AAA 4.5:1">
             This is 26px text on a light gray background with insufficient contrast for AAA compliance.
         </div>
     </div>
@@ -154,7 +165,7 @@
         <div class="test-description">
             <strong>Test Case 5:</strong> Very large text (36px) with ~2.8:1 contrast ratio - should fail AAA
         </div>
-        <div class="very-large-text-fail">
+        <div class="very-large-text-fail" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="36px #a0a0a0 on white = 2.62:1 fails AAA 4.5:1">
             Even at 36px, this text fails AAA contrast requirements due to poor color choice.
         </div>
     </div>
@@ -163,7 +174,7 @@
         <div class="test-description">
             <strong>Test Case 6:</strong> Large text (28px) on dark background with ~3.5:1 contrast - should fail AAA
         </div>
-        <div class="large-text-dark-bg-fail">
+        <div class="large-text-dark-bg-fail" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="28px #666666 on #2f2f2f = 2.33:1 fails AAA 4.5:1">
             This is 28px text on a dark background with insufficient contrast for AAA level.
         </div>
     </div>
@@ -172,7 +183,7 @@
         <div class="test-description">
             <strong>Test Case 7:</strong> Bold text exactly at 18.66px threshold with ~3.9:1 contrast - should fail AAA
         </div>
-        <div class="large-bold-edge-case">
+        <div class="large-bold-edge-case" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="18.66px bold #898989 on white = 3.50:1 fails AAA 4.5:1">
             This is exactly 18.66px bold text, qualifying as large text but failing AAA with 3.9:1 contrast.
         </div>
     </div>
@@ -181,7 +192,7 @@
         <div class="test-description">
             <strong>Test Case 8:</strong> Large text (32px) with custom colors having ~3.3:1 contrast - should fail AAA
         </div>
-        <div class="large-text-custom-colors">
+        <div class="large-text-custom-colors" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="32px #cd853f on #fffdd0 = 2.88:1 fails AAA 4.5:1">
             This is 32px text using Peru color on cream background, failing AAA contrast requirements.
         </div>
     </div>
@@ -190,37 +201,37 @@
         <div class="test-description">
             <strong>Passing Example:</strong> Large text (24px) with 4.5:1 contrast ratio - should pass AAA
         </div>
-        <div class="large-text-pass">
+        <div class="large-text-pass" data-expected-pass="true" data-pass-reason="24px #767676 on white = 4.54:1 meets AAA large-text 4.5:1">
             This is 24px text with proper contrast ratio of 4.5:1 that meets WCAG AAA requirements for large text.
         </div>
     </div>
     
     <!-- Additional content with various HTML elements containing failing large text -->
     <section>
-        <h2 style="font-size: 28px; color: #a5a5a5;">Heading with Poor Contrast (28px, ~2.7:1)</h2>
+        <h2 style="font-size: 28px; color: #a5a5a5;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="28px #a5a5a5 heading on white = 2.46:1 fails AAA 4.5:1">Heading with Poor Contrast (28px, ~2.7:1)</h2>
         
         <p>
-            <span style="font-size: 25px; color: #999999;">Large span text failing AAA contrast (25px, ~3.1:1)</span>
+            <span style="font-size: 25px; color: #999999;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="25px #999999 span on white = 2.85:1 fails AAA 4.5:1">Large span text failing AAA contrast (25px, ~3.1:1)</span>
         </p>
         
-        <blockquote style="font-size: 26px; color: #8f8f8f; background: white; padding: 15px;">
+        <blockquote style="font-size: 26px; color: #8f8f8f; background: white; padding: 15px;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="26px #8f8f8f blockquote on white = 3.23:1 fails AAA 4.5:1">
             This blockquote contains large text with insufficient contrast ratio of approximately 3.8:1, which fails WCAG Level AAA requirements for enhanced accessibility.
         </blockquote>
         
-        <div style="font-size: 24px; font-weight: bold; color: #7a7a7a;">
+        <div style="font-size: 24px; font-weight: bold; color: #7a7a7a;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="24px bold #7a7a7a on white = 4.29:1 fails AAA 4.5:1">
             Bold 24px text with borderline contrast (~4.2:1) - still fails AAA requirement of 4.5:1
         </div>
         
         <table style="margin: 20px 0;">
             <tr>
-                <td style="font-size: 27px; color: #9b9b9b; background: #ffffff; padding: 10px;">
+                <td style="font-size: 27px; color: #9b9b9b; background: #ffffff; padding: 10px;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="27px #9b9b9b table cell on white = 2.78:1 fails AAA 4.5:1">
                     Table cell with large text failing AAA contrast (27px, ~2.9:1)
                 </td>
             </tr>
         </table>
         
         <ul>
-            <li style="font-size: 22px; font-weight: bold; color: #858585;">
+            <li style="font-size: 22px; font-weight: bold; color: #858585;" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAAA" data-violation-reason="22px bold #858585 list item on white = 3.69:1 fails AAA 4.5:1">
                 Bold list item at 22px with poor contrast (~4.1:1) - fails AAA for large text
             </li>
         </ul>

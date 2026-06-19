@@ -29,7 +29,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from bson import ObjectId
@@ -37,6 +37,20 @@ from bson import ObjectId
 
 TOKEN_PREFIX = "a11y_"
 TOKEN_LIFETIME_DAYS = 30
+
+
+def _as_aware_utc(value: datetime) -> datetime:
+    """Normalise ``value`` to tz-aware UTC.
+
+    MongoDB returns datetimes either naive-UTC (default client) or
+    tz-aware (``tz_aware=True`` client). Stored values are always UTC,
+    so a naive value is interpreted as UTC. This lets callers compare
+    against ``datetime.now(timezone.utc)`` without a naive-vs-aware
+    ``TypeError``.
+    """
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
 
 
 def hash_token(raw: str) -> str:
@@ -78,10 +92,12 @@ class ApiToken:
     user_id: str
     token_hash: str
     description: str | None = None
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc),
+    )
     last_used_at: datetime | None = None
     expires_at: datetime = field(
-        default_factory=lambda: datetime.now() + timedelta(
+        default_factory=lambda: datetime.now(timezone.utc) + timedelta(
             days=TOKEN_LIFETIME_DAYS,
         ),
     )
@@ -106,7 +122,7 @@ class ApiToken:
         """True when the token is not revoked and not expired."""
         if self.revoked_at is not None:
             return False
-        return datetime.now() < self.expires_at
+        return datetime.now(timezone.utc) < _as_aware_utc(self.expires_at)
 
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -128,11 +144,13 @@ class ApiToken:
             user_id=data["user_id"],
             token_hash=data["token_hash"],
             description=data.get("description"),
-            created_at=data.get("created_at", datetime.now()),
+            created_at=data.get("created_at", datetime.now(timezone.utc)),
             last_used_at=data.get("last_used_at"),
             expires_at=data.get(
                 "expires_at",
-                datetime.now() + timedelta(days=TOKEN_LIFETIME_DAYS),
+                datetime.now(timezone.utc) + timedelta(
+                    days=TOKEN_LIFETIME_DAYS,
+                ),
             ),
             revoked_at=data.get("revoked_at"),
             _id=data.get("_id"),

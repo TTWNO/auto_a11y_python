@@ -180,47 +180,49 @@ def parse_tounicode_mapping(
     if cs_match is not None:
         byte_width = max(1, len(cs_match.group(1)) // 2)
 
-    # beginbfchar / endbfchar: pairs of <srcCode> <dstUnicode>
+    # beginbfchar / endbfchar: a sequence of <srcCode> <dstUnicode>
+    # pairs. The pairs may be laid out one-per-line, several-per-line, or
+    # the entire block may be a single line — the CMap grammar imposes no
+    # line discipline. So we tokenise the *whole block* into consecutive
+    # <…> hex groups and consume them two at a time.
     for block in re.finditer(r"beginbfchar\s*(.*?)\s*endbfchar", text, re.DOTALL):
-        for line in block.group(1).strip().split("\n"):
-            parts = re.findall(r"<([0-9a-fA-F]+)>", line)
-            if len(parts) >= 2:
-                try:
-                    src = int(parts[0], 16)
-                    dst_bytes = bytes.fromhex(parts[1])
-                    mapping[src] = dst_bytes.decode("utf-16-be")
-                except (ValueError, UnicodeDecodeError):
-                    pass
+        tokens = re.findall(r"<([0-9a-fA-F]+)>", block.group(1))
+        for idx in range(0, len(tokens) - 1, 2):
+            try:
+                src = int(tokens[idx], 16)
+                dst_bytes = bytes.fromhex(tokens[idx + 1])
+                mapping[src] = dst_bytes.decode("utf-16-be")
+            except (ValueError, UnicodeDecodeError):
+                pass
 
     # beginbfrange / endbfrange:
     #   array form:  <start> <end> [<dst1> <dst2> ...]
     #   simple form: <start> <end> <dstStart>
+    #
+    # Like bfchar, a block may carry several ranges with no line
+    # discipline. We scan the block left-to-right, matching either an
+    # array-form entry (which greedily consumes its bracketed destination
+    # list) or a simple-form triple, advancing past each match so every
+    # entry in the block is parsed — not just the first on each line.
+    bfrange_entry = re.compile(
+        r"<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*(?:\[([^\]]*)\]|<([0-9a-fA-F]+)>)"
+    )
     for block in re.finditer(r"beginbfrange\s*(.*?)\s*endbfrange", text, re.DOTALL):
-        for line in block.group(1).strip().split("\n"):
-            array_match = re.match(
-                r"\s*<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*\[([^\]]*)\]",
-                line,
-            )
-            if array_match is not None:
-                try:
-                    start = int(array_match.group(1), 16)
-                    end = int(array_match.group(2), 16)
-                    items = re.findall(r"<([0-9a-fA-F]+)>", array_match.group(3))
+        for entry in bfrange_entry.finditer(block.group(1)):
+            array_body = entry.group(3)
+            simple_dst = entry.group(4)
+            try:
+                start = int(entry.group(1), 16)
+                end = int(entry.group(2), 16)
+                if array_body is not None:
+                    items = re.findall(r"<([0-9a-fA-F]+)>", array_body)
                     for off, item_hex in enumerate(items):
                         if start + off > end:
                             break
                         dst_bytes = bytes.fromhex(item_hex)
                         mapping[start + off] = dst_bytes.decode("utf-16-be")
-                except (ValueError, UnicodeDecodeError):
-                    pass
-                continue
-
-            parts = re.findall(r"<([0-9a-fA-F]+)>", line)
-            if len(parts) >= 3:
-                try:
-                    start = int(parts[0], 16)
-                    end = int(parts[1], 16)
-                    dst_bytes = bytes.fromhex(parts[2])
+                elif simple_dst is not None:
+                    dst_bytes = bytes.fromhex(simple_dst)
                     dst_start = int.from_bytes(dst_bytes, "big")
                     byte_len = len(dst_bytes)
                     for off in range(end - start + 1):
@@ -228,8 +230,8 @@ def parse_tounicode_mapping(
                         mapping[start + off] = code.to_bytes(
                             byte_len, "big"
                         ).decode("utf-16-be")
-                except (ValueError, UnicodeDecodeError):
-                    pass
+            except (ValueError, UnicodeDecodeError):
+                pass
 
     if not mapping:
         return None
@@ -339,10 +341,22 @@ def extract_mcid_text_map_from_content_streams(pdf: pikepdf.Pdf) -> McidTextMap:
         font_unicode_maps = _preload_font_unicode_maps(page)
 
         current_mcid: int | None = None
-        # The MCID stack records the mcid value to restore on EMC (i.e.
-        # the parent's mcid). It's pushed on every BDC/BMC and popped
-        # on EMC, mirroring the marked-content nesting.
-        mcid_stack: list[int | None] = []
+        # Marked-content nesting stack. One frame is pushed for every
+        # BDC/BMC and popped on the matching EMC, mirroring the nesting.
+        #
+        # Each frame is ``(opened_mcid, saved_mcid, saved_parts)``:
+        #   * ``opened_mcid`` — True when this marker introduced a *new*
+        #     /MCID (a BDC carrying /MCID). Only such markers switch the
+        #     active accumulator; their EMC flushes and restores.
+        #   * ``saved_mcid`` / ``saved_parts`` — the enclosing region's
+        #     MCID and its accumulated text-parts list, captured at the
+        #     moment this marker opened so they can be restored on EMC.
+        #
+        # Preserving ``saved_parts`` is what keeps an outer MCID's text
+        # alive across a nested marked-content region: text drawn before
+        # the nested BDC and text drawn after the nested EMC both land in
+        # the same restored parts list and are flushed together.
+        mc_stack: list[tuple[bool, int | None, list[str]]] = []
         current_text_parts: list[str] = []
         current_font: str | None = None
 
@@ -362,31 +376,44 @@ def extract_mcid_text_map_from_content_streams(pdf: pikepdf.Pdf) -> McidTextMap:
                 # Begin marked content with properties.
                 mcid_val = _bdc_mcid(inst)
                 if mcid_val is not None:
-                    mcid_stack.append(current_mcid)
+                    # A new MCID region: stash the enclosing region's
+                    # MCID and its accumulated parts, then start a fresh
+                    # accumulator for this region.
+                    mc_stack.append((True, current_mcid, current_text_parts))
                     current_mcid = mcid_val
                     current_text_parts = []
                 else:
-                    mcid_stack.append(current_mcid)
+                    # BDC without /MCID: no MCID switch. Text drawn here
+                    # belongs to the enclosing MCID, so keep accumulating
+                    # into the current parts list.
+                    mc_stack.append((False, current_mcid, current_text_parts))
 
             elif op == "BMC":
                 # Begin marked content (no properties, hence no MCID).
-                mcid_stack.append(current_mcid)
+                # Text drawn here belongs to the enclosing MCID.
+                mc_stack.append((False, current_mcid, current_text_parts))
 
             elif op == "EMC":
-                if current_mcid is not None and current_text_parts:
-                    text = "".join(current_text_parts)
-                    if current_mcid in page_mcids:
-                        page_mcids[current_mcid] += text
-                    else:
-                        page_mcids[current_mcid] = text
-                if mcid_stack:
-                    prev = mcid_stack.pop()
-                    if prev != current_mcid:
-                        current_mcid = prev
-                        current_text_parts = []
-                    else:
-                        current_mcid = prev
+                if mc_stack:
+                    opened_mcid, saved_mcid, saved_parts = mc_stack.pop()
+                    if opened_mcid:
+                        # Closing an MCID region: commit its text, then
+                        # resume the enclosing region's accumulator so any
+                        # text drawn after this EMC continues to belong to
+                        # the outer MCID.
+                        if current_mcid is not None and current_text_parts:
+                            text = "".join(current_text_parts)
+                            if current_mcid in page_mcids:
+                                page_mcids[current_mcid] += text
+                            else:
+                                page_mcids[current_mcid] = text
+                        current_mcid = saved_mcid
+                        current_text_parts = saved_parts
+                    # else: a BMC / property-less BDC closing — the active
+                    # MCID and its accumulator are unchanged.
                 else:
+                    # Unbalanced EMC (no matching open): reset to the
+                    # outside-marked-content state.
                     current_mcid = None
                     current_text_parts = []
 

@@ -6,8 +6,9 @@
     <title>Website - Element Lang Empty</title>
     <script type="application/json" id="test-metadata">
 {
-    "id": "WarnElementLangEmpty_001_violations_basic",
-    "issueId": "WarnElementLangEmpty",
+    "enforceElementExpectations": true,
+    "id": "ErrEmptyLanguageAttribute_001_violations_basic",
+    "issueId": "ErrEmptyLanguageAttribute",
     "expectedViolationCount": 2,
     "expectedPassCount": 0,
     "description": "Elements with empty or whitespace-only lang attributes",
@@ -23,7 +24,7 @@
 
     <article lang=""
              data-expected-violation="true"
-             data-violation-id="WarnElementLangEmpty"
+             data-violation-id="ErrEmptyLanguageAttribute"
              data-violation-reason="Article has empty lang attribute, providing no language change information">
         <h2>Latest Updates</h2>
         <p>This article has an empty lang attribute.</p>
@@ -31,7 +32,7 @@
 
     <section lang=" "
              data-expected-violation="true"
-             data-violation-id="WarnElementLangEmpty"
+             data-violation-id="ErrEmptyLanguageAttribute"
              data-violation-reason="Section has lang attribute with whitespace only, no valid language code present">
         <h3>Important Notice</h3>
         <p>This section has whitespace in the lang attribute.</p>

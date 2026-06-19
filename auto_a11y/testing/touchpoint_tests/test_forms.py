@@ -7,10 +7,119 @@ from __future__ import annotations
 
 from typing import Any
 import logging
+import re
 
 from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
+
+# Length value with a leading numeric portion and an optional unit suffix.
+_LENGTH_RE = re.compile(r'^\s*([+-]?\d*\.?\d+)\s*([a-z%]*)\s*$', re.IGNORECASE)
+
+# rgb()/rgba() with comma-separated channels (legacy syntax from getComputedStyle).
+_RGBA_RE = re.compile(
+    r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', re.IGNORECASE
+)
+
+# Common CSS named colours (subset) -> RGB. Used as a fallback when
+# getComputedStyle does not normalise to rgb()/rgba().
+_NAMED_COLORS: dict[str, tuple[int, int, int]] = {
+    'black': (0, 0, 0),
+    'white': (255, 255, 255),
+    'red': (255, 0, 0),
+    'green': (0, 128, 0),
+    'lime': (0, 255, 0),
+    'blue': (0, 0, 255),
+    'yellow': (255, 255, 0),
+    'cyan': (0, 255, 255),
+    'aqua': (0, 255, 255),
+    'magenta': (255, 0, 255),
+    'fuchsia': (255, 0, 255),
+    'gray': (128, 128, 128),
+    'grey': (128, 128, 128),
+    'silver': (192, 192, 192),
+    'maroon': (128, 0, 0),
+    'olive': (128, 128, 0),
+    'navy': (0, 0, 128),
+    'teal': (0, 128, 128),
+    'purple': (128, 0, 128),
+    'orange': (255, 165, 0),
+}
+
+
+def parse_px(value: str | None) -> float:
+    """Parse a CSS length to pixels.
+
+    Handles px, em, rem (1em/1rem == 16px) and bare numeric values. Returns
+    0 for empty/``auto``/unparseable input.
+    """
+    if not value or value == 'auto':
+        return 0
+    match = _LENGTH_RE.match(value)
+    if not match:
+        return 0
+    try:
+        number = float(match.group(1))
+    except (ValueError, TypeError):
+        return 0
+    unit = match.group(2).lower()
+    # Both rem and em are treated as 16px relative to the default root size.
+    if unit in ('em', 'rem'):
+        return number * 16
+    return number
+
+
+def parse_color(color_str: str | None) -> dict[str, float]:
+    """Parse a CSS colour into an ``{r, g, b, a}`` dict.
+
+    Handles rgb()/rgba(), 6-digit and 3-digit hex (#rrggbb / #rgb), 8-digit
+    hex (#rrggbbaa), and a subset of CSS named colours. Truly unparseable
+    input falls back to opaque black (callers assume a dict is always
+    returned); the fallback is logged.
+    """
+    if not color_str:
+        return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
+
+    color = color_str.strip()
+
+    rgba_match = _RGBA_RE.match(color)
+    if rgba_match:
+        return {
+            'r': int(rgba_match.group(1)),
+            'g': int(rgba_match.group(2)),
+            'b': int(rgba_match.group(3)),
+            'a': float(rgba_match.group(4)) if rgba_match.group(4) else 1.0,
+        }
+
+    if color.startswith('#'):
+        hex_digits = color[1:]
+        try:
+            if len(hex_digits) == 3:
+                # #abc -> #aabbcc
+                r = int(hex_digits[0] * 2, 16)
+                g = int(hex_digits[1] * 2, 16)
+                b = int(hex_digits[2] * 2, 16)
+                return {'r': r, 'g': g, 'b': b, 'a': 1.0}
+            if len(hex_digits) == 6:
+                r = int(hex_digits[0:2], 16)
+                g = int(hex_digits[2:4], 16)
+                b = int(hex_digits[4:6], 16)
+                return {'r': r, 'g': g, 'b': b, 'a': 1.0}
+            if len(hex_digits) == 8:
+                r = int(hex_digits[0:2], 16)
+                g = int(hex_digits[2:4], 16)
+                b = int(hex_digits[4:6], 16)
+                a = int(hex_digits[6:8], 16) / 255.0
+                return {'r': r, 'g': g, 'b': b, 'a': a}
+        except (ValueError, TypeError):
+            pass
+
+    named = _NAMED_COLORS.get(color.lower())
+    if named is not None:
+        return {'r': named[0], 'g': named[1], 'b': named[2], 'a': 1.0}
+
+    logger.debug("parse_color: unrecognised colour %r, defaulting to opaque black", color_str)
+    return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
 TEST_DOCUMENTATION = {
     "testName": "Form Accessibility Analysis",
@@ -105,7 +214,24 @@ async def test_forms(page: Page) -> dict[str, Any]:
                     }
                     return path;
                 }
-                
+
+                // Text of an element as it contributes to the accessible name: descendants
+                // hidden via display:none or visibility:hidden are excluded (they contribute
+                // nothing to the accessible name), while visually-hidden "sr-only" text (which
+                // uses clip/position, not display/visibility) is correctly retained. This is
+                // why a label whose only content is display:none resolves to an empty name.
+                function getVisibleTextContent(element) {
+                    let text = '';
+                    (function walk(node) {
+                        if (node.nodeType === 3) { text += node.nodeValue; return; }
+                        if (node.nodeType !== 1) return;
+                        const cs = window.getComputedStyle(node);
+                        if (cs.display === 'none' || cs.visibility === 'hidden' || cs.visibility === 'collapse') return;
+                        node.childNodes.forEach(walk);
+                    })(element);
+                    return text.replace(/\s+/g, ' ').trim();
+                }
+
                 // ERROR: Check for empty forms with no child nodes (must run before inputs check)
                 const allForms = Array.from(document.querySelectorAll('form'));
                 allForms.forEach(form => {
@@ -225,7 +351,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         if (label) {
                             hasLabel = true;
                             hasVisibleLabel = true;
-                            labelText = label.textContent.trim();
+                            labelText = getVisibleTextContent(label);
                         }
                     }
 
@@ -235,7 +361,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         if (parentLabel) {
                             hasLabel = true;
                             hasVisibleLabel = true;
-                            labelText = parentLabel.textContent.trim();
+                            labelText = getVisibleTextContent(parentLabel);
                         }
                     }
 
@@ -483,7 +609,37 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         }
                     }
                 });
-                
+
+                // ERROR: aria-labelledby reference existence on ARIA-role custom widgets.
+                // The native-input loop above only validates aria-labelledby refs on
+                // input/select/textarea, so a custom form widget (e.g. a role="textbox"
+                // contenteditable) with a broken aria-labelledby reference would slip through.
+                // Check those here, scoped to widget roles and skipping native controls.
+                const ariaWidgetRoles = ['textbox', 'combobox', 'searchbox', 'spinbutton', 'listbox', 'slider', 'checkbox', 'radio', 'switch'];
+                document.querySelectorAll('[aria-labelledby][role]').forEach(el => {
+                    const widgetRole = (el.getAttribute('role') || '').trim().toLowerCase();
+                    if (!ariaWidgetRoles.includes(widgetRole)) return;
+                    if (el.matches('input, select, textarea')) return; // native: handled above
+                    const ref = (el.getAttribute('aria-labelledby') || '').trim();
+                    if (ref === '') return;
+                    ref.split(/\s+/).forEach(refId => {
+                        if (!document.getElementById(refId)) {
+                            results.errors.push({
+                                err: 'ErrFieldAriaRefDoesNotExist',
+                                type: 'err',
+                                cat: 'forms',
+                                element: el.tagName,
+                                xpath: getFullXPath(el),
+                                html: el.outerHTML.substring(0, 200),
+                                description: `Custom ${widgetRole} widget has aria-labelledby referencing non-existent ID: "${refId}"`,
+                                inputType: widgetRole,
+                                missingId: refId
+                            });
+                            results.elements_failed++;
+                        }
+                    });
+                });
+
                 // Check for fieldset/legend for radio and checkbox groups
                 const radioGroups = {};
                 const checkboxGroups = {};
@@ -498,41 +654,61 @@ async def test_forms(page: Page) -> dict[str, Any]:
                         radioGroups[name].push(radio);
                     }
                 });
-                
-                // Check each radio group for fieldset
-                Object.entries(radioGroups).forEach(([name, radios]) => {
-                    if (radios.length > 1) {
-                        const firstRadio = radios[0];
-                        const fieldset = firstRadio.closest('fieldset');
-                        
-                        if (!fieldset) {
+
+                // Group checkboxes by name (same-name checkboxes form a group, e.g. interests[])
+                checkboxes.forEach(checkbox => {
+                    const name = checkbox.name;
+                    if (name) {
+                        if (!checkboxGroups[name]) {
+                            checkboxGroups[name] = [];
+                        }
+                        checkboxGroups[name].push(checkbox);
+                    }
+                });
+
+                // Check each radio/checkbox group for fieldset and legend.
+                // A fieldset can contain several groups, so dedupe WarnNoLegend per fieldset.
+                const fieldsetsMissingLegend = new Set();
+                function checkGroupFieldset(name, controls, groupKindLabel, elementLabel) {
+                    if (controls.length <= 1) return;
+                    const firstControl = controls[0];
+                    const fieldset = firstControl.closest('fieldset');
+
+                    if (!fieldset) {
+                        results.warnings.push({
+                            err: 'WarnNoFieldset',
+                            type: 'warn',
+                            cat: 'forms',
+                            element: elementLabel,
+                            xpath: getFullXPath(firstControl),
+                            html: firstControl.outerHTML.substring(0, 200),
+                            description: `${groupKindLabel} group "${name}" should be wrapped in a fieldset with legend`,
+                            groupName: name,
+                            groupSize: controls.length
+                        });
+                    } else {
+                        const legend = fieldset.querySelector('legend');
+                        if ((!legend || !legend.textContent.trim()) && !fieldsetsMissingLegend.has(fieldset)) {
+                            fieldsetsMissingLegend.add(fieldset);
                             results.warnings.push({
-                                err: 'WarnNoFieldset',
+                                err: 'WarnNoLegend',
                                 type: 'warn',
                                 cat: 'forms',
-                                element: 'RADIO_GROUP',
-                                xpath: getFullXPath(firstRadio),
-                                html: firstRadio.outerHTML.substring(0, 200),
-                                description: `Radio button group "${name}" should be wrapped in a fieldset with legend`,
-                                groupName: name,
-                                groupSize: radios.length
+                                element: 'FIELDSET',
+                                xpath: getFullXPath(fieldset),
+                                html: fieldset.outerHTML.substring(0, 200),
+                                description: 'Fieldset is missing a legend element',
+                                groupName: name
                             });
-                        } else {
-                            const legend = fieldset.querySelector('legend');
-                            if (!legend || !legend.textContent.trim()) {
-                                results.warnings.push({
-                                    err: 'WarnNoLegend',
-                                    type: 'warn',
-                                    cat: 'forms',
-                                    element: 'FIELDSET',
-                                    xpath: getFullXPath(fieldset),
-                                    html: fieldset.outerHTML.substring(0, 200),
-                                    description: 'Fieldset is missing a legend element',
-                                    groupName: name
-                                });
-                            }
                         }
                     }
+                }
+
+                Object.entries(radioGroups).forEach(([name, radios]) => {
+                    checkGroupFieldset(name, radios, 'Radio button', 'RADIO_GROUP');
+                });
+                Object.entries(checkboxGroups).forEach(([name, boxes]) => {
+                    checkGroupFieldset(name, boxes, 'Checkbox', 'CHECKBOX_GROUP');
                 });
                 
                 // Add check information for reporting
@@ -652,7 +828,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
 
                     // Check if accessible name contains the word "form"
                     // Use word boundary regex to match "form" as a whole word
-                    if (accessibleName && /\\bform\\b/.test(accessibleName)) {
+                    if (accessibleName && /\bform\b/.test(accessibleName)) {
                         results.warnings.push({
                             err: 'WarnFormLandmarkAccessibleNameUsesForm',
                             type: 'warn',
@@ -1062,24 +1238,6 @@ async def test_forms(page: Page) -> dict[str, Any]:
 
         # Process input focus indicators (Python logic)
         if input_styles:
-            import re
-
-            def parse_px(value: str | None) -> float:
-                if not value or value == 'auto': return 0
-                try:
-                    if 'em' in value:
-                        return float(value.replace('em', '').replace('rem', '')) * 16
-                    return float(value.replace('px', ''))
-                except Exception: return 0
-
-            def parse_color(color_str: str | None) -> dict[str, float]:
-                if not color_str: return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
-                rgba_match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
-                if rgba_match:
-                    return {'r': int(rgba_match.group(1)), 'g': int(rgba_match.group(2)),
-                            'b': int(rgba_match.group(3)),
-                            'a': float(rgba_match.group(4)) if rgba_match.group(4) else 1.0}
-                return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
             def get_contrast_ratio(color1: dict[str, float], color2: dict[str, float]) -> float:
                 def luminance(c: dict[str, float]) -> float:
@@ -1290,7 +1448,18 @@ async def test_forms(page: Page) -> dict[str, Any]:
                 )
 
                 normal_border_color: str = field.get('normalBorderColor') or field.get('normalBorderTopColor') or ''
-                focus_border_color: str = field.get('focusBorderColor') or field.get('focusBorderTopColor') or ''
+                # When a :focus rule does not specify a border colour, the border colour is
+                # UNCHANGED on focus. The raw extracted values are None in that case, so fall back
+                # to the normal border colour rather than to '' (which would spuriously read as a
+                # colour change and misclassify "no visible focus" as "colour-change only").
+                raw_focus_border_color = field.get('focusBorderColor')
+                raw_focus_border_top_color = field.get('focusBorderTopColor')
+                if raw_focus_border_color:
+                    focus_border_color: str = raw_focus_border_color
+                elif raw_focus_border_top_color:
+                    focus_border_color = raw_focus_border_top_color
+                else:
+                    focus_border_color = normal_border_color
                 border_color_changed = normal_border_color != focus_border_color
 
                 normal_box_shadow = field['normalBoxShadow']

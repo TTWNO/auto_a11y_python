@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Iframe Missing Title Test - ErrVideoIframeMissingTitle</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrVideoIframeMissingTitle",
+    "issueId": "ErrVideoIframeMissingTitle",
+    "expectedViolationCount": 2,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "iframe elements embedding video content with no title attribute. Each recognised video iframe element is validated individually for the missing-title violation.",
+    "wcag": "4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Video Iframes Without Title Attributes</h1>
@@ -12,14 +24,14 @@
     <iframe width="560" height="315" 
             src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
             frameborder="0" 
-            allowfullscreen>
+            allowfullscreen data-expected-violation="true" data-violation-id="ErrVideoIframeMissingTitle" data-violation-reason="YouTube video iframe has no title attribute">
     </iframe>
     
     <!-- Vimeo embed without title -->
     <iframe src="https://player.vimeo.com/video/123456789" 
             width="640" 
             height="360" 
-            frameborder="0">
+            frameborder="0" data-expected-violation="true" data-violation-id="ErrVideoIframeMissingTitle" data-violation-reason="Vimeo video iframe has no title attribute">
     </iframe>
     
     <!-- Custom video player iframe without title -->

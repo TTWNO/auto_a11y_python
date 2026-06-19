@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generic Document Link Text Warning Test - WarnGenericDocumentLinkText</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnGenericDocumentLinkText",
+    "issueId": "WarnGenericDocumentLinkText",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 3,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Links pointing to downloadable documents whose visible text is generic (such as Download PDF, Download Excel, or Document) and does not describe the document content. Each demonstrated case is validated individually.",
+    "wcag": "2.4.4"
+}
+    </script>
 </head>
 <body>
     <h1>Generic Document Link Text</h1>
@@ -21,11 +33,11 @@
     <a href="spreadsheet.csv">.csv</a>
     
     <!-- Generic download text -->
-    <a href="report.pdf">Download PDF</a>
-    <a href="data.xlsx">Download Excel</a>
+    <a href="report.pdf" data-expected-warning="true" data-warning-id="WarnGenericDocumentLinkText" data-warning-reason="Document link text is the generic phrase Download PDF">Download PDF</a>
+    <a href="data.xlsx" data-expected-warning="true" data-warning-id="WarnGenericDocumentLinkText" data-warning-reason="Document link text is the generic phrase Download Excel">Download Excel</a>
     
     <!-- Document type only -->
-    <a href="annual-report.pdf">Document</a>
+    <a href="annual-report.pdf" data-expected-warning="true" data-warning-id="WarnGenericDocumentLinkText" data-warning-reason="Document link text is the generic word Document">Document</a>
     <a href="budget.xlsx">Spreadsheet</a>
     
     <p>Links should describe content, not just file type.</p>

@@ -208,13 +208,25 @@ async def test_accessible_names(page: Page) -> dict[str, Any]:
                             return clone.textContent.trim();
                         }
 
-                        // For input type=submit/reset/button, use value
+                        // For input type=submit/reset/button, use value.
+                        // An explicitly empty value attribute renders an unlabeled
+                        // button, so only a MISSING attribute falls back to the
+                        // browser default name for submit/reset.
                         if (tag === 'input') {
                             const type = element.getAttribute('type');
                             if (['submit', 'reset', 'button'].includes(type)) {
-                                return element.value || (type === 'submit' ? 'Submit' : type === 'reset' ? 'Reset' : '');
+                                if (element.hasAttribute('value')) {
+                                    return element.getAttribute('value').trim();
+                                }
+                                return type === 'submit' ? 'Submit' : type === 'reset' ? 'Reset' : '';
                             }
                         }
+
+                        // Form controls don't support name-from-content: option or
+                        // default text must never name a select/textarea/input.
+                        // A title attribute is still a valid (last-resort) source.
+                        const controlTitle = element.getAttribute('title');
+                        return controlTitle && controlTitle.trim() ? controlTitle.trim() : '';
                     }
 
                     // Handle iframes
@@ -228,6 +240,7 @@ async def test_accessible_names(page: Page) -> dict[str, Any]:
                         const directText = Array.from(element.childNodes)
                             .filter(node => node.nodeType === Node.TEXT_NODE)
                             .map(node => node.textContent.trim())
+                            .filter(text => text.length > 0)
                             .join(' ');
 
                         if (directText) {

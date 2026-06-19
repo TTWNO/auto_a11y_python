@@ -4,6 +4,7 @@ from __future__ import annotations
 Report formatters for different output formats
 """
 
+import html
 import json
 import csv
 import re
@@ -16,6 +17,7 @@ from typing_extensions import override
 from datetime import datetime
 from pathlib import Path
 import logging
+from auto_a11y.models.test_result import ImpactLevel
 from auto_a11y.reporting.comprehensive_report import ComprehensiveReportGenerator
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 from io import StringIO
@@ -195,6 +197,8 @@ class BaseFormatter:
             'impact_high': 'High',
             'impact_medium': 'Medium',
             'impact_low': 'Low',
+            'impact_info': 'Info',
+            'impact_unknown': 'Unknown',
             # Summary sheet labels
             'summary_statistics': 'Summary Statistics',
             'overall_statistics': 'Overall Statistics',
@@ -337,6 +341,8 @@ class BaseFormatter:
             'impact_high': 'Élevé',
             'impact_medium': 'Moyen',
             'impact_low': 'Faible',
+            'impact_info': 'Info',
+            'impact_unknown': 'Inconnu',
             # Summary sheet labels
             'summary_statistics': 'Statistiques résumées',
             'overall_statistics': 'Statistiques générales',
@@ -371,8 +377,12 @@ class BaseFormatter:
             return ''
         key = f'impact_{impact_raw.strip().lower()}'
         translated = self._t(key)
-        # If _t returned the key itself (no translation found), return original uppercased
-        return translated.upper() if translated != key else impact_raw.upper()
+        if translated != key:
+            return translated.upper()
+        # No specific translation for this impact value — fall back to the
+        # translated 'unknown' label rather than leaking the raw English token
+        # (which would otherwise appear untranslated in FR reports).
+        return self._t('impact_unknown').upper()
 
     @staticmethod
     def _best_description(issue_dict: dict[str, Any]) -> str:
@@ -505,7 +515,22 @@ class HTMLFormatter(BaseFormatter):
         self._output_file: str = ''
         self._summary: dict[str, Any] = {}
         self._body_tempfile: IO[str] | None = None
-    
+
+    @staticmethod
+    def _esc(value: object) -> str:
+        """Escape a dynamic value for safe interpolation into HTML text.
+
+        Report data can include page titles, URLs, descriptions, xpaths and
+        HTML fragments captured from attacker-controlled tested sites. Every
+        such value must be escaped to prevent stored XSS in generated reports.
+        """
+        return html.escape('' if value is None else str(value))
+
+    @staticmethod
+    def _esc_attr(value: object) -> str:
+        """Escape a dynamic value for use inside a double-quoted HTML attribute."""
+        return html.escape('' if value is None else str(value), quote=True)
+
     def format_all_projects_report(self, data: dict[str, Any]) -> str:
         """Format report for all projects as HTML"""
         warnings.warn(
@@ -514,7 +539,7 @@ class HTMLFormatter(BaseFormatter):
             stacklevel=2
         )
 
-        report_title = data.get('title', self._t('all_projects_accessibility_report'))
+        report_title = self._esc(data.get('title', self._t('all_projects_accessibility_report')))
         html = f"""<!DOCTYPE html>
 <html lang="{self.language}">
 <head>
@@ -529,7 +554,7 @@ class HTMLFormatter(BaseFormatter):
             <h1>{report_title}</h1>
             <div class="metadata">
                 <p><strong>{self._t('total_projects')}:</strong> {data['summary']['total_projects']}</p>
-                <p><strong>{self._t('generated')}:</strong> {data['generated_at']}</p>
+                <p><strong>{self._t('generated')}:</strong> {self._esc(data['generated_at'])}</p>
             </div>
         </header>
 
@@ -585,7 +610,7 @@ class HTMLFormatter(BaseFormatter):
             website = website_data['website']
             websites_html += f"""
             <div class="website-item">
-                <h4>{website.get('name', website.get('url', self._t('unknown')))}</h4>
+                <h4>{self._esc(website.get('name', website.get('url', self._t('unknown'))))}</h4>
                 <p>{self._t('pages')}: {website_data['pages']} | {self._t('tested_pages')}: {website_data['tested']} |
                    {self._t('violations')}: {website_data['violations']} | {self._t('warnings')}: {website_data['warnings']}</p>
             </div>
@@ -593,8 +618,8 @@ class HTMLFormatter(BaseFormatter):
 
         return f"""
         <div class="project-section">
-            <h3>{project.get('name', self._t('unknown'))}</h3>
-            <p>{project.get('description', '')}</p>
+            <h3>{self._esc(project.get('name', self._t('unknown')))}</h3>
+            <p>{self._esc(project.get('description', ''))}</p>
             <div class="project-stats">
                 <span>{self._t('websites')}: {stats['website_count']}</span>
                 <span>{self._t('pages')}: {stats['total_pages']}</span>
@@ -620,16 +645,17 @@ class HTMLFormatter(BaseFormatter):
 
             if state_desc:
                 page_state_info = f"""
-                <p><strong>{self._t('page_state')}:</strong> {state_desc}</p>
-                <p><strong>{self._t('session_id')}:</strong> {test_result.get('session_id', '')}</p>
+                <p><strong>{self._t('page_state')}:</strong> {self._esc(state_desc)}</p>
+                <p><strong>{self._t('session_id')}:</strong> {self._esc(test_result.get('session_id', ''))}</p>
                 """
 
+        page_url = data['page']['url']
         html = f"""<!DOCTYPE html>
 <html lang="{self.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{self._t('accessibility_report')} - {data['page']['url']}</title>
+    <title>{self._t('accessibility_report')} - {self._esc(page_url)}</title>
     {self._get_css()}
 </head>
 <body>
@@ -637,10 +663,10 @@ class HTMLFormatter(BaseFormatter):
         <header>
             <h1>{self._t('accessibility_report')}</h1>
             <div class="metadata">
-                <p><strong>{self._t('page')}:</strong> <a href="{data['page']['url']}" target="_blank">{data['page']['url']}</a></p>
-                <p><strong>{self._t('website')}:</strong> {data['website']['name']}</p>
-                <p><strong>{self._t('project')}:</strong> {data['project']['name']}</p>
-                <p><strong>{self._t('generated')}:</strong> {data['generated_at']}</p>
+                <p><strong>{self._t('page')}:</strong> <a href="{self._esc_attr(page_url)}" target="_blank">{self._esc(page_url)}</a></p>
+                <p><strong>{self._t('website')}:</strong> {self._esc(data['website']['name'])}</p>
+                <p><strong>{self._t('project')}:</strong> {self._esc(data['project']['name'])}</p>
+                <p><strong>{self._t('generated')}:</strong> {self._esc(data['generated_at'])}</p>
                 {page_state_info}
             </div>
         </header>
@@ -699,7 +725,7 @@ class HTMLFormatter(BaseFormatter):
         for project in data['projects']:
             projects_html += f"""
             <tr>
-                <td>{project['name']}</td>
+                <td>{self._esc(project['name'])}</td>
                 <td>{project['websites']}</td>
                 <td>{project['pages_tested']}</td>
                 <td class="violations">{project['violations']}</td>
@@ -717,7 +743,7 @@ class HTMLFormatter(BaseFormatter):
     <div class="container">
         <header>
             <h1>{self._t('accessibility_executive_summary')}</h1>
-            <p class="generated">{self._t('generated')}: {data['generated_at']}</p>
+            <p class="generated">{self._t('generated')}: {self._esc(data['generated_at'])}</p>
         </header>
 
         <section class="overview">
@@ -939,17 +965,17 @@ class HTMLFormatter(BaseFormatter):
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {self._esc(metadata.get('breakpoint'))}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {self._esc(metadata.get('pseudoclass'))}</p>"
 
             html += f"""
             <div class="violation">
-                <h4>{v.get('rule_id', self._t('unknown'))}
-                    <span class="impact {impact_class}">{self._translate_impact(v.get('impact', 'moderate'))}</span>
+                <h4>{self._esc(v.get('rule_id', self._t('unknown')))}
+                    <span class="impact {self._esc_attr(impact_class)}">{self._translate_impact(v.get('impact', 'moderate'))}</span>
                 </h4>
-                <p><strong>{self._t('description')}:</strong> {self._best_description(v)}</p>
-                <p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(v.get('wcag_criteria', []))}</p>
+                <p><strong>{self._t('description')}:</strong> {self._esc(self._best_description(v))}</p>
+                <p><strong>{self._t('wcag_criteria')}:</strong> {self._esc(', '.join(v.get('wcag_criteria', [])))}</p>
                 <p><strong>{self._t('elements_affected')}:</strong> {v.get('node_count', 0)}</p>
                 {metadata_html}
                 {self._format_fix(v.get('suggested_fix'))}
@@ -969,14 +995,14 @@ class HTMLFormatter(BaseFormatter):
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {self._esc(metadata.get('breakpoint'))}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {self._esc(metadata.get('pseudoclass'))}</p>"
 
             html += f"""
             <div class="warning">
-                <h4>{w.get('rule_id', self._t('unknown'))}</h4>
-                <p>{self._best_description(w)}</p>
+                <h4>{self._esc(w.get('rule_id', self._t('unknown')))}</h4>
+                <p>{self._esc(self._best_description(w))}</p>
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -994,16 +1020,16 @@ class HTMLFormatter(BaseFormatter):
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {self._esc(metadata.get('breakpoint'))}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {self._esc(metadata.get('pseudoclass'))}</p>"
 
             html += f"""
             <div class="info-item">
-                <h4>{item.get('id', self._t('unknown'))}</h4>
-                <p><strong>{self._t('description')}:</strong> {self._best_description(item)}</p>
-                <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
-                {f"<p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(item.get('wcag_criteria', []))}</p>" if item.get('wcag_criteria') else ""}
+                <h4>{self._esc(item.get('id', self._t('unknown')))}</h4>
+                <p><strong>{self._t('description')}:</strong> {self._esc(self._best_description(item))}</p>
+                <p><strong>{self._t('category')}:</strong> {self._esc(item.get('category', 'General'))}</p>
+                {f"<p><strong>{self._t('wcag_criteria')}:</strong> {self._esc(', '.join(item.get('wcag_criteria', [])))}</p>" if item.get('wcag_criteria') else ""}
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -1022,16 +1048,16 @@ class HTMLFormatter(BaseFormatter):
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {self._esc(metadata.get('breakpoint'))}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {self._esc(metadata.get('pseudoclass'))}</p>"
 
             html += f"""
             <div class="discovery-item">
-                <h4>{item.get('id', self._t('unknown'))}</h4>
-                <p><strong>{self._t('description')}:</strong> {self._best_description(item)}</p>
-                <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
-                {f"<p><strong>{self._t('location')}:</strong> <code>{item.get('xpath', self._t('not_specified'))}</code></p>" if item.get('xpath') else ""}
+                <h4>{self._esc(item.get('id', self._t('unknown')))}</h4>
+                <p><strong>{self._t('description')}:</strong> {self._esc(self._best_description(item))}</p>
+                <p><strong>{self._t('category')}:</strong> {self._esc(item.get('category', 'General'))}</p>
+                {f"<p><strong>{self._t('location')}:</strong> <code>{self._esc(item.get('xpath', self._t('not_specified')))}</code></p>" if item.get('xpath') else ""}
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -1047,10 +1073,10 @@ class HTMLFormatter(BaseFormatter):
             severity_class = f.severity.value.lower() if hasattr(f, 'severity') else 'moderate'
             html += f"""
             <div class="ai-finding">
-                <h4>{f.type if hasattr(f, 'type') else self._t('ai_finding')}
-                    <span class="impact {severity_class}">{f.severity.value.upper() if hasattr(f, 'severity') else 'MODERATE'}</span>
+                <h4>{self._esc(f.type if hasattr(f, 'type') else self._t('ai_finding'))}
+                    <span class="impact {self._esc_attr(severity_class)}">{f.severity.value.upper() if hasattr(f, 'severity') else 'MODERATE'}</span>
                 </h4>
-                <p><strong>{self._t('description')}:</strong> {f.description if hasattr(f, 'description') else self._t('no_description')}</p>
+                <p><strong>{self._t('description')}:</strong> {self._esc(f.description if hasattr(f, 'description') else self._t('no_description'))}</p>
                 <p><strong>{self._t('confidence')}:</strong> {f.confidence * 100 if hasattr(f, 'confidence') else 85:.0f}%</p>
                 {self._format_fix(f.suggested_fix if hasattr(f, 'suggested_fix') else None)}
             </div>"""
@@ -1064,7 +1090,7 @@ class HTMLFormatter(BaseFormatter):
         
         html = f"<section class='passes'><h2>{self._t('passes')}</h2><ul>"
         for p in passes[:10]:  # Show first 10 passes
-            html += f"<li>{p.get('rule_id', self._t('unknown'))}: {p.get('description', self._t('passed'))}</li>"
+            html += f"<li>{self._esc(p.get('rule_id', self._t('unknown')))}: {self._esc(p.get('description', self._t('passed')))}</li>"
         if len(passes) > 10:
             remaining = len(passes) - 10
             html += f"<li>... {remaining} more</li>"
@@ -1075,7 +1101,7 @@ class HTMLFormatter(BaseFormatter):
         """Format suggested fix"""
         if not fix:
             return ""
-        return f'<p><strong>{self._t("suggested_fix")}:</strong> {fix}</p>'
+        return f'<p><strong>{self._t("suggested_fix")}:</strong> {self._esc(fix)}</p>'
     
     def _format_violation_types_section(self, violation_types: dict[str, Any]) -> str:
         """Format violation types section"""
@@ -1087,10 +1113,10 @@ class HTMLFormatter(BaseFormatter):
             pages_summary = f"{len(set(info['pages']))} pages"
             html += f"""
             <tr>
-                <td>{rule_id}</td>
+                <td>{self._esc(rule_id)}</td>
                 <td>{info['count']}</td>
-                <td>{info['description']}</td>
-                <td>{pages_summary}</td>
+                <td>{self._esc(info['description'])}</td>
+                <td>{self._esc(pages_summary)}</td>
             </tr>"""
         
         html += "</tbody></table></section>"
@@ -1106,10 +1132,10 @@ class HTMLFormatter(BaseFormatter):
             test = pr['test_result']
             html += f"""
             <tr>
-                <td><a href="{page.url}" target="_blank">{page.url}</a></td>
+                <td><a href="{self._esc_attr(page.url)}" target="_blank">{self._esc(page.url)}</a></td>
                 <td class="violations">{test.violation_count}</td>
                 <td class="warnings">{test.warning_count}</td>
-                <td>{test.test_date}</td>
+                <td>{self._esc(test.test_date)}</td>
             </tr>"""
         
         html += "</tbody></table></section>"
@@ -1157,8 +1183,8 @@ class HTMLFormatter(BaseFormatter):
             # Website header with all statistics
             html += f"""
             <div class="website">
-                <h3>{website.name}</h3>
-                <p><a href="{website.url}" target="_blank">{website.url}</a></p>
+                <h3>{self._esc(website.name)}</h3>
+                <p><a href="{self._esc_attr(website.url)}" target="_blank">{self._esc(website.url)}</a></p>
                 <div class="stats-grid" style="margin: 20px 0;">
                     <div class="stat-card violations">
                         <h4>{total_violations}</h4>
@@ -1192,7 +1218,7 @@ class HTMLFormatter(BaseFormatter):
                     v_issue: object = v_item['issue']
                     issue_id: str = str(getattr(v_issue, 'id', self._t('unknown')))
                     issue_desc: str = str(getattr(v_issue, 'description', self._t('no_description')))
-                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{v_item['page']}</em></li>"
+                    html += f"<li><strong>{self._esc(issue_id)}:</strong> {self._esc(issue_desc)} - <em>{self._esc(v_item['page'])}</em></li>"
                 if len(all_violations) > 10:
                     remaining = len(all_violations) - 10
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1204,7 +1230,7 @@ class HTMLFormatter(BaseFormatter):
                     w_issue: object = w_item['issue']
                     issue_id = str(getattr(w_issue, 'id', self._t('unknown')))
                     issue_desc = str(getattr(w_issue, 'description', self._t('no_description')))
-                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{w_item['page']}</em></li>"
+                    html += f"<li><strong>{self._esc(issue_id)}:</strong> {self._esc(issue_desc)} - <em>{self._esc(w_item['page'])}</em></li>"
                 if len(all_warnings) > 10:
                     remaining = len(all_warnings) - 10
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1216,7 +1242,7 @@ class HTMLFormatter(BaseFormatter):
                     i_issue: object = info_item['issue']
                     issue_id = str(getattr(i_issue, 'id', self._t('unknown')))
                     issue_desc = str(getattr(i_issue, 'description', self._t('no_description')))
-                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{info_item['page']}</em></li>"
+                    html += f"<li><strong>{self._esc(issue_id)}:</strong> {self._esc(issue_desc)} - <em>{self._esc(info_item['page'])}</em></li>"
                 if len(all_info) > 5:
                     remaining = len(all_info) - 5
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1228,7 +1254,7 @@ class HTMLFormatter(BaseFormatter):
                     d_issue: object = d_item['issue']
                     issue_id = str(getattr(d_issue, 'id', self._t('unknown')))
                     issue_desc = str(getattr(d_issue, 'description', self._t('no_description')))
-                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{d_item['page']}</em></li>"
+                    html += f"<li><strong>{self._esc(issue_id)}:</strong> {self._esc(issue_desc)} - <em>{self._esc(d_item['page'])}</em></li>"
                 if len(all_discovery) > 5:
                     remaining = len(all_discovery) - 5
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1268,7 +1294,7 @@ class HTMLFormatter(BaseFormatter):
         violations: list[Any] = self.get_issue_list(test_result, 'violations')
         warnings_list: list[Any] = self.get_issue_list(test_result, 'warnings')
 
-        section = f'<div class="page-section"><h3><a href="{page_url}">{page_title or page_url}</a></h3>\n'
+        section = f'<div class="page-section"><h3><a href="{self._esc_attr(page_url)}">{self._esc(page_title or page_url)}</a></h3>\n'
 
         if violations:
             section += f'<table><thead><tr><th>{self._t("code")}</th><th>{self._t("description")}</th><th>{self._t("impact")}</th><th>{self._t("wcag_criteria")}</th><th>{self._t("xpath")}</th></tr></thead><tbody>\n'
@@ -1364,7 +1390,7 @@ class HTMLFormatter(BaseFormatter):
         description = self._best_description(issue_dict)
         xpath: str = str(issue_dict.get('xpath', ''))
 
-        return f'<tr><td>{code}</td><td>{description}</td><td>{impact_str}</td><td>{wcag_str}</td><td>{xpath}</td></tr>\n'
+        return f'<tr><td>{self._esc(code)}</td><td>{self._esc(description)}</td><td>{impact_str}</td><td>{self._esc(wcag_str)}</td><td>{self._esc(xpath)}</td></tr>\n'
 
 
 
@@ -2328,7 +2354,11 @@ class ExcelFormatter(BaseFormatter):
         # Add AI findings if present
         for f in data.get('ai_findings', []):
             ws.cell(row=row, column=1, value='AI Finding')
-            ws.cell(row=row, column=2, value=getattr(f, 'severity', 'MEDIUM').upper())
+            # severity is an ImpactLevel enum (no .upper()); mirror the
+            # _create_ai_findings_sheet handling and read .value first.
+            sev: object = getattr(f, 'severity', None)
+            sev_value: str = sev.value if isinstance(sev, ImpactLevel) else str(sev or 'MEDIUM')
+            ws.cell(row=row, column=2, value=sev_value.upper())
             ws.cell(row=row, column=3, value=getattr(f, 'type', ''))
             ws.cell(row=row, column=4, value='')  # AI findings don't have touchpoint
             ws.cell(row=row, column=5, value=getattr(f, 'description', ''))
@@ -3258,8 +3288,8 @@ class ExcelFormatter(BaseFormatter):
                 try:
                     if cell.value:
                         max_length = max(max_length, len(str(cell.value)))
-                except:
-                    pass
+                except Exception as exc:
+                    logger.debug("Could not measure column width for cell: %s", exc)
             
             adjusted_width = min(max_length + 2, 50)
             ws.column_dimensions[column_letter].width = adjusted_width

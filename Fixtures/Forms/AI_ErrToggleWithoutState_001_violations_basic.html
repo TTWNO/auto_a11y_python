@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI_ErrToggleWithoutState - Violations</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "AI_ErrToggleWithoutState_001_violations_basic",
+    "issueId": "AI_ErrToggleWithoutState",
+    "expectedViolationCount": 3,
+    "expectedPassCount": 0,
+    "description": "Toggle switches that expose role=switch but no aria-checked reflecting their on/off state",
+    "wcag": "4.1.2",
+    "impact": "High"
+}
+    </script>
+    <style>
+        body { font-family: sans-serif; padding: 24px; }
+        .switch { display: inline-flex; align-items: center; gap: 10px; margin: 14px 0; cursor: pointer; }
+        .track { width: 46px; height: 26px; background: #2e7d32; border-radius: 13px; position: relative; flex: none; }
+        .track .thumb { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; background: #ffffff; border-radius: 50%; }
+        .label { font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Test Page: Toggle Switches Without State</h1>
+
+    <main>
+        <section>
+            <h2>Settings</h2>
+
+            <!-- Visible on/off switch: HAS role="switch" but NO aria-checked to convey state -->
+            <div class="switch" role="switch" tabindex="0" aria-label="Wi-Fi"
+                 data-expected-violation="true"
+                 data-violation-id="AI_ErrToggleWithoutState"
+                 data-violation-reason="Switch exposes role=switch but no aria-checked, so its on/off state is not conveyed">
+                <span class="track"><span class="thumb"></span></span>
+                <span class="label">Wi-Fi</span>
+            </div>
+
+            <div class="switch" role="switch" tabindex="0" aria-label="Bluetooth"
+                 data-expected-violation="true"
+                 data-violation-id="AI_ErrToggleWithoutState"
+                 data-violation-reason="Switch exposes role=switch but no aria-checked, so its on/off state is not conveyed">
+                <span class="track"><span class="thumb"></span></span>
+                <span class="label">Bluetooth</span>
+            </div>
+
+            <div class="switch" role="switch" tabindex="0" aria-label="Dark mode"
+                 data-expected-violation="true"
+                 data-violation-id="AI_ErrToggleWithoutState"
+                 data-violation-reason="Switch exposes role=switch but no aria-checked, so its on/off state is not conveyed">
+                <span class="track"><span class="thumb"></span></span>
+                <span class="label">Dark mode</span>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

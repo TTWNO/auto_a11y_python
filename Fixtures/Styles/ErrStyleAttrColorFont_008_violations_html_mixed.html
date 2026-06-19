@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" style="--primary-color: #007bff; background-color: #fff; --spacing: 8px;">
+<html lang="en" style="--primary-color: #007bff; background-color: #fff; --spacing: 8px;"
+      data-expected-violation="true"
+      data-violation-id="ErrStyleAttrColorFont"
+      data-violation-reason="The <html> element has mixed inline styles: --primary-color (allowed CSS variable), background-color (NOT allowed - hard-coded color), --spacing (allowed CSS variable). Even though some properties are legitimate, the presence of ANY hard-coded color or font properties should trigger a violation. The test should flag the element because it contains background-color: #fff; which prevents user customization.">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mixed Variables and Colors on HTML Element - Violation</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrStyleAttrColorFont_008_violations_html_mixed",
     "issueId": "ErrStyleAttrColorFont",
     "expectedViolationCount": 1,
@@ -17,10 +21,7 @@
     </script>
     <link rel="stylesheet" href="external.css">
 </head>
-<body data-expected-violation="true"
-      data-violation-xpath="/html[1]"
-      data-violation-id="ErrStyleAttrColorFont"
-      data-violation-reason="The <html> element has mixed inline styles: --primary-color (allowed CSS variable), background-color (NOT allowed - hard-coded color), --spacing (allowed CSS variable). Even though some properties are legitimate, the presence of ANY hard-coded color or font properties should trigger a violation. The test should flag the element because it contains background-color: #fff; which prevents user customization.">
+<body>
     <h1>Mixed Styles on HTML Element</h1>
 
     <main>

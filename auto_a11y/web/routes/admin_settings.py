@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Mapping
 from typing import Any
 
 from flask import Blueprint, Response, flash, render_template, request, url_for
 
+from auto_a11y.core import user_settings
 from auto_a11y.core.runtime_config import (
     CONFIG_SECTIONS,
     ConfigField,
@@ -27,6 +29,7 @@ from auto_a11y.core.runtime_config import (
     section_source,
 )
 from auto_a11y.core.system_settings import SystemSettings
+from auto_a11y.core.user_settings import UserSettings
 from auto_a11y.drupal.config import DRUPAL_SETTINGS_KEY
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.routes.auth import admin_required
@@ -69,6 +72,58 @@ def _drupal_form_view(settings: SystemSettings) -> dict[str, Any]:
     }
 
 
+def build_user_secrets_view(settings: UserSettings) -> dict[str, Any]:
+    """Display data for the "Application secrets" section.
+
+    These secrets live in the per-user ``user_settings.json`` file (read at
+    startup *before* MongoDB is available) rather than the ``system_settings``
+    collection, because the Mongo URI itself is among them. Secret values are
+    never echoed back to the page — only a boolean "is set" so the admin can
+    see whether a key is stored. The Mongo URI and ffmpeg/ffprobe paths are
+    shown in full so they can be edited in place.
+    """
+    return {
+        "mongodb_uri": settings.mongodb_uri or "",
+        "ffmpeg_path": settings.ffmpeg_path or "",
+        "ffprobe_path": settings.ffprobe_path or "",
+        "anthropic_set": bool(settings.anthropic_api_key),
+        "deepgram_set": bool(settings.deepgram_api_key),
+        "huggingface_set": bool(settings.huggingface_token),
+    }
+
+
+def apply_user_secret_form(
+    existing: UserSettings, form: Mapping[str, str]
+) -> UserSettings:
+    """Merge submitted form values onto ``existing`` user settings.
+
+    Two field families with different blank-handling:
+
+    - Plain fields (Mongo URI, ffmpeg/ffprobe paths) — the submitted value is
+      authoritative; a blank field clears the override so the env var / PATH
+      lookup applies again.
+    - Secret fields (Anthropic / Deepgram keys, HF token) — a blank field
+      *keeps* the stored value so the admin never has to retype a key to
+      change something else. Submitting ``<field>_clear=on`` removes it.
+    """
+    def plain(name: str) -> str | None:
+        return form.get(name, "").strip() or None
+
+    def secret(name: str, current: str | None) -> str | None:
+        if form.get(f"{name}_clear", "") == "on":
+            return None
+        return form.get(name, "").strip() or current
+
+    return UserSettings(
+        mongodb_uri=plain("mongodb_uri"),
+        ffmpeg_path=plain("ffmpeg_path"),
+        ffprobe_path=plain("ffprobe_path"),
+        anthropic_api_key=secret("anthropic_api_key", existing.anthropic_api_key),
+        deepgram_api_key=secret("deepgram_api_key", existing.deepgram_api_key),
+        huggingface_token=secret("huggingface_token", existing.huggingface_token),
+    )
+
+
 def _section_form_view(section: ConfigSection, settings: SystemSettings) -> dict[str, Any]:
     """Build the data passed to the template for one env-var section."""
     section_data = settings.get_section(section.section_id)
@@ -107,6 +162,7 @@ def settings_page() -> str | Response:
         'admin_settings/index.html',
         drupal=_drupal_form_view(settings),
         env_sections=sections_view,
+        user_secrets=build_user_secrets_view(user_settings.read()),
     )
 
 
@@ -169,6 +225,35 @@ def update_drupal() -> Response:
         updated_by=user_id,
     )
     flash(ftl('admin-settings-drupal-saved'), 'success')
+    return redirect(url_for('admin_settings.settings_page'))
+
+
+@admin_settings_bp.route('/admin/settings/user-secrets', methods=['POST'])
+@admin_required
+def update_user_secrets() -> Response:
+    """Persist the bootstrap secrets (Mongo URI / API keys / ffmpeg paths).
+
+    Unlike the other sections on this page, these are read at startup *before*
+    MongoDB is available, so they are stored in the per-user
+    ``user_settings.json`` file rather than the ``system_settings`` collection.
+    After writing, we overlay the new values onto the current process
+    environment so features that read env vars at request time pick them up
+    without a restart; the flash reminds the admin that a restart guarantees
+    full application (startup-bound config such as preflight is captured once).
+    """
+    existing = user_settings.read()
+    updated = apply_user_secret_form(existing, request.form.to_dict())
+    try:
+        user_settings.write(updated)
+    except OSError as exc:
+        logger.exception("Failed to write user-settings file")
+        flash(
+            ftl('admin-settings-user-secrets-save-failed', detail=str(exc)),
+            'danger',
+        )
+        return redirect(url_for('admin_settings.settings_page'))
+    user_settings.apply_to_environment(updated)
+    flash(ftl('admin-settings-user-secrets-saved'), 'success')
     return redirect(url_for('admin_settings.settings_page'))
 
 

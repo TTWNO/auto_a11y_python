@@ -6,6 +6,7 @@
     <title>ErrButtonTransparentOutline - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrButtonTransparentOutline_001_violations_semi_transparent",
     "issueId": "ErrButtonTransparentOutline",
     "expectedViolationCount": 4,
@@ -47,7 +48,7 @@
 <body>
     <h1>Test: Semi-Transparent Focus Outlines</h1>
 
-    <p>These buttons use focus outlines with transparency (alpha < 0.5), making it impossible
+    <p>These buttons use focus outlines with transparency (alpha &lt; 0.5), making it impossible
        to guarantee they meet the 3:1 contrast requirement in all contexts. As backgrounds change
        (scrolling, overlays, animations), the outline's effective contrast varies, potentially
        becoming invisible.</p>

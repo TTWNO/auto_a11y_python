@@ -6,11 +6,12 @@
     <title>Accessible Fonts Test - Correct</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrInaccessibleFont_002_correct_accessible",
     "issueId": "ErrInaccessibleFont",
     "expectedViolationCount": 0,
-    "expectedPassCount": 0,
-    "description": "Tests that accessible fonts are NOT flagged as errors",
+    "expectedPassCount": 1,
+    "description": "Tests that accessible fonts are NOT flagged as errors. Runs as a negative test (the code must not be emitted anywhere on the page), which covers all four font sections; the body-level pass annotation documents that intent.",
     "wcag": "1.4.8",
     "impact": "High"
 }
@@ -32,7 +33,8 @@
         }
     </style>
 </head>
-<body data-expected-violation="false">
+<body data-expected-pass="true"
+      data-pass-reason="All fonts on the page are accessible, so no ErrInaccessibleFont is emitted.">
 
     <h1>Testing Accessible Fonts</h1>
 

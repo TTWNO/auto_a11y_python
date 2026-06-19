@@ -150,6 +150,50 @@ def _resolve_project_id(**kwargs: Any) -> str | None:
         recording = db.get_recording(recording_id)
         return recording.project_id if recording else None
 
+    issue_id: str | None = kwargs.get('issue_id')
+    if issue_id:
+        issue = db.get_recording_issue(issue_id)
+        if not issue:
+            return None
+        issue_project_id: str | None = getattr(issue, 'project_id', None)
+        if issue_project_id:
+            return issue_project_id
+        issue_recording_id: str | None = getattr(issue, 'recording_id', None)
+        if issue_recording_id:
+            # RecordingIssue.recording_id holds the human Recording.recording_id
+            # (e.g. 'NED-A'), not the Mongo _id, so look it up by that field.
+            recording = db.get_recording_by_recording_id(issue_recording_id)
+            return recording.project_id if recording else None
+        return None
+
+    user_id: str | None = kwargs.get('user_id')
+    if user_id:
+        pu = db.get_project_user(user_id)
+        return pu.project_id if pu else None
+
+    script_id: str | None = kwargs.get('script_id')
+    if script_id:
+        script = db.get_page_setup_script(script_id)  # NB: not get_page_script
+        if script and getattr(script, 'page_id', None):
+            page = db.get_page(script.page_id)
+            if page:
+                website = db.get_website(page.website_id)
+                return website.project_id if website else None
+        if script and getattr(script, 'website_id', None):
+            website = db.get_website(script.website_id)
+            return website.project_id if website else None
+        return None
+
+    result_id: str | None = kwargs.get('result_id')
+    if result_id:
+        result = db.get_test_result(result_id)
+        if result:
+            page = db.get_page(result.page_id)
+            if page:
+                website = db.get_website(page.website_id)
+                return website.project_id if website else None
+        return None
+
     return None
 
 

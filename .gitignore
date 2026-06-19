@@ -1,6 +1,10 @@
 # Python
 __pycache__/
 *.py[cod]
+
+# Build-time commit stamp (written into the staged app by build/*.sh;
+# never belongs in the repo — build_info.py falls back to git in dev).
+auto_a11y/BUILD_COMMIT
 *$py.class
 *.so
 .Python
@@ -106,6 +110,7 @@ test_*.py
 !auto_a11y/testing/touchpoint_tests/test_*.py
 !auto_a11y/web/api/schemas/test_*.py
 !tests/test_*.py
+!tests/core/test_*.py
 !tests/pdf/test_*.py
 !tests/api/test_*.py
 !tests/api/schemas/test_*.py
@@ -128,6 +133,13 @@ tests/audio/fixtures/*.mp4
 *.mov
 *.avi
 *.mkv
+
+# ...except bundled package assets that the app needs at runtime (e.g. the
+# CNIB AccessLabs logo rendered onto recording title cards / watermark).
+# These ship inside the macOS app bundle via the source rsync, so they
+# MUST be committed.
+!auto_a11y/audio/assets/
+!auto_a11y/audio/assets/*.png
 
 # Documentation drafts
 *_COMPLETE.md

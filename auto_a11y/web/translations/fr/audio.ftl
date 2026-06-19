@@ -3,9 +3,9 @@
 
 # === Formulaire de téléversement ===
 audio-upload-heading                    = Téléverser une vidéo d'audit
-audio-upload-intro                      = Téléversez une vidéo MP4 d'un audit d'accessibilité manuel. Le pipeline extraira l'audio, le transcrira, identifiera les intervenants, exécutera l'analyse de Claude et importera les résultats sous forme de problèmes d'enregistrement.
-audio-upload-file-label                 = Fichier vidéo (MP4)
-audio-upload-file-help                  = Sélectionnez le MP4 de la session d'audit. Maximum { $max } Mo.
+audio-upload-intro                      = Téléversez une vidéo d'un audit d'accessibilité manuel. Le pipeline extraira l'audio, le transcrira, identifiera les intervenants, exécutera l'analyse de Claude et importera les résultats sous forme de problèmes d'enregistrement.
+audio-upload-file-label                 = Fichier vidéo
+audio-upload-file-help                  = Sélectionnez la vidéo de la session d'audit (MP4, MOV, WebM, etc.). Maximum { $max } Mo.
 audio-upload-project-label              = Projet
 audio-upload-project-help               = À quel projet cet enregistrement doit-il être associé ?
 audio-upload-title-label                = Titre de l'enregistrement
@@ -44,12 +44,13 @@ audio-cost-total                        = Total
 
 # === Erreurs ===
 audio-error-no-language                 = Sélectionnez au moins une langue.
-audio-error-file-required               = Choisissez un fichier MP4 à téléverser.
+audio-error-file-required               = Choisissez un fichier vidéo à téléverser.
 audio-error-file-too-large              = Vidéo trop volumineuse ; maximum { $max } Mo.
-audio-error-invalid-mp4                 = Le fichier n'est pas un MP4 valide.
+audio-error-invalid-mp4                 = Le fichier n'est pas une vidéo valide.
 audio-error-no-project                  = Le projet est obligatoire.
 audio-error-no-project-access           = Vous n'avez pas accès à ce projet.
 audio-error-runner-not-configured       = Le processus vidéo n'est pas configuré sur le serveur.
+audio-error-keys-not-configured         = Impossible de démarrer le traitement — ces clés API ne sont pas configurées : { $keys }. Ajoutez-les dans les paramètres, puis réessayez.
 audio-error-already-processing          = Cet enregistrement n'est pas à l'état « téléversé » et ne peut pas être traité.
 
 # === Étiquettes d'étape du pipeline ===
@@ -83,7 +84,12 @@ audio-detail-cost-estimated-was         = Coût estimé initialement
 # === Vidéo avec annotations (phase 9) ===
 audio-callouts-download                 = Télécharger la vidéo annotée
 audio-callouts-failed                   = La génération de la vidéo annotée a échoué ; le reste de l'audit s'est terminé avec succès.
+audio-callouts-failed-help              = L'audit est terminé, mais la vidéo de marque (cartons de titre, logo Labos d'accessibilité INCA, filigrane et annotations) n'a pas pu être générée. La raison technique figure ci-dessous et dans le journal de l'application.
+audio-callouts-failed-details           = Afficher les détails techniques
 audio-callouts-pending                  = Génération de la vidéo annotée en cours…
+audio-analysis-partial-failed           = Certaines analyses n'ont pas pu être générées
+audio-analysis-partial-failed-help      = L'enregistrement est terminé, mais une ou plusieurs analyses par IA (p. ex. problèmes, points clés) ont échoué et ont été ignorées. Le reste de l'enregistrement est intact. Les raisons figurent ci-dessous et dans le journal de l'application.
+audio-analysis-partial-failed-details   = Afficher les analyses ayant échoué
 
 # === Récupération des paramètres (phase 10) ===
 recovery-title                          = Récupération des paramètres

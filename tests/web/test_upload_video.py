@@ -16,8 +16,11 @@ from unittest.mock import MagicMock, patch
 from bson import ObjectId
 from flask.testing import FlaskClient
 
+from auto_a11y.models import RecordingType
+
 
 _MP4_BYTES = b'fake mp4 content for testing'
+_MOV_BYTES = b'fake mov content for testing'
 
 
 def _make_recording_mock(
@@ -83,6 +86,72 @@ def test_mp4_upload_creates_recording_and_renders_confirm(
     assert saved.estimated_cost_usd > 0
 
 
+def _upload_with_context(
+    client: FlaskClient,
+    mock_db: MagicMock,
+    audit_context: str,
+) -> Any:
+    """POST a minimal valid MP4 upload with the given audit context.
+
+    Returns the ``Recording`` passed to ``db.create_recording`` so callers
+    can assert on the derived ``recording_type``.
+    """
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        return_value=120.0,
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'title': f'{audit_context} session',
+                'audit_context': audit_context,
+                'languages': ['en'],
+                'video_file': (io.BytesIO(_MP4_BYTES), 'rec.mp4', 'video/mp4'),
+            },
+            content_type='multipart/form-data',
+        )
+    assert resp.status_code == 200
+    assert mock_db.create_recording.called
+    return mock_db.create_recording.call_args.args[0]
+
+
+def test_mp4_upload_audit_context_sets_audit_recording_type(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """``audit`` context → ``recording_type`` AUDIT (so reports read 'audit')."""
+    saved = _upload_with_context(client, mock_db, 'audit')
+    assert saved.audit_context == 'audit'
+    assert saved.recording_type == RecordingType.AUDIT
+
+
+def test_mp4_upload_lived_experience_sets_lived_experience_recording_type(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """``livedExperience`` context must NOT be mislabelled as an audit.
+
+    Regression for: lived-experience uploads always displayed as 'audit'
+    because the video flow only set ``audit_context`` and left
+    ``recording_type`` at its AUDIT default.
+    """
+    saved = _upload_with_context(client, mock_db, 'livedExperience')
+    assert saved.audit_context == 'livedExperience'
+    assert saved.recording_type != RecordingType.AUDIT
+    assert saved.recording_type == RecordingType.LIVED_EXPERIENCE_WEBSITE
+
+
+def test_mp4_upload_navilens_sets_nav_and_wayfinding_recording_type(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """``navilens`` context → the nav-and-wayfinding lived-experience type."""
+    saved = _upload_with_context(client, mock_db, 'navilens')
+    assert saved.audit_context == 'navilens'
+    assert saved.recording_type == RecordingType.LIVED_EXPERIENCE_NAV_AND_WAYFINDING
+
+
 def test_mp4_upload_rejects_when_no_language_selected(
     client: FlaskClient,
     mock_db: MagicMock,
@@ -136,6 +205,104 @@ def test_mp4_upload_rejects_over_size_cap(
     assert not mock_db.create_recording.called
 
 
+def test_mov_upload_is_accepted(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """A QuickTime ``.mov`` (the macOS default recording format) is accepted.
+
+    Regression test for the Mac-upload bug: the upload was hard-locked to
+    ``video/mp4`` / ``.mp4``, so a Mac colleague's ``.mov`` (MIME
+    ``video/quicktime``) was rejected with a 400 before it ever reached
+    ffprobe. The pipeline only needs the audio track, which ffmpeg reads
+    from any container, so any file ffprobe can parse must be accepted.
+    """
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        return_value=120.0,
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'title': 'Mac audit session',
+                'audit_context': 'audit',
+                'languages': ['en'],
+                'video_file': (
+                    io.BytesIO(_MOV_BYTES), 'audit.mov', 'video/quicktime',
+                ),
+            },
+            content_type='multipart/form-data',
+        )
+
+    assert resp.status_code == 200
+    assert mock_db.create_recording.called
+
+
+def test_arbitrary_video_container_is_accepted(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """Format is validated by ffprobe, not by the extension/MIME allowlist.
+
+    A ``.webm`` upload (neither ``.mp4`` nor ``.mov``) is accepted because
+    ffprobe can read it; this locks in the "accept any video, let ffprobe
+    be the gate" decision rather than a fixed container allowlist.
+    """
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        return_value=90.0,
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'audit_context': 'audit',
+                'languages': ['en'],
+                'video_file': (
+                    io.BytesIO(b'fake webm content'), 'audit.webm', 'video/webm',
+                ),
+            },
+            content_type='multipart/form-data',
+        )
+
+    assert resp.status_code == 200
+    assert mock_db.create_recording.called
+
+
+def test_upload_rejected_when_ffprobe_cannot_read_file(
+    client: FlaskClient,
+    mock_db: MagicMock,
+) -> None:
+    """A file ffprobe can't parse → 400, no Recording row created.
+
+    ffprobe is the real gate now that the extension/MIME allowlist is
+    gone: an upload that isn't a readable media file must still be
+    refused, not persisted.
+    """
+    from auto_a11y.audio.errors import AudioPipelineError
+
+    with patch(
+        'auto_a11y.audio.segmenter.probe_duration',
+        side_effect=AudioPipelineError('unreadable'),
+    ):
+        resp = client.post(
+            '/recordings/upload/video',
+            data={
+                'project_id': 'p-1',
+                'audit_context': 'audit',
+                'languages': ['en'],
+                'video_file': (
+                    io.BytesIO(b'this is not a video'), 'notes.txt', 'text/plain',
+                ),
+            },
+            content_type='multipart/form-data',
+        )
+
+    assert resp.status_code == 400
+    assert not mock_db.create_recording.called
+
+
 def test_process_endpoint_flips_status_and_submits_job(
     client: FlaskClient,
     mock_db: MagicMock,
@@ -172,6 +339,39 @@ def test_process_endpoint_flips_status_and_submits_job(
 
     # Task submitted to the runner pool.
     submit_task.assert_called_once()
+
+
+def test_process_endpoint_refuses_when_api_keys_missing(
+    client: FlaskClient,
+    mock_db: MagicMock,
+    mock_video_runner: MagicMock,
+) -> None:
+    """No Deepgram/Anthropic key → refuse to start: no status flip, no job.
+
+    Regression test for the Mac colleague's failure: with no API keys the
+    pipeline used to start and die at transcription with a cryptic
+    ``Illegal header value b'Token '``. The process route must instead
+    refuse up front and tell the user to configure their keys.
+    """
+    rec = _make_recording_mock(status='uploaded')
+    mock_db.get_recording.return_value = rec
+    mock_video_runner.missing_api_keys.return_value = ['Deepgram', 'Anthropic']
+
+    with patch(
+        'auto_a11y.web.routes.recordings.task_runner.submit_task',
+    ) as submit_task, patch(
+        'auto_a11y.web.routes.recordings.JobManager'
+    ) as job_manager_cls:
+        resp = client.post(f'/recordings/{rec.id}/process')
+
+    # Redirect back to the detail page with a flashed error.
+    assert resp.status_code == 302
+    assert f'/recordings/{rec.id}' in resp.headers['Location']
+    # Crucially: nothing was started.
+    assert rec.status == 'uploaded'
+    assert not mock_db.update_recording.called
+    assert not job_manager_cls.get_instance.called
+    submit_task.assert_not_called()
 
 
 def test_process_endpoint_rejects_non_uploaded_status(

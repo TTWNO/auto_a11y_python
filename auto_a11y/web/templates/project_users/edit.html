@@ -389,6 +389,7 @@
             logout_button_selector: emptyToNull(fd.get('logout_button_selector')),
             logout_success_indicator_selector: emptyToNull(fd.get('logout_success_indicator_selector')),
             session_timeout_minutes: intOrDefault(fd.get('session_timeout_minutes'), 30),
+            manual_login_wait_seconds: intOrDefault(fd.get('manual_login_wait_seconds'), 120),
         };
 
         // Blank password preserves existing on PUT; non-blank rotates it.

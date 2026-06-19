@@ -6,6 +6,7 @@
     <title>ErrOutlineIsNoneOnInteractiveElement - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrOutlineIsNoneOnInteractiveElement_001_violations_basic",
     "issueId": "ErrOutlineIsNoneOnInteractiveElement",
     "expectedViolationCount": 3,
@@ -48,10 +49,14 @@
 <body>
     <h1>User Settings</h1>
 
-    <nav data-expected-violation="true"
-         data-violation-id="ErrOutlineIsNoneOnInteractiveElement"
-         data-violation-reason="Universal selector removes all outlines with !important. No alternative focus indicator provided. Keyboard users completely lose ability to see focus. Makes site unusable for keyboard-only users. Violates WCAG 2.4.7 by removing critical visual feedback without replacement">
-        <a href="/profile" class="menu-link">Profile</a>
+    <!-- The engine emits ErrOutlineIsNoneOnInteractiveElement at each interactive
+         element (the links), never at the nav container, so the annotation sits on
+         the link itself. -->
+    <nav>
+        <a href="/profile" class="menu-link"
+           data-expected-violation="true"
+           data-violation-id="ErrOutlineIsNoneOnInteractiveElement"
+           data-violation-reason="Universal selector removes all outlines with !important. No alternative focus indicator provided. Keyboard users completely lose ability to see focus. Makes site unusable for keyboard-only users. Violates WCAG 2.4.7 by removing critical visual feedback without replacement">Profile</a>
         <a href="/settings" class="menu-link">Settings</a>
         <a href="/logout" class="menu-link">Logout</a>
     </nav>

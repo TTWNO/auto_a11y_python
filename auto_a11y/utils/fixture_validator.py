@@ -34,7 +34,7 @@ class FixtureValidator:
         """
         # Check cache
         if not force_refresh and self._cache is not None:
-            if self._cache_time and (datetime.now() - self._cache_time).seconds < self._cache_duration:
+            if self._cache_time and (datetime.now() - self._cache_time).total_seconds() < self._cache_duration:
                 return self._cache
 
         try:

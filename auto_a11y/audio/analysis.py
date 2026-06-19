@@ -27,6 +27,27 @@ logger = logging.getLogger(__name__)
 Language = Literal["en", "fr"]
 
 
+# Output-token ceiling for one analysis pass. Was 8000, which truncated the
+# JSON for a full audit (every issue + painpoint + takeaway + assertion):
+# ~22.5 KB of dense JSON ≈ 8000 tokens, so the response was cut off
+# mid-object (stop_reason="max_tokens") and json.loads failed with a
+# misleading "Expecting ',' delimiter". We now request Opus's full 128K
+# output ceiling; the request streams (below) so the SDK doesn't trip its
+# non-streaming timeout guard at this size. max_tokens is only a cap —
+# billed on actual output — so the headroom costs nothing when unused.
+_MAX_OUTPUT_TOKENS = 128000
+
+
+# How many times to (re)issue the analyze request when the model returns a
+# COMPLETE response whose body still doesn't parse as JSON. The dominant
+# cause of parse failure — truncation at the token ceiling — is handled
+# separately (stop_reason="max_tokens" fails fast; a retry would just
+# truncate again). What remains is the occasional well-formed-looking but
+# invalid JSON from a non-deterministic generation; re-rolling it usually
+# yields valid JSON. Kept small: each attempt is a full (expensive) call.
+_MAX_PARSE_ATTEMPTS = 2
+
+
 _FRENCH_PREFIX = (
     "IMPORTANT: Produce ALL output in French (français). All field values, "
     "all natural-language content, in French.\n\n"
@@ -64,7 +85,7 @@ class Analyzer:
         self,
         *,
         client: Any,
-        model: str = "claude-opus-4-7",
+        model: str = "claude-opus-4-8",
         extended_context: bool = False,
     ) -> None:
         self._client = client
@@ -92,44 +113,81 @@ class Analyzer:
         if self._extended_context:
             betas.append("output-128k-2025-02-19")
 
-        message = self._client.messages.create(
-            model=self._model,
-            max_tokens=8000,
-            messages=[{"role": "user", "content": full_prompt}],
-            extra_headers={"anthropic-beta": ",".join(betas)},
-        )
+        # Stream the request: the analysis JSON can be large, and the SDK
+        # refuses / times out non-streaming requests at a high max_tokens.
+        # ``get_final_message()`` reassembles the full message for us.
+        #
+        # Retry only on a parse failure of a COMPLETE response (a flaky
+        # generation); truncation (stop_reason="max_tokens") raises
+        # immediately inside the loop since re-rolling won't help.
+        for attempt in range(1, _MAX_PARSE_ATTEMPTS + 1):
+            with self._client.messages.stream(
+                model=self._model,
+                max_tokens=_MAX_OUTPUT_TOKENS,
+                messages=[{"role": "user", "content": full_prompt}],
+                extra_headers={"anthropic-beta": ",".join(betas)},
+            ) as stream:
+                message = stream.get_final_message()
 
-        # Extract content text. Anthropic SDK returns a list of content
-        # blocks; only text-bearing blocks contribute to the payload.
-        text_blocks: list[str] = []
-        for block in message.content:
-            text = getattr(block, "text", None)
-            if isinstance(text, str):
-                text_blocks.append(text)
-        raw = "".join(text_blocks)
+            # Fail loudly and clearly if the model still hit the ceiling,
+            # instead of letting a truncated body surface as a cryptic JSON
+            # parse error. Not retryable — propagate out of the loop.
+            if getattr(message, "stop_reason", None) == "max_tokens":
+                raise AnalysisError(
+                    f"Analysis output for recording {recording_id} was truncated at "
+                    + f"the {_MAX_OUTPUT_TOKENS}-token limit (stop_reason=max_tokens); "
+                    + "the transcript may be unusually long. Raise the analysis token "
+                    + "budget and retry."
+                )
 
-        json_payload = self._extract_json(raw, recording_id)
+            # Extract content text. Anthropic SDK returns a list of content
+            # blocks; only text-bearing blocks contribute to the payload.
+            text_blocks: list[str] = []
+            for block in message.content:
+                text = getattr(block, "text", None)
+                if isinstance(text, str):
+                    text_blocks.append(text)
+            raw = "".join(text_blocks)
 
-        usage = AnthropicUsage(
-            input_tokens=int(getattr(message.usage, "input_tokens", 0) or 0),
-            output_tokens=int(getattr(message.usage, "output_tokens", 0) or 0),
-            cache_read_tokens=int(
-                getattr(message.usage, "cache_read_input_tokens", 0) or 0
-            ),
-            cache_write_tokens=int(
-                getattr(message.usage, "cache_creation_input_tokens", 0) or 0
-            ),
-        )
-        cost = cost_for_anthropic_call(
-            usage, model=self._model, extended_context=self._extended_context,
-        )
+            try:
+                json_payload = self._extract_json(raw, recording_id)
+            except AnalysisError as exc:
+                if attempt < _MAX_PARSE_ATTEMPTS:
+                    logger.warning(
+                        "Analysis JSON parse failed for recording %s "
+                        + "(attempt %d/%d): %s — retrying.",
+                        recording_id, attempt, _MAX_PARSE_ATTEMPTS, exc,
+                    )
+                    continue
+                raise
 
-        return AnalysisResult(
-            json_payload=json_payload,
-            html_text=None,
-            cost_usd=cost,
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
+            usage = AnthropicUsage(
+                input_tokens=int(getattr(message.usage, "input_tokens", 0) or 0),
+                output_tokens=int(getattr(message.usage, "output_tokens", 0) or 0),
+                cache_read_tokens=int(
+                    getattr(message.usage, "cache_read_input_tokens", 0) or 0
+                ),
+                cache_write_tokens=int(
+                    getattr(message.usage, "cache_creation_input_tokens", 0) or 0
+                ),
+            )
+            cost = cost_for_anthropic_call(
+                usage, model=self._model, extended_context=self._extended_context,
+            )
+
+            return AnalysisResult(
+                json_payload=json_payload,
+                html_text=None,
+                cost_usd=cost,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+            )
+
+        # Unreachable: the loop returns on success and raises on the final
+        # failed attempt. Present so the type checkers see a total function.
+        raise AnalysisError(
+            f"Analysis exhausted {_MAX_PARSE_ATTEMPTS} attempts for recording "
+            + f"{recording_id} without producing parseable JSON"
         )
 
     @staticmethod

@@ -119,6 +119,23 @@ echo "--- Step 5: Copy application source ---"
 # Copy essential files/dirs only
 rsync -a --exclude='__pycache__' --exclude='*.pyc' --exclude='.git' \
     "$PROJECT_DIR/auto_a11y" "$BUILD_DIR/app/"
+
+# The callouts/branding stage reads this PNG at runtime — resolved relative
+# to auto_a11y/audio/callouts.py (_asset_path), NOT pip-installed, so it
+# ships only via the rsync above. A missing/empty copy makes the annotated
+# "callouts" video render without the AccessLabs title-card logo + watermark
+# (or abort the render entirely). Fail at copy time, not on the user's machine.
+_logo_asset="$BUILD_DIR/app/auto_a11y/audio/assets/accesslabs_logo.png"
+[ -s "$_logo_asset" ] \
+    || { echo "ERROR: callouts logo asset missing/empty after copy: $_logo_asset" >&2; exit 1; }
+
+# Stamp the git commit so the running app can report which build it is — the
+# bundle carries no .git, so auto_a11y/build_info.py reads this file. Falls
+# back to "unknown" if the build host isn't a git checkout.
+git -C "$PROJECT_DIR" rev-parse --short HEAD > "$BUILD_DIR/app/auto_a11y/BUILD_COMMIT" 2>/dev/null \
+    || echo "unknown" > "$BUILD_DIR/app/auto_a11y/BUILD_COMMIT"
+echo "Stamped build commit: $(cat "$BUILD_DIR/app/auto_a11y/BUILD_COMMIT")"
+
 rsync -a --exclude='__pycache__' --exclude='*.pyc' \
     "$PROJECT_DIR/Fixtures" "$BUILD_DIR/app/"
 

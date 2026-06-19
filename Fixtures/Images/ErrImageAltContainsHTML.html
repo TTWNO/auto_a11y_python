@@ -4,27 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Alt Contains HTML Test - ErrImageAltContainsHTML</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrImageAltContainsHTML",
+    "issueId": "ErrImageAltContainsHTML",
+    "expectedViolationCount": 5,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Each img element whose alt text contains HTML markup triggers ErrImageAltContainsHTML; a comparison img element whose alt only contains literal less-than and greater-than characters as text is not flagged.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Images with HTML in Alt Text</h1>
     
     <!-- Alt text with HTML tags -->
-    <img src="photo1.jpg" alt="<strong>Important</strong> image">
+    <img data-expected-violation="true" data-violation-id="ErrImageAltContainsHTML" data-violation-reason="alt text contains strong markup" src="photo1.jpg" alt="<strong>Important</strong> image">
     
     <!-- Alt text with break tags -->
-    <img src="photo2.jpg" alt="Line one<br>Line two">
+    <img data-expected-violation="true" data-violation-id="ErrImageAltContainsHTML" data-violation-reason="alt text contains a break tag" src="photo2.jpg" alt="Line one<br>Line two">
     
     <!-- Alt text with link -->
-    <img src="photo3.jpg" alt="Visit <a href='site.com'>our site</a>">
+    <img data-expected-violation="true" data-violation-id="ErrImageAltContainsHTML" data-violation-reason="alt text contains an anchor tag" src="photo3.jpg" alt="Visit <a href='site.com'>our site</a>">
     
     <!-- Alt text with span -->
-    <img src="photo4.jpg" alt="<span style='color:red'>Red</span> car">
+    <img data-expected-violation="true" data-violation-id="ErrImageAltContainsHTML" data-violation-reason="alt text contains a span tag" src="photo4.jpg" alt="<span style='color:red'>Red</span> car">
     
     <!-- Alt text with entities that look like HTML -->
-    <img src="photo5.jpg" alt="Price < $100 & > $50">
+    <img data-expected-pass="true" data-pass-reason="alt text uses literal comparison characters as plain text, not HTML markup" src="photo5.jpg" alt="Price < $100 & > $50">
     
     <!-- Alt text with emphasis tags -->
-    <img src="photo6.jpg" alt="<em>Emphasized</em> text">
+    <img data-expected-violation="true" data-violation-id="ErrImageAltContainsHTML" data-violation-reason="alt text contains an emphasis tag" src="photo6.jpg" alt="<em>Emphasized</em> text">
     
     <p>Alt text should be plain text without HTML markup.</p>
 </body>

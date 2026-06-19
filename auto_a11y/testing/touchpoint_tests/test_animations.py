@@ -154,6 +154,31 @@ async def test_animations(page: Page) -> dict[str, Any]:
                     return false;
                 }
 
+                // Resolve any CSS colour value to its WCAG relative luminance (0-1).
+                // A canvas context normalises keywords/hex/rgb() to a parseable form
+                // without needing the colour applied to an in-document element.
+                const luminanceCtx = document.createElement('canvas').getContext('2d');
+                function colorLuminance(colorValue) {
+                    if (!luminanceCtx) return null;
+                    luminanceCtx.fillStyle = '#000000';
+                    luminanceCtx.fillStyle = colorValue;
+                    const normalized = luminanceCtx.fillStyle;
+                    let r, g, b;
+                    if (normalized.charAt(0) === '#') {
+                        r = parseInt(normalized.substr(1, 2), 16) / 255;
+                        g = parseInt(normalized.substr(3, 2), 16) / 255;
+                        b = parseInt(normalized.substr(5, 2), 16) / 255;
+                    } else {
+                        const match = normalized.match(/rgba?\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)/);
+                        if (!match) return null;
+                        r = parseInt(match[1], 10) / 255;
+                        g = parseInt(match[2], 10) / 255;
+                        b = parseInt(match[3], 10) / 255;
+                    }
+                    const lin = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+                    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+                }
+
                 // Analyze keyframes to detect problematic animation patterns
                 function analyzeKeyframes(animationName) {
                     const problems = [];
@@ -187,6 +212,29 @@ async def test_animations(page: Page) -> dict[str, Any]:
                                                     type: 'flashing',
                                                     severity: 'high',
                                                     description: 'Rapid opacity changes can trigger seizures'
+                                                });
+                                            }
+                                        }
+
+                                        // Check for background-colour flashing (e.g. white<->black);
+                                        // same seizure risk as opacity flashing but via colour swings
+                                        let bgLuminances = [];
+                                        keyframes.forEach(kf => {
+                                            const bg = kf.style.backgroundColor;
+                                            if (bg !== '' && bg !== undefined) {
+                                                const lum = colorLuminance(bg);
+                                                if (lum !== null) bgLuminances.push(lum);
+                                            }
+                                        });
+
+                                        if (bgLuminances.length >= 2) {
+                                            const maxLum = Math.max(...bgLuminances);
+                                            const minLum = Math.min(...bgLuminances);
+                                            if (maxLum - minLum > 0.5) {
+                                                problems.push({
+                                                    type: 'flashing',
+                                                    severity: 'high',
+                                                    description: 'Rapid background colour changes can trigger seizures'
                                                 });
                                             }
                                         }

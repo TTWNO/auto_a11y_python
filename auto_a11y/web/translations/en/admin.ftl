@@ -12,6 +12,30 @@ admin-settings-source-environment = No values are saved here. The current config
 admin-settings-source-unset = This integration is not configured. Saving values below will enable it.
 admin-settings-source-default = No values are saved here and no environment variables are set. The application is using built-in defaults; saving below will override them.
 
+# Application secrets — stored in the per-user settings file (read before the
+# database is available). Mongo URI, optional API keys, ffmpeg overrides.
+admin-settings-user-secrets-heading = Application secrets
+admin-settings-user-secrets-description = Connection and API-key values used at startup and by optional features. These are stored in this computer's local settings file, separate from the database settings above.
+admin-settings-user-secrets-restart-note = Saved values apply to new work right away. Restart the application to apply them everywhere.
+admin-settings-user-secrets-mongodb-uri = MongoDB connection URI
+admin-settings-user-secrets-mongodb-uri-help = Leave blank to use the bundled/default database connection.
+admin-settings-user-secrets-anthropic = Anthropic API key
+admin-settings-user-secrets-anthropic-help = Enables AI analysis features.
+admin-settings-user-secrets-deepgram = Deepgram API key
+admin-settings-user-secrets-deepgram-help = Enables audio transcription features.
+admin-settings-user-secrets-huggingface = Hugging Face token
+admin-settings-user-secrets-huggingface-help = Optional; used for speaker-diarization models.
+admin-settings-user-secrets-ffmpeg = ffmpeg path (optional override)
+admin-settings-user-secrets-ffmpeg-help = Leave blank to use the bundled ffmpeg or the one on your PATH.
+admin-settings-user-secrets-ffprobe = ffprobe path (optional override)
+admin-settings-user-secrets-ffprobe-help = Leave blank to use the bundled ffprobe or the one on your PATH.
+admin-settings-user-secrets-secret-set = A value is already stored — leave blank to keep it.
+admin-settings-user-secrets-secret-unset = No value is stored yet.
+admin-settings-user-secrets-placeholder-set = •••••••• (stored)
+admin-settings-user-secrets-remove = Remove the stored value
+admin-settings-user-secrets-saved = Application secrets saved.
+admin-settings-user-secrets-save-failed = Could not write the settings file: { $detail }
+
 # Generic helpers shared across env-var sections.
 admin-settings-restart-note = Most changes take effect immediately. A few settings (e.g. server bind address, scheduler startup) only apply after restarting the application.
 admin-settings-password-placeholder-set = (leave blank to keep existing value)

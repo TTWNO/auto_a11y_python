@@ -11,7 +11,8 @@ from bson import ObjectId
 from datetime import datetime
 import logging
 
-from auto_a11y.models import DiscoveredPage, DrupalSyncStatus
+from auto_a11y.models import DiscoveredPage, DrupalSyncStatus, UserRole
+from auto_a11y.web.routes.auth import discovered_page_role_required
 from auto_a11y.drupal import DrupalJSONAPIClient, DiscoveredPageTaxonomies
 from auto_a11y.drupal.config import get_drupal_config
 
@@ -20,6 +21,7 @@ discovered_pages_bp = Blueprint('discovered_pages', __name__)
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>')
+@discovered_page_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
     """View and edit a discovered page"""
     try:
@@ -70,12 +72,13 @@ def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
         )
 
     except Exception as e:
-        logger.error(f"Error viewing discovered page: {e}")
-        flash(ftl('pages-error-loading-page-error', error=str(e)), 'error')
+        logger.exception(f"Error viewing discovered page: {e}")
+        flash(ftl('common-unexpected-error'), 'error')
         return redirect(url_for('projects.list_projects'))
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>/edit', methods=['POST'])
+@discovered_page_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Update a discovered page"""
     try:
@@ -140,15 +143,16 @@ def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Re
             return redirect(url_for('discovered_pages.view_discovered_page', page_id=page_id))
 
     except Exception as e:
-        logger.error(f"Error updating discovered page: {e}")
+        logger.exception(f"Error updating discovered page: {e}")
         if request.is_json:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
         else:
-            flash(ftl('pages-error-updating-page-error', error=str(e)), 'error')
+            flash(ftl('common-unexpected-error'), 'error')
             return redirect(url_for('discovered_pages.view_discovered_page', page_id=page_id))
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>/delete', methods=['POST'])
+@discovered_page_role_required(UserRole.ADMIN)
 def delete_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Delete a discovered page"""
     try:
@@ -178,9 +182,9 @@ def delete_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[
                 return redirect(url_for('projects.list_projects'))
 
     except Exception as e:
-        logger.error(f"Error deleting discovered page: {e}")
+        logger.exception(f"Error deleting discovered page: {e}")
         if request.is_json:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
         else:
-            flash(ftl('pages-error-deleting-page-error', error=str(e)), 'error')
+            flash(ftl('common-unexpected-error'), 'error')
             return redirect(url_for('projects.list_projects'))

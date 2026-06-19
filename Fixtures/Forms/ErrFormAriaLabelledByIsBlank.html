@@ -4,13 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Form aria-labelledby Blank Reference Test Fixture</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFormAriaLabelledByIsBlank",
+    "issueId": "ErrFormAriaLabelledByIsBlank",
+    "expectedViolationCount": 7,
+    "expectedPassCount": 3,
+    "enforceElementExpectations": true,
+    "description": "Form landmarks whose aria-labelledby resolves to a blank/empty referenced element (empty, whitespace-only, comment-only, empty-nested, all-blank multi-ID, or nbsp-only), leaving the form with no accessible name. Seven forms demonstrate the issue; two comparison forms reference visible text and pass. Test 6 (hidden empty reference) is owned by the sibling code ErrFormAriaLabelledByReferenceDIsHidden and is intentionally not annotated here.",
+    "wcag": "1.3.1,4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Test Fixture: Form aria-labelledby References Blank Elements</h1>
     
     <!-- Test Case 1: Form with aria-labelledby pointing to completely empty element -->
     <div id="empty-label"></div>
-    <form aria-labelledby="empty-label">
+    <form aria-labelledby="empty-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByIsBlank" data-violation-reason="aria-labelledby references div#empty-label which has no text content">
         <input type="text" name="test1" placeholder="This form has empty labelledby">
         <button type="submit">Submit</button>
     </form>
@@ -19,21 +30,21 @@
     <div id="whitespace-label">   
         
     </div>
-    <form aria-labelledby="whitespace-label">
+    <form aria-labelledby="whitespace-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByIsBlank" data-violation-reason="aria-labelledby references div#whitespace-label which contains only whitespace">
         <input type="email" name="test2" placeholder="This form has whitespace-only labelledby">
         <button type="submit">Submit</button>
     </form>
 
     <!-- Test Case 3: Form with aria-labelledby pointing to element with only HTML comments -->
     <div id="comment-only-label"><!-- This is just a comment --></div>
-    <form aria-labelledby="comment-only-label">
+    <form aria-labelledby="comment-only-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByIsBlank" data-violation-reason="aria-labelledby references div#comment-only-label which contains only an HTML comment (no text)">
         <input type="password" name="test3" placeholder="This form has comment-only labelledby">
         <button type="submit">Submit</button>
     </form>
 
     <!-- Test Case 4: Form with aria-labelledby pointing to element with empty nested elements -->
     <div id="empty-nested-label"><span></span><div></div></div>
-    <form aria-labelledby="empty-nested-label">
+    <form aria-labelledby="empty-nested-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByIsBlank" data-violation-reason="aria-labelledby references div#empty-nested-label whose nested span/div have no text content">
         <input type="tel" name="test4" placeholder="This form has empty nested elements in labelledby">
         <button type="submit">Submit</button>
     </form>
@@ -42,7 +53,7 @@
     <div id="blank1"></div>
     <div id="blank2">  </div>
     <div id="blank3"><!-- comment --></div>
-    <form aria-labelledby="blank1 blank2 blank3">
+    <form aria-labelledby="blank1 blank2 blank3" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByIsBlank" data-violation-reason="all three referenced ids (blank1/blank2/blank3) resolve to blank text">
         <input type="url" name="test5" placeholder="This form has multiple blank labelledby references">
         <button type="submit">Submit</button>
     </form>
@@ -56,14 +67,14 @@
 
     <!-- Test Case 7: Form with aria-labelledby pointing to element with only non-breaking spaces -->
     <div id="nbsp-label">&nbsp;&nbsp;&nbsp;</div>
-    <form aria-labelledby="nbsp-label">
+    <form aria-labelledby="nbsp-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByIsBlank" data-violation-reason="aria-labelledby references div#nbsp-label which contains only non-breaking spaces">
         <input type="date" name="test7" placeholder="This form has non-breaking spaces in labelledby">
         <button type="submit">Submit</button>
     </form>
 
     <!-- Test Case 8: Form with aria-labelledby pointing to element that contains only invisible characters -->
     <div id="invisible-chars-label">&#8203;&#8204;&#8205;</div>
-    <form aria-labelledby="invisible-chars-label">
+    <form aria-labelledby="invisible-chars-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByIsBlank" data-violation-reason="referenced element contains only zero-width characters, so the accessible name is blank">
         <input type="time" name="test8" placeholder="This form has invisible characters in labelledby">
         <button type="submit">Submit</button>
     </form>
@@ -73,7 +84,7 @@
     
     <!-- Correct: Form with proper aria-labelledby pointing to element with text content -->
     <div id="proper-label">User Registration Form</div>
-    <form aria-labelledby="proper-label">
+    <form aria-labelledby="proper-label" data-expected-pass="true" data-pass-reason="aria-labelledby references div#proper-label with visible text 'User Registration Form'">
         <input type="text" name="username" placeholder="Username">
         <input type="email" name="email" placeholder="Email">
         <button type="submit">Register</button>
@@ -81,7 +92,7 @@
 
     <!-- Correct: Form with aria-labelledby pointing to visible text content -->
     <h3 id="contact-heading">Contact Information</h3>
-    <form aria-labelledby="contact-heading">
+    <form aria-labelledby="contact-heading" data-expected-pass="true" data-pass-reason="aria-labelledby references h3#contact-heading with visible text 'Contact Information'">
         <input type="text" name="name" placeholder="Full Name">
         <input type="tel" name="phone" placeholder="Phone Number">
         <button type="submit">Save Contact</button>
@@ -91,7 +102,7 @@
     <div id="form-title">Payment Details</div>
     <div id="form-subtitle">Secure Checkout</div>
     <div id="empty-but-has-sibling"></div>
-    <form aria-labelledby="form-title form-subtitle empty-but-has-sibling">
+    <form aria-labelledby="form-title form-subtitle empty-but-has-sibling" data-expected-pass="true" data-pass-reason="two referenced elements have text, so the resolved accessible name is non-blank despite one empty sibling reference">
         <input type="text" name="cardnumber" placeholder="Card Number">
         <button type="submit">Process Payment</button>
     </form>

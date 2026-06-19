@@ -8,7 +8,7 @@ import hashlib
 import uuid
 
 from flask import Blueprint, Response, request, jsonify, url_for
-from flask_login import current_user
+from flask_login import current_user, login_required
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config
 from itsdangerous import URLSafeSerializer
@@ -56,7 +56,7 @@ def create_website_token(website_id: str) -> Response | tuple[Response, int]:
 
 def _create_token(scope: TokenScope, scope_id: str) -> Response:
     """Shared logic for creating a token"""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     label = request.form.get('label', '').strip()
     if not label:
@@ -69,7 +69,7 @@ def _create_token(scope: TokenScope, scope_id: str) -> Response:
         try:
             days = int(expires_days)
             if days > 0:
-                expires_at = datetime.now() + timedelta(days=days)
+                expires_at = datetime.now(timezone.utc) + timedelta(days=days)
         except ValueError:
             pass
 
@@ -127,8 +127,16 @@ def list_website_tokens(website_id: str) -> Response:
 
 
 @share_tokens_bp.route('/share-tokens/<token_id>/revoke', methods=['POST'])
+@login_required
 def revoke_token(token_id: str) -> Response | tuple[Response, int]:
-    """Revoke a share token"""
+    """Revoke a share token.
+
+    ``<token_id>`` is not a resource ``resolve_project_id`` can map to a
+    project, so this route cannot use ``project_role_required``. Instead it
+    keeps its in-handler scope check: it loads the token, resolves the token's
+    scope to its owning project, and requires ADMIN/AUDITOR on that project
+    (superadmins bypass). ``@login_required`` blocks anonymous callers.
+    """
     # Look up token to find its scope, then check project membership
     token = get_db().get_share_token(token_id)
     if not token:

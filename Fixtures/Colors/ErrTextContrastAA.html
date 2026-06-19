@@ -79,9 +79,9 @@
             font-size: 19px;
         }
         
-        /* Test Case 9: Red text on pink (contrast ~4.2:1 - close but still failing) */
+        /* Test Case 9: Red text on pink (contrast ~4.1:1 - close but still failing) */
         .fail-red {
-            color: #b33939;
+            color: #c44a4a;
             background: #ffeaea;
             font-size: 16px;
         }
@@ -93,9 +93,9 @@
             font-size: 14px;
         }
         
-        /* Test Case 11: Small text with borderline contrast (~4.4:1) */
+        /* Test Case 11: Small text with borderline contrast (~3.95:1) */
         .fail-small-text {
-            color: #767676;
+            color: #808080;
             background: #ffffff;
             font-size: 12px;
         }
@@ -129,6 +129,17 @@
             font-size: 16px;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrTextContrastAA",
+    "issueId": "ErrTextContrastAA",
+    "expectedViolationCount": 21,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Normal text failing the 4.5:1 AA contrast threshold on white, light, dark and coloured backgrounds, plus inline link/list/strong/em/code cases. One large-text case (24px bold heading) emits ErrLargeTextContrastAA instead. Each demonstrated case is validated individually.",
+    "wcag": "1.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Text Contrast AA Test Fixture</h1>
@@ -136,77 +147,77 @@
     
     <div class="test-section">
         <h3>Test Case 1: Light Gray on White (~2.9:1)</h3>
-        <div class="test-paragraph fail-light-gray">
+        <div class="test-paragraph fail-light-gray" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#9d9d9d on white 16px ~2.7:1 fails 4.5:1">
             This text uses #9d9d9d on #ffffff background with 16px font size. The contrast ratio is approximately 2.9:1, which fails WCAG AA requirements. This should trigger an ErrTextContrastAA error.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 2: Gray on Light Gray (~2.1:1)</h3>
-        <div class="test-paragraph fail-gray-on-light">
+        <div class="test-paragraph fail-gray-on-light" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#888888 on #e8e8e8 14px ~2.9:1 fails 4.5:1">
             This paragraph demonstrates #888888 text on #e8e8e8 background at 14px. The contrast ratio is around 2.1:1, significantly below the required 4.5:1 threshold.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 3: Light Blue on White (~3.2:1)</h3>
-        <div class="test-paragraph fail-light-blue">
+        <div class="test-paragraph fail-light-blue" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#7fb3d3 on white 18px ~2.3:1 fails 4.5:1">
             Here we have #7fb3d3 colored text on white background (#ffffff) at 18px font size. This creates approximately 3.2:1 contrast ratio, failing AA compliance.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 4: Dark Gray on Medium Gray (~2.8:1)</h3>
-        <div class="test-paragraph fail-dark-on-medium">
+        <div class="test-paragraph fail-dark-on-medium" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#666666 on #cccccc 16px ~3.6:1 fails 4.5:1">
             This content uses #666666 foreground color on #cccccc background with 16px font. The resulting contrast of ~2.8:1 does not meet accessibility standards.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 5: Yellow on Light Yellow (~1.8:1)</h3>
-        <div class="test-paragraph fail-yellow">
+        <div class="test-paragraph fail-yellow" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#d4aa00 on #fffacd 20px ~2.1:1 fails 4.5:1">
             This text demonstrates #d4aa00 on #fffacd background at 20px font size. With only 1.8:1 contrast ratio, this is particularly problematic for users with visual impairments.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 6: Purple on Light Purple (~3.8:1)</h3>
-        <div class="test-paragraph fail-purple">
+        <div class="test-paragraph fail-purple" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#8b5a8c on #f0e6f7 15px ~4.4:1 fails 4.5:1">
             Using #8b5a8c text on #f0e6f7 background with 15px font creates approximately 3.8:1 contrast. While better than previous examples, it still falls short of the 4.5:1 requirement.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 7: Orange on Peach (~2.5:1)</h3>
-        <div class="test-paragraph fail-orange">
+        <div class="test-paragraph fail-orange" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#cc7a00 on #ffe5cc 17px ~2.7:1 fails 4.5:1">
             This demonstrates #cc7a00 text on #ffe5cc background at 17px. The 2.5:1 contrast ratio makes this text difficult to read for many users.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 8: Green on Light Green (~3.1:1)</h3>
-        <div class="test-paragraph fail-green">
+        <div class="test-paragraph fail-green" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#5d8a5d on #e8f5e8 19px ~3.6:1 fails 4.5:1">
             Here's #5d8a5d colored text on #e8f5e8 background with 19px font size. The contrast ratio of approximately 3.1:1 fails to meet WCAG AA standards.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 9: Red on Pink (~4.2:1 - Close Failure)</h3>
-        <div class="test-paragraph fail-red">
+        <div class="test-paragraph fail-red" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#c44a4a on #ffeaea 16px ~4.1:1 fails 4.5:1 (nudged from #b33939 which actually passed at 5.1:1)">
             This text uses #b33939 on #ffeaea background at 16px. With 4.2:1 contrast, it's close to passing but still fails the 4.5:1 AA requirement by a narrow margin.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 10: Very Light Gray on White (~1.1:1)</h3>
-        <div class="test-paragraph fail-very-light">
+        <div class="test-paragraph fail-very-light" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#f0f0f0 on white 14px ~1.1:1 fails 4.5:1">
             This extremely low contrast example uses #f0f0f0 on #ffffff with 14px font. At only 1.1:1 contrast ratio, this text is nearly invisible to many users.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 11: Small Text Edge Case</h3>
-        <div class="test-paragraph fail-small-text">
+        <div class="test-paragraph fail-small-text" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#808080 on white 12px normal ~3.95:1 fails 4.5:1 (nudged from #767676 which actually passed at 4.54:1)">
             This smaller text (12px) uses #767676 on white background. While large text might pass at lower contrast, normal text at this size with ~4.4:1 contrast fails AA requirements.
         </div>
     </div>
@@ -214,44 +225,44 @@
     <div class="test-section">
         <h3>Test Case 12: Link-Style Text</h3>
         <div class="test-paragraph">
-            This paragraph contains a <span class="fail-link">link with poor contrast</span> using #9bb3ff on white background at 16px font size.
+            This paragraph contains a <span class="fail-link" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#9bb3ff on white 16px ~2.0:1 fails 4.5:1">link with poor contrast</span> using #9bb3ff on white background at 16px font size.
         </div>
     </div>
     
     <div class="test-section">
         <h3>Test Case 13: Heading with Poor Contrast</h3>
-        <h2 class="fail-heading">This Heading Fails Contrast Requirements</h2>
+        <h2 class="fail-heading" data-expected-violation="true" data-violation-id="ErrLargeTextContrastAA" data-violation-reason="#aaaaaa on white 24px bold (large) ~2.3:1 fails 3:1">This Heading Fails Contrast Requirements</h2>
         <p>The heading above uses #aaaaaa on white background at 24px, creating insufficient contrast.</p>
     </div>
     
     <div class="test-section">
         <h3>Test Case 14: List Items</h3>
         <ul>
-            <li class="fail-list-item">First list item with poor contrast (#999999 on white)</li>
-            <li class="fail-list-item">Second list item also failing contrast requirements</li>
-            <li class="fail-list-item">Third item demonstrating consistent contrast failure</li>
+            <li class="fail-list-item" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#999999 on white 16px ~2.9:1 fails 4.5:1">First list item with poor contrast (#999999 on white)</li>
+            <li class="fail-list-item" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#999999 on white 16px ~2.9:1 fails 4.5:1">Second list item also failing contrast requirements</li>
+            <li class="fail-list-item" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#999999 on white 16px ~2.9:1 fails 4.5:1">Third item demonstrating consistent contrast failure</li>
         </ul>
     </div>
     
     <div class="test-section">
         <h3>Additional Test Content</h3>
-        <div class="test-paragraph fail-light-gray">
+        <div class="test-paragraph fail-light-gray" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#9d9d9d on white 16px ~2.7:1 fails 4.5:1 (additional content)">
             <strong>Bold text</strong> that still fails contrast requirements when using #9d9d9d on white background.
         </div>
-        <div class="test-paragraph fail-gray-on-light">
+        <div class="test-paragraph fail-gray-on-light" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#888888 on #e8e8e8 14px ~2.9:1 fails 4.5:1 (additional content)">
             <em>Italic text</em> with insufficient contrast ratio of approximately 2.1:1.
         </div>
-        <div class="test-paragraph fail-light-blue">
+        <div class="test-paragraph fail-light-blue" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#7fb3d3 on white 18px ~2.3:1 fails 4.5:1 (additional content)">
             Text with <code style="color: inherit; background: inherit;">inline code styling</code> that maintains the same poor contrast.
         </div>
     </div>
     
     <div class="test-section" style="background: #333;">
         <h3 style="color: white;">Dark Background Tests</h3>
-        <div style="color: #666666; background: #333333; padding: 10px; font-size: 16px;">
+        <div style="color: #666666; background: #333333; padding: 10px; font-size: 16px;" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#666666 on #333333 16px ~2.2:1 fails 4.5:1">
             This text uses #666666 on #333333 background, creating approximately 1.9:1 contrast ratio, failing AA requirements.
         </div>
-        <div style="color: #888888; background: #444444; padding: 10px; font-size: 18px; margin-top: 10px;">
+        <div style="color: #888888; background: #444444; padding: 10px; font-size: 18px; margin-top: 10px;" data-expected-violation="true" data-violation-id="ErrTextContrastAA" data-violation-reason="#888888 on #444444 18px ~2.8:1 fails 4.5:1">
             Another dark theme example with #888888 on #444444, resulting in roughly 2.8:1 contrast.
         </div>
     </div>

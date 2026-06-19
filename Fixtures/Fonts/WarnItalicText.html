@@ -15,12 +15,24 @@
             line-height: 1.5;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnItalicText",
+    "issueId": "WarnItalicText",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 6,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Large blocks of italicized body text reduce readability. Each italic block element is validated individually; one short non-italic comparison paragraph passes.",
+    "wcag": "1.4.8"
+}
+    </script>
 </head>
 <body>
     <h1>Excessive Italic Text Usage</h1>
     
     <!-- Entire paragraph in italics -->
-    <p class="italic-paragraph">
+    <p class="italic-paragraph" data-expected-warning="true" data-warning-id="WarnItalicText" data-warning-reason="Entire paragraph set in italics">
         This entire paragraph is in italics, which can be difficult to read for extended periods.
         Italic text should be used sparingly for emphasis, not for large blocks of content.
         Extended italic text can cause eye strain and reduce reading speed.
@@ -28,18 +40,18 @@
     
     <!-- Long italic section -->
     <div class="large-italic-block">
-        <p>This is a large block of italic text that spans multiple lines and paragraphs.</p>
-        <p>Using italics for extended content makes it harder to scan and comprehend.</p>
-        <p>Screen readers don't distinguish italic text, so meaning shouldn't depend on it.</p>
+        <p data-expected-warning="true" data-warning-id="WarnItalicText" data-warning-reason="Italic paragraph inside large italic block">This is a large block of italic text that spans multiple lines and paragraphs.</p>
+        <p data-expected-warning="true" data-warning-id="WarnItalicText" data-warning-reason="Italic paragraph inside large italic block">Using italics for extended content makes it harder to scan and comprehend.</p>
+        <p data-expected-warning="true" data-warning-id="WarnItalicText" data-warning-reason="Italic paragraph inside large italic block">Screen readers don't distinguish italic text, so meaning shouldn't depend on it.</p>
     </div>
     
     <!-- Multiple italic elements -->
-    <i>This uses the i tag for italic text, which is semantically unclear.</i>
-    <em style="display: block; margin: 10px 0;">
+    <i data-expected-warning="true" data-warning-id="WarnItalicText" data-warning-reason="i element used for an extended italic run">This uses the i tag for italic text, which is semantically unclear.</i>
+    <em style="display: block; margin: 10px 0;" data-expected-warning="true" data-warning-id="WarnItalicText" data-warning-reason="em block italicizes a large text block">
         This entire emphasis block is italicized, reducing readability for long content.
         The em tag is better semantically but still shouldn't be used for large text blocks.
     </em>
     
-    <p>Italic text should be used sparingly for emphasis.</p>
+    <p data-expected-pass="true" data-pass-reason="Short non-italic body paragraph; not flagged for excessive italic usage">Italic text should be used sparingly for emphasis.</p>
 </body>
 </html>

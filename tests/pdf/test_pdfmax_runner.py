@@ -15,6 +15,7 @@ behind an env-var gate because (a) it costs ~10s on a typical PDF and
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import subprocess
 from pathlib import Path
@@ -165,6 +166,12 @@ class TestCacheBehaviour:
         cache.mkdir()
         cached = cache / "doc_accessibility_report.md"
         cached.write_text("# cached content")
+        # The cache is content-keyed: a sidecar holds the SHA-256 of the
+        # PDF the report was generated from. Reuse only happens when the
+        # current PDF's hash matches the stored one, so write a matching
+        # sidecar. (mtime is no longer the cache key — see pdfmax_runner.)
+        sidecar = cache / "doc_accessibility_report.sha256"
+        sidecar.write_text(hashlib.sha256(pdf.read_bytes()).hexdigest())
         # Push the cache mtime forward so it post-dates the source PDF.
         future = pdf.stat().st_mtime + 60
         os.utime(cached, (future, future))

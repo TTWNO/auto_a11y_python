@@ -4,15 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No Alt Test - ErrNoAlt</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrNoAlt",
+    "issueId": "ErrNoAlt",
+    "expectedViolationCount": 1,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "An img element with no alt attribute triggers ErrNoAlt; a comparison img element that has a valid alt does not.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Images and Image Maps Without Alt</h1>
     
     <!-- Image without alt -->
-    <img src="important.jpg">
+    <img src="important.jpg" data-expected-violation="true" data-violation-id="ErrNoAlt" data-violation-reason="img element has no alt attribute">
     
     <!-- Image map areas without alt -->
-    <img src="map.jpg" usemap="#map1" alt="Site map">
+    <img src="map.jpg" usemap="#map1" alt="Site map" data-expected-pass="true" data-pass-reason="img element has a valid alt attribute">
     <map name="map1">
         <area shape="rect" coords="0,0,100,100" href="page1.html">
         <area shape="circle" coords="150,150,50" href="page2.html">

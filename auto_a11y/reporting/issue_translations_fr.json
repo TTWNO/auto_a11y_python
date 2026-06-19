@@ -3494,5 +3494,381 @@
     "why": "La validation de l'état de la page a échoué lors de la vérification de la visibilité ou de l'accessibilité d'un élément dans un état spécifique de la page.",
     "who": "Tous les utilisateurs qui dépendent de l'état correct de la page pour interagir avec le contenu.",
     "remediation": "Vérifiez que les éléments attendus sont présents et accessibles dans tous les états de la page testés. Consultez les détails de l'erreur pour identifier l'élément et l'état problématiques."
+  },
+  "AI_ErrAlertWithoutARIA": {
+    "title": "Le message d'alerte {element_text} n'a pas de balisage ARIA de region active",
+    "what": "Une alerte, une banniere ou un message d'etat visuel est presente sans role=\"alert\", role=\"status\" ni attribut aria-live, de sorte que les technologies d'assistance n'ont aucun moyen de savoir qu'il doit etre annonce. Le message apparait stylise comme un avis de succes, d'erreur ou d'avertissement, mais il est expose aux lecteurs d'ecran comme du texte ordinaire.",
+    "what_generic": "Une alerte ou un message d'etat n'a pas le role ARIA ou l'attribut aria-live necessaire pour que les lecteurs d'ecran l'annoncent.",
+    "why": "Les messages d'etat qui communiquent un succes, une erreur ou un avertissement doivent etre determinables par programmation et annonces sans deplacer le focus, conformement au critere WCAG 4.1.3 Messages d'etat. Sans region active ARIA, les utilisateurs de lecteurs d'ecran n'entendent jamais que leurs modifications ont ete enregistrees, qu'une erreur s'est produite ou que leur session va expirer.",
+    "who": "Les utilisateurs de lecteurs d'ecran aveugles ou malvoyants, et toute personne qui s'appuie sur une technologie d'assistance annoncant les changements de la page plutot que de les reperer visuellement.",
+    "remediation": "Ajoutez role=\"alert\" (avec aria-live=\"assertive\") aux messages d'erreur et d'avertissement urgents, ou role=\"status\" (avec aria-live=\"polite\") aux messages de succes ou de progression non urgents; incluez aria-atomic=\"true\" pour que le message complet soit lu d'un seul tenant. Assurez-vous que le conteneur de la region active existe dans le DOM avant l'insertion de son contenu afin que le changement soit detecte."
+  },
+  "AI_ErrAudioWithoutTranscript": {
+    "title": "Le contenu audio n'a pas de transcription textuelle",
+    "what": "Le lecteur audio {element_tag} diffuse du contenu parl ou strictement sonore sans fournir de transcription textuelle, ni en ligne ni sous forme de lien. Un bref rsum descriptif prs du lecteur n'quivaut pas une transcription complte.",
+    "what_generic": "Du contenu strictement audio est fourni sans transcription textuelle quivalente.",
+    "why": "Sans transcription, les personnes qui ne peuvent pas entendre l'audio n'ont aucun moyen d'accder son information, ce qui choue au critre WCAG 1.2.1 Contenu seulement audio et seulement vido (pranregistr). Une transcription doit restituer toutes les paroles et les sons significatifs afin que le contenu soit accessible tous.",
+    "who": "Les personnes sourdes ou malentendantes, les personnes dans un environnement bruyant ou o le son est interdit qui ne peuvent pas couter l'audio, et les utilisateurs qui prfrent ou doivent lire plutt qu'couter.",
+    "remediation": "Fournissez une transcription textuelle complte de toutes les paroles et des sons importants, soit en ligne sous le lecteur (ventuellement rfrence avec aria-describedby), soit via un lien clairement libell comme Lire la transcription complte . Veillez ce que la transcription restitue tout le contenu et non un simple rsum."
+  },
+  "AI_ErrAutocompleteWithoutARIA": {
+    "title": "Widget de saisie semi-automatique sans balisage ARIA de zone de liste modifiable",
+    "what": "Une zone de saisie semi-automatique personnalisee, construite a partir d'un champ texte simple et d'une liste de suggestions, n'expose aucun ARIA : le champ n'a ni role=combobox, ni aria-autocomplete, ni aria-expanded, ni aria-controls, et le conteneur et les elements de suggestions n'ont ni role=listbox ni role=option. Les technologies d'assistance ne peuvent pas savoir que le champ controle une liste deroulante ni transmettre son etat ouvert ou ferme.",
+    "what_generic": "Un widget de saisie semi-automatique personnalise ne comporte pas le balisage ARIA de zone de liste modifiable necessaire aux technologies d'assistance pour le comprendre et l'utiliser.",
+    "why": "Le critere WCAG 4.1.2 Nom, role et valeur exige que le role, l'etat et les relations des widgets personnalises soient exposes aux technologies d'assistance. Sans le modele ARIA combobox, les utilisateurs de lecteurs d'ecran ne savent pas que des suggestions existent, combien il y en a ni laquelle est active, et la liste n'est pas utilisable comme une veritable zone de liste modifiable.",
+    "who": "Les utilisateurs de lecteurs d'ecran et les personnes naviguant uniquement au clavier qui dependent des roles, etats et de la relation aria-activedescendant exposes par programme pour decouvrir et parcourir la liste de suggestions.",
+    "remediation": "Appliquez le modele combobox de WAI-ARIA : ajoutez role=combobox, aria-autocomplete=list, aria-expanded (bascule true/false) et aria-controls pointant vers la liste sur le champ ; ajoutez role=listbox au conteneur de suggestions et role=option avec un id a chaque element ; et definissez aria-activedescendant sur le champ avec l'id de l'option en surbrillance lors de la navigation au clavier."
+  },
+  "AI_ErrAutoplayMedia": {
+    "title": "Le media demarre automatiquement sans controle de l'utilisateur",
+    "what": "Un element {element_tag} demarre la lecture audio automatiquement au chargement de la page sans permettre a l'utilisateur de la mettre en pause, de l'arreter ou de la couper. Une video ou un audio en arriere-plan qui se lance automatiquement et dure plus de 3 secondes doit offrir un controle pour le couper.",
+    "what_generic": "Un audio ou une video demarre automatiquement au chargement de la page sans controle permettant de la mettre en pause, de l'arreter ou de la couper.",
+    "why": "Cela enfreint le critere WCAG 1.4.2 Controle du son. Un son inattendu qui se lance automatiquement masque la synthese vocale du lecteur d'ecran, rendant la page inutilisable, et aucun mecanisme ne permet de l'arreter independamment du volume du systeme.",
+    "who": "Les utilisateurs de lecteurs d'ecran dont la voix de la technologie d'assistance est masquee par le son, les personnes ayant des troubles cognitifs ou de l'attention distraites par un son inattendu, et les personnes malvoyantes qui dependent des indices sonores.",
+    "remediation": "Retirez l'attribut autoplay afin que la lecture ne demarre que lorsque l'utilisateur active un controle. Ajoutez l'attribut controls a l'element audio ou video, ou fournissez des boutons de lecture et de pause explicites, pour que l'utilisateur decide du moment du demarrage et puisse l'arreter."
+  },
+  "AI_ErrBreadcrumbsWithoutARIA": {
+    "title": "Le fil d'Ariane n'est pas balisé comme navigation de fil d'Ariane",
+    "what": "Un fil d'Ariane est visible mais il n'est pas encapsulé dans un élément <nav> avec aria-label=\"Breadcrumb\", et la page courante n'est pas indiquée par aria-current=\"page\". Le balisage utilise une simple structure <ul>, <div> ou <span>, de sorte que les technologies d'assistance ne peuvent pas le reconnaître comme un fil d'Ariane.",
+    "what_generic": "Le fil d'Ariane ne comporte pas d'élément nav avec aria-label=\"Breadcrumb\" ni de marqueur aria-current, de sorte que les technologies d'assistance ne peuvent pas l'identifier comme un fil d'Ariane.",
+    "why": "Sans le point de repère de navigation ni le libellé de fil d'Ariane, les utilisateurs de lecteur d'écran ne peuvent pas identifier le fil comme navigation de fil d'Ariane, le trouver via la navigation par points de repère, ni savoir quel élément représente la page courante, ce qui affaiblit les indices de localisation exigés par le critère WCAG 2.4.8 (Localisation) et les attentes de nom/rôle/valeur du critère 4.1.2.",
+    "who": "Les utilisateurs de lecteurs d'écran et d'autres technologies d'assistance qui s'appuient sur les points de repère et les rôles pour naviguer et comprendre où ils se situent dans la hiérarchie du site.",
+    "remediation": "Encapsulez le fil d'Ariane dans un élément <nav aria-label=\"Breadcrumb\">, balisez le fil comme une liste ordonnée (<ol> avec des éléments <li>) puisque les étapes sont séquentielles, et ajoutez aria-current=\"page\" à l'élément de liste représentant la page courante."
+  },
+  "AI_ErrCardWithoutARIA": {
+    "title": "Composant carte construit avec des div generiques sans structure semantique ni ARIA",
+    "what": "Un composant carte est assemble a partir de simples elements <div> sans balisage semantique ni ARIA, de sorte que sa structure n'est pas exposee aux technologies d'assistance. Lorsque toute la carte est cliquable via un gestionnaire onclick, elle n'a aucun role interactif et ne peut etre atteinte ni actionnee au clavier.",
+    "what_generic": "Un composant carte est construit avec des div generiques sans HTML semantique ni ARIA, et les cartes cliquables n'ont aucun role interactif ni prise en charge du clavier.",
+    "why": "Sans elements semantiques ni ARIA, les lecteurs d'ecran ne peuvent pas identifier la carte comme une region distincte, annoncer son titre comme un en-tete, ni signaler qu'une carte en div est en fait un controle, ce qui enfreint les criteres WCAG 1.3.1 Information et relations et 4.1.2 Nom, role et valeur. Les utilisateurs au clavier ne peuvent pas activer un gestionnaire de clic attache a une div non focalisable.",
+    "who": "Les utilisateurs de lecteurs d'ecran, qui perdent la structure de la carte et le role des cartes cliquables; et les utilisateurs au clavier seul ou de dispositifs a commutateur, qui ne peuvent ni focaliser ni activer les cartes cliquables en div.",
+    "remediation": "Encadrez chaque carte dans un element semantique <article> et utilisez un vrai en-tete (par ex. <h2>) pour le titre de la carte ainsi qu'une <img> avec texte alternatif au lieu d'une image de fond CSS. Pour une carte entierement cliquable, enveloppez son contenu dans un <a href> (ou un <button>) afin qu'elle soit focalisable et actionnable au clavier, et ajoutez-lui un aria-label decrivant la destination ou l'action; ajoutez un aria-label aux valeurs ambigues comme le prix."
+  },
+  "AI_ErrCheckboxGroupWithoutARIA": {
+    "title": "Le groupe de cases à cocher n'a pas les rôles ARIA, états ou sémantiques de regroupement appropriés",
+    "what": "Un ensemble de cases à cocher est présenté sans la sémantique requise par les technologies d'assistance : les cases personnalisées en div n'ont pas de role=\"checkbox\", pas d'état aria-checked, et le conteneur n'a pas de role=\"group\", ou les cases natives ne sont pas regroupées dans un fieldset/legend et n'ont pas d'éléments label associés.",
+    "what_generic": "Un groupe de cases à cocher n'a pas les rôles ARIA, les états cochés, ou le regroupement fieldset/legend et label nécessaires pour que les technologies d'assistance les identifient et les utilisent.",
+    "why": "Sans ces rôles, états et regroupement, les lecteurs d'écran ne peuvent pas annoncer les éléments comme des cases à cocher, indiquer si chacune est cochée, ni transmettre l'étiquette commune du groupe, de sorte que les utilisateurs ne peuvent ni comprendre ni utiliser les contrôles. Cela échoue au critère WCAG 4.1.2 Nom, rôle et valeur.",
+    "who": "Les utilisateurs de lecteurs d'écran et d'autres technologies d'assistance qui dépendent des rôles, états et contextes de groupe programmatiques pour percevoir et utiliser les cases à cocher.",
+    "remediation": "Pour les cases personnalisées, attribuez à chaque contrôle role=\"checkbox\", aria-checked (maintenu à jour lors du basculement), un nom accessible et tabindex=\"0\" avec gestion du clavier, et placez-les dans un conteneur avec role=\"group\" et aria-labelledby pointant vers l'étiquette du groupe ; pour les cases natives, regroupez l'ensemble dans un fieldset avec une legend et associez à chaque input un label via for/id."
+  },
+  "AI_ErrDatePickerWithoutARIA": {
+    "title": "Sélecteur de date construit sans rôles ARIA ni regroupement",
+    "what": "Un sélecteur de date personnalisé n'expose aucune structure accessible : le calendrier contextuel n'a pas de role=\"dialog\", la grille du calendrier n'a pas de role=\"grid\" et ses cellules de date n'ont pas de role=\"gridcell\" ni d'aria-label par date, ou les listes déroulantes mois/jour/année ne sont pas regroupées dans un fieldset/legend avec des étiquettes individuelles.",
+    "what_generic": "Un sélecteur de date personnalisé n'a pas les rôles ARIA, les étiquettes et le regroupement nécessaires pour que les technologies d'assistance puissent l'interpréter et l'utiliser.",
+    "why": "Sans ces rôles, étiquettes et regroupements, un lecteur d'écran ne peut pas annoncer l'ouverture d'un calendrier, ni transmettre la structure de la grille ou la date représentée par chaque cellule, ni indiquer que les listes déroulantes distinctes forment une seule date, ce qui enfreint le critère WCAG 4.1.2 Nom, rôle et valeur.",
+    "who": "Les utilisateurs de lecteurs d'écran (personnes aveugles et malvoyantes) et les personnes naviguant au clavier qui dépendent des rôles exposés et de la gestion du focus pour utiliser la grille du calendrier.",
+    "remediation": "Donnez au déclencheur aria-haspopup=\"dialog\" et aria-expanded ; marquez le calendrier avec role=\"dialog\", aria-modal et un aria-label ; ajoutez role=\"grid\" au conteneur des dates et role=\"gridcell\" avec un aria-label descriptif (p. ex. « 1 janvier 2024 ») et un tabindex mobile à chaque date ; pour des champs séparés, regroupez les listes mois/jour/année dans un fieldset avec une legend et étiquetez chaque liste."
+  },
+  "AI_ErrDisclosureWithoutARIA": {
+    "title": "Le widget de divulgation « {element_text} » n'a pas le balisage ARIA requis",
+    "what": "Un contrôle de divulgation (afficher/masquer) bascule du contenu mais ne possède aucun état aria-expanded, et il est parfois construit à partir d'un élément non interactif tel qu'un div ou un span au lieu d'un bouton. L'état déplié/replié et le lien avec le contenu contrôlé ne sont pas exposés aux technologies d'assistance.",
+    "what_generic": "Un contrôle de divulgation afficher/masquer n'a pas l'état aria-expanded ni la sémantique de bouton nécessaires pour que les technologies d'assistance l'annoncent et l'actionnent.",
+    "why": "Sans aria-expanded, les personnes utilisant un lecteur d'écran ne peuvent pas savoir si la divulgation est ouverte ou fermée, et sans aria-controls elles ne peuvent pas repérer le contenu qu'elle révèle. Lorsque le déclencheur est un div ou un span plutôt qu'un bouton, il n'a aucun rôle et n'est ni atteignable ni actionnable au clavier, ce qui enfreint les critères WCAG 4.1.2 Nom, rôle et valeur et 2.1.1 Clavier.",
+    "who": "Les personnes utilisant un lecteur d'écran, qui n'entendent aucune annonce de l'état déplié/replié ni de la région contrôlée ; et les personnes naviguant uniquement au clavier, qui ne peuvent ni atteindre ni activer les déclencheurs construits à partir d'éléments div/span non interactifs.",
+    "remediation": "Utilisez un <button> natif pour le déclencheur, ajoutez aria-expanded (basculé entre « false » et « true » dans le script lorsque le contenu s'affiche ou se masque) et aria-controls pointant vers l'id du contenu ; donnez éventuellement à la région révélée role=\"region\" avec aria-labelledby renvoyant au bouton, et marquez toute icône de bascule décorative avec aria-hidden=\"true\"."
+  },
+  "AI_ErrFeedWithoutARIA": {
+    "title": "Le composant de fil d'actualité n'utilise pas le motif ARIA feed",
+    "what": "Un fil ou flux de publications déroulant est construit avec de simples conteneurs sans role=\"feed\" sur l'enveloppe ni role=\"article\" sur chaque élément, et il omet aria-posinset, aria-setsize et aria-busy. Rien n'indique aux technologies d'assistance qu'il s'agit d'un fil dynamique et paginé.",
+    "what_generic": "Un fil ou flux dynamique d'éléments n'utilise pas le motif ARIA feed (role=\"feed\", role=\"article\", aria-posinset, aria-setsize, aria-busy).",
+    "why": "Sans le motif feed, un lecteur d'écran présente le contenu comme du texte indifférencié; les utilisateurs ne peuvent ni reconnaître un fil, ni naviguer article par article en mode lecture, ni connaître leur position dans l'ensemble, ni être informés du chargement de nouveaux éléments. Cela échoue au critère WCAG 4.1.2 Nom, rôle et valeur, car le rôle et l'état du composant ne sont pas déterminables par programmation.",
+    "who": "Les personnes utilisant un lecteur d'écran (p. ex. JAWS, NVDA, VoiceOver) et les autres utilisateurs de technologies d'assistance qui dépendent des rôles et de la structure programmatiques pour naviguer efficacement dans un contenu dynamique à défilement infini.",
+    "remediation": "Ajoutez role=\"feed\" avec un nom accessible (aria-label ou aria-labelledby) et aria-busy sur le conteneur, attribuez à chaque élément role=\"article\" avec tabindex à 0, un aria-labelledby qui le nomme, ainsi que des valeurs aria-posinset et aria-setsize; passez aria-busy à \"true\" pendant le chargement de nouveaux éléments et mettez à jour aria-setsize à mesure que des éléments sont ajoutés."
+  },
+  "AI_ErrFlashingContent": {
+    "title": "Le contenu clignote plus de trois fois par seconde",
+    "what": "Un élément clignote, stroboscope ou alterne rapidement entre des couleurs très contrastées plus de trois fois par seconde. Le contenu détecté se répète assez vite (par exemple une boucle d'animation de 0,1s ou 0,15s) pour franchir le seuil général de clignotement.",
+    "what_generic": "Le contenu clignote plus de trois fois par seconde, ce qui peut déclencher des crises chez les personnes photosensibles.",
+    "why": "Un clignotement plus rapide que trois fois par seconde peut déclencher des crises chez les personnes atteintes d'épilepsie photosensible, ce qui enfreint le critère WCAG 2.3.1 Pas plus de trois flashs ou sous le seuil critique (niveau A). Les transitions de couleurs très contrastées, comme rouge vers bleu ou noir vers jaune, sont particulièrement dangereuses.",
+    "who": "Les personnes atteintes d'épilepsie photosensible et d'autres troubles convulsifs, qui peuvent subir une crise à cause du clignotement; les personnes ayant des troubles vestibulaires ou une sensibilité à la migraine sont également touchées.",
+    "remediation": "Supprimez le clignotement rapide ou ralentissez l'animation pour qu'elle ne clignote pas plus de trois fois par seconde (un intervalle d'au moins 0,34s; un clignotement par seconde est sûr). Remplacez les stroboscopes de couleurs très contrastées par des changements de couleur peu contrastés ou une pulsation douce de l'opacité, et maintenez le clignotement dans la petite zone sûre définie par le critère WCAG 2.3.1."
+  },
+  "AI_ErrFormErrorNotAnnounced": {
+    "title": "L'erreur de validation du formulaire n'est pas annoncée aux lecteurs d'écran",
+    "what": "Une erreur de validation de formulaire est affichée uniquement visuellement (texte rouge et bordure rouge) mais n'est pas reliée programmatiquement à son champ ni exposée aux technologies d'assistance. Le champ de saisie n'a pas d'attribut aria-invalid ni d'aria-describedby pointant vers le message, et le message apparaît sans région live, donc il n'est jamais annoncé.",
+    "what_generic": "Une erreur de validation de formulaire est affichée uniquement visuellement et n'est ni associée programmatiquement à son champ ni annoncée aux technologies d'assistance.",
+    "why": "Les utilisateurs de lecteurs d'écran ne reçoivent aucune indication qu'un champ a échoué à la validation ni pourquoi, ce qui les empêche de repérer ou de corriger l'erreur. Cela enfreint les critères WCAG 3.3.1 (Identification des erreurs) et 4.1.3 (Messages d'état), car l'erreur n'est ni associée programmatiquement au champ ni annoncée lorsqu'elle apparaît.",
+    "who": "Les personnes aveugles ou malvoyantes utilisant un lecteur d'écran, ainsi que les personnes qui ne perçoivent pas la couleur et la bordure servant à signaler visuellement l'erreur.",
+    "remediation": "Ajoutez aria-invalid='true' sur le champ en erreur et reliez-le à son message avec aria-describedby pointant vers l'identifiant du message ; donnez à chaque message d'erreur role='alert' (ou placez les erreurs dans une région aria-live / un résumé d'erreurs avec role='alert') afin qu'il soit annoncé dès son apparition, et retirez aria-invalid ainsi que le message une fois le champ valide."
+  },
+  "AI_ErrLandmarkWithoutLabel": {
+    "title": "Le repère {element_tag} dupliqué n'a pas d'etiquette distinctive",
+    "what": "La page contient plusieurs reperes du meme type (par exemple deux zones de navigation ou deux zones complementaires) et ce repere {element_tag} n'a ni aria-label ni aria-labelledby pour le distinguer. Les lecteurs d'ecran les annoncent tous avec le meme nom generique.",
+    "what_generic": "Une page comporte plusieurs reperes du meme type mais ceux-ci n'ont pas d'etiquette accessible distinctive.",
+    "why": "Lorsque plusieurs reperes du meme type partagent un nom accessible identique, les utilisateurs de technologies d'assistance qui naviguent par repere ne peuvent pas savoir de quelle zone il s'agit, ce qui annule l'interet de la navigation par repere et echoue aux criteres WCAG 2.4.1 Contourner des blocs et 4.1.2 Nom, role et valeur.",
+    "who": "Les personnes aveugles ou malvoyantes qui utilisent un lecteur d'ecran (JAWS, NVDA, VoiceOver) et naviguent par reperes pour passer d'une zone de la page a une autre.",
+    "remediation": "Donnez a chaque repere duplique un nom accessible unique : ajoutez aria-label (par exemple aria-label=\"Navigation principale\" et aria-label=\"Navigation utilitaire\") ou faites pointer aria-labelledby vers un titre visible a l'interieur de la zone (par exemple aria-labelledby=\"updates-heading\")."
+  },
+  "AI_ErrLoadingStateNotAnnounced": {
+    "title": "L'état de chargement n'est pas annoncé aux technologies d'assistance",
+    "what": "Un indicateur de chargement ou de progression (comme un cercle de progression ou un texte « Chargement... ») apparaît et disparaît visuellement mais n'est pas exposé via une région dynamique, de sorte qu'il n'est jamais annoncé aux lecteurs d'écran. Les utilisateurs ne savent pas que le contenu se charge ni quand le chargement est terminé.",
+    "what_generic": "Un indicateur de chargement ou de progression visuel n'est pas exposé aux technologies d'assistance via une région dynamique, de sorte que ses changements d'état ne sont jamais annoncés.",
+    "why": "Sans message d'état dans une région dynamique, les utilisateurs de lecteur d'écran ne reçoivent aucune notification indiquant qu'une action est en cours ou terminée, ce qui les laisse incertains quant au bon fonctionnement de la page. Cela enfreint le critère WCAG 4.1.3 Messages d'état, qui exige que les changements d'état soient déterminables par programmation et annoncés sans déplacer le focus.",
+    "who": "Les personnes aveugles ou malvoyantes utilisant un lecteur d'écran, ainsi que les utilisateurs d'autres technologies d'assistance qui dépendent des mises à jour d'état programmatiques plutôt que des indices visuels.",
+    "remediation": "Ajoutez une région dynamique telle que <div role=\"status\" aria-live=\"polite\" aria-atomic=\"true\"> et mettez à jour son texte au début du chargement (par ex. « Chargement, veuillez patienter... ») et à la fin (par ex. « Données chargées avec succès »); marquez le cercle de progression purement visuel avec aria-hidden=\"true\", et reliez le contrôle déclencheur avec aria-describedby pointant vers la région d'état."
+  },
+  "AI_ErrMeterWithoutARIA": {
+    "title": "Jauge ou indicateur de mesure sans balisage ARIA accessible",
+    "what": "Un indicateur de mesure ou une jauge personnalisée (comme une barre d'utilisation du processeur ou d'espace disque) est construit à partir d'éléments <div> génériques, sans role=\"meter\", sans aria-valuenow/aria-valuemin/aria-valuemax et sans étiquette accessible : sa valeur et sa signification n'existent que sous forme visuelle.",
+    "what_generic": "Une jauge ou un indicateur de mesure personnalisé n'a pas le rôle ARIA et les propriétés de valeur (ou un élément meter natif) nécessaires pour exposer sa mesure aux technologies d'assistance.",
+    "why": "Les lecteurs d'écran ne peuvent pas déterminer ce que la jauge mesure, sa valeur actuelle ni sa plage acceptable, car la mesure est transmise uniquement de façon visuelle, sans sémantique programmatique (WCAG 1.3.1 Information et relations et 4.1.2 Nom, rôle et valeur).",
+    "who": "Les personnes aveugles ou malvoyantes utilisant un lecteur d'écran, et toute personne dépendant d'une technologie d'assistance pour lire des valeurs de mesure qui ne sont pas présentées sous forme de texte.",
+    "remediation": "Utilisez l'élément HTML natif <meter> avec value/min/max accompagné d'un <label> associé, ou ajoutez role=\"meter\" (ou role=\"progressbar\") au conteneur avec aria-valuenow, aria-valuemin, aria-valuemax, un nom accessible via aria-label ou aria-labelledby, et aria-valuetext pour une lecture compréhensible ; masquez tout texte de valeur visuel dupliqué avec aria-hidden=\"true\"."
+  },
+  "AI_ErrMissingLiveRegion": {
+    "title": "Le contenu mis a jour dynamiquement n'a pas de region live ARIA",
+    "what": "Une region telle qu'un message d'etat, un compteur de panier ou une notification est mise a jour dynamiquement par JavaScript mais ne possede aucun attribut aria-live ni role de region live, de sorte que le changement n'est pas transmis aux technologies d'assistance.",
+    "what_generic": "Du contenu mis a jour dynamiquement n'a pas de region live ARIA, de sorte que les lecteurs d'ecran n'annoncent pas le changement.",
+    "why": "Les utilisateurs de lecteurs d'ecran ne recoivent aucune annonce lorsque le contenu change ; ils manquent donc les confirmations d'etat, les mises a jour de quantite et les alertes urgentes. Cela echoue au critere WCAG 4.1.3 Messages d'etat, qui exige que les changements d'etat soient determinables par programme sans necessiter le focus.",
+    "who": "Les personnes aveugles ou malvoyantes utilisant un lecteur d'ecran, qui ne voient pas les mises a jour visuelles et dependent des annonces vocales pour savoir que le contenu a change.",
+    "remediation": "Placez la region mise a jour dans un element avec un role de region live approprie et une valeur aria-live : utilisez role=\"status\" avec aria-live=\"polite\" pour les mises a jour non urgentes (confirmations, compteurs) et role=\"alert\" avec aria-live=\"assertive\" pour les messages critiques et urgents ; ajoutez aria-atomic=\"true\" pour que le message complet soit lu."
+  },
+  "AI_ErrMissingSkipLink": {
+    "title": "Aucun lien d'évitement pour contourner la navigation",
+    "what": "La page présente de grands blocs de navigation (un menu principal et une barre latérale) avant le contenu principal, mais n'offre aucun lien d'évitement pour les contourner. Les personnes utilisant le clavier doivent parcourir chaque élément de navigation à chaque chargement de page pour atteindre le contenu.",
+    "what_generic": "La page comporte des blocs de navigation répétés mais aucun lien d'évitement permettant aux personnes utilisant le clavier de les contourner pour atteindre le contenu principal.",
+    "why": "Cela enfreint le critère WCAG 2.4.1 Contourner des blocs. Un mécanisme doit permettre de contourner les blocs de contenu répétés sur plusieurs pages, comme la navigation; sans lui, les personnes utilisant le clavier ou un lecteur d'écran sont obligées de parcourir des dizaines de liens répétés avant de pouvoir utiliser la page.",
+    "who": "Les personnes naviguant uniquement au clavier, celles utilisant un dispositif de commutation et les personnes utilisant un lecteur d'écran qui naviguent de façon séquentielle et ne peuvent pas sauter les blocs de navigation répétés à l'aide d'un pointeur.",
+    "remediation": "Ajoutez un lien d'évitement comme premier élément focalisable de la page, p. ex. <a href=\"#main-content\" class=\"skip-link\">Aller au contenu principal</a>, donnez au contenu principal une cible correspondante (<main id=\"main-content\" tabindex=\"-1\">), et stylisez le lien pour qu'il soit masqué visuellement jusqu'à ce qu'il reçoive le focus clavier; ajoutez d'autres liens d'évitement pour les autres grands blocs, comme une barre latérale."
+  },
+  "AI_ErrModalWithoutARIA": {
+    "title": "Boîte de dialogue modale sans sémantique ARIA ni gestion du focus",
+    "what": "Une boîte de dialogue modale est construite avec un conteneur ordinaire (par exemple un {element_tag}) dépourvu de role=\"dialog\", de aria-modal=\"true\" et de nom accessible, et qui ne déplace ni ne confine le focus clavier à son ouverture. Les technologies d'assistance ne peuvent pas détecter qu'une boîte de dialogue est apparue, à quoi elle sert, ni que l'arrière-plan est inactif.",
+    "what_generic": "Une boîte de dialogue modale est dépourvue de role=\"dialog\", de aria-modal=\"true\", d'un nom accessible et d'une gestion appropriée du focus.",
+    "why": "Sans role=\"dialog\" ni aria-modal=\"true\", un lecteur d'écran n'annonce jamais la fenêtre modale ni son objet (critère 4.1.2 Nom, rôle et valeur), et faute de déplacement ou de confinement du focus, les utilisateurs au clavier et de lecteur d'écran continuent de tabuler vers la page masquée derrière la superposition et perdent leur repère (critères 2.1.1 Clavier et 2.4.3 Parcours du focus).",
+    "who": "Les utilisateurs de lecteur d'écran, qui ne reçoivent aucune annonce de l'ouverture de la fenêtre modale ni de son contenu; les personnes naviguant uniquement au clavier ou par commutateur, dont le focus s'échappe vers l'arrière-plan inactif; et les personnes ayant des troubles cognitifs, privées d'un contexte clair et délimité.",
+    "remediation": "Ajoutez role=\"dialog\" et aria-modal=\"true\" au conteneur de la fenêtre modale, donnez-lui un nom accessible avec aria-labelledby pointant vers le titre (et aria-describedby pour le texte), puis, à l'ouverture, déplacez le focus vers la première commande de la boîte de dialogue, confinez Tab/Maj+Tab à l'intérieur, gérez la touche Échap pour fermer et redonnez le focus à l'élément déclencheur à la fermeture."
+  },
+  "AI_ErrMotionWithoutControl": {
+    "title": "Le contenu en mouvement n'a aucune commande de pause, d'arret ou de masquage",
+    "what": "Un contenu qui defile ou bouge automatiquement, comme un carrousel automatique ou un effet de defilement parallaxe, fonctionne en continu sans permettre a l'utilisateur de le mettre en pause, de l'arreter ou de le desactiver, et ne respecte pas le reglage prefers-reduced-motion.",
+    "what_generic": "Un contenu en mouvement automatique fonctionne sans aucune commande pour le mettre en pause, l'arreter ou le masquer et ignore les preferences de mouvement reduit.",
+    "why": "Le critere WCAG 2.2.2 (Mettre en pause, arreter, masquer) exige un mecanisme permettant de mettre en pause, d'arreter ou de masquer tout mouvement qui demarre automatiquement et dure plus de cinq secondes, et le critere WCAG 2.3.3 (Animation declenchee par une interaction) exige que les mouvements non essentiels puissent etre desactives ; sans ces commandes, le mouvement distrait et peut empecher la lecture du contenu.",
+    "who": "Les personnes ayant des troubles vestibulaires qui ressentent des vertiges ou des nausees face au mouvement, les personnes ayant des troubles de l'attention ou cognitifs distraites par le mouvement, les personnes photosensibles et les utilisateurs de loupe d'ecran pour qui le contenu en mouvement est difficile a suivre.",
+    "remediation": "Fournir un bouton de pause/arret visible et utilisable au clavier (par exemple un <button> avec aria-label='Mettre le carrousel en pause' qui bascule l'animation) pour tout contenu qui defile automatiquement plus de cinq secondes, et ajouter une regle @media (prefers-reduced-motion: reduce) qui desactive l'animation et remplace le parallaxe background-attachment: fixed par scroll."
+  },
+  "AI_ErrNotificationWithoutARIA": {
+    "title": "Une notification apparaît sans région dynamique ni rôle status/alert",
+    "what": "Une notification (par exemple un message de succès, d'erreur ou d'information) apparaît dynamiquement sans role=\"status\", role=\"alert\" ni région aria-live, de sorte que son contenu n'est jamais transmis aux technologies d'assistance lorsqu'elle s'affiche.",
+    "what_generic": "Une notification dynamique s'affiche sans rôle status/alert ni région aria-live, de sorte que les lecteurs d'écran ne l'annoncent jamais.",
+    "why": "Comme le message est inséré ou affiché sans région dynamique, les lecteurs d'écran ne l'annoncent pas, laissant les personnes non voyantes ignorer qu'une mise à jour d'état, une confirmation ou une erreur s'est produite. Cela enfreint le critère WCAG 4.1.3 Messages d'état, qui exige des messages d'état déterminables par programmation et annoncés automatiquement.",
+    "who": "Les personnes aveugles ou malvoyantes utilisant un lecteur d'écran, qui n'entendent jamais la notification et manquent les confirmations, erreurs ou mises à jour que les personnes voyantes voient apparaître à l'écran.",
+    "remediation": "Ajoutez une région dynamique à chaque notification : utilisez role=\"status\" avec aria-live=\"polite\" pour les confirmations non critiques et les mises à jour informatives, et role=\"alert\" avec aria-live=\"assertive\" pour les erreurs qui doivent interrompre l'utilisateur ; ajoutez aria-atomic=\"true\" afin que le message complet soit annoncé comme un tout."
+  },
+  "AI_ErrPaginationWithoutARIA": {
+    "title": "Les commandes de pagination n'ont pas de balisage de navigation ARIA",
+    "what": "Un ensemble de commandes de pagination n'est pas encadré par un élément <nav> doté d'un aria-label, et la page courante n'est pas indiquée par aria-current=\"page\". Les technologies d'assistance ne peuvent pas reconnaître la commande comme une navigation de pagination ni déterminer quelle page est active.",
+    "what_generic": "Les commandes de pagination n'ont pas de repère nav étiqueté ni de marqueur aria-current pour la page courante.",
+    "why": "Sans repère de navigation étiqueté, les utilisateurs de lecteurs d'écran ne peuvent pas trouver ou reconnaître la zone de pagination, et sans aria-current=\"page\" ils ne peuvent pas savoir sur quelle page ils se trouvent. Cela enfreint les critères WCAG 2.4.8 Localisation (les utilisateurs perdent leur repère dans l'ensemble des résultats) et 4.1.2 Nom, rôle et valeur (le rôle et l'état de la commande ne sont pas exposés aux technologies d'assistance).",
+    "who": "Les utilisateurs de lecteurs d'écran, ainsi que les personnes utilisant d'autres technologies d'assistance qui s'appuient sur les repères et les états ARIA pour naviguer et connaître leur position courante dans des résultats paginés.",
+    "remediation": "Encadrez les liens de pagination dans un élément <nav> doté d'un aria-label descriptif (par exemple aria-label=\"Pagination\"), indiquez la page courante avec aria-current=\"page\" et donnez à chaque lien de page un nom accessible clair, comme aria-label=\"Aller à la page 3\" ou « Aller à la page suivante »."
+  },
+  "AI_ErrProgressBarWithoutARIA": {
+    "title": "L'indicateur de progression n'a pas le rôle progressbar ni les attributs de valeur ARIA",
+    "what": "Un indicateur de progression ou de chargement visuel est construit à partir d'éléments stylisés sans role=\"progressbar\" ni les attributs aria-valuenow/aria-valuemin/aria-valuemax (ou aria-busy pour un état indéterminé), de sorte que son état n'est transmis que visuellement.",
+    "what_generic": "Un indicateur de progression ou de chargement visuel n'a pas le rôle progressbar ni d'attributs de valeur ARIA, de sorte que son état n'est pas exposé aux technologies d'assistance.",
+    "why": "Sans le rôle progressbar ni les attributs de valeur, les technologies d'assistance ne peuvent pas identifier l'élément comme indicateur de progression ni annoncer la part de la tâche accomplie, ce qui enfreint le critère WCAG 4.1.2 Nom, rôle et valeur, car le composant n'expose aucun rôle ni valeur programmatiques.",
+    "who": "Les personnes utilisant un lecteur d'écran et celles qui dépendent d'une technologie d'assistance pour savoir qu'un traitement est en cours et où il en est.",
+    "remediation": "Ajoutez role=\"progressbar\" à l'indicateur avec aria-valuenow, aria-valuemin (0) et aria-valuemax (100), ainsi qu'un nom accessible via aria-labelledby ou aria-label, en mettant à jour aria-valuenow à mesure que la progression change ; pour un état indéterminé/de chargement, omettez aria-valuenow et définissez aria-busy=\"true\", et annoncez les changements au moyen d'une région aria-live ou role=\"status\"."
+  },
+  "AI_ErrRadioGroupWithoutARIA": {
+    "title": "Le groupe de boutons radio manque du regroupement et de l'état ARIA requis",
+    "what": "Un ensemble de choix mutuellement exclusifs est présenté comme un groupe de boutons radio, mais il manque le balisage dont les lecteurs d'écran ont besoin : un groupe personnalisé construit à partir d'éléments <div> génériques n'a pas de role=\"radiogroup\", pas de role=\"radio\" sur les options et aucun état aria-checked, tandis que des champs radio natifs ne sont pas encadrés par un fieldset/legend et n'ont pas d'étiquettes associées.",
+    "what_generic": "Un groupe de boutons radio manque des rôles ARIA, de l'état de sélection et du regroupement dont les lecteurs d'écran ont besoin pour l'identifier et l'utiliser.",
+    "why": "Sans ces rôles, états et regroupement, les technologies d'assistance ne peuvent pas annoncer le contrôle comme un groupe de boutons radio, ne peuvent pas indiquer à l'utilisateur quelle option est sélectionnée ni transmettre la question commune à laquelle les options répondent ; le nom, le rôle et la valeur du contrôle ne sont donc pas exposés (WCAG 4.1.2) et la relation de groupe est perdue (WCAG 1.3.1).",
+    "who": "Les utilisateurs de lecteurs d'écran et d'autres technologies d'assistance, qui s'appuient sur les rôles, états et regroupements programmatiques pour comprendre et utiliser le contrôle ; les personnes naviguant uniquement au clavier lorsque le groupe personnalisé n'offre pas non plus de focus mobile ni de navigation par touches fléchées.",
+    "remediation": "Pour les groupes radio personnalisés, ajoutez role=\"radiogroup\" avec un nom accessible (aria-labelledby ou aria-label) au conteneur, role=\"radio\" et aria-checked=\"true|false\" sur chaque option, et gérez tabindex (0 sur l'option sélectionnée/première, -1 sur les autres) avec une navigation par touches fléchées. Pour les champs natifs, encadrez-les dans un <fieldset> avec un <legend> décrivant la question et associez à chaque <input type=\"radio\"> une <label for>."
+  },
+  "AI_ErrSearchWithoutARIA": {
+    "title": "Fonction de recherche sans repere de recherche ni etiquettes",
+    "what": "Une fonction de recherche est presente mais n'est pas encadree par un repere de recherche (role=\"search\" ou l'element HTML <search>), et son champ ainsi que son bouton n'ont pas de nom accessible. Dans certains cas, le controle de recherche est construit avec un <div> et un gestionnaire onclick plutot qu'avec un veritable formulaire et un bouton.",
+    "what_generic": "La fonction de recherche n'a pas de repere de recherche ni de noms accessibles sur son champ et son bouton.",
+    "why": "Sans repere de recherche ni noms accessibles, les technologies d'assistance ne peuvent pas identifier ces controles comme la recherche du site, les exposer dans la liste des reperes/regions, ni annoncer la fonction du champ et du bouton, ce qui enfreint le critere WCAG 4.1.2 Nom, role et valeur.",
+    "who": "Les utilisateurs de lecteurs d'ecran qui naviguent par reperes et comptent sur l'annonce des noms et des roles; les utilisateurs au clavier seul qui dependent de veritables controles de formulaire semantiques plutot que de gestionnaires de clic sur des div.",
+    "remediation": "Encadrez les controles de recherche par un repere de recherche en utilisant <search> (ou un conteneur avec role=\"search\"), utilisez un veritable <form> avec <input type=\"search\"> et un <button type=\"submit\">, donnez au champ un nom accessible au moyen d'un <label> ou d'aria-label, et ajoutez un aria-label au bouton (surtout lorsque son contenu est une icone)."
+  },
+  "AI_ErrSliderWithoutARIA": {
+    "title": "Le curseur ne possede pas le role ARIA et les attributs de valeur requis",
+    "what": "Un curseur (slider) n'expose pas le role slider ni les attributs de valeur (aria-valuenow, aria-valuemin, aria-valuemax) et le nom accessible dont les technologies d'assistance ont besoin. Cela concerne autant les curseurs personnalises a base de div sans role='slider' que les champs range natifs sans etiquette programmatique ou description de valeur.",
+    "what_generic": "Un curseur ne possede pas le role slider, les attributs de valeur ou le nom accessible requis par les technologies d'assistance.",
+    "why": "Sans le role slider, la valeur actuelle, les bornes de la plage et un nom accessible, les lecteurs d'ecran n'annoncent rien d'utile (ou un 'curseur' generique sans contexte), et un curseur personnalise sans gestion du clavier ne peut pas etre utilise du tout. Cela enfreint le critere WCAG 4.1.2 Nom, role et valeur et, pour les curseurs personnalises, 2.1.1 Clavier.",
+    "who": "Les utilisateurs de lecteurs d'ecran, qui n'entendent ni nom, ni role, ni valeur actuelle; et les personnes utilisant uniquement le clavier, qui ne peuvent pas deplacer un curseur personnalise ne reagissant qu'au glisser-deposer a la souris.",
+    "remediation": "Pour un curseur personnalise, donnez au curseur (thumb) role='slider', tabindex='0', un nom accessible (aria-label ou aria-labelledby) et aria-valuenow, aria-valuemin, aria-valuemax (plus aria-valuetext pour les valeurs non numeriques), puis implementez la gestion des touches fleches/Origine/Fin qui met a jour aria-valuenow. Pour un champ range natif, associez un <label for> visible ou ajoutez aria-labelledby/aria-label, et utilisez aria-valuetext lorsque la valeur affichee necessite une unite ou une description."
+  },
+  "AI_ErrSpinbuttonWithoutARIA": {
+    "title": "Le contrôle de type incrémenteur (spinbutton) ne possède pas le balisage ARIA approprié",
+    "what": "L'élément {element_tag} « {element_text} » fonctionne comme un incrémenteur (contrôle numérique avec boutons plus/moins) mais il lui manque role=\"spinbutton\", les attributs aria-valuenow/aria-valuemin/aria-valuemax, ou une étiquette accessible.",
+    "what_generic": "Un incrémenteur ou contrôle numérique ne possède pas le rôle, les attributs de valeur ou l'étiquette accessible dont les lecteurs d'écran ont besoin.",
+    "why": "Sans ces attributs, les lecteurs d'écran ne peuvent pas annoncer le type de contrôle, sa valeur actuelle ni sa plage autorisée, empêchant l'utilisateur de le comprendre ou de l'utiliser; cela enfreint le critère WCAG 4.1.2 Nom, rôle et valeur.",
+    "who": "Les utilisateurs de lecteurs d'écran et les utilisateurs au clavier qui dépendent des informations programmatiques de rôle et de valeur pour utiliser le contrôle.",
+    "remediation": "Pour un widget personnalisé, ajoutez role=\"spinbutton\", aria-valuenow, aria-valuemin, aria-valuemax, un nom accessible via aria-label ou aria-labelledby, tabindex=\"0\" et la gestion des touches Flèche haut/Flèche bas qui met à jour aria-valuenow; pour un <input type=\"number\"> natif, associez un <label for> (ou aria-label) et conservez min/max afin que la plage soit annoncée."
+  },
+  "AI_ErrTimeLimitNoWarning": {
+    "title": "La limite de temps expire sans avertissement ni moyen de la prolonger",
+    "what": "La page impose une limite de temps de session ou de tâche (par exemple un compte à rebours de 60 secondes) qui déconnecte l'utilisateur ou le redirige à son expiration, sans l'avertir à l'avance ni lui permettre de désactiver, d'ajuster ou de prolonger ce délai.",
+    "what_generic": "Une limite de temps expire et déconnecte ou redirige l'utilisateur sans aucun avertissement préalable ni possibilité de prolonger le délai.",
+    "why": "Le critère WCAG 2.2.1 (Délai modifiable) exige que les utilisateurs puissent désactiver, ajuster ou prolonger une limite de temps avant son expiration. Un compte à rebours qui se termine par une déconnexion ou une redirection sans avertissement préalable fait perdre leur travail aux utilisateurs et les empêche de terminer leur tâche.",
+    "who": "Les personnes qui lisent ou saisissent lentement, dont celles ayant un handicap cognitif, d'apprentissage, moteur ou visuel, ainsi que les utilisateurs de lecteurs d'écran ou de commutateurs qui ont besoin de plus de temps pour naviguer et remplir des formulaires.",
+    "remediation": "Avertissez l'utilisateur avant que la limite ne soit atteinte (par exemple 20 secondes à l'avance) au moyen d'un role=\"alertdialog\" doté d'un nom et d'une description accessibles, et fournissez une commande clairement étiquetée pour prolonger ou réinitialiser la session (un bouton « Prolonger la session »). Déplacez le focus vers la boîte de dialogue à son apparition et offrez au moins l'option de désactiver ou d'allonger le délai."
+  },
+  "AI_ErrToggleWithoutARIA": {
+    "title": "L'interrupteur à bascule « {element_text} » n'a pas de role=\"switch\" ni d'état aria-checked",
+    "what": "Un interrupteur à bascule a été identifié visuellement, mais son balisage ne comporte pas role=\"switch\" ni l'attribut aria-checked, et il est souvent inaccessible au clavier.",
+    "what_generic": "L'interrupteur à bascule n'a pas de role=\"switch\" ni d'état aria-checked.",
+    "why": "Sans role=\"switch\" ni aria-checked, les lecteurs d'écran ne peuvent pas identifier le contrôle comme un interrupteur ni annoncer s'il est activé ou désactivé, ce qui enfreint le critère WCAG 4.1.2 Nom, rôle et valeur; l'absence d'accès au clavier enfreint aussi le critère WCAG 2.1.1 Clavier.",
+    "who": "Utilisateurs de lecteurs d'écran, utilisateurs au clavier uniquement",
+    "remediation": "Ajoutez role=\"switch\" et aria-checked=\"true/false\" (mis à jour au changement) ainsi qu'un nom accessible via aria-label ou aria-labelledby, et rendez-le utilisable au clavier avec tabindex=\"0\" et la gestion des touches Espace/Entrée, ou utilisez un élément <button> natif."
+  },
+  "AI_ErrTreeViewWithoutARIA": {
+    "title": "L'arborescence n'a ni rôles ARIA ni prise en charge du clavier",
+    "what": "Une vue en arborescence hiérarchique (par exemple un explorateur de fichiers) est construite à partir de listes imbriquées avec des gestionnaires de clic, mais sans role=\"tree\", role=\"treeitem\" ni role=\"group\", sans état aria-expanded sur les nœuds extensibles et sans navigation au clavier.",
+    "what_generic": "Une vue en arborescence interactive ne comporte pas les rôles ARIA d'arborescence, l'état d'extension et la prise en charge du clavier dont les technologies d'assistance ont besoin pour transmettre et utiliser sa hiérarchie.",
+    "why": "Sans ces rôles et états, les technologies d'assistance ne peuvent pas indiquer qu'il s'agit d'une arborescence, quels nœuds sont extensibles, leur état ouvert/fermé ni leur niveau d'imbrication, et l'arborescence ne peut pas être utilisée au clavier, ce qui contrevient aux critères WCAG 4.1.2 Nom, rôle et valeur et 2.1.1 Clavier.",
+    "who": "Les personnes utilisant un lecteur d'écran, qui perdent la structure, l'état et les repères de navigation de l'arborescence, et les personnes naviguant uniquement au clavier, qui ne peuvent pas parcourir ni ouvrir et fermer les nœuds sans souris.",
+    "remediation": "Ajoutez role=\"tree\" avec un nom accessible (aria-label) au conteneur, role=\"treeitem\" à chaque nœud, role=\"group\" à chaque liste enfant imbriquée et aria-expanded=\"true/false\" à chaque nœud extensible; puis implémentez un tabindex mobile et une navigation aux flèches (Haut/Bas pour se déplacer, Gauche/Droite pour replier/déplier, Entrée ou Espace pour activer)."
+  },
+  "AI_ErrVideoWithoutCaptions": {
+    "title": "La vidéo n'a aucun sous-titrage codé",
+    "what": "Une vidéo diffuse du contenu audio mais ne fournit aucun sous-titrage codé. L'élément {element_tag} n'a aucune piste de sous-titres (et les vidéos intégrées dans une iframe n'exposent aucun mécanisme de sous-titrage), de sorte que les dialogues, la narration et les sons significatifs sont inaccessibles à toute personne qui ne peut pas entendre l'audio.",
+    "what_generic": "Du contenu vidéo est fourni sans sous-titrage codé pour son audio.",
+    "why": "Sans sous-titrage codé, les personnes sourdes ou malentendantes ne peuvent pas accéder aux dialogues, à la narration et aux sons non vocaux importants présents dans l'audio de la vidéo. Cela constitue un échec au critère WCAG 1.2.2 Sous-titres (préenregistrés), qui exige des sous-titres synchronisés pour tout contenu audio préenregistré dans un média synchronisé.",
+    "who": "Les personnes sourdes ou malentendantes; les utilisateurs dans des environnements sans son (bureaux ouverts, transports en commun) et toute personne regardant sans audio fonctionnel.",
+    "remediation": "Ajoutez un élément <track kind=\"captions\"> pointant vers un fichier de sous-titres WebVTT à l'intérieur de la <video>, par exemple <track kind=\"captions\" src=\"video-fr.vtt\" srclang=\"fr\" label=\"Français\" default>; fournissez des pistes de sous-titres supplémentaires pour d'autres langues au besoin. Pour les vidéos intégrées dans une iframe, activez les sous-titres sur la plateforme d'hébergement ou liez vers une version sous-titrée. Les sous-titres codés doivent transmettre les dialogues et les sons importants, pas seulement traduire la parole (les sous-titres de traduction seuls ne suffisent pas)."
+  },
+  "AI_InfoContentOrder": {
+    "title": "Ordre du contenu à confirmer - la mise en page visuelle peut réorganiser le contenu par rapport à l'ordre du DOM",
+    "what": "Des techniques de mise en page CSS telles que flex-direction: column-reverse, le placement par grille CSS, les flottants ou le positionnement absolu semblent présenter le contenu dans un ordre différent de celui de sa séquence source dans le DOM. Ce point est signalé pour confirmation manuelle plutôt que comme une défaillance certaine.",
+    "what_generic": "La mise en page visuelle peut présenter le contenu dans un ordre différent de la séquence source du DOM.",
+    "why": "Les lecteurs d'écran et la navigation au clavier suivent l'ordre source du DOM, et non la mise en page visuelle ; toute divergence risque de faire lire ou parcourir le contenu dans une séquence illogique (WCAG 1.3.2 Ordre séquentiel logique). En tant que note informative, ce point oriente les réviseurs vers un endroit où un humain doit confirmer que l'ordre de lecture demeure cohérent.",
+    "who": "Utilisateurs de lecteurs d'écran, utilisateurs uniquement au clavier, utilisateurs avec déficiences cognitives",
+    "remediation": "Confirmez manuellement que l'ordre source du DOM correspond au flux de lecture prévu ; si ce n'est pas le cas, réorganisez le HTML sous-jacent pour que la séquence source se lise logiquement et réservez les propriétés CSS order/flex/grid/float/positionnement absolu aux ajustements purement visuels qui ne modifient pas le sens."
+  },
+  "AI_WarnBannerRoleOnHeader": {
+    "title": "L'attribut role=\"banner\" explicite sur un élément <header> est redondant ou mal placé",
+    "what": "Un élément <header> porte un attribut role=\"banner\" explicite. Lorsque l'en-tête est un enfant direct de <body>, le rôle banner duplique la sémantique déjà fournie par HTML, et lorsque l'en-tête est imbriqué dans un <article> ou une <section>, le rôle banner est tout simplement erroné, car cet en-tête délimite sa section et non la page.",
+    "what_generic": "Un élément <header> possède un attribut role=\"banner\" explicite qui est redondant sur un en-tête de premier niveau ou incorrect sur un en-tête limité à une section.",
+    "why": "Des rôles ARIA redondants ou incorrects n'apportent aucune information et peuvent induire en erreur les développeurs et les technologies d'assistance, affaiblissant ainsi l'exposition fiable des rôles exigée par le critère WCAG 4.1.2 Nom, rôle et valeur; un rôle banner appliqué à un en-tête limité à une section peut aussi créer plusieurs points de repère banner, ce qui déroute les utilisateurs de lecteurs d'écran naviguant par région.",
+    "who": "Les utilisateurs de lecteurs d'écran et d'autres technologies d'assistance qui naviguent par points de repère et comptent sur des rôles de région exacts et non dupliqués, ainsi que les développeurs qui maintiennent le balisage.",
+    "remediation": "Retirez role=\"banner\" de l'élément <header>. Un <header> enfant direct de <body> expose automatiquement le point de repère banner, aucun ARIA n'est donc nécessaire; un <header> imbriqué dans un <article> ou une <section> ne doit pas avoir de rôle banner, car il fournit un contexte de sectionnement et non une bannière de page."
+  },
+  "AI_WarnComplementaryRoleOnAside": {
+    "title": "role=\"complementary\" redondant sur l'élément <aside>",
+    "what": "L'élément <aside> possède un role=\"complementary\" explicite, mais <aside> correspond déjà nativement au repère complementary en HTML5, ce qui rend cet attribut ARIA redondant.",
+    "what_generic": "Un élément aside porte un role=\"complementary\" redondant qui duplique sa sémantique de repère native HTML5.",
+    "why": "Il faut privilégier la sémantique HTML native plutôt que l'ARIA explicite (WCAG 4.1.2 Nom, rôle, valeur). Un rôle redondant alourdit le code, augmente le risque de maintenance et peut masquer ou contredire la sémantique implicite ; s'appuyer sur l'élément natif expose correctement le rôle aux technologies d'assistance.",
+    "who": "Les développeurs qui maintiennent le balisage, et indirectement les utilisateurs de lecteurs d'écran qui comptent sur une annonce cohérente et correcte du repère complementary.",
+    "remediation": "Retirez l'attribut role=\"complementary\" de l'élément <aside> et appuyez-vous sur son rôle de repère complementary implicite ; n'ajoutez un rôle explicite que lorsqu'un élément autre que <aside> a besoin de cette sémantique."
+  },
+  "AI_WarnContentinfoRoleOnFooter": {
+    "title": "Rôle role=\"contentinfo\" redondant ou mal placé sur un élément {element_tag}",
+    "what": "Un élément footer porte un rôle role=\"contentinfo\" explicite. Lorsque le footer est un enfant direct de body, ce rôle est redondant car l'élément natif expose déjà le repère contentinfo ; lorsque le footer est imbriqué dans un article ou une section, le rôle est incorrect et crée un repère contentinfo supplémentaire et déplacé.",
+    "what_generic": "Un élément footer comporte un rôle role=\"contentinfo\" explicite qui est soit redondant avec la sémantique HTML native, soit appliqué à tort à un footer imbriqué.",
+    "why": "L'ARIA redondante alourdit le code et un contentinfo mal placé crée un deuxième repère de niveau page là où un seul est attendu, ce qui déroute les utilisateurs de lecteurs d'écran qui naviguent par repères et affaiblit la correspondance programmatique nom/rôle exigée par le critère WCAG 4.1.2 Nom, rôle et valeur.",
+    "who": "Les utilisateurs de lecteurs d'écran et d'autres technologies d'assistance qui naviguent par régions de repère et peuvent rencontrer des repères contentinfo dupliqués ou inattendus.",
+    "remediation": "Retirez role=\"contentinfo\" du footer. Un footer de premier niveau (enfant direct de body) expose déjà nativement le repère contentinfo, et un footer imbriqué dans un article ou une section ne doit fournir qu'un contexte de sectionnement, pas un repère contentinfo."
+  },
+  "AI_WarnFormRoleOnForm": {
+    "title": "role=\"form\" redondant sur un élément <form> natif",
+    "what": "Un élément HTML <form> natif porte un role=\"form\" explicite, ce qui est redondant car un <form> doté d'un nom accessible expose déjà implicitement le rôle de repère « form ». Cet ARIA superflu n'ajoute aucune sémantique et alourdit inutilement le balisage.",
+    "what_generic": "Un élément de formulaire natif porte un role=\"form\" explicite redondant qui duplique sa sémantique implicite.",
+    "why": "Le critère WCAG 4.1.2 (Nom, rôle et valeur) exige des rôles corrects et non conflictuels et privilégie la sémantique native plutôt que des ARIA dupliqués. Un <form> nommé s'annonce déjà comme une région de formulaire, donc le rôle explicite est inutile ; la sémantique native est plus robuste et plus facile à maintenir qu'un ARIA redondant.",
+    "who": "Affecte surtout les développeurs et les responsables de maintenance par l'encombrement du code ; bien que les utilisateurs de lecteurs d'écran ne soient pas bloqués, l'ARIA redondant augmente le risque de futurs conflits de rôle pouvant dégrader leur expérience.",
+    "remediation": "Supprimez l'attribut role=\"form\" de l'élément <form> et appuyez-vous sur sa sémantique native : conservez le nom accessible (via aria-label ou aria-labelledby) afin que le formulaire reste annoncé comme une région de formulaire nommée."
+  },
+  "AI_WarnMainRoleOnMain": {
+    "title": "Attribut role=\"main\" redondant sur un élément <main>",
+    "what": "L'élément <main> porte un attribut role=\"main\" explicite, qui est redondant puisque l'élément HTML5 natif <main> expose déjà automatiquement le rôle de repère principal (main landmark). Ce rôle ARIA dupliqué n'ajoute aucune sémantique et ne fait qu'encombrer le balisage.",
+    "what_generic": "Un élément HTML porte un rôle ARIA explicite qui duplique le rôle qu'il possède déjà nativement.",
+    "why": "Les rôles ARIA redondants enfreignent le critère WCAG 4.1.2 (Nom, rôle et valeur) en remplaçant la sémantique native par un rôle explicite identique au lieu de s'appuyer sur le mappage intégré du navigateur. Bien que cela ne perturbe généralement pas les technologies d'assistance, cela témoigne d'un usage incorrect d'ARIA, alourdit la maintenance et risque de masquer de vrais problèmes lorsque le rôle natif et le rôle ARIA divergent.",
+    "who": "Principalement les développeurs et responsables de la maintenance ; les utilisateurs de lecteurs d'écran en bénéficient indirectement, car une sémantique native et propre est exposée de façon plus fiable et cohérente dans les navigateurs et technologies d'assistance qu'un rôle ARIA dupliqué.",
+    "remediation": "Supprimez l'attribut role=\"main\" de l'élément <main>. L'élément <main> natif fournit déjà le repère principal ; utilisez simplement <main>...</main> sans rôle explicite."
+  },
+  "AI_WarnNavigationRoleOnNav": {
+    "title": "role=\"navigation\" redondant sur un élément <nav>",
+    "what": "Un élément <nav> porte un attribut role=\"navigation\" explicite, alors que l'élément HTML5 <nav> expose déjà le rôle de repère de navigation ; le rôle ARIA est donc redondant.",
+    "what_generic": "Un élément HTML natif s'est vu attribuer un rôle ARIA qui duplique le rôle qu'il fournit déjà implicitement.",
+    "why": "Les sémantiques HTML natives doivent être privilégiées par rapport à l'ARIA explicite (WCAG 4.1.2 Nom, rôle, valeur). Le rôle redondant n'apporte aucune information aux technologies d'assistance, alourdit le balisage et augmente le risque que le rôle ne corresponde plus à l'élément.",
+    "who": "Surtout les développeurs et les responsables de maintenance ; bien que cela ne bloque pas les utilisateurs de lecteurs d'écran, l'ARIA redondant accroît le risque à long terme de rôles incohérents ou contradictoires qui les affecteraient.",
+    "remediation": "Supprimez l'attribut role=\"navigation\" de l'élément <nav> et appuyez-vous sur son rôle de repère de navigation implicite ; conservez l'aria-label pour distinguer plusieurs régions de navigation."
+  },
+  "AI_WarnPossibleReadingOrderIssue": {
+    "title": "La mise en page peut produire un ordre de lecture différent de l'ordre du DOM",
+    "what": "Une mise en page visuelle a été détectée (colonnes CSS, réorganisation par la propriété order de flexbox/grid ou tableau de mise en page) où l'ordre de lecture à l'écran peut ne pas correspondre à l'ordre source du DOM que suivent les lecteurs d'écran et les utilisateurs du clavier.",
+    "what_generic": "La mise en page visuelle peut produire un ordre de lecture différent de l'ordre source du DOM suivi par les technologies d'assistance.",
+    "why": "Les lecteurs d'écran et la navigation au clavier suivent l'ordre du DOM ; ainsi, lorsque des colonnes CSS, la propriété order de flex/grid ou des tableaux de mise en page réorganisent visuellement le contenu, la séquence annoncée ou de focus peut devenir illogique, ce qui enfreint les critères WCAG 1.3.2 Ordre signifiant et 2.4.3 Ordre de focus.",
+    "who": "Les utilisateurs de lecteurs d'écran, les personnes naviguant uniquement au clavier et les utilisateurs de technologies d'assistance qui s'appuient sur l'ordre du DOM et du focus",
+    "remediation": "Vérifiez que l'ordre du DOM reflète déjà la séquence de lecture prévue ; évitez d'utiliser la propriété CSS order ou column-count pour réorganiser du contenu signifiant, et n'utilisez pas de tableaux pour la mise en page (privilégiez un balisage sémantique ou CSS grid/flexbox avec un ordre source correspondant)."
+  },
+  "AI_WarnRegionWithoutLabel": {
+    "title": "Le repère region <{element_tag}> n'a pas de nom accessible",
+    "what": "Un element avec role=\"region\" n'a pas de nom accessible car il lui manque a la fois aria-label et aria-labelledby. La region devient un repere mais ne peut pas etre identifiee ni distinguee des autres regions.",
+    "what_generic": "Un repere region n'a pas de nom accessible et ne peut donc pas etre identifie lors de la navigation par reperes.",
+    "why": "Un role region cree un repere de navigation, mais sans nom un lecteur d'ecran annonce seulement \"region\" sans information d'identification, ce qui ne permet pas de passer au contenu ni de le reconnaitre. Cela enfreint les criteres WCAG 2.4.1 Contourner des blocs et 4.1.2 Nom, role et valeur.",
+    "who": "Les utilisateurs de lecteurs d'ecran qui naviguent par reperes, ainsi que les utilisateurs du clavier qui s'appuient sur la navigation par reperes pour parcourir la page efficacement.",
+    "remediation": "Donnez a chaque role=\"region\" un nom accessible avec aria-label (par ex. aria-label=\"Caracteristiques du produit\") ou aria-labelledby pointant vers l'id d'un titre visible, ou supprimez role=\"region\" si la section n'a pas besoin d'etre un repere."
+  },
+  "AI_WarnSearchRoleOnForm": {
+    "title": "role=\"search\" appliqué directement à un élément <form>",
+    "what": "Le rôle de point de repère role=\"search\" est défini directement sur un élément <form>, ce qui écrase la sémantique native du formulaire au lieu d'être placé sur un conteneur englobant. Cela combine deux rôles sur un même élément et peut empêcher les technologies d'assistance de le reconnaître comme un formulaire.",
+    "what_generic": "Un rôle de point de repère de recherche est placé directement sur un élément de formulaire au lieu d'un conteneur englobant, écrasant la sémantique native du formulaire.",
+    "why": "Le rôle ARIA role=\"search\" remplace le rôle implicite de formulaire ; les lecteurs d'écran peuvent donc annoncer la région uniquement comme un point de repère de recherche et perdre l'identité du formulaire, ce qui affaiblit le critère Nom, rôle et valeur (WCAG 4.1.2). Le modèle recommandé conserve les deux sémantiques en plaçant role=\"search\" sur un conteneur englobant.",
+    "who": "Les utilisateurs de lecteurs d'écran et les personnes utilisant des technologies d'assistance qui dépendent d'annonces exactes des rôles de point de repère et de formulaire pour comprendre et naviguer dans la page.",
+    "remediation": "Retirez role=\"search\" de l'élément <form> et enveloppez plutôt le formulaire dans un conteneur portant le point de repère, par exemple <div role=\"search\"><form action=\"/search\" method=\"get\">...</form></div> ; conservez tout aria-label sur le conteneur afin que le formulaire garde sa sémantique native à l'intérieur du point de repère de recherche."
+  },
+  "AI_WarnTableWithComplexStructure": {
+    "title": "Tableau complexe sans association des en-têtes",
+    "what": "Ce tableau a une structure complexe (plusieurs niveaux d'en-têtes, ou des cellules fusionnées par rowspan/colspan) mais n'associe pas ses cellules de données à leurs cellules d'en-tête au moyen des attributs scope ou des références id/headers. Les relations entre en-têtes et données ne peuvent donc pas être déterminées par programmation.",
+    "what_generic": "Un tableau complexe n'associe pas ses cellules de données à leurs en-têtes au moyen des attributs scope ou id/headers.",
+    "why": "Les lecteurs d'écran s'appuient sur scope ou id/headers pour annoncer quels en-têtes de ligne et de colonne s'appliquent à chaque cellule de données. Sans eux, les personnes qui naviguent cellule par cellule entendent des valeurs sans contexte et ne peuvent pas comprendre le tableau, ce qui enfreint le critère WCAG 1.3.1 Information et relations.",
+    "who": "Les personnes aveugles ou malvoyantes utilisant un lecteur d'écran, ainsi que les personnes ayant un handicap cognitif qui dépendent d'une structure clairement transmise pour interpréter des données tabulaires.",
+    "remediation": "Ajoutez scope='col' aux en-têtes de colonne et scope='row' aux en-têtes de ligne; pour les en-têtes couvrant des groupes, utilisez scope='colgroup' ou scope='rowgroup'. Pour les tableaux à cellules fusionnées, donnez un id à chaque en-tête et listez les id applicables dans l'attribut headers de chaque cellule de données (par ex. headers='alice w1-mon week1'). Ajoutez une légende (caption) décrivant le tableau."
+  },
+  "AI_WarnVideoWithoutCaptions": {
+    "title": "La vidéo semble ne pas avoir de sous-titres",
+    "what": "Cet élément vidéo diffuse un contenu audio parlé mais ne fournit aucune piste de sous-titres, de sorte que ses dialogues et ses sons importants ne sont présentés que sous forme audio. Aucun élément <track kind=\"captions\"> n'accompagne les sources vidéo.",
+    "what_generic": "Une vidéo avec un audio parlé ne fournit aucune piste de sous-titres synchronisée.",
+    "why": "Sans sous-titres synchronisés, les personnes sourdes ou malentendantes ne peuvent pas accéder au contenu parlé, et personne ne peut activer les sous-titres même s'il le souhaite. Cela enfreint le critère WCAG 1.2.2 Sous-titres (préenregistrés), qui exige des sous-titres pour tout contenu audio préenregistré dans un média synchronisé.",
+    "who": "Les personnes sourdes ou malentendantes, ainsi que toute personne regardant la vidéo sans le son ou dans un environnement bruyant où l'audio ne peut être entendu.",
+    "remediation": "Ajoutez une solution de remplacement textuelle sous-titrée : insérez un élément <track kind=\"captions\" srclang=\"fr\" src=\"sous-titres.vtt\" label=\"Sous-titres français\" default> dans la balise <video>, avec un fichier WebVTT transcrivant tous les dialogues et les effets sonores significatifs en synchronisation avec la chronologie. Fournissez une piste distincte par langue au besoin."
+  },
+  "AI_WarnVideoWithoutTranscript": {
+    "title": "La vidéo n'a pas de transcription textuelle",
+    "what": "Une vidéo comportant du contenu audio et visuel est présentée sans transcription textuelle d'accompagnement. Des sous-titres peuvent être présents, mais aucune solution de remplacement textuelle complète couvrant les dialogues parlés et l'information visuelle n'est fournie.",
+    "what_generic": "Le contenu vidéo est présenté sans solution de remplacement sous forme de transcription textuelle.",
+    "why": "La transcription est la seule solution de remplacement entièrement accessible pour les personnes qui ne peuvent pas utiliser les sous-titres ou l'audio, et elle permet à chacun de lire, rechercher, parcourir et citer le contenu. Sans elle, les critères WCAG 1.2.3 (Audiodescription ou solution de remplacement pour un média) et 1.2.8 (Solution de remplacement pour un média préenregistré) ne sont pas respectés.",
+    "who": "Les personnes sourdes-aveugles qui dépendent d'un afficheur braille et ne peuvent accéder ni aux sous-titres ni à l'audio, les personnes sourdes ou malentendantes, les utilisateurs sur connexion lente ou qui préfèrent lire plutôt que regarder, et toute personne devant rechercher ou citer le contenu.",
+    "remediation": "Fournir une transcription textuelle complète de tous les dialogues parlés et de l'information visuelle importante, placée près de la vidéo (par exemple dans une section titrée) ou sous forme de fichier téléchargeable clairement lié ; inclure des horodatages pour permettre la mise en correspondance avec la vidéo."
+  },
+  "ErrOrientationLocked": {
+    "title": "Le contenu est verrouillé dans une seule orientation d'écran",
+    "what": "Le CSS masque le contenu principal dans une orientation (par exemple @media (orientation: portrait) { body { display: none } }), forçant l'utilisateur à pivoter l'appareil pour accéder à la page.",
+    "what_generic": "La page masque le contenu dans une orientation, la verrouillant en portrait ou en paysage.",
+    "why": "Restreindre le contenu à une seule orientation exclut les utilisateurs qui ne peuvent pas pivoter leur appareil, ce qui enfreint le critère WCAG 1.3.4 Orientation.",
+    "who": "Les utilisateurs dont l'appareil est monté en position fixe (par exemple sur un fauteuil roulant) et les personnes ayant des limitations motrices qui ne peuvent pas facilement pivoter un appareil.",
+    "remediation": "Prenez en charge les orientations portrait et paysage. Ne masquez pas et ne désactivez pas le contenu selon l'orientation, sauf si une orientation précise est essentielle ; utilisez plutôt un CSS adaptatif pour que la mise en page s'ajuste aux deux orientations."
+  },
+  "ErrTargetSizeTooSmall": {
+    "title": "La cible interactive est plus petite que le minimum de 24 x 24 pixels",
+    "what": "Un bouton, un lien ou un autre contrôle interactif s'affiche à une taille inférieure à 24 sur 24 pixels CSS, en deçà de la taille de cible minimale du critère WCAG 2.5.8.",
+    "what_generic": "Une cible interactive est plus petite que la taille minimale de 24 x 24 pixels.",
+    "why": "Les petites cibles sont difficiles à activer avec précision, ce qui enfreint le critère WCAG 2.5.8 Taille de la cible (minimum) et provoque des erreurs de pointage pour les utilisateurs ayant une dextérité réduite ou sur écran tactile.",
+    "who": "Les utilisateurs ayant des limitations motrices ou de dextérité, les personnes sujettes aux tremblements et toute personne utilisant un écran tactile.",
+    "remediation": "Rendez les cibles interactives d'au moins 24 x 24 pixels CSS (idéalement 44 x 44), ou laissez au moins 24 px d'espacement entre les petites cibles adjacentes. Augmentez le remplissage ou min-width/min-height sur les boutons, icônes et liens."
+  },
+  "ErrTextSpacingRestricted": {
+    "title": "L'espacement du texte ne peut pas être ajusté sans perte de contenu",
+    "what": "Le texte utilise un espacement négatif des lettres ou des mots, ou se trouve dans un conteneur à hauteur fixe avec overflow:hidden, de sorte qu'augmenter l'espacement du texte tronque ou rompt le contenu.",
+    "what_generic": "L'espacement du texte est restreint, de sorte que son ajustement tronque ou rompt le contenu.",
+    "why": "Lorsque les utilisateurs modifient l'espacement pour la lisibilité (interligne 1,5, espacement des lettres 0,12em, espacement des mots 0,16em), aucun contenu ne doit être perdu ni se chevaucher, conformément au critère WCAG 1.4.12 Espacement du texte.",
+    "who": "Les personnes dyslexiques et malvoyantes qui augmentent l'espacement du texte pour lire plus confortablement.",
+    "remediation": "Évitez les valeurs négatives de letter-spacing et word-spacing. Utilisez min-height plutôt qu'une hauteur fixe sur les conteneurs de texte et évitez overflow:hidden sur le texte, afin que la mise en page s'agrandisse lorsque les utilisateurs augmentent l'espacement."
+  },
+  "ErrViewportZoomDisabled": {
+    "title": "La balise meta viewport désactive ou limite le zoom",
+    "what": "La balise <meta name=\"viewport\"> utilise user-scalable=no ou un maximum-scale inférieur à 2, ce qui empêche ou limite le zoom par pincement et le zoom de page du navigateur.",
+    "what_generic": "La balise meta viewport empêche les utilisateurs de zoomer sur la page.",
+    "why": "Bloquer le zoom empêche les personnes malvoyantes d'agrandir le texte et le contenu à une taille lisible, ce qui enfreint les critères WCAG 1.4.4 Redimensionnement du texte et 1.4.10 Redistribution.",
+    "who": "Les personnes malvoyantes qui dépendent du zoom du navigateur ou du zoom par pincement pour lire le contenu, et les utilisateurs sur petits écrans tactiles.",
+    "remediation": "Retirez user-scalable=no et tout maximum-scale inférieur à 2 (ou 5) de la balise meta viewport. Utilisez content=\"width=device-width, initial-scale=1\" et laissez les utilisateurs zoomer librement jusqu'à au moins 200 %."
   }
 }

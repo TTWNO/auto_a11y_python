@@ -149,6 +149,17 @@
             border: 0;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrModalMissingClose",
+    "issueId": "ErrModalMissingClose",
+    "expectedViolationCount": 4,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Modal dialog overlays that provide no keyboard-accessible close mechanism (no close button, no escape handler, mouse-only or non-keyboard close). Each flagged overlay is validated individually; the accessible modal with a close button passes.",
+    "wcag": "2.1.2,4.1.2"
+}
+    </script>
 </head>
 <body>
     <div class="container">
@@ -162,7 +173,7 @@
             <p>This modal has no close button, no escape key handler, and prevents clicking outside to close.</p>
             <button onclick="openTrappedModal()">Open Trapped Modal</button>
             
-            <div id="trapped-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="trapped-title">
+            <div id="trapped-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="trapped-title" data-expected-violation="true" data-violation-id="ErrModalMissingClose" data-violation-reason="Modal overlay has no close button and no keyboard-accessible close mechanism">
                 <div class="modal">
                     <h3 id="trapped-title">Trapped Modal Dialog</h3>
                     <p>This modal has no way to close it! Users become trapped here.</p>
@@ -183,7 +194,7 @@
             <p>This modal has a close mechanism but it's not keyboard accessible.</p>
             <button onclick="openInaccessibleModal()">Open Inaccessible Modal</button>
             
-            <div id="inaccessible-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="inaccessible-title">
+            <div id="inaccessible-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="inaccessible-title" data-expected-violation="true" data-violation-id="ErrModalMissingClose" data-violation-reason="Close control is a non-keyboard div, so no accessible close mechanism">
                 <div class="modal">
                     <h3 id="inaccessible-title">Inaccessible Close Modal</h3>
                     <p>This modal has a close button, but it's not accessible via keyboard!</p>
@@ -204,7 +215,7 @@
             <p>This modal can only be closed by clicking outside (mouse-dependent).</p>
             <button onclick="openMouseOnlyModal()">Open Mouse-Only Modal</button>
             
-            <div id="mouse-only-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mouse-title" onclick="closeMouseOnlyModal()">
+            <div id="mouse-only-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mouse-title" onclick="closeMouseOnlyModal()" data-expected-violation="true" data-violation-id="ErrModalMissingClose" data-violation-reason="Modal can only be closed by clicking outside (mouse only), no keyboard close">
                 <div class="modal" onclick="event.stopPropagation()">
                     <h3 id="mouse-title">Mouse-Only Close Modal</h3>
                     <p>This modal can only be closed by clicking outside the modal area.</p>
@@ -225,7 +236,7 @@
             <p>This modal provides multiple accessible ways to close it.</p>
             <button onclick="openAccessibleModal()">Open Accessible Modal</button>
             
-            <div id="accessible-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="accessible-title">
+            <div id="accessible-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="accessible-title" data-expected-pass="true" data-pass-reason="Modal provides a keyboard-accessible close button, so no ErrModalMissingClose">
                 <div class="modal">
                     <button type="button" class="close-btn" onclick="closeAccessibleModal()" aria-label="Close dialog">×</button>
                     <h3 id="accessible-title">Accessible Modal Dialog</h3>
@@ -251,7 +262,7 @@
             <p>This modal has a close button but it's visually hidden and not announced to screen readers.</p>
             <button onclick="openHiddenCloseModal()">Open Hidden Close Modal</button>
             
-            <div id="hidden-close-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="hidden-title">
+            <div id="hidden-close-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="hidden-title" data-expected-violation="true" data-violation-id="ErrModalMissingClose" data-violation-reason="only close control is display:none, so there is no usable close mechanism">
                 <div class="modal">
                     <h3 id="hidden-title">Hidden Close Button Modal</h3>
                     <p>This modal has a close button, but it's hidden and not accessible!</p>

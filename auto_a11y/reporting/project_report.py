@@ -4,6 +4,7 @@ Aggregates data from multiple websites in a project
 """
 from __future__ import annotations
 
+import html as html_module
 import logging
 from typing import Any, Callable
 from datetime import datetime
@@ -127,13 +128,18 @@ class ProjectReport:
             self.generate()
         assert self.report_data is not None
 
+        # User-entered free text must be HTML-escaped to prevent stored XSS.
+        project_name = html_module.escape(self.project.name or '')
+        project_description = html_module.escape(self.project.description or 'No description')
+        wcag_level = html_module.escape(str(self.report_data['wcag_level']))
+
         html = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Accessibility Report - {self.project.name}</title>
+    <title>Project Accessibility Report - {project_name}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -179,10 +185,10 @@ class ProjectReport:
             <div class="col-12">
                 <h1>Project Accessibility Report</h1>
                 <div class="mb-3">
-                    <h3>{self.project.name}</h3>
+                    <h3>{project_name}</h3>
                     <p class="text-muted">
-                        {self.project.description or 'No description'}<br>
-                        <strong>WCAG Level:</strong> {self.report_data['wcag_level']}<br>
+                        {project_description}<br>
+                        <strong>WCAG Level:</strong> {wcag_level}<br>
                         <strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     </p>
                 </div>
@@ -262,18 +268,23 @@ class ProjectReport:
         # Add website cards
         for website in self.report_data['websites']:
             coverage_color = 'pass' if website['test_coverage'] >= 80 else 'medium' if website['test_coverage'] >= 50 else 'high'
-            
+
+            # User-entered free text must be HTML-escaped to prevent stored XSS.
+            website_name = html_module.escape(website['name'] or '')
+            website_url_text = html_module.escape(website['url'] or '')
+            website_url_attr = html_module.escape(website['url'] or '', quote=True)
+
             html += f"""
             <div class="col-md-6 col-lg-4">
                 <div class="card website-card">
                     <div class="card-body">
                         <h5 class="card-title">
-                            {website['name']}
-                            <a href="{website['url']}" target="_blank" class="float-end">
+                            {website_name}
+                            <a href="{website_url_attr}" target="_blank" class="float-end">
                                 <i class="bi bi-box-arrow-up-right"></i>
                             </a>
                         </h5>
-                        <p class="card-text text-muted small">{website['url']}</p>
+                        <p class="card-text text-muted small">{website_url_text}</p>
                         
                         <div class="mb-3">
                             <div class="progress" style="height: 20px;">

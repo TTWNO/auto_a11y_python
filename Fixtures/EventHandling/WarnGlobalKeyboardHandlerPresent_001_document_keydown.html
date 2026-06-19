@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"
+      data-expected-warning="true"
+      data-warning-id="WarnGlobalKeyboardHandlerPresent"
+      data-warning-reason="document.addEventListener('keydown', ...) detected at page level — emitted once at /html[1]">
 <head>
     <meta charset="UTF-8">
     <title>WarnGlobalKeyboardHandlerPresent — document.keydown</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnGlobalKeyboardHandlerPresent_001_document_keydown",
     "issueId": "WarnGlobalKeyboardHandlerPresent",
     "expectedViolationCount": 1,
@@ -15,9 +19,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="WarnGlobalKeyboardHandlerPresent"
-      data-violation-reason="document.addEventListener('keydown', ...) detected at page level">
+<body>
     <p>Press any key to log it (this is a discovery-style test).</p>
     <script>
         document.addEventListener('keydown', (e) => console.log('global key', e.key));

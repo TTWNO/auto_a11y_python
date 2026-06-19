@@ -4,12 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modal No Focusable Elements Warning Test - WarnModalNoFocusableElements</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnModalNoFocusableElements",
+    "issueId": "WarnModalNoFocusableElements",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 2,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Modal dialogs that contain no focusable element: the first holds only a heading and paragraph text, the last holds only a decorative image and a loading message. Each flagged modal is validated individually.",
+    "wcag": "2.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Modals Without Focusable Elements</h1>
     
     <!-- Modal with only text, no focusable elements -->
-    <div role="dialog" aria-modal="true" aria-labelledby="modal1-title">
+    <div role="dialog" aria-modal="true" aria-labelledby="modal1-title" data-expected-warning="true" data-warning-id="WarnModalNoFocusableElements" data-warning-reason="dialog contains only heading and text, nothing focusable">
         <h2 id="modal1-title">Information</h2>
         <p>This modal only contains text with no buttons or focusable elements.</p>
     </div>
@@ -29,7 +41,7 @@
     </div>
     
     <!-- Modal with only decorative elements -->
-    <div role="dialog" aria-modal="true">
+    <div role="dialog" aria-modal="true" data-expected-warning="true" data-warning-id="WarnModalNoFocusableElements" data-warning-reason="dialog contains only a decorative image and text, nothing focusable">
         <img src="loading.gif" alt="">
         <p>Loading...</p>
     </div>

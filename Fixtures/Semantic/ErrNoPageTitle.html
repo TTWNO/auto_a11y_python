@@ -1,9 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head data-expected-violation="true" data-violation-id="ErrNoPageTitle" data-violation-reason="head has no title element; every page must have one">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Missing title element entirely -->
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrNoPageTitle",
+    "issueId": "ErrNoPageTitle",
+    "expectedViolationCount": 1,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "The head contains no title element at all, so the page has no programmatic title. Reported on the head element.",
+    "wcag": "2.4.2"
+}
+    </script>
 </head>
 <body>
     <h1>Page Without Title Element</h1>

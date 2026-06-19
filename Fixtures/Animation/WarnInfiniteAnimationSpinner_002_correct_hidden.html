@@ -9,8 +9,9 @@
     "id": "WarnInfiniteAnimationSpinner_002_correct_hidden",
     "issueId": "WarnInfiniteAnimationSpinner",
     "expectedViolationCount": 0,
-    "expectedPassCount": 0,
-    "description": "Spinner is hidden (display: none) - no warning expected",
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Spinner is hidden (display: none) - no warning expected. The spinner element is validated individually: it must NOT emit WarnInfiniteAnimationSpinner.",
     "wcag": "2.2.2",
     "impact": "Medium"
 }
@@ -33,12 +34,12 @@
         }
     </style>
 </head>
-<body data-expected-warning="false"
-      data-warning-id="WarnInfiniteAnimationSpinner"
-      data-warning-reason="Spinner is properly hidden with display: none">
+<body>
     <h1>Content Loaded</h1>
 
-    <div class="spinner" role="status" aria-label="Loading content"></div>
+    <div class="spinner" role="status" aria-label="Loading content"
+         data-expected-pass="true"
+         data-pass-reason="Spinner is hidden with display: none, so no WarnInfiniteAnimationSpinner is emitted."></div>
 
     <div class="content">
         <p>Your content has loaded successfully!</p>

@@ -25,7 +25,7 @@
                             <div class="mb-3">
                                 <label for="video_file" class="form-label">{{ ftl('audio-upload-file-label') }}</label>
                                 <input type="file" class="form-control" id="video_file" name="video_file"
-                                       accept=".mp4,video/mp4" required aria-describedby="video-file-help">
+                                       accept="video/*" required aria-describedby="video-file-help">
                                 <div class="form-text" id="video-file-help">
                                     {{ ftl('audio-upload-file-help', max=5120) }}
                                 </div>

@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error: Partial Text Contrast AAA - Some Text Cannot Be Tested</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrPartialTextContrastAAA",
+    "issueId": "ErrPartialTextContrastAAA",
+    "expectedViolationCount": 5,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Each case passes AA contrast (>= 4.5:1) but fails AAA contrast (< 7:1) inside a solid container AND overflows it (content or box overflow), so part of the text sits on an undefined background. The AA-pass/AAA-fail band ensures these cases exercise the AAA threshold specifically and would not be flagged at AA. Every example is validated individually via data-expected-* annotations.",
+    "wcag": "1.4.6"
+}
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -43,35 +55,34 @@
             margin-top: 10px;
         }
 
-        /* Horizontal Overflow - Failing contrast inside */
+        /* Horizontal Overflow - nowrap text spills out of the coloured box (content overflow) */
         .overflow-horizontal-fail {
             width: 200px;
-            background: #999999; /* Gray */
+            background: #333333; /* Dark gray */
             overflow: visible;
             white-space: nowrap;
             padding: 15px;
-            color: #cccccc; /* Light gray - fails 7:1 on #999999 (ratio: 1.77:1) */
+            color: #b0b0b0; /* Light gray - passes AA but fails AAA on #333333 (5.83:1) */
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Vertical Overflow - Failing contrast inside */
+        /* Vertical Overflow - fixed height, extra lines spill below the box (content overflow) */
         .overflow-vertical-fail {
             height: 25px;
-            background: #888888; /* Medium gray */
+            background: #404040; /* Dark gray */
             overflow: visible;
             padding: 8px;
-            color: #aaaaaa; /* Light gray - fails 7:1 on #888888 (ratio: 1.53:1) */
+            color: #c4c4c4; /* Light gray - passes AA but fails AAA on #404040 (5.94:1) */
             font-weight: bold;
             line-height: 1.3;
             font-size: 16px;
         }
 
-        /* Absolute Positioning - Failing contrast inside */
+        /* Absolute Positioning - nowrap text spills out of the absolutely-positioned box */
         .overflow-absolute-parent-fail {
             position: relative;
             height: 100px;
-            background: #777777; /* Dark gray */
             padding: 15px;
         }
 
@@ -79,25 +90,30 @@
             position: absolute;
             top: 15px;
             left: 15px;
-            color: #999999; /* Medium gray - fails 7:1 on #777777 (ratio: 1.57:1) */
+            width: 200px;
+            white-space: nowrap;
+            overflow: visible;
+            background: #4a4a4a; /* Dark gray box; text overflows it */
+            color: #cfcfcf; /* Light gray - passes AA but fails AAA on #4a4a4a (5.69:1) */
+            padding: 5px;
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Negative Margin - Failing contrast inside */
+        /* Negative Margin - the box itself is pushed left, outside its parent (box overflow) */
         .overflow-negative-margin-fail {
-            background: #666666; /* Dark gray */
-            color: #888888; /* Medium gray - fails 7:1 on #666666 (ratio: 1.62:1) */
+            background: #363636; /* Dark gray */
+            color: #bfbfbf; /* Light gray - passes AA but fails AAA on #363636 (6.57:1) */
             padding: 15px;
             margin-left: -50px;
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Transform Translation - Failing contrast inside */
+        /* Transform Translation - the box is shifted left, outside its parent (box overflow) */
         .overflow-transform-fail {
-            background: #555555; /* Dark gray */
-            color: #777777; /* Medium gray - fails 7:1 on #555555 (ratio: 1.66:1) */
+            background: #4e4e4e; /* Dark gray */
+            color: #d6d6d6; /* Light gray - passes AA but fails AAA on #4e4e4e (5.73:1) */
             padding: 15px;
             transform: translateX(-30px);
             font-weight: bold;
@@ -107,85 +123,95 @@
 </head>
 <body>
     <h1>Error: Partial Text Contrast AAA - Some Text Cannot Be Tested</h1>
-    <p><strong>Purpose:</strong> These cases have text that FAILS AAA contrast (7:1) inside the container, AND some text extends outside the container. Result: <code>ErrPartialTextContrastAAA</code>.</p>
+    <p><strong>Purpose:</strong> Each case PASSES AA contrast (&ge; 4.5:1) but FAILS AAA contrast (&lt; 7:1) for text inside a solid container, AND some of that text extends outside the container onto an undefined background. The AA-pass/AAA-fail band confirms the test detects the AAA threshold specifically (these cases would not be flagged at AA). Result: <code>ErrPartialTextContrastAAA</code>.</p>
 
     <div class="section">
         <h2>Section 1: Horizontal Overflow - Fails AAA</h2>
-        <p><strong>Detection:</strong> Text inside fails AAA AND text extends beyond container horizontally.</p>
+        <p><strong>Detection:</strong> Text inside fails AAA AND content extends beyond the box horizontally.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-AAA-1: Horizontal Overflow (nowrap)</span>
-            <div class="overflow-horizontal-fail">
-                Light gray on gray (1.77:1 - fails AAA 7:1), and this text extends beyond the gray container with no background.
+            <div class="overflow-horizontal-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAAA"
+                 data-violation-reason="Light gray on dark gray passes AA (5.83:1 ≥ 4.5:1) but fails AAA (< 7:1); nowrap text spills past the 200px coloured box">
+                Light gray on dark gray (5.83:1 - passes AA 4.5:1, fails AAA 7:1), and this text extends beyond the gray container with no background.
             </div>
-            <div class="note">✗ Fails AAA (1.77:1 < 7:1). ⚠ Text outside cannot be tested. Result: ErrPartialTextContrastAAA.</div>
+            <div class="note">✓ Passes AA (5.83:1 ≥ 4.5:1). ✗ Fails AAA (5.83:1 &lt; 7:1). ⚠ Text outside cannot be tested. Result: ErrPartialTextContrastAAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 2: Vertical Overflow - Fails AAA</h2>
-        <p><strong>Detection:</strong> Text inside fails AAA AND text extends below container.</p>
+        <p><strong>Detection:</strong> Text inside fails AAA AND content extends below the box.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-AAA-2: Vertical Overflow</span>
-            <div class="overflow-vertical-fail">
-                Fails AAA (1.53:1).<br>
+            <div class="overflow-vertical-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAAA"
+                 data-violation-reason="Light gray on dark gray passes AA (5.94:1 ≥ 4.5:1) but fails AAA (< 7:1); extra lines spill below the fixed-height box">
+                Passes AA, fails AAA (5.94:1).<br>
                 Line 2 overflows.<br>
                 Line 3 overflows.<br>
                 Line 4 overflows.
             </div>
-            <div class="note">✗ Fails AAA (1.53:1 < 7:1). ⚠ Lines 2-4 overflow. Result: ErrPartialTextContrastAAA.</div>
+            <div class="note">✓ Passes AA (5.94:1 ≥ 4.5:1). ✗ Fails AAA (5.94:1 &lt; 7:1). ⚠ Lines 2-4 overflow. Result: ErrPartialTextContrastAAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 3: Absolute Positioning - Fails AAA</h2>
-        <p><strong>Detection:</strong> Text inside fails AAA AND position: absolute extends text outside.</p>
+        <p><strong>Detection:</strong> Text inside fails AAA AND nowrap content overflows the absolutely-positioned box.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-AAA-3: Absolute Positioning</span>
             <div class="overflow-absolute-parent-fail">
-                <div class="overflow-absolute-fail">
-                    Medium gray on dark gray (1.57:1 - fails AAA) and extends beyond the container using position: absolute.
+                <div class="overflow-absolute-fail"
+                     data-expected-violation="true"
+                     data-violation-id="ErrPartialTextContrastAAA"
+                     data-violation-reason="Light gray on dark gray passes AA (5.69:1 ≥ 4.5:1) but fails AAA (< 7:1); nowrap text overflows the absolutely-positioned coloured box">
+                    Light gray on dark gray (5.69:1 - passes AA, fails AAA) and extends beyond its coloured box; the absolutely-positioned element uses nowrap so the text runs past its background.
                 </div>
             </div>
-            <div class="note">✗ Fails AAA (1.57:1 < 7:1). ⚠ Positioned text outside cannot be tested. Result: ErrPartialTextContrastAAA.</div>
+            <div class="note">✓ Passes AA (5.69:1 ≥ 4.5:1). ✗ Fails AAA (5.69:1 &lt; 7:1). ⚠ Overflowing text cannot be tested. Result: ErrPartialTextContrastAAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 4: Negative Margin - Fails AAA</h2>
-        <p><strong>Detection:</strong> Text inside fails AAA AND negative margin pushes text outside.</p>
+        <p><strong>Detection:</strong> Text inside fails AAA AND negative margin pushes the box outside its parent.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-AAA-4: Negative Margin</span>
-            <div class="overflow-negative-margin-fail">
-                Medium gray on dark gray (1.62:1 - fails AAA) with negative left margin. Part extends left with no background.
+            <div class="overflow-negative-margin-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAAA"
+                 data-violation-reason="Light gray on dark gray passes AA (6.57:1 ≥ 4.5:1) but fails AAA (< 7:1); negative left margin pushes the box outside its parent">
+                Light gray on dark gray (6.57:1 - passes AA, fails AAA) with negative left margin. Part extends left with no background.
             </div>
-            <div class="note">✗ Fails AAA (1.62:1 < 7:1). ⚠ Text in negative margin cannot be tested. Result: ErrPartialTextContrastAAA.</div>
+            <div class="note">✓ Passes AA (6.57:1 ≥ 4.5:1). ✗ Fails AAA (6.57:1 &lt; 7:1). ⚠ Text in negative margin cannot be tested. Result: ErrPartialTextContrastAAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 5: Transform Translation - Fails AAA</h2>
-        <p><strong>Detection:</strong> Text inside fails AAA AND transform pushes text outside.</p>
+        <p><strong>Detection:</strong> Text inside fails AAA AND transform pushes the box outside its parent.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-AAA-5: Transform Translation</span>
-            <div class="overflow-transform-fail">
-                Medium gray on dark gray (1.66:1 - fails AAA) with transform translateX. Part extends left with no background.
+            <div class="overflow-transform-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAAA"
+                 data-violation-reason="Light gray on dark gray passes AA (5.73:1 ≥ 4.5:1) but fails AAA (< 7:1); transform translateX shifts the box outside its parent">
+                Light gray on dark gray (5.73:1 - passes AA, fails AAA) with transform translateX. Part extends left with no background.
             </div>
-            <div class="note">✗ Fails AAA (1.66:1 < 7:1). ⚠ Transformed text outside cannot be tested. Result: ErrPartialTextContrastAAA.</div>
+            <div class="note">✓ Passes AA (5.73:1 ≥ 4.5:1). ✗ Fails AAA (5.73:1 &lt; 7:1). ⚠ Transformed text outside cannot be tested. Result: ErrPartialTextContrastAAA.</div>
         </div>
     </div>
 
     <p style="margin-top: 40px; padding: 20px; background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px;">
-        <strong>Summary:</strong> All test cases demonstrate <strong>PARTIAL AAA FAILURES</strong>:
-        <ul>
-            <li><strong>Text inside container:</strong> FAILS AAA contrast (< 7:1)</li>
-            <li><strong>Text outside container:</strong> Cannot be tested due to undefined background</li>
-        </ul>
-        <strong>Expected Result:</strong> <code>ErrPartialTextContrastAAA</code>
+        <strong>Summary:</strong> Each case passes AA contrast (&ge; 4.5:1) but fails AAA contrast (&lt; 7:1) inside a solid container and overflows it, so part of the text sits on an undefined background. Result: <code>ErrPartialTextContrastAAA</code>. Each case is validated individually through its <code>data-expected-*</code> annotation.
     </p>
 </body>
 </html>

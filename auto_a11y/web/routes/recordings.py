@@ -12,12 +12,16 @@ from flask import (
     Blueprint, Response, abort, make_response, render_template, request, redirect,
     send_file, url_for, flash, jsonify, session
 )
+from flask_login import current_user, login_required
 from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.routes.auth import project_role_required
+from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.typed_app import (
     get_app_config, get_audio_storage, get_db, get_video_runner,
 )
 from werkzeug.datastructures import FileStorage
+from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response as WerkzeugResponse
 import logging
 import json
@@ -35,8 +39,15 @@ recordings_bp = Blueprint('recordings', __name__)
 
 
 @recordings_bp.route('/')
+@login_required
 def list_recordings() -> str | Response:
-    """List all recordings"""
+    """List all recordings the current user can access.
+
+    No per-resource id lives in the URL, so this cannot use
+    ``project_role_required``. Instead it is scoped to the projects the
+    current user is a member of (superadmins see all) to avoid leaking
+    other tenants' recordings — mirroring the ``api/list`` fix.
+    """
     try:
         project_id = request.args.get('project_id')
         recording_type = request.args.get('recording_type')
@@ -53,6 +64,16 @@ def list_recordings() -> str | Response:
             project_id=project_id,
             recording_type=recording_type_enum
         )
+
+        # Scope to the projects the user can access (superadmin sees all).
+        if not getattr(current_user, 'is_superadmin', False):
+            accessible_project_ids = {
+                p.id
+                for p in get_db().get_projects_for_user(str(current_user.get_id()))
+            }
+            recordings = [
+                r for r in recordings if r.project_id in accessible_project_ids
+            ]
 
         # Get projects for filter dropdown
         projects = get_db().get_all_projects()
@@ -71,6 +92,7 @@ def list_recordings() -> str | Response:
 
 
 @recordings_bp.route('/<recording_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_recording(recording_id: str) -> str | Response | WerkzeugResponse:
     """View recording details"""
     try:
@@ -159,6 +181,7 @@ def view_recording(recording_id: str) -> str | Response | WerkzeugResponse:
 
 
 @recordings_bp.route('/combined/<project_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_combined_recordings(project_id: str) -> str | Response | WerkzeugResponse:
     """View all recordings for a project combined into a single issue list"""
     try:
@@ -215,23 +238,39 @@ def view_combined_recordings(project_id: str) -> str | Response | WerkzeugRespon
         return redirect(url_for('projects.view_project', project_id=project_id))
 
 
-def _is_mp4_upload(file: FileStorage) -> bool:
-    """Return True iff ``file`` looks like an MP4 upload.
+def _is_video_upload(file: FileStorage) -> bool:
+    """Return True iff ``file`` is a real uploaded file (not a placeholder).
 
-    Checks both the MIME type the browser declared and the filename
-    extension; either is sufficient. Empty filename or zero-byte uploads
-    return False so we never branch into the video flow for the empty
-    placeholder files that browsers attach to unused ``<input type=file>``
-    elements.
+    We deliberately do **not** filter by extension or MIME type here. The
+    pipeline only consumes the audio track, which ffmpeg reads from any
+    container, so the real format gate is ffprobe in
+    :func:`_handle_video_upload` — a file ffprobe can't parse is rejected
+    there with a 400. Filtering on ``video/mp4`` / ``.mp4`` used to reject
+    the macOS default ``.mov`` (MIME ``video/quicktime``), silently
+    breaking uploads for Mac users.
+
+    The only thing screened out is the empty placeholder file that
+    browsers attach to an unused ``<input type=file>`` element: those
+    arrive with an empty filename, so an empty filename returns False and
+    we never branch into the video flow for them.
     """
-    filename = file.filename or ''
-    if not filename:
-        return False
-    if file.mimetype == 'video/mp4':
+    return bool(file.filename)
+
+
+def _can_edit_project(project_id: str) -> bool:
+    """Return True iff the current user may create recordings in ``project_id``.
+
+    The upload routes take ``project_id`` from a form field (not a URL kwarg),
+    so ``project_role_required`` cannot resolve it ahead of the handler. They
+    are therefore ``@login_required`` and call this to enforce edit-tier
+    (ADMIN/AUDITOR) membership on the target project inside the handler — a
+    superadmin always passes. This closes the IDOR where any authenticated
+    user could attach a recording to an arbitrary project.
+    """
+    if getattr(current_user, 'is_superadmin', False):
         return True
-    if filename.lower().endswith('.mp4'):
-        return True
-    return False
+    from auto_a11y.core.permissions import user_has_permission
+    return user_has_permission(current_user, project_id, 'test_results', 'create')
 
 
 def _narrow_audit_context(raw: str) -> AuditContext:
@@ -243,6 +282,23 @@ def _narrow_audit_context(raw: str) -> AuditContext:
     if raw == 'navilens':
         return 'navilens'
     return 'audit'
+
+
+def _recording_type_for_context(context: AuditContext) -> RecordingType:
+    """Derive the display ``RecordingType`` from a video upload's audit context.
+
+    The video-upload form only captures the 3-way :data:`AuditContext`
+    (``audit`` / ``livedExperience`` / ``navilens``), while every label and
+    report reads :class:`RecordingType`. Without this mapping ``recording_type``
+    stays at its ``AUDIT`` default, so lived-experience and NaviLens uploads
+    are mislabelled as audits. ``navilens`` maps to the nav-and-wayfinding
+    lived-experience type; generic lived experience maps to the website type.
+    """
+    if context == 'livedExperience':
+        return RecordingType.LIVED_EXPERIENCE_WEBSITE
+    if context == 'navilens':
+        return RecordingType.LIVED_EXPERIENCE_NAV_AND_WAYFINDING
+    return RecordingType.AUDIT
 
 
 def _narrow_language(raw: str) -> AnalysisLanguage | None:
@@ -269,13 +325,16 @@ def _error_response(message_id: str, status: int, **kwargs: object) -> Response:
 
 
 def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse:
-    """Handle an MP4 upload: validate, allocate storage, estimate cost.
+    """Handle a video upload: validate, allocate storage, estimate cost.
 
     Splits the video flow out of :func:`upload_recording` to keep the
-    existing JSON / HTML import path readable. On success renders
-    ``recordings/upload_confirm.html`` with the freshly-created
-    :class:`Recording`; on validation failure renders the upload form
-    with a flash + an appropriate HTTP status (400 / 413).
+    existing JSON / HTML import path readable. The uploaded file is saved
+    and then probed with ffprobe, which is the real format gate: any
+    container ffprobe can read (``.mp4``, ``.mov``, ``.webm``, ...) is
+    accepted, and a file it can't parse is refused with a 400. On success
+    renders ``recordings/upload_confirm.html`` with the freshly-created
+    :class:`Recording`; on validation failure renders the upload form with
+    a flash + an appropriate HTTP status (400 / 413).
     """
     cfg = get_app_config()
     max_mb = cfg.AUDIO_MAX_SIZE_MB
@@ -288,6 +347,9 @@ def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse
 
     project = get_db().get_project(project_id)
     if project is None:
+        return _error_response('audio-error-no-project-access', 403)
+
+    if not _can_edit_project(project_id):
         return _error_response('audio-error-no-project-access', 403)
 
     # Language selection — at least one required.
@@ -338,6 +400,7 @@ def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse
         return _error_response('audio-error-invalid-mp4', 400)
 
     audit_context = _narrow_audit_context(request.form.get('audit_context', 'audit'))
+    recording_type = _recording_type_for_context(audit_context)
     extended_context = request.form.get('extended_context') == 'on'
     speaker_remap_enabled = request.form.get('speaker_remap_enabled') == 'on'
     callouts_requested = request.form.get('callouts_requested') == 'on'
@@ -358,6 +421,7 @@ def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse
         project_id=project_id,
         source_video_path=str(slot.source_mp4),
         audit_context=audit_context,
+        recording_type=recording_type,
         analysis_languages=selected,
         extended_context=extended_context,
         speaker_remap_enabled=speaker_remap_enabled,
@@ -386,6 +450,7 @@ def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse
 
 
 @recordings_bp.route('/upload', methods=['GET'])
+@login_required
 def upload_recording() -> WerkzeugResponse:
     """Legacy entry point — redirect to the video upload form.
 
@@ -398,29 +463,33 @@ def upload_recording() -> WerkzeugResponse:
 
 
 @recordings_bp.route('/upload/video', methods=['GET', 'POST'])
+@login_required
 def upload_video() -> str | Response | WerkzeugResponse:
-    """Upload an MP4 audit video → audioA11y pipeline (cost-estimate confirm).
+    """Upload an audit video → audioA11y pipeline (cost-estimate confirm).
 
-    GET renders the minimal video form. POST locates the uploaded MP4 and
+    GET renders the minimal video form. POST locates the uploaded file and
     dispatches to :func:`_handle_video_upload`, which auto-generates a
     ``REC-YYYYMMDDHHMMSS-{6hex}`` id, allocates the per-recording directory
     tree under ``AUDIO_STORAGE_DIR``, probes the duration via ffprobe,
     computes a pre-flight cost estimate, and renders the confirm-step
     template. The user kicks off the actual pipeline by POSTing to
-    ``/recordings/<id>/process``. A missing or non-MP4 file is refused with
-    a 400 so the user picks the right file (or the JSON page).
+    ``/recordings/<id>/process``. Any container ffprobe can read is
+    accepted (e.g. ``.mp4``, the macOS-default ``.mov``, ``.webm``); a
+    missing file is refused with a 400, and a file ffprobe can't parse is
+    refused by :func:`_handle_video_upload`.
     """
     if request.method == 'GET':
         projects = get_db().get_all_projects()
         return render_template('recordings/upload_video.html', projects=projects)
 
     for upload in request.files.values():
-        if _is_mp4_upload(upload):
+        if _is_video_upload(upload):
             return _handle_video_upload(upload)
     return _error_response('audio-error-file-required', 400)
 
 
 @recordings_bp.route('/upload/json', methods=['GET', 'POST'])
+@login_required
 def upload_json() -> str | Response | WerkzeugResponse:
     """Import a Dictaphone JSON export directly into the recording_issues collection.
 
@@ -456,6 +525,10 @@ def upload_json() -> str | Response | WerkzeugResponse:
         if not project_id:
             flash(ftl('recordings-project-is-required'), "danger")
             return redirect(url_for('recordings.upload_json'))
+
+        if not _can_edit_project(project_id):
+            flash(ftl('common-you-do-not-have-permission-to-access-this-resource'), "danger")
+            abort(403)
 
         # Optional fields
         title = request.form.get('title', '')
@@ -684,6 +757,13 @@ def upload_json() -> str | Response | WerkzeugResponse:
             if tmp_file_en:
                 Path(tmp_file_en).unlink(missing_ok=True)
 
+    except HTTPException:
+        # Authorization aborts (e.g. ``abort(403)`` from ``_can_edit_project``)
+        # and any other ``abort(...)`` must reach the client with their real
+        # status, not be swallowed by the broad ``except Exception`` below and
+        # downgraded to a 302 redirect. Without this, the in-handler IDOR guard
+        # was silently neutered.
+        raise
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON file: {e}")
         flash(ftl('recordings-invalid-json-file-error', error=str(e)), "danger")
@@ -754,6 +834,7 @@ def _run_video_pipeline(
 
 
 @recordings_bp.route('/<recording_id>/process', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def process_recording(recording_id: str) -> Response | WerkzeugResponse:
     """Kick off the audioA11y pipeline for an ``uploaded`` Recording.
 
@@ -776,6 +857,18 @@ def process_recording(recording_id: str) -> Response | WerkzeugResponse:
     runner = get_video_runner()
     if runner is None:
         flash(ftl('audio-error-runner-not-configured'), 'danger')
+        return redirect(url_for('recordings.view_recording', recording_id=recording_id))
+
+    # Refuse to start a run that can only fail: the pipeline needs the
+    # Deepgram (transcription) and Anthropic (analysis) API keys. Without
+    # them the SDKs build an empty ``Token`` auth header and die deep in
+    # httpx; surface an actionable message up front instead.
+    missing_keys = runner.missing_api_keys()
+    if missing_keys:
+        flash(
+            ftl('audio-error-keys-not-configured', keys=', '.join(missing_keys)),
+            'danger',
+        )
         return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
     recording.status = 'processing'
@@ -805,6 +898,7 @@ def process_recording(recording_id: str) -> Response | WerkzeugResponse:
 
 
 @recordings_bp.route('/<recording_id>/callouts.mp4')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def download_callouts_video(recording_id: str) -> Response:
     """Stream the rendered callouts MP4.
 
@@ -833,6 +927,7 @@ def download_callouts_video(recording_id: str) -> Response:
 
 
 @recordings_bp.route('/<recording_id>/cancel', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def cancel_recording(recording_id: str) -> WerkzeugResponse:
     """Flip a ``processing`` Recording's status to ``cancelling``.
 
@@ -857,6 +952,7 @@ def cancel_recording(recording_id: str) -> WerkzeugResponse:
 
 
 @recordings_bp.route('/<recording_id>/delete', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def delete_recording(recording_id: str) -> WerkzeugResponse:
     """Delete a recording"""
     try:
@@ -886,12 +982,28 @@ def delete_recording(recording_id: str) -> WerkzeugResponse:
 # API endpoints
 
 @recordings_bp.route('/api/list')
+@login_required
 @deprecated(successor="/api/v1/recordings", sunset="2026-09-01")
 def api_list_recordings() -> Response | tuple[Response, int]:
-    """API endpoint to list recordings"""
+    """API endpoint to list recordings the current user can access.
+
+    No per-resource id lives in the URL, so this cannot use
+    ``project_role_required``. Instead it is scoped to the projects the
+    current user is a member of (superadmins see all) so it never leaks
+    other tenants' recordings. The response shape is unchanged.
+    """
     try:
         project_id = request.args.get('project_id')
         recordings = get_db().get_recordings(project_id=project_id)
+
+        if not getattr(current_user, 'is_superadmin', False):
+            accessible_project_ids = {
+                p.id
+                for p in get_db().get_projects_for_user(str(current_user.get_id()))
+            }
+            recordings = [
+                r for r in recordings if r.project_id in accessible_project_ids
+            ]
 
         return jsonify({
             'success': True,
@@ -918,6 +1030,7 @@ def api_list_recordings() -> Response | tuple[Response, int]:
 
 
 @recordings_bp.route('/api/<recording_id>/issues')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 @deprecated(successor="/api/v1/recordings/<recording_id>/issues", sunset="2026-09-01")
 def api_recording_issues(recording_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get issues for a recording"""
@@ -953,6 +1066,7 @@ def api_recording_issues(recording_id: str) -> Response | tuple[Response, int]:
 
 
 @recordings_bp.route('/api/issue/<issue_id>/status', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 @deprecated(successor="/api/v1/recording-issues/<issue_id>", sunset="2026-09-01")
 def api_update_issue_status(issue_id: str) -> Response | tuple[Response, int]:
     """API endpoint to update issue status"""

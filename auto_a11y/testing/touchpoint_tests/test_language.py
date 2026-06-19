@@ -125,19 +125,30 @@ def validate_language_code(lang_code: str) -> tuple[bool, bool, bool, bool, str,
     if '_' in lang_code:
         is_correctly_formatted = False
 
-    # Check basic format pattern (allows any case to detect case issues)
-    if not LANG_FORMAT_PATTERN.match(lang_code):
+    # Check basic format pattern (allows any case to detect case issues).
+    # Match against the stripped value: surrounding whitespace is a formatting
+    # problem (already flagged above), not grounds to reject the code outright.
+    if not LANG_FORMAT_PATTERN.match(lang_code.strip()):
         return (False, False, False, False, '', '')
 
-    # If format matches, check case sensitivity
-    if '-' in lang_code:
-        parts = lang_code.split('-')
+    # If format matches, check case sensitivity. The format pattern is compiled
+    # with re.IGNORECASE, so an all-uppercase code (e.g. "EN") matches; we must
+    # still flag it as mis-formatted because the primary subtag should be
+    # lowercase.
+    stripped_code = lang_code.strip()
+    if '-' in stripped_code:
+        parts = stripped_code.split('-')
         # Language code should be lowercase, region should be uppercase
         if parts[0] != parts[0].lower() or parts[1] != parts[1].upper():
             is_correctly_formatted = False
+    else:
+        # No region subtag: the whole code is the primary language and must be
+        # lowercase (e.g. "EN" is mis-formatted, "en" is correct).
+        if stripped_code != stripped_code.lower():
+            is_correctly_formatted = False
 
     # Extract primary language code and region code (normalized for validation)
-    parts = lang_code.split('-')
+    parts = stripped_code.split('-')
     primary_lang = parts[0].lower()
     region_code = parts[1].upper() if len(parts) > 1 else ''
 

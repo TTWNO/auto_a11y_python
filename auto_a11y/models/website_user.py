@@ -10,6 +10,8 @@ from typing import Any
 from bson import ObjectId
 from enum import Enum
 
+from auto_a11y.utils.crypto import decrypt_credential, encrypt_credential
+
 
 class AuthenticationMethod(Enum):
     """Authentication method types"""
@@ -160,7 +162,7 @@ class WebsiteUser:
         data: dict[str, Any] = {
             'website_id': self.website_id,
             'username': self.username,
-            'password': self.password,  # TODO: Encrypt in production
+            'password': encrypt_credential(self.password),
             'display_name': self.display_name,
             'roles': self.roles,
             'description': self.description,
@@ -182,7 +184,7 @@ class WebsiteUser:
         return cls(
             website_id=data['website_id'],
             username=data['username'],
-            password=data['password'],
+            password=decrypt_credential(data['password']),
             display_name=data.get('display_name'),
             roles=data.get('roles', []),
             description=data.get('description'),

@@ -178,7 +178,15 @@ async def test_document_links(page: Page) -> dict[str, Any]:
                     
                     // Check for generic link text
                     const genericTexts = ['click here', 'download', 'here', 'link', 'file', 'document'];
-                    if (genericTexts.some(generic => text.toLowerCase().includes(generic)) && text.length < 20) {
+                    // Link text that is ONLY a file-format name (e.g. "PDF",
+                    // ".pdf", "Excel") names the format, not the document, so
+                    // it is generic too. Exact match only - descriptive text
+                    // that merely mentions the format ("User Guide (PDF)") is fine.
+                    const formatOnlyTexts = ['pdf', 'doc', 'docx', 'word', 'xls', 'xlsx', 'excel',
+                                             'spreadsheet', 'ppt', 'pptx', 'powerpoint', 'presentation',
+                                             'csv', 'rtf', 'txt', 'odt', 'ods', 'odp'];
+                    const formatOnly = formatOnlyTexts.includes(text.toLowerCase().replace(/^\\./, ''));
+                    if ((genericTexts.some(generic => text.toLowerCase().includes(generic)) && text.length < 20) || formatOnly) {
                         results.warnings.push({
                             err: 'WarnGenericDocumentLinkText',
                             type: 'warn',

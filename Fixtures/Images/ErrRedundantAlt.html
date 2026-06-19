@@ -4,24 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redundant Alt Test - ErrRedundantAlt</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrRedundantAlt",
+    "issueId": "ErrRedundantAlt",
+    "expectedViolationCount": 5,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Each img element whose alt text includes a redundant phrase such as image of, picture of, graphic of, photo of, or just the word image triggers ErrRedundantAlt; every demonstrated case is validated individually.",
+    "wcag": "1.1.1"
+}
+    </script>
 </head>
 <body>
     <h1>Images With Redundant Alt Text</h1>
     
     <!-- Alt text says "image of" -->
-    <img src="sunset.jpg" alt="Image of sunset">
+    <img src="sunset.jpg" alt="Image of sunset" data-expected-violation="true" data-violation-id="ErrRedundantAlt" data-violation-reason="alt text starts with the redundant phrase image of">
     
     <!-- Alt text says "picture of" -->
-    <img src="team.jpg" alt="Picture of our team">
+    <img src="team.jpg" alt="Picture of our team" data-expected-violation="true" data-violation-id="ErrRedundantAlt" data-violation-reason="alt text starts with the redundant phrase picture of">
     
     <!-- Alt text says "graphic of" -->
-    <img src="chart.png" alt="Graphic of sales data">
+    <img src="chart.png" alt="Graphic of sales data" data-expected-violation="true" data-violation-id="ErrRedundantAlt" data-violation-reason="alt text starts with the redundant phrase graphic of">
     
     <!-- Alt text says "photo of" -->
-    <img src="ceo.jpg" alt="Photo of CEO John Smith">
+    <img src="ceo.jpg" alt="Photo of CEO John Smith" data-expected-violation="true" data-violation-id="ErrRedundantAlt" data-violation-reason="alt text starts with the redundant phrase photo of">
     
     <!-- Alt text just says "image" -->
-    <img src="logo.png" alt="Image">
+    <img src="logo.png" alt="Image" data-expected-violation="true" data-violation-id="ErrRedundantAlt" data-violation-reason="alt text is just the redundant word image">
     
     <!-- Alt text says "icon" -->
     <img src="email.svg" alt="Icon">

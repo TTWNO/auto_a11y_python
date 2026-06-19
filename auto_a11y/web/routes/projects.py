@@ -22,6 +22,17 @@ from auto_a11y.models.app_user import UserRole
 from auto_a11y.core.issue_aggregator import count_website_issues
 from auto_a11y.pdf.storage import PdfStorage
 
+# Allow-list for the project WCAG conformance target. Form input is normalised
+# against this so an out-of-range value can't be persisted into project config
+# (defence-in-depth; the value is also escaped on output in reports).
+_VALID_WCAG_LEVELS: tuple[str, ...] = ('A', 'AA', 'AAA')
+
+
+def _normalise_wcag_level(value: str | None) -> str:
+    """Return ``value`` if it is a valid WCAG level, else the 'AA' default."""
+    level = (value or 'AA').strip().upper()
+    return level if level in _VALID_WCAG_LEVELS else 'AA'
+
 
 def summarise_pdf_status(pdfs: list[PdfDocument]) -> dict[str, int]:
     """Bucket a list of PdfDocuments by audit status for the nav-card counter.
@@ -70,8 +81,8 @@ def api_list_projects() -> Response | tuple[Response, int]:
             ]
         })
     except Exception as e:
-        logger.error(f"Error listing projects: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error listing projects: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/<project_id>/websites')
@@ -93,11 +104,12 @@ def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
             ]
         })
     except Exception as e:
-        logger.error(f"Error listing project websites: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error listing project websites: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/test-details/<test_id>')
+@login_required
 @deprecated(successor="/api/v1/issues/<code>", sunset="2026-09-01")
 def api_test_details(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get detailed information about a test"""
@@ -150,10 +162,10 @@ def api_test_details(test_id: str) -> Response | tuple[Response, int]:
             'test': response_data
         })
     except Exception as e:
-        logger.error(f"Error getting test details for {test_id}: {e}")
+        logger.exception(f"Error getting test details for {test_id}: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': ftl('common-unexpected-error')
         }), 500
 
 
@@ -196,10 +208,10 @@ def api_set_test_production_ready(test_id: str) -> Response | tuple[Response, in
             }), 500
 
     except Exception as e:
-        logger.error(f"Error setting production ready for {test_id}: {e}")
+        logger.exception(f"Error setting production ready for {test_id}: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': ftl('common-unexpected-error')
         }), 500
 
 
@@ -238,10 +250,10 @@ def api_issue_documentation_stats() -> Response | tuple[Response, int]:
         })
 
     except Exception as e:
-        logger.error(f"Error getting documentation stats: {e}")
+        logger.exception(f"Error getting documentation stats: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': ftl('common-unexpected-error')
         }), 500
 
 
@@ -273,7 +285,7 @@ def create_project() -> str | Response:
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description', '')
-        wcag_level = request.form.get('wcag_level', 'AA')
+        wcag_level = _normalise_wcag_level(request.form.get('wcag_level'))
         project_type_value = request.form.get('project_type', 'website')
 
         # Parse project type
@@ -598,6 +610,7 @@ def view_project(project_id: str) -> str | Response:
 
 
 @projects_bp.route('/<project_id>/edit', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN)
 def edit_project(project_id: str) -> str | Response:
     """Edit project"""
     project = get_db().get_project(project_id)
@@ -651,7 +664,7 @@ def edit_project(project_id: str) -> str | Response:
         project.drupal_audit_name = drupal_audit_name
 
         # Update WCAG level in config
-        wcag_level = request.form.get('wcag_level', 'AA')
+        wcag_level = _normalise_wcag_level(request.form.get('wcag_level'))
         if not project.config:
             project.config = {}
         project.config['wcag_level'] = wcag_level
@@ -762,6 +775,7 @@ def edit_project(project_id: str) -> str | Response:
 
 
 @projects_bp.route('/<project_id>/delete', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def delete_project(project_id: str) -> Response:
     """Delete project"""
     project = get_db().get_project(project_id)
@@ -817,6 +831,7 @@ def add_website(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/<project_id>/test-all', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_project(project_id: str) -> Response:
     """Test all websites in a project"""
     import asyncio
@@ -881,8 +896,8 @@ def test_project(project_id: str) -> Response:
             flash(ftl('projects-no-websites-found-to-test-in-this-project'), 'warning')
         
     except Exception as e:
-        logger.error(f"Failed to start project testing: {e}")
-        flash(ftl('projects-failed-to-start-testing-error', error=str(e)), 'error')
+        logger.exception(f"Failed to start project testing: {e}")
+        flash(ftl('common-unexpected-error'), 'error')
     
     return redirect(url_for('projects.view_project', project_id=project_id))
 
@@ -942,6 +957,8 @@ def generate_project_report(project_id: str) -> Response:
 
 
 @projects_bp.route('/api/<project_id>/users')
+@login_required
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 @deprecated(successor="/api/v1/projects/<project_id>/users", sunset="2026-09-01")
 def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project users"""
@@ -960,11 +977,13 @@ def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
             ]
         })
     except Exception as e:
-        logger.error(f"Error fetching project users: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error fetching project users: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/<project_id>/details')
+@login_required
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 @deprecated(successor="/api/v1/projects/<project_id>", sunset="2026-09-01")
 def api_get_project(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project details including testers and supervisors"""
@@ -985,11 +1004,13 @@ def api_get_project(project_id: str) -> Response | tuple[Response, int]:
             }
         })
     except Exception as e:
-        logger.error(f"Error fetching project: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error fetching project: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/<project_id>/discovered-pages')
+@login_required
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 @deprecated(successor="/api/v1/projects/<project_id>/discovered-pages", sunset="2026-09-01")
 def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get discovered pages for a project"""
@@ -1015,5 +1036,5 @@ def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]
             'discovered_pages': pages
         })
     except Exception as e:
-        logger.error(f"Error fetching discovered pages: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error fetching discovered pages: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500

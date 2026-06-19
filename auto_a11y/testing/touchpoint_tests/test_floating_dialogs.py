@@ -12,6 +12,123 @@ from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
+
+def aggregate_breakpoint_results(
+    per_breakpoint_results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Combine the per-breakpoint JS results into a single result.
+
+    The in-browser script runs once per CSS breakpoint, so the SAME dialog is
+    reported at every breakpoint. Without deduplication the same issue would be
+    emitted N times (N = breakpoint count) and the element tested/passed/failed
+    counts would be multiplied by N.
+
+    Deduplication rules:
+    - errors, warnings and passes are deduped by ``(err, xpath)`` signature.
+    - ``ErrContentObscuring`` errors are intentionally NOT deduped: a dialog can
+      obscure different content at different breakpoints, so each instance is
+      kept.
+    - element tested/passed/failed counts are derived from the DEDUPED finding
+      sets by counting distinct dialog xpaths across ALL breakpoints, NOT from a
+      ``max(...)`` of a per-breakpoint scalar. This counts a dialog once no
+      matter how many breakpoints it appears at, while still counting dialogs
+      that are distinct ACROSS breakpoints (e.g. one only visible at 320px and
+      another only at 1200px) as separate elements. A dialog with any error is
+      counted as failed; a dialog that only passes (no error) is counted as
+      passed; ``tested`` is the union, so ``tested == passed + failed``.
+
+    The returned check summary's ``total`` is derived from ``passed + failed`` so
+    it always reconciles (Bug B).
+
+    Args:
+        per_breakpoint_results: one JS result dict per breakpoint. Each dict has
+            ``applicable``, ``errors``, ``warnings``, ``passes``,
+            ``elements_tested``, ``elements_passed``, ``elements_failed`` and an
+            optional ``not_applicable_reason``.
+
+    Returns:
+        Aggregated result dict matching the touchpoint result contract.
+    """
+    all_errors: list[dict[str, Any]] = []
+    all_warnings: list[dict[str, Any]] = []
+    all_passes: list[dict[str, Any]] = []
+    test_applicable = False
+    not_applicable_reason = ''
+
+    def _signature(issue: dict[str, Any]) -> str:
+        return f"{issue.get('err')}:{issue.get('xpath')}"
+
+    def _dedup_into(
+        bucket: list[dict[str, Any]],
+        incoming: list[dict[str, Any]],
+        *,
+        keep_obscuring: bool,
+    ) -> None:
+        for issue in incoming:
+            signature = _signature(issue)
+            existing = next(
+                (i for i in bucket if _signature(i) == signature), None
+            )
+            if existing is None:
+                bucket.append(issue)
+            elif keep_obscuring and issue.get('err') == 'ErrContentObscuring':
+                # Content obscuring is breakpoint-specific; keep every instance.
+                bucket.append(issue)
+
+    for results in per_breakpoint_results:
+        if results.get('applicable'):
+            test_applicable = True
+
+        _dedup_into(all_errors, results.get('errors', []), keep_obscuring=True)
+        _dedup_into(all_warnings, results.get('warnings', []), keep_obscuring=False)
+        _dedup_into(all_passes, results.get('passes', []), keep_obscuring=False)
+
+        if not results.get('applicable') and not not_applicable_reason:
+            not_applicable_reason = results.get('not_applicable_reason', '')
+
+    # Derive element counts from the DEDUPED finding sets by distinct dialog
+    # xpath. A dialog with any error counts as failed; a dialog that only passes
+    # (and has no error) counts as passed; tested is their union. This counts a
+    # dialog once regardless of how many breakpoints it appeared at, AND counts
+    # dialogs that are distinct across breakpoints as separate elements.
+    failed_xpaths: set[str] = {
+        str(issue.get('xpath')) for issue in all_errors
+    }
+    passing_xpaths: set[str] = {
+        str(issue.get('xpath')) for issue in all_passes
+    } - failed_xpaths
+    elements_failed = len(failed_xpaths)
+    elements_passed = len(passing_xpaths)
+    elements_tested = elements_failed + elements_passed
+
+    final_results: dict[str, Any] = {
+        'applicable': test_applicable,
+        'not_applicable_reason': not_applicable_reason if not test_applicable else '',
+        'errors': all_errors,
+        'warnings': all_warnings,
+        'passes': all_passes,
+        'elements_tested': elements_tested,
+        'elements_passed': elements_passed,
+        'elements_failed': elements_failed,
+        'test_name': 'floating_dialogs',
+        'checks': [],
+    }
+
+    if test_applicable and elements_tested > 0:
+        # Bug B: derive total from the actual checks so passed + failed == total.
+        checks_list: list[dict[str, object]] = []
+        checks_list.append({
+            'description': 'Dialog accessibility',
+            'wcag': ['4.1.2', '2.4.6', '2.1.1', '2.1.2'],
+            'total': elements_passed + elements_failed,
+            'passed': elements_passed,
+            'failed': elements_failed,
+        })
+        final_results['checks'] = checks_list
+
+    return final_results
+
+
 TEST_DOCUMENTATION = {
     "testName": "Floating Dialog Accessibility Analysis",
     "touchpoint": "floating_dialogs",
@@ -104,15 +221,10 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
         # Store original viewport (Playwright uses viewport_size property)
         original_viewport = page.viewport_size
 
-        # Collect all errors/warnings/passes across all breakpoints
-        all_errors: list[dict[str, Any]] = []
-        all_warnings: list[dict[str, Any]] = []
-        all_passes: list[dict[str, Any]] = []
-        total_elements_tested = 0
-        total_elements_passed = 0
-        total_elements_failed = 0
-        test_applicable = False
-        not_applicable_reason = ''
+        # Collect the raw JS result for each breakpoint; aggregation (including
+        # deduplication of errors/warnings/passes and element counting) is done
+        # once afterwards by aggregate_breakpoint_results.
+        per_breakpoint_results: list[dict[str, Any]] = []
 
         # Test at each breakpoint
         for breakpoint_width in breakpoints:
@@ -615,7 +727,9 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
                         });
                     }
                     
-                    if (!ariaLabelledby) {
+                    // An empty or whitespace-only aria-labelledby references nothing,
+                    // so it is equivalent to the attribute being absent.
+                    if (!ariaLabelledby || !ariaLabelledby.trim()) {
                         results.warnings.push({
                             err: 'WarnMissingAriaLabelledby',
                             type: 'warn',
@@ -642,62 +756,134 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
             '''
 
             results: dict[str, Any] = await page.evaluate(js_code)
-
-            # Aggregate results from this breakpoint
-            if results['applicable']:
-                test_applicable = True
-
-            # Deduplicate errors by signature (xpath + error type, but keep breakpoint-specific ones)
-            for error in results.get('errors', []):
-                # Check if we already have this error at a different breakpoint
-                signature = f"{error.get('err')}:{error.get('xpath')}"
-                existing = next((e for e in all_errors if f"{e.get('err')}:{e.get('xpath')}" == signature), None)
-
-                if not existing:
-                    all_errors.append(error)
-                elif error.get('err') == 'ErrContentObscuring':
-                    # For content obscuring, we want to keep all breakpoint-specific instances
-                    all_errors.append(error)
-
-            all_warnings.extend(results.get('warnings', []))
-            all_passes.extend(results.get('passes', []))
-            total_elements_tested += results.get('elements_tested', 0)
-            total_elements_passed += results.get('elements_passed', 0)
-            total_elements_failed += results.get('elements_failed', 0)
-
-            if not results['applicable'] and not not_applicable_reason:
-                not_applicable_reason = results.get('not_applicable_reason', '')
+            per_breakpoint_results.append(results)
 
         # Restore original viewport
         if original_viewport:
             await page.set_viewport_size(original_viewport)
 
-        # Return aggregated results
-        final_results: dict[str, Any] = {
-            'applicable': test_applicable,
-            'not_applicable_reason': not_applicable_reason if not test_applicable else '',
-            'errors': all_errors,
-            'warnings': all_warnings,
-            'passes': all_passes,
-            'elements_tested': total_elements_tested,
-            'elements_passed': total_elements_passed,
-            'elements_failed': total_elements_failed,
-            'test_name': 'floating_dialogs',
-            'checks': []
-        }
+        # Aggregate across breakpoints (dedups errors/warnings/passes, counts
+        # elements once, and reconciles the check total with passed + failed).
+        aggregated = aggregate_breakpoint_results(per_breakpoint_results)
 
-        if test_applicable and total_elements_tested > 0:
-            checks_list: list[dict[str, object]] = final_results.get('checks', [])
-            checks_list.append({
-                'description': 'Dialog accessibility',
-                'wcag': ['4.1.2', '2.4.6', '2.1.1', '2.1.2'],
-                'total': total_elements_tested * 3,
-                'passed': total_elements_passed,
-                'failed': total_elements_failed
-            })
-            final_results['checks'] = checks_list
+        # Hit-test based content-obscuring detection (run once at the restored
+        # viewport). For each visible interactive control we ask the browser which
+        # element actually sits at the control's centre point via
+        # document.elementFromPoint. If the topmost element there is a different,
+        # non-related element, the control is visually covered and cannot be
+        # clicked/seen - WCAG 2.4.3 / 2.1.2. Using the real hit-test (rather than a
+        # rect-overlap heuristic) means hidden overlays (display:none / visibility
+        # :hidden), pointer-events:none decorations, and an element's own children
+        # are handled correctly, which keeps false positives low.
+        obscured_findings: list[dict[str, Any]] = await page.evaluate(r'''
+            () => {
+                function getFullXPath(element) {
+                    if (!element) return '';
+                    function getElementIdx(el) {
+                        let count = 1;
+                        for (let sib = el.previousSibling; sib; sib = sib.previousSibling) {
+                            if (sib.nodeType === 1 && sib.tagName === el.tagName) count++;
+                        }
+                        return count;
+                    }
+                    let path = '';
+                    while (element && element.nodeType === 1) {
+                        const idx = getElementIdx(element);
+                        path = `/${element.tagName.toLowerCase()}[${idx}]${path}`;
+                        element = element.parentNode;
+                    }
+                    return path;
+                }
 
-        return final_results
+                const interactiveSelector = 'a[href], button, input:not([type="hidden"]), select, textarea, [role="button"], [role="link"], [role="checkbox"], [role="menuitem"], [tabindex]:not([tabindex="-1"])';
+                const findings = [];
+                const seen = new Set();
+
+                // When a modal dialog is open it is SUPPOSED to cover the background, so a
+                // background control being obscured is expected behaviour, not a defect. Collect
+                // any visible modal dialogs and suppress obscuring findings for controls that sit
+                // outside them. A bare overlay/banner (no dialog semantics) is NOT treated as a
+                // modal and still produces findings.
+                const visibleModals = Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog'))
+                    .filter(m => {
+                        const ms = window.getComputedStyle(m);
+                        if (ms.display === 'none' || ms.visibility === 'hidden') return false;
+                        if (m.tagName.toLowerCase() === 'dialog' && !m.hasAttribute('open')) return false;
+                        const mr = m.getBoundingClientRect();
+                        return mr.width > 0 && mr.height > 0;
+                    });
+
+                Array.from(document.querySelectorAll(interactiveSelector)).forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) return;
+
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) return;
+
+                    // Centre point, clamped into the viewport so off-screen-but-visible
+                    // controls are still testable.
+                    const cx = Math.min(Math.max(rect.left + rect.width / 2, 1), window.innerWidth - 1);
+                    const cy = Math.min(Math.max(rect.top + rect.height / 2, 1), window.innerHeight - 1);
+
+                    const topEl = document.elementFromPoint(cx, cy);
+                    if (!topEl) return;
+
+                    // Not obscured if the hit element is the control itself, a
+                    // descendant of it (e.g. an icon inside a button), or an ancestor
+                    // that the control sits within.
+                    if (topEl === el || el.contains(topEl) || topEl.contains(el)) return;
+
+                    // A label that is programmatically tied to the control is not an
+                    // obscuring element.
+                    if (topEl.tagName.toLowerCase() === 'label' && topEl.contains(el)) return;
+
+                    // If a modal dialog is open and this control is in the (expectedly
+                    // obscured) background outside that modal, do not flag it.
+                    if (visibleModals.some(m => !m.contains(el))) {
+                        const insideAModal = visibleModals.some(m => m.contains(el));
+                        if (!insideAModal) return;
+                    }
+
+                    const xpath = getFullXPath(el);
+                    if (seen.has(xpath)) return;
+                    seen.add(xpath);
+
+                    findings.push({
+                        err: 'ErrContentObscuring',
+                        type: 'err',
+                        cat: 'floating_content',
+                        element: el.tagName,
+                        xpath: xpath,
+                        html: el.outerHTML.substring(0, 200),
+                        description: `Interactive ${el.tagName.toLowerCase()} element is obscured by another element (<${topEl.tagName.toLowerCase()}>) and cannot be clicked or seen`,
+                        metadata: {
+                            coveredBy: topEl.tagName.toLowerCase() + (topEl.id ? '#' + topEl.id : ''),
+                            coveredByXpath: getFullXPath(topEl)
+                        }
+                    });
+                });
+
+                return findings;
+            }
+        ''')
+
+        if obscured_findings:
+            existing_obscuring_xpaths = {
+                str(issue.get('xpath'))
+                for issue in aggregated.get('errors', [])
+                if issue.get('err') == 'ErrContentObscuring'
+            }
+            new_findings = [
+                f for f in obscured_findings
+                if str(f.get('xpath')) not in existing_obscuring_xpaths
+            ]
+            if new_findings:
+                aggregated['applicable'] = True
+                aggregated.setdefault('errors', []).extend(new_findings)
+                aggregated['elements_failed'] = aggregated.get('elements_failed', 0) + len(new_findings)
+                aggregated['elements_tested'] = aggregated.get('elements_tested', 0) + len(new_findings)
+
+        return aggregated
         
     except Exception as e:
         logger.error(f"Error in test_floating_dialogs: {e}")

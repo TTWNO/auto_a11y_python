@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Form Landmark Accessible Name Test Fixture</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFormLandmarkAccessibleNameIsBlank",
+    "issueId": "ErrFormLandmarkAccessibleNameIsBlank",
+    "expectedViolationCount": 3,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Form landmarks that carry a labeling attribute whose value resolves to a blank accessible name (empty or whitespace-only aria-label, or aria-labelledby resolving to nothing) trigger the blank-name error. Forms with a real resolved accessible name must not trigger it.",
+    "wcag": "1.3.1,4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Form Landmark Accessible Name Test Cases</h1>
@@ -18,14 +30,14 @@
     </form>
 
     <!-- Test Case 2: Form with empty aria-label -->
-    <form aria-label="">
+    <form aria-label="" data-expected-violation="true" data-violation-id="ErrFormLandmarkAccessibleNameIsBlank" data-violation-reason="form aria-label is empty, accessible name is blank">
         <label for="username1">Username:</label>
         <input type="text" id="username1" name="username">
         <button type="submit">Login</button>
     </form>
 
     <!-- Test Case 3: Form with whitespace-only aria-label -->
-    <form aria-label="   ">
+    <form aria-label="   " data-expected-violation="true" data-violation-id="ErrFormLandmarkAccessibleNameIsBlank" data-violation-reason="form aria-label is whitespace-only, accessible name is blank">
         <label for="search1">Search:</label>
         <input type="search" id="search1" name="q">
         <button type="submit">Search</button>
@@ -56,7 +68,7 @@
 
     <!-- Test Case 7: Form with both empty aria-label and empty aria-labelledby -->
     <span id="empty-span"></span>
-    <form aria-label="" aria-labelledby="empty-span">
+    <form aria-label="" aria-labelledby="empty-span" data-expected-violation="true" data-violation-id="ErrFormLandmarkAccessibleNameIsBlank" data-violation-reason="form aria-label empty and aria-labelledby resolves to blank text">
         <label for="address1">Address:</label>
         <input type="text" id="address1" name="address">
         <button type="submit">Save</button>
@@ -73,7 +85,7 @@
 
     <!-- Test Case 9: Form with proper aria-labelledby -->
     <h2 id="login-form-heading">Login Form</h2>
-    <form aria-labelledby="login-form-heading">
+    <form aria-labelledby="login-form-heading" data-expected-pass="true" data-pass-reason="form aria-labelledby resolves to a real heading, accessible name is not blank">
         <label for="username2">Username:</label>
         <input type="text" id="username2" name="username">
         <label for="password2">Password:</label>
@@ -93,7 +105,7 @@
     <!-- Test Case 11: Form with aria-labelledby pointing to multiple elements -->
     <h2 id="payment-heading">Payment</h2>
     <p id="payment-description">Enter your payment information</p>
-    <form aria-labelledby="payment-heading payment-description">
+    <form aria-labelledby="payment-heading payment-description" data-expected-pass="true" data-pass-reason="form aria-labelledby resolves to real text, accessible name is not blank">
         <label for="card-number">Card Number:</label>
         <input type="text" id="card-number" name="card-number">
         <button type="submit">Pay Now</button>

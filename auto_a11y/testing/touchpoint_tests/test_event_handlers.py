@@ -7,10 +7,109 @@ from __future__ import annotations
 
 from typing import Any
 import logging
+import re
 
 from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
+
+# Common CSS named colors used in focus-indicator styling. Anything not listed
+# (and not rgb()/rgba()/hex) falls back to opaque black -- see _parse_color.
+_NAMED_COLORS: dict[str, tuple[int, int, int]] = {
+    'black': (0, 0, 0),
+    'white': (255, 255, 255),
+    'red': (255, 0, 0),
+    'green': (0, 128, 0),
+    'lime': (0, 255, 0),
+    'blue': (0, 0, 255),
+    'yellow': (255, 255, 0),
+    'cyan': (0, 255, 255),
+    'aqua': (0, 255, 255),
+    'magenta': (255, 0, 255),
+    'fuchsia': (255, 0, 255),
+    'silver': (192, 192, 192),
+    'gray': (128, 128, 128),
+    'grey': (128, 128, 128),
+    'maroon': (128, 0, 0),
+    'olive': (128, 128, 0),
+    'purple': (128, 0, 128),
+    'teal': (0, 128, 128),
+    'navy': (0, 0, 128),
+    'orange': (255, 165, 0),
+}
+
+# CSS length: leading number (int/float, optional sign) followed by an optional
+# unit (px/em/rem/etc.). We only need the numeric magnitude for width/offset
+# comparisons, so the unit itself is discarded.
+_LENGTH_RE = re.compile(r'^\s*([+-]?\d*\.?\d+)')
+
+
+def _parse_px(value: str | None) -> float:
+    """Parse the leading numeric magnitude from a CSS length string.
+
+    Handles px/em/rem and bare numbers. The unit is intentionally ignored --
+    callers compare relative widths/offsets, not absolute pixels. Returns 0 for
+    empty/None/unparseable input.
+    """
+    if not value:
+        return 0
+    match = _LENGTH_RE.match(value)
+    if not match:
+        return 0
+    try:
+        return float(match.group(1))
+    except ValueError:
+        return 0
+
+
+def _parse_color(color_str: str | None) -> dict[str, float]:
+    """Parse a CSS color string to an RGBA dict.
+
+    Supports rgb()/rgba(), 6-digit and 3-digit hex, and a set of common named
+    colors. ``transparent``/``initial`` map to fully transparent black. Truly
+    unknown input falls back to opaque black ({r:0,g:0,b:0,a:1}).
+    """
+    if not color_str or color_str == 'transparent' or color_str == 'initial':
+        return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
+
+    color_str = color_str.strip()
+
+    match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
+    if match:
+        return {
+            'r': int(match.group(1)),
+            'g': int(match.group(2)),
+            'b': int(match.group(3)),
+            'a': float(match.group(4)) if match.group(4) else 1.0
+        }
+
+    match = re.match(r'#([0-9a-fA-F]{6})$', color_str)
+    if match:
+        hex_val = match.group(1)
+        return {
+            'r': int(hex_val[0:2], 16),
+            'g': int(hex_val[2:4], 16),
+            'b': int(hex_val[4:6], 16),
+            'a': 1.0
+        }
+
+    # 3-digit shorthand hex: #abc -> #aabbcc
+    match = re.match(r'#([0-9a-fA-F]{3})$', color_str)
+    if match:
+        hex_val = match.group(1)
+        return {
+            'r': int(hex_val[0] * 2, 16),
+            'g': int(hex_val[1] * 2, 16),
+            'b': int(hex_val[2] * 2, 16),
+            'a': 1.0
+        }
+
+    named = _NAMED_COLORS.get(color_str.lower())
+    if named is not None:
+        return {'r': named[0], 'g': named[1], 'b': named[2], 'a': 1.0}
+
+    # Unknown color: fall back to opaque black.
+    return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
 TEST_DOCUMENTATION = {
     "testName": "Event Handler Accessibility Tests",
@@ -152,7 +251,12 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     const tabindexValue = tabindex ? parseInt(tabindex) : 0;
                     
                     // Check for negative tabindex
-                    if (tabindexValue < 0) {
+                    // Only warn for interactive elements: removing an interactive control from the
+                    // tab order makes it keyboard-inaccessible. A non-interactive container (e.g. a
+                    // <div> or <section> with tabindex="-1" for programmatic focus, such as a modal
+                    // target or skip-link destination) is a correct, recommended pattern and must
+                    // not be flagged.
+                    if (tabindexValue < 0 && isIntrinsicInteractive(element)) {
                         results.warnings.push({
                             err: 'WarnNegativeTabindex',
                             type: 'warn',
@@ -250,7 +354,50 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     
                     previousRect = rect;
                 });
-                
+
+                // Positive-tabindex tab-order check (WCAG 2.4.3 Focus Order).
+                // A positive tabindex value forces an element to the front of the tab sequence in
+                // ascending tabindex order, ahead of every tabindex=0/implicit element regardless of
+                // where it sits in the document. This almost always makes the keyboard focus order
+                // diverge from the visual reading order. We compare the order produced by the
+                // positive tabindex values against those same elements' document order; if they
+                // disagree, the focus order does not match the visual/DOM order and we flag it.
+                const positiveTabindexElements = focusableElements
+                    .map((el, domIndex) => ({ el, domIndex, ti: parseInt(el.getAttribute('tabindex') || '0') }))
+                    .filter(item => item.ti > 0);
+
+                if (positiveTabindexElements.length > 0) {
+                    // Order the positive-tabindex elements as the browser would visit them:
+                    // ascending tabindex, ties broken by document order.
+                    const tabSequence = positiveTabindexElements.slice().sort((a, b) => {
+                        if (a.ti !== b.ti) return a.ti - b.ti;
+                        return a.domIndex - b.domIndex;
+                    });
+                    // Their document order, for comparison.
+                    const domSequence = positiveTabindexElements.slice().sort((a, b) => a.domIndex - b.domIndex);
+
+                    for (let k = 0; k < tabSequence.length; k++) {
+                        if (tabSequence[k].el !== domSequence[k].el) {
+                            const el = tabSequence[k].el;
+                            const desc = el.tagName.toLowerCase() +
+                                (el.id ? `#${el.id}` : '') +
+                                (el.textContent ? ` ("${el.textContent.trim().substring(0, 30)}")` : '');
+                            tabOrderViolations++;
+                            results.errors.push({
+                                err: 'ErrTabOrderViolation',
+                                type: 'err',
+                                cat: 'event_handling',
+                                element: el.tagName.toLowerCase(),
+                                xpath: getFullXPath(el),
+                                html: el.outerHTML.substring(0, 200),
+                                description: `Tab order diverges from document/visual order: ${desc} has tabindex="${tabSequence[k].ti}", forcing a focus sequence that does not match the order in which elements appear on the page`,
+                                tabindex: tabSequence[k].ti
+                            });
+                            results.elements_failed++;
+                        }
+                    }
+                }
+
                 // Check for modals without escape handlers
                 // Collect inline JS and external script URLs for analysis
                 let inlineJsCode = '';
@@ -409,9 +556,13 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     return path;
                 }
                 function isIntrinsicInteractive(element) {
-                    const interactiveTags = ['a', 'button', 'input', 'select', 'textarea', 'details', 'summary'];
+                    const interactiveTags = ['button', 'input', 'select', 'textarea', 'details', 'summary'];
                     const interactiveRoles = ['button', 'link', 'menuitem', 'tab', 'checkbox', 'radio', 'switch'];
-                    return interactiveTags.includes(element.tagName.toLowerCase()) ||
+                    const tag = element.tagName.toLowerCase();
+                    // An <a> without href is not focusable or keyboard-operable, so it
+                    // is NOT intrinsically interactive (a fake button needing checks).
+                    if (tag === 'a') return element.hasAttribute('href');
+                    return interactiveTags.includes(tag) ||
                            (element.getAttribute('role') &&
                             interactiveRoles.includes(element.getAttribute('role')));
                 }
@@ -514,12 +665,14 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                 }
 
                 // ErrMissingTabindex — preserved logic, sourced from handlerMap.
+                const flaggedMissingTabindex = new Set();
                 Array.from(document.querySelectorAll('*')).forEach(element => {
                     const entry = handlerMap.getEntry(element);
                     if (!entry) return;
                     if (entry.mouseEvents.size === 0 && entry.keyEvents.size === 0) return;
                     if (isIntrinsicInteractive(element) || element.hasAttribute('tabindex')) return;
                     const tagName = element.tagName.toLowerCase();
+                    flaggedMissingTabindex.add(element);
                     out.errors.push({
                         err: 'ErrMissingTabindex',
                         type: 'err',
@@ -533,6 +686,44 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                         hasOtherHandlers: element.hasAttribute('onmousedown') ||
                                           element.hasAttribute('onmouseup') ||
                                           element.hasAttribute('ondblclick'),
+                    });
+                    out.elements_failed++;
+                });
+
+                // ErrMissingTabindex — role-based custom controls.
+                // A non-native element that advertises an interactive role (role="button",
+                // "link", "menuitem", "checkbox", "radio", "switch", "tab", "slider", ...) is
+                // announced to assistive technology as operable, but an ARIA role does NOT make
+                // an element focusable. Without tabindex="0" (or another focusable host) it cannot
+                // receive keyboard focus, so keyboard and switch users cannot operate it. Native
+                // controls (<button>, <a href>, <input>, ...) are intrinsically focusable and are
+                // not flagged. Inline onclick handlers are caught here too, since the script-text
+                // handler map only sees addEventListener registrations.
+                const focusableNativeTags = ['a', 'button', 'input', 'select', 'textarea', 'details', 'summary'];
+                const keyboardOperableRoles = [
+                    'button', 'link', 'menuitem', 'menuitemcheckbox', 'menuitemradio',
+                    'checkbox', 'radio', 'switch', 'tab', 'slider', 'spinbutton',
+                    'option', 'treeitem'
+                ];
+                Array.from(document.querySelectorAll('[role]')).forEach(element => {
+                    if (flaggedMissingTabindex.has(element)) return;
+                    if (element.hasAttribute('tabindex')) return;
+                    const tagName = element.tagName.toLowerCase();
+                    if (focusableNativeTags.includes(tagName)) return;
+                    const role = (element.getAttribute('role') || '').trim().toLowerCase();
+                    if (!keyboardOperableRoles.includes(role)) return;
+                    flaggedMissingTabindex.add(element);
+                    out.errors.push({
+                        err: 'ErrMissingTabindex',
+                        type: 'err',
+                        cat: 'event_handling',
+                        element: tagName,
+                        xpath: getFullXPath(element),
+                        html: element.outerHTML.substring(0, 200),
+                        description: `<${tagName}> with role="${role}" is not keyboard focusable - missing tabindex="0"`,
+                        elementTag: tagName,
+                        role: role,
+                        hasOnclick: element.hasAttribute('onclick'),
                     });
                     out.elements_failed++;
                 });
@@ -873,39 +1064,9 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
 
         # Process focus indicator data in Python
         if focus_elements:
-            import re
-
-            def parse_px(value: str | None) -> float:
-                """Parse pixel value from CSS string"""
-                if not value:
-                    return 0
-                try:
-                    return float(value.replace('px', '').replace('em', '').replace('rem', '').strip())
-                except:
-                    return 0
-
-            def parse_color(color_str: str | None) -> dict[str, float]:
-                """Parse CSS color to RGBA dict"""
-                if not color_str or color_str == 'transparent' or color_str == 'initial':
-                    return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
-                match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
-                if match:
-                    return {
-                        'r': int(match.group(1)),
-                        'g': int(match.group(2)),
-                        'b': int(match.group(3)),
-                        'a': float(match.group(4)) if match.group(4) else 1.0
-                    }
-                match = re.match(r'#([0-9a-fA-F]{6})', color_str)
-                if match:
-                    hex_val = match.group(1)
-                    return {
-                        'r': int(hex_val[0:2], 16),
-                        'g': int(hex_val[2:4], 16),
-                        'b': int(hex_val[4:6], 16),
-                        'a': 1.0
-                    }
-                return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
+            # Module-level helpers (tested directly); aliased for readability.
+            parse_px = _parse_px
+            parse_color = _parse_color
 
             def get_luminance(color: dict[str, float]) -> float:
                 """Calculate relative luminance"""
@@ -988,9 +1149,18 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     ]
                     
                     is_interactive = role in interactive_roles or has_handler
-                    
+
+                    # An explicit tabindex makes the element focusable on purpose,
+                    # so the missing focus indicator is a hard failure regardless of
+                    # whether we can also prove interactivity (a click handler may be
+                    # attached via addEventListener, which this static check cannot
+                    # see). Event-handler elements without a detectable interactive
+                    # signal stay a warning, matching the softer "handler" path.
                     if is_interactive:
                         desc = f"Interactive element (role='{role}') with tabindex lacks visible focus indicator"
+                        issues_found.append((f'{code_prefix}NoVisibleFocus', desc))
+                    elif elem_type == 'tabindex':
+                        desc = f"Focusable <{tag}> with tabindex lacks a visible focus indicator. Keyboard users cannot tell when this element has focus. Add a visible :focus style (outline, box-shadow, or border), or use tabindex='-1' if the element does not need to be in the tab order."
                         issues_found.append((f'{code_prefix}NoVisibleFocus', desc))
                     else:
                         desc = f"Non-interactive <{tag}> with tabindex lacks visible focus indicator. Adding tabindex to non-interactive elements makes them focusable but may confuse users expecting interactivity. Consider: (1) removing tabindex if focus is not needed, (2) adding a visible focus style if focus is intentional, or (3) using tabindex='-1' for programmatic focus only."

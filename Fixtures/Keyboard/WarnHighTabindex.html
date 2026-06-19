@@ -4,28 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>High Tabindex Warning Test - WarnHighTabindex</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnHighTabindex",
+    "issueId": "WarnHighTabindex",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 7,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Interactive and custom-role elements carry very high positive tabindex values (100, 250, 500, 999, 1000, 9999 and the maximum 32767), which make tab order unpredictable and hard to maintain. Each flagged element is validated individually.",
+    "wcag": "2.4.3"
+}
+    </script>
 </head>
 <body>
     <h1>Elements with Very High Tabindex Values</h1>
     
     <!-- Extremely high tabindex values -->
-    <button tabindex="999">Button with tabindex 999</button>
+    <button tabindex="999" data-expected-warning="true" data-warning-id="WarnHighTabindex" data-warning-reason="button has very high tabindex 999">Button with tabindex 999</button>
     
-    <input type="text" tabindex="100" placeholder="Input with tabindex 100">
+    <input type="text" tabindex="100" placeholder="Input with tabindex 100" data-expected-warning="true" data-warning-id="WarnHighTabindex" data-warning-reason="input has high tabindex 100">
     
-    <a href="#" tabindex="500">Link with tabindex 500</a>
+    <a href="#" tabindex="500" data-expected-warning="true" data-warning-id="WarnHighTabindex" data-warning-reason="link has high tabindex 500">Link with tabindex 500</a>
     
-    <select tabindex="250">
+    <select tabindex="250" data-expected-warning="true" data-warning-id="WarnHighTabindex" data-warning-reason="select has high tabindex 250">
         <option>Select with tabindex 250</option>
     </select>
     
     <!-- Custom elements with high tabindex -->
-    <div role="button" tabindex="1000">Custom button tabindex 1000</div>
+    <div role="button" tabindex="1000" data-expected-warning="true" data-warning-id="WarnHighTabindex" data-warning-reason="custom button role has very high tabindex 1000">Custom button tabindex 1000</div>
     
-    <span role="link" tabindex="9999">Custom link tabindex 9999</span>
+    <span role="link" tabindex="9999" data-expected-warning="true" data-warning-id="WarnHighTabindex" data-warning-reason="custom link role has very high tabindex 9999">Custom link tabindex 9999</span>
     
     <!-- Maximum tabindex value -->
-    <button tabindex="32767">Maximum tabindex value</button>
+    <button tabindex="32767" data-expected-warning="true" data-warning-id="WarnHighTabindex" data-warning-reason="button has the maximum tabindex 32767">Maximum tabindex value</button>
     
     <p>High tabindex values make tab order unpredictable and hard to maintain.</p>
 </body>

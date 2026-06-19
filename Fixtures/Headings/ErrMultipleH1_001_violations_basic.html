@@ -6,9 +6,10 @@
     <title>Test Fixture: Multiple H1 Elements</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrMultipleH1_001_violations_basic",
     "issueId": "ErrMultipleH1",
-    "expectedViolationCount": 3,
+    "expectedViolationCount": 1,
     "expectedPassCount": 0,
     "description": "Page with three h1 elements instead of one",
     "wcag": "1.3.1",
@@ -18,23 +19,20 @@
 </head>
 <body>
     <header>
+        <!-- The engine emits ONE grouped ErrMultipleH1 per page, anchored at the first h1 (all h1s listed in its allH1s metadata) -->
         <h1 data-expected-violation="true"
             data-violation-id="ErrMultipleH1"
-            data-violation-reason="First of three h1 elements on page">Company Name</h1>
+            data-violation-reason="First of three h1 elements on page - the single grouped ErrMultipleH1 is anchored here">Company Name</h1>
     </header>
 
     <main>
-        <h1 data-expected-violation="true"
-            data-violation-id="ErrMultipleH1"
-            data-violation-reason="Second of three h1 elements on page">Welcome to Our Services</h1>
+        <h1>Welcome to Our Services</h1>
         <p>This page incorrectly uses multiple h1 elements, breaking the document hierarchy.</p>
 
         <h2>About Us</h2>
         <p>Learn more about our company.</p>
 
-        <h1 data-expected-violation="true"
-            data-violation-id="ErrMultipleH1"
-            data-violation-reason="Third of three h1 elements on page">Contact Information</h1>
+        <h1>Contact Information</h1>
         <p>Get in touch with us today.</p>
     </main>
 

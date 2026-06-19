@@ -42,6 +42,18 @@
             font-weight: normal;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFieldLabelledUsingAriaLabel",
+    "issueId": "ErrFieldLabelledUsingAriaLabel",
+    "expectedViolationCount": 11,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Form fields labelled only via aria-label with no visible label element. Each case is validated individually.",
+    "wcag": "3.3.2"
+}
+    </script>
 </head>
 <body>
     <header>
@@ -55,19 +67,19 @@
             <h3>❌ ERROR CASES - Fields with aria-label only (No visible labels)</h3>
             
             <div class="form-group">
-                <input type="text" aria-label="First Name" placeholder="Enter first name">
+                <input type="text" aria-label="First Name" placeholder="Enter first name" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
             
             <div class="form-group">
-                <input type="email" aria-label="Email Address" placeholder="user@example.com">
+                <input type="email" aria-label="Email Address" placeholder="user@example.com" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
             
             <div class="form-group">
-                <input type="password" aria-label="Password">
+                <input type="password" aria-label="Password" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
             
             <div class="form-group">
-                <select aria-label="Country Selection">
+                <select aria-label="Country Selection" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
                     <option value="">Choose country</option>
                     <option value="us">United States</option>
                     <option value="ca">Canada</option>
@@ -76,24 +88,24 @@
             </div>
             
             <div class="form-group">
-                <textarea aria-label="Comments or feedback" placeholder="Enter your comments"></textarea>
+                <textarea aria-label="Comments or feedback" placeholder="Enter your comments" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case"></textarea>
             </div>
             
             <div class="form-group">
-                <input type="checkbox" id="terms-aria" aria-label="I agree to the terms and conditions">
+                <input type="checkbox" id="terms-aria" aria-label="I agree to the terms and conditions" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
             
             <div class="form-group">
-                <input type="radio" name="contact-method-aria" value="email" aria-label="Contact me by email">
-                <input type="radio" name="contact-method-aria" value="phone" aria-label="Contact me by phone">
+                <input type="radio" name="contact-method-aria" value="email" aria-label="Contact me by email" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
+                <input type="radio" name="contact-method-aria" value="phone" aria-label="Contact me by phone" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
             
             <div class="form-group">
-                <input type="date" aria-label="Birth Date">
+                <input type="date" aria-label="Birth Date" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
             
             <div class="form-group">
-                <input type="number" aria-label="Age" min="18" max="120">
+                <input type="number" aria-label="Age" min="18" max="120" data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
         </section>
 
@@ -165,7 +177,7 @@
             
             <div class="form-group">
                 <!-- This should trigger error: aria-label without visible label -->
-                <input type="search" aria-label="Search products" placeholder="Search...">
+                <input type="search" aria-label="Search products" placeholder="Search..." data-expected-violation="true" data-violation-id="ErrFieldLabelledUsingAriaLabel" data-violation-reason="ErrFieldLabelledUsingAriaLabel case">
             </div>
             
             <div class="form-group">

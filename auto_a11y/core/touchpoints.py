@@ -391,8 +391,7 @@ class TouchpointMapper:
         'DiscoFooterFound': TouchpointID.LANDMARKS,  # Contentinfo is a landmark
         'DiscoSearchFound': TouchpointID.LANDMARKS,  # Search is a landmark
         'DiscoNoSubmitButton': TouchpointID.FORMS,
-        'WarnGenericButtonText': TouchpointID.FORMS,
-        'WarnRequiredNotIndicated': TouchpointID.FORMS,
+        'WarnButtonGenericText': TouchpointID.FORMS,
 
         # Color/contrast errors
         'ErrTextContrastAA': TouchpointID.COLORS,
@@ -496,7 +495,6 @@ class TouchpointMapper:
         'ErrModalWithoutEscape': TouchpointID.DIALOGS,
         'WarnMissingAriaModal': TouchpointID.DIALOGS,
         'WarnModalMissingAriaLabelledby': TouchpointID.DIALOGS,
-        'WarnModalMissingAriaModal': TouchpointID.DIALOGS,
         'WarnModalNoFocusableElements': TouchpointID.DIALOGS,
         
         # Animation/Timer errors
@@ -577,7 +575,70 @@ class TouchpointMapper:
         # AI-detected content order/reading issues
         'AI_InfoContentOrder': TouchpointID.HEADINGS,
         'AI_WarnPossibleReadingOrderIssue': TouchpointID.HEADINGS,
-        
+        # Pre-existing AI codes made explicit (touchpoints preserve prior analysis-type behaviour)
+        'AI_ErrHeadingLevelMismatch': TouchpointID.HEADINGS,
+        'AI_ErrVisualHeadingNotMarked': TouchpointID.HEADINGS,
+        'AI_ErrReadingOrderMismatch': TouchpointID.FOCUS_MANAGEMENT,
+
+        # DOM-detected adaptability codes (2026-06-15 audit follow-up; replace former DOM-redundant AI codes)
+        'ErrViewportZoomDisabled': TouchpointID.PAGE,
+        'ErrOrientationLocked': TouchpointID.PAGE,
+        'ErrTargetSizeTooSmall': TouchpointID.PAGE,
+        'ErrTextSpacingRestricted': TouchpointID.FONTS,
+
+        # AI-detected codes wired to match fixtures (2026-06-15 audit follow-up)
+        'AI_ErrFlashingContent': TouchpointID.ANIMATION,
+        'AI_ErrMotionWithoutControl': TouchpointID.ANIMATION,
+        'AI_ErrSkippedHeading': TouchpointID.HEADINGS,
+        'AI_ErrMissingFocusIndicator': TouchpointID.FOCUS_MANAGEMENT,
+        'AI_ErrLandmarkWithoutLabel': TouchpointID.LANDMARKS,
+        'AI_WarnBannerRoleOnHeader': TouchpointID.LANDMARKS,
+        'AI_WarnComplementaryRoleOnAside': TouchpointID.LANDMARKS,
+        'AI_WarnContentinfoRoleOnFooter': TouchpointID.LANDMARKS,
+        'AI_WarnFormRoleOnForm': TouchpointID.LANDMARKS,
+        'AI_WarnMainRoleOnMain': TouchpointID.LANDMARKS,
+        'AI_WarnNavigationRoleOnNav': TouchpointID.LANDMARKS,
+        'AI_WarnRegionWithoutLabel': TouchpointID.LANDMARKS,
+        'AI_WarnMixedLanguage': TouchpointID.LANGUAGE,
+        'AI_ErrAlertWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrFormErrorNotAnnounced': TouchpointID.FORMS,
+        'AI_ErrLoadingStateNotAnnounced': TouchpointID.EVENT_HANDLING,
+        'AI_ErrMissingLiveRegion': TouchpointID.EVENT_HANDLING,
+        'AI_ErrNotificationWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrAudioWithoutTranscript': TouchpointID.VIDEOS,
+        'AI_ErrAutoplayMedia': TouchpointID.VIDEOS,
+        'AI_ErrVideoWithoutCaptions': TouchpointID.VIDEOS,
+        'AI_WarnVideoWithoutCaptions': TouchpointID.VIDEOS,
+        'AI_WarnVideoWithoutTranscript': TouchpointID.VIDEOS,
+        'AI_ErrDialogWithoutARIA': TouchpointID.DIALOGS,
+        'AI_ErrModalFocusTrap': TouchpointID.DIALOGS,
+        'AI_ErrModalWithoutARIA': TouchpointID.DIALOGS,
+        'AI_WarnModalMissingLabel': TouchpointID.DIALOGS,
+        'AI_WarnModalWithoutFocusTrap': TouchpointID.DIALOGS,
+        'AI_InfoVisualCue': TouchpointID.HEADINGS,
+        'AI_ErrMissingSkipLink': TouchpointID.NAVIGATION,
+        'AI_ErrTimeLimitNoWarning': TouchpointID.TIMERS,
+        'AI_WarnTableWithComplexStructure': TouchpointID.TABLES,
+        'AI_ErrAutocompleteWithoutARIA': TouchpointID.FORMS,
+        'AI_ErrBreadcrumbsWithoutARIA': TouchpointID.NAVIGATION,
+        'AI_ErrCardWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrCheckboxGroupWithoutARIA': TouchpointID.FORMS,
+        'AI_ErrDatePickerWithoutARIA': TouchpointID.FORMS,
+        'AI_ErrDisclosureWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrFeedWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrMeterWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrPaginationWithoutARIA': TouchpointID.NAVIGATION,
+        'AI_ErrProgressBarWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrRadioGroupWithoutARIA': TouchpointID.FORMS,
+        'AI_ErrSearchWithoutARIA': TouchpointID.FORMS,
+        'AI_ErrSliderWithoutARIA': TouchpointID.FORMS,
+        'AI_ErrSpinbuttonWithoutARIA': TouchpointID.FORMS,
+        'AI_ErrTabsWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrToggleWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_ErrToggleWithoutState': TouchpointID.EVENT_HANDLING,
+        'AI_ErrTreeViewWithoutARIA': TouchpointID.EVENT_HANDLING,
+        'AI_WarnSearchRoleOnForm': TouchpointID.FORMS,
+
         # Style errors and warnings
         'ErrStyleAttrColorFont': TouchpointID.STYLES,
         'WarnStyleAttrOther': TouchpointID.STYLES,

@@ -257,6 +257,17 @@
             color: #155724;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnProblematicAnimation",
+    "issueId": "WarnProblematicAnimation",
+    "expectedWarningCount": 3,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Rapidly-cycling animations likely to provoke seizures or vestibular reactions (strobing text, very fast spin, aggressive scaling pulse) are flagged as problematic. Gentle animations that respect prefers-reduced-motion do not trigger the warning.",
+    "wcag": "2.3.1"
+}
+    </script>
 </head>
 <body>
     <h1>AI_WarnProblematicAnimation Test Fixture</h1>
@@ -280,7 +291,7 @@
         <p>Flashes at 10Hz - exceeds WCAG safe threshold of 3Hz</p>
         
         <h3>2. Strobing Text</h3>
-        <div class="strobe-text">FLASHING TEXT</div>
+        <div class="strobe-text" data-expected-warning="true" data-warning-id="WarnProblematicAnimation" data-warning-reason="text strobes at roughly 5Hz, a seizure risk">FLASHING TEXT</div>
         <p>Text that strobes at 5Hz</p>
         
         <h3>3. Rapid Color Changes</h3>
@@ -292,11 +303,11 @@
         <p>Rapid movement that could trigger vestibular disorders</p>
         
         <h3>5. Fast Spinning Animation</h3>
-        <div class="fast-spin"></div>
+        <div class="fast-spin" data-expected-warning="true" data-warning-id="WarnProblematicAnimation" data-warning-reason="high-contrast element spins very fast, a vestibular and flicker risk"></div>
         <p>Spins at high speed with contrasting pattern</p>
         
         <h3>6. Aggressive Pulsing</h3>
-        <div class="aggressive-pulse"></div>
+        <div class="aggressive-pulse" data-expected-warning="true" data-warning-id="WarnProblematicAnimation" data-warning-reason="aggressive rapid scaling and opacity pulse is a problematic animation"></div>
         <p>Rapidly scales and changes opacity</p>
         
         <h3>7. Multiple Problematic Animations</h3>
@@ -325,11 +336,11 @@
         </div>
         
         <h3>1. Gentle Animation with Reduced Motion Support</h3>
-        <div class="good-animation"></div>
+        <div class="good-animation" data-expected-pass="true" data-pass-reason="slow gentle float that respects prefers-reduced-motion is not problematic"></div>
         <p>Slow, gentle floating animation that respects prefers-reduced-motion</p>
         
         <h3>2. Subtle Fade Animation</h3>
-        <div class="gentle-fade"></div>
+        <div class="gentle-fade" data-expected-pass="true" data-pass-reason="slow gentle fade that respects prefers-reduced-motion is not problematic"></div>
         <p>Slow fade animation with reduced motion support</p>
         
         <h3>3. Static Content (No Animation)</h3>

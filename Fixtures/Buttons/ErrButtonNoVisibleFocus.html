@@ -152,9 +152,9 @@
             cursor: pointer;
         }
         .good-focus-visible:focus-visible {
-            outline: 2px solid #fff;
+            outline: 3px solid #1a1a1a; /* Dark ring: ~16:1 vs the #f5f5f5 page, ~5.6:1 vs the button */
             outline-offset: 2px;
-            box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.3);
+            box-shadow: 0 0 0 2px #fff; /* White spacer separates the dark ring from the green button */
         }
 
         .instructions {
@@ -179,6 +179,17 @@
             font-family: monospace;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrButtonNoVisibleFocus",
+    "issueId": "ErrButtonNoVisibleFocus",
+    "expectedViolationCount": 2,
+    "expectedPassCount": 3,
+    "enforceElementExpectations": true,
+    "description": "Buttons whose focus indicator is fully removed (outline: none) provide no visible focus. Each affected button is validated individually; buttons with a strong high-contrast focus ring and the browser-default button pass.",
+    "wcag": "2.4.7"
+}
+    </script>
 </head>
 <body>
     <h1>Button Focus Indicator Test Fixture</h1>
@@ -202,7 +213,7 @@
         <div class="button-grid">
             <div>
                 <h4>No Focus Outline</h4>
-                <button class="no-focus-outline">Submit Form</button>
+                <button class="no-focus-outline" data-expected-violation="true" data-violation-id="ErrButtonNoVisibleFocus" data-violation-reason="outline: none on :focus removes the visible focus indicator">Submit Form</button>
                 <p><small>outline: none removes focus indicator</small></p>
             </div>
 
@@ -250,19 +261,19 @@
         <div class="button-grid">
             <div>
                 <h4>High Contrast Focus</h4>
-                <button class="good-focus">Good Button</button>
+                <button class="good-focus" data-expected-pass="true" data-pass-reason="3px high-contrast outline with offset provides a clearly visible focus indicator">Good Button</button>
                 <p><small>High contrast, proper thickness</small></p>
             </div>
 
             <div>
                 <h4>Focus-Visible Implementation</h4>
-                <button class="good-focus-visible">Modern Focus</button>
+                <button class="good-focus-visible" data-expected-pass="true" data-pass-reason="focus-visible ring with white spacer gives a visible high-contrast focus indicator">Modern Focus</button>
                 <p><small>Uses :focus-visible with good contrast</small></p>
             </div>
 
             <div>
                 <h4>Browser Default</h4>
-                <button>Default Button</button>
+                <button data-expected-pass="true" data-pass-reason="Relies on the browser default focus outline; not overridden">Default Button</button>
                 <p><small>Uses browser's default focus styling</small></p>
             </div>
         </div>
@@ -286,7 +297,7 @@
 
             <div>
                 <h4>Button with tabindex="-1"</h4>
-                <button tabindex="-1" class="no-focus-outline">Not Tabbable</button>
+                <button tabindex="-1" class="no-focus-outline" data-expected-violation="true" data-violation-id="ErrButtonNoVisibleFocus" data-violation-reason="outline: none on :focus removes the visible focus indicator">Not Tabbable</button>
                 <p><small>Removed from tab order but still focusable programmatically</small></p>
             </div>
         </div>

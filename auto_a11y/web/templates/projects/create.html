@@ -842,19 +842,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Build the /api/v1/projects request body from the form.
 //
-// NOTE (issue-21 cutover): The legacy server-rendered POST handler accepted
-// the following top-level form fields that the v1 `ProjectIn` schema does NOT
-// model and that the v1 `POST /projects` handler does NOT read:
-//   - project_type
-//   - app_identifier
-//   - device_model
-//   - location
-//   - drupal_audit_name
-// We keep those inputs visible for UX continuity (the GET flow still asks
-// the user for them), but we DROP them from the request body. They can be
-// set on the project later via the edit flow once `ProjectPatch` gains
-// fields for them, or via a follow-up endpoint. The v1 schema is the
-// source of truth — see auto_a11y/web/api/schemas/projects.py::ProjectIn.
+// NOTE: `project_type`, `app_identifier`, `device_model`, `location` and
+// `drupal_audit_name` are all modeled + applied by `ProjectIn` / the v1
+// `POST /projects` handler and are sent below. Keep this body in sync with
+// `ProjectIn` — fields not modeled there are dropped by the StrictModel schema.
+// The v1 schema is the source of truth — see
+// auto_a11y/web/api/schemas/projects.py::ProjectIn.
 function buildCreateProjectBody(form) {
     const fd = new FormData(form);
 
@@ -894,6 +887,11 @@ function buildCreateProjectBody(form) {
         name: fd.get('name') || '',
         description: fd.get('description') || '',
         config: config,
+        drupal_audit_name: fd.get('drupal_audit_name') || '',
+        project_type: fd.get('project_type') || 'website',
+        app_identifier: fd.get('app_identifier') || '',
+        device_model: fd.get('device_model') || '',
+        location: fd.get('location') || '',
     };
 }
 

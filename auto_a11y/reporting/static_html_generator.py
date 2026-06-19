@@ -1625,6 +1625,11 @@ class StaticHTMLReportGenerator:
         Converts the output of _collect_summary_stats into the summary format
         expected by index.html template, manifest, and other consumers.
         """
+        # stats['scores'] already contains exactly the tested pages' scores,
+        # including real 0 scores (worst pages): _collect_summary_stats skips
+        # untested pages via `continue` and appends every non-None score
+        # (including 0). So averaging over the whole list is correct here — do
+        # NOT filter out 0, that would inflate the average and compliance level.
         scores = stats['scores']
         average_score = sum(scores) / len(scores) if scores else 0.0
 
@@ -1887,7 +1892,12 @@ class StaticHTMLReportGenerator:
         pages_with_info = sum(1 for p in pages_data if p['issues']['info'] > 0)
         pages_with_discovery = sum(1 for p in pages_data if p['issues']['discovery'] > 0)
 
-        scores = [p['score'] for p in pages_data if p['score'] > 0]
+        # A score of 0 is a real (worst) result for a tested page — every test
+        # failed — so it MUST count toward the site average. Only genuinely
+        # untested pages (test_date is None; see _collect_pages_data's no-result
+        # branch) are excluded; counting their placeholder 0 would deflate the
+        # average for pages that were never assessed.
+        scores = [p['score'] for p in pages_data if p.get('test_date') is not None]
         average_score = sum(scores) / len(scores) if scores else 0.0
 
         # Determine compliance level

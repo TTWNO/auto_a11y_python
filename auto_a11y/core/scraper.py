@@ -1829,13 +1829,21 @@ class ScrapingEngine:
             parsed = urlparse(url)
             robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
 
-            # Check cache
+            # Fetch and parse the live robots.txt per-origin, caching the result.
             if robots_url not in self.robots_cache:
-                # For now, skip robots.txt checking to avoid page conflicts
-                # TODO: Implement proper robots.txt fetching with requests library
                 rp = RobotFileParser()
                 rp.set_url(robots_url)
-                rp.parse(['User-agent: *', 'Allow: /'])
+                try:
+                    # robots fetch is blocking I/O -- run it off the event loop
+                    # so it does not stall concurrent discovery work.
+                    await asyncio.to_thread(rp.read)
+                except Exception as fetch_error:
+                    # Standard behaviour: if robots.txt cannot be fetched,
+                    # default to allowing everything.
+                    logger.debug(
+                        f"Could not fetch robots.txt at {robots_url}: {fetch_error} -- defaulting to allow"
+                    )
+                    rp.parse(['User-agent: *', 'Disallow:'])
                 self.robots_cache[robots_url] = rp
 
             # Check if URL is fetchable

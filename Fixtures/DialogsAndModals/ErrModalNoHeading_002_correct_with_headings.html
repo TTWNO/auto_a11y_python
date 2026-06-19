@@ -8,9 +8,10 @@
     {
         "id": "ErrModalNoHeading_002_correct_with_headings",
         "issueId": "ErrModalNoHeading",
-        "description": "Modal dialogs with proper headings - should pass",
+        "description": "Modal dialogs with proper h2 headings (including a visually-hidden but programmatically-present one) - should pass. Each dialog is validated individually: it must NOT emit ErrModalNoHeading.",
         "expectedViolationCount": 0,
-        "expectedPasses": 3
+        "expectedPassCount": 3,
+        "enforceElementExpectations": true
     }
     </script>
     <style>
@@ -77,7 +78,9 @@
          role="dialog" 
          aria-modal="true"
          aria-labelledby="cookie-heading"
-         data-pass-id="ErrModalNoHeading">
+         data-expected-pass="true"
+         data-pass-id="ErrModalNoHeading"
+         data-pass-reason="Dialog has an h2 heading, so the engine does not flag ErrModalNoHeading.">
         <h2 id="cookie-heading">Cookie Consent</h2>
         <p>We use cookies to improve your experience. By continuing to browse, you accept our use of cookies.</p>
         <button class="btn-primary">Accept</button>
@@ -90,7 +93,9 @@
              role="dialog" 
              aria-modal="true"
              aria-labelledby="confirm-heading"
-             data-pass-id="ErrModalNoHeading">
+             data-expected-pass="true"
+             data-pass-id="ErrModalNoHeading"
+             data-pass-reason="Dialog has an h2 heading, so the engine does not flag ErrModalNoHeading.">
             <h2 id="confirm-heading">Confirm Deletion</h2>
             <p>Are you sure you want to delete this item? This action cannot be undone.</p>
             <button class="btn-primary">Delete</button>
@@ -103,7 +108,9 @@
          role="alertdialog"
          aria-modal="true"
          aria-labelledby="success-heading"
-         data-pass-id="ErrModalNoHeading">
+         data-expected-pass="true"
+         data-pass-id="ErrModalNoHeading"
+         data-pass-reason="Dialog has a programmatically-present (visually-hidden) h2 heading, so the engine does not flag ErrModalNoHeading.">
         <h2 id="success-heading" class="visually-hidden">Success Notification</h2>
         <p>Your changes have been saved successfully.</p>
         <button aria-label="Close notification">X</button>

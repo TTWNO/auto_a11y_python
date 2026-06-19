@@ -6,11 +6,12 @@
     <title>Multilingual Blog - Invalid Lang Changes</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrInvalidLangChange_001_violations_basic",
     "issueId": "ErrInvalidLangChange",
-    "expectedViolationCount": 3,
+    "expectedViolationCount": 1,
     "expectedPassCount": 0,
-    "description": "Language changes with invalid or unrecognized language codes",
+    "description": "Language changes with invalid or unrecognized language codes; 'fre' and 'ger' are validly formatted but unrecognized so they emit ErrElementPrimaryLangNotRecognized instead",
     "wcag": "3.1.2",
     "impact": "High"
 }
@@ -23,15 +24,15 @@
 
     <blockquote lang="fre"
                 data-expected-violation="true"
-                data-violation-id="WarnInvalidLangChange"
-                data-violation-reason="lang='fre' is not a valid ISO 639-1 code, should be 'fr' for French">
+                data-violation-id="ErrElementPrimaryLangNotRecognized"
+                data-violation-reason="lang='fre' is not a recognized ISO 639-1 code, should be 'fr' for French">
         <p>La vie est belle et pleine de surprises.</p>
         <cite>— Proverbe français</cite>
     </blockquote>
 
     <article lang="Spanish"
              data-expected-violation="true"
-             data-violation-id="WarnInvalidLangChange"
+             data-violation-id="ErrInvalidLangChange"
              data-violation-reason="lang='Spanish' uses full language name instead of ISO code, should be 'es'">
         <h2>Título del Artículo</h2>
         <p>El arte es la expresión del alma más profunda del ser humano.</p>
@@ -39,7 +40,7 @@
 
     <section lang="ger"
              data-expected-violation="true"
-             data-violation-id="WarnInvalidLangChange"
+             data-violation-id="ErrElementPrimaryLangNotRecognized"
              data-violation-reason="lang='ger' is ISO 639-2 code, should use ISO 639-1 code 'de' for German">
         <h3>Deutsche Überschrift</h3>
         <p>Die Musik ist die universelle Sprache der Menschheit.</p>

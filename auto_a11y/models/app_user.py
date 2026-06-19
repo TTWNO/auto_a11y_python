@@ -131,6 +131,13 @@ class AppUser:
             self.failed_login_count = 0
             self.locked_until = None
         else:
+            # If a previous lock has already expired, the user has waited out
+            # the lockout window and earns a fresh allotment of attempts.
+            # Reset the counter before incrementing so a single subsequent
+            # failure does not immediately re-lock the account.
+            if self.locked_until is not None and self.locked_until <= datetime.now():
+                self.failed_login_count = 0
+                self.locked_until = None
             self.failed_login_count += 1
             if self.failed_login_count >= 5:
                 from datetime import timedelta

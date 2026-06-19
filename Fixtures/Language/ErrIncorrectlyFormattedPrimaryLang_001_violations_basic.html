@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en_US">
+<html lang="en_US"
+      data-expected-violation="true"
+      data-violation-id="ErrIncorrectlyFormattedPrimaryLang"
+      data-violation-reason="lang='en_US' uses underscore separator instead of hyphen, should be 'en-US'">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Website - Incorrectly Formatted Lang</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrIncorrectlyFormattedPrimaryLang_001_violations_basic",
     "issueId": "ErrIncorrectlyFormattedPrimaryLang",
     "expectedViolationCount": 3,
@@ -16,9 +20,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrIncorrectlyFormattedPrimaryLang"
-      data-violation-reason="lang='en_US' uses underscore separator instead of hyphen, should be 'en-US'">
+<body>
     <h1>Welcome</h1>
 
     <p>This page uses "en_US" with an underscore instead of the correct hyphen format "en-US".</p>

@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="xyz">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="xyz"
+      data-expected-violation="true"
+      data-violation-id="ErrPrimaryXmlLangUnrecognized"
+      data-violation-reason="xml:lang='xyz' is not a recognized ISO 639 language code">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>XHTML - Unrecognized xml:lang Code</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrPrimaryXmlLangUnrecognized_001_violations_basic",
     "issueId": "ErrPrimaryXmlLangUnrecognized",
     "expectedViolationCount": 3,
@@ -16,9 +20,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="ErrPrimaryXmlLangUnrecognized"
-      data-violation-reason="xml:lang='xyz' is not a recognized ISO 639 language code">
+<body>
     <h1>XHTML Document</h1>
 
     <p>This XHTML document has an unrecognized xml:lang code "xyz" on the root element.</p>

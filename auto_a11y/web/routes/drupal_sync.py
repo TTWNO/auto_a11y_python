@@ -471,6 +471,7 @@ def upload_to_drupal(project_id: str) -> Response:
                                 'message': f'Syncing {len(recording_issues)} issues from recording "{recording.title}"'
                             }) + '\n'
 
+                            issues_failed = 0
                             for issue_doc in recording_issues:
                                 try:
                                     from auto_a11y.models import RecordingIssue
@@ -515,16 +516,45 @@ def upload_to_drupal(project_id: str) -> Response:
                                             }
                                         )
 
+                                        issues_failed += 1
                                         yield json.dumps({
                                             'type': 'warning',
                                             'message': f'  ✗ Failed to sync issue "{rec_issue.title}": {issue_result.get("error")}'
                                         }) + '\n'
                                 except Exception as issue_err:
+                                    issues_failed += 1
                                     logger.error(f"Error syncing recording issue: {issue_err}")
                                     yield json.dumps({
                                         'type': 'warning',
                                         'message': f'  ✗ Error syncing issue: {str(issue_err)}'
                                     }) + '\n'
+
+                            # If any issue failed, the recording is NOT fully
+                            # synced even though its video node uploaded — mark
+                            # it failed (re-sync is idempotent: it updates the
+                            # existing node and retries the issues) and surface
+                            # an error so the operator doesn't see a false green.
+                            if issues_failed:
+                                db.recordings.update_one(
+                                    {'_id': ObjectId(recording_id)},
+                                    {
+                                        '$set': {
+                                            'drupal_sync_status': 'sync_failed',
+                                            'drupal_error_message': (
+                                                f'{issues_failed} of {len(recording_issues)} '
+                                                'issues failed to sync'
+                                            ),
+                                        }
+                                    }
+                                )
+                                yield json.dumps({
+                                    'type': 'error',
+                                    'message': (
+                                        f'✗ {issues_failed} of {len(recording_issues)} issues '
+                                        f'failed to sync for "{recording.title}" — recording '
+                                        'marked for re-sync'
+                                    )
+                                }) + '\n'
                     else:
                         # Update database with error
                         db.recordings.update_one(

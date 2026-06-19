@@ -7,10 +7,148 @@ from __future__ import annotations
 
 from typing import Any
 import logging
+import re
 
 from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
+
+
+# Common CSS named colours used for focus indicators / backgrounds. This is not
+# the exhaustive CSS named-colour list; it covers the values realistically seen
+# in computed styles so that contrast maths does not silently treat them as
+# opaque black (which can flip a pass/fail result).
+_NAMED_COLORS: dict[str, tuple[int, int, int]] = {
+    'black': (0, 0, 0),
+    'white': (255, 255, 255),
+    'red': (255, 0, 0),
+    'green': (0, 128, 0),
+    'lime': (0, 255, 0),
+    'blue': (0, 0, 255),
+    'yellow': (255, 255, 0),
+    'cyan': (0, 255, 255),
+    'aqua': (0, 255, 255),
+    'magenta': (255, 0, 255),
+    'fuchsia': (255, 0, 255),
+    'gray': (128, 128, 128),
+    'grey': (128, 128, 128),
+    'silver': (192, 192, 192),
+    'maroon': (128, 0, 0),
+    'olive': (128, 128, 0),
+    'navy': (0, 0, 128),
+    'teal': (0, 128, 128),
+    'purple': (128, 0, 128),
+    'orange': (255, 165, 0),
+}
+
+
+def parse_color(color_str: str | None) -> dict[str, float]:
+    """Parse a CSS colour string into an ``{r, g, b, a}`` dict.
+
+    Supports ``rgb()``/``rgba()``, 6-digit hex (``#rrggbb``), 3-digit hex
+    (``#rgb`` expanded to ``#rrggbb``) and a set of common named colours.
+
+    Truly unknown input falls back to opaque black (``{r:0,g:0,b:0,a:1.0}``);
+    callers treat this as a conservative dark colour for contrast maths. The
+    fully-transparent sentinel (``a:0``) is returned only for ``None``/empty/
+    ``transparent`` so it is distinguishable from the unknown-input fallback.
+    """
+    if not color_str or color_str == 'transparent':
+        return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
+
+    # Handle rgb/rgba format
+    rgba_match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
+    if rgba_match:
+        return {
+            'r': int(rgba_match.group(1)),
+            'g': int(rgba_match.group(2)),
+            'b': int(rgba_match.group(3)),
+            'a': float(rgba_match.group(4)) if rgba_match.group(4) else 1.0
+        }
+
+    # Handle 6-digit hex format
+    hex6_match = re.match(r'^#([0-9a-f]{6})$', color_str, re.IGNORECASE)
+    if hex6_match:
+        hex_val = hex6_match.group(1)
+        return {
+            'r': int(hex_val[0:2], 16),
+            'g': int(hex_val[2:4], 16),
+            'b': int(hex_val[4:6], 16),
+            'a': 1.0
+        }
+
+    # Handle 3-digit hex format (#abc -> #aabbcc)
+    hex3_match = re.match(r'^#([0-9a-f]{3})$', color_str, re.IGNORECASE)
+    if hex3_match:
+        hex_val = hex3_match.group(1)
+        return {
+            'r': int(hex_val[0] * 2, 16),
+            'g': int(hex_val[1] * 2, 16),
+            'b': int(hex_val[2] * 2, 16),
+            'a': 1.0
+        }
+
+    # Handle common named colours
+    named = _NAMED_COLORS.get(color_str.strip().lower())
+    if named is not None:
+        return {'r': named[0], 'g': named[1], 'b': named[2], 'a': 1.0}
+
+    # Fallback for truly-unknown input: opaque black (conservative dark colour).
+    return {'r': 0, 'g': 0, 'b': 0, 'a': 1.0}
+
+
+def parse_px(value_str: str | None, font_size: float = 16, root_font_size: float = 16) -> float:
+    """Parse CSS pixel values, return float or 0.
+
+    Args:
+        value_str: CSS value string (e.g., '2px', '1.5em', '2rem', 'thin')
+        font_size: Element font size in pixels (for em)
+        root_font_size: Root font size in pixels (for rem)
+    """
+    if not value_str:
+        return 0.0
+    if value_str == '0' or value_str == 'none':
+        return 0.0
+
+    value_str = str(value_str).strip()
+
+    # Handle px values
+    if 'px' in value_str:
+        try:
+            return float(value_str.replace('px', '').strip())
+        except (ValueError, TypeError):
+            return 0.0
+
+    # Handle rem values (relative to root font size) BEFORE em, since 'rem'
+    # also contains the substring 'em'.
+    if 'rem' in value_str:
+        try:
+            rem_value = float(value_str.replace('rem', '').strip())
+            return rem_value * root_font_size
+        except (ValueError, TypeError):
+            return 0.0
+
+    # Handle em values (relative to element font size)
+    if 'em' in value_str:
+        try:
+            em_value = float(value_str.replace('em', '').strip())
+            return em_value * font_size
+        except (ValueError, TypeError):
+            return 0.0
+
+    # Handle keywords: thin=1px, medium=3px, thick=5px
+    if value_str == 'thin':
+        return 1.0
+    if value_str == 'medium':
+        return 3.0
+    if value_str == 'thick':
+        return 5.0
+
+    # Try parsing as plain number (assume px)
+    try:
+        return float(value_str)
+    except (ValueError, TypeError):
+        return 0.0
 
 TEST_DOCUMENTATION = {
     "testName": "Button Focus Indicators",
@@ -382,34 +520,8 @@ async def test_buttons(page: Page) -> dict[str, Any]:
 
         results['elements_tested'] = len(button_data)
 
-        # Helper function to parse color values
-        def parse_color(color_str: str | None) -> dict[str, float]:
-            if not color_str or color_str == 'transparent':
-                return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
-
-            # Handle rgba format
-            import re
-            rgba_match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
-            if rgba_match:
-                return {
-                    'r': int(rgba_match.group(1)),
-                    'g': int(rgba_match.group(2)),
-                    'b': int(rgba_match.group(3)),
-                    'a': float(rgba_match.group(4)) if rgba_match.group(4) else 1.0
-                }
-
-            # Handle hex format
-            hex_match = re.match(r'^#([0-9a-f]{6})$', color_str, re.IGNORECASE)
-            if hex_match:
-                hex_val = hex_match.group(1)
-                return {
-                    'r': int(hex_val[0:2], 16),
-                    'g': int(hex_val[2:4], 16),
-                    'b': int(hex_val[4:6], 16),
-                    'a': 1.0
-                }
-
-            return {'r': 0, 'g': 0, 'b': 0, 'a': 1.0}
+        # Colour and pixel parsing use the module-level parse_color / parse_px
+        # helpers (defined above) so they are unit-testable in isolation.
 
         def get_luminance(color: dict[str, float]) -> float:
             r_srgb = color['r'] / 255.0
@@ -429,64 +541,17 @@ async def test_buttons(page: Page) -> dict[str, Any]:
             darker = min(lum1, lum2)
             return (lighter + 0.05) / (darker + 0.05)
 
-        # Helper function to parse px values (including em/rem)
-        def parse_px(value_str: str | None, font_size: float = 16, root_font_size: float = 16) -> float:
-            """Parse CSS pixel values, return float or 0
-
-            Args:
-                value_str: CSS value string (e.g., '2px', '1.5em', '2rem', 'thin')
-                font_size: Element font size in pixels (for em)
-                root_font_size: Root font size in pixels (for rem)
-            """
-            if not value_str:
-                return 0.0
-            if value_str == '0' or value_str == 'none':
-                return 0.0
-
-            value_str = str(value_str).strip()
-
-            # Handle px values
-            if 'px' in value_str:
-                try:
-                    return float(value_str.replace('px', '').strip())
-                except:
-                    return 0.0
-
-            # Handle em values (relative to element font size)
-            if 'em' in value_str and 'rem' not in value_str:
-                try:
-                    em_value = float(value_str.replace('em', '').strip())
-                    return em_value * font_size
-                except:
-                    return 0.0
-
-            # Handle rem values (relative to root font size)
-            if 'rem' in value_str:
-                try:
-                    rem_value = float(value_str.replace('rem', '').strip())
-                    return rem_value * root_font_size
-                except:
-                    return 0.0
-
-            # Handle keywords: thin=1px, medium=3px, thick=5px
-            if value_str == 'thin':
-                return 1.0
-            if value_str == 'medium':
-                return 3.0
-            if value_str == 'thick':
-                return 5.0
-
-            # Try parsing as plain number (assume px)
-            try:
-                return float(value_str)
-            except:
-                return 0.0
-
-        # Helper to detect gradient backgrounds
+        # Helper to detect gradient backgrounds. Matches CSS gradient functions
+        # only: the bare word "gradient" can also appear inside SVG data: URIs
+        # (e.g. <linearGradient>), which are image backgrounds, not CSS gradients.
         def has_gradient_background(bg_str: str | None) -> bool:
             if not bg_str:
                 return False
-            return 'gradient' in bg_str.lower()
+            return re.search(
+                r'(?:repeating-)?(?:linear|radial|conic)-gradient\(',
+                bg_str,
+                re.IGNORECASE,
+            ) is not None
 
         # Helper to detect image backgrounds
         def has_image_background(bg_str: str | None) -> bool:
@@ -506,7 +571,6 @@ async def test_buttons(page: Page) -> dict[str, Any]:
             #   "0 0 0 3px blue" - all sides (spread with no offset)
             #   "0 4px 0 0 blue" - bottom only (y-offset=4px)
             #   "2px 0 0 0 blue" - right only (x-offset=2px)
-            import re
 
             # Simple heuristic: if x or y offset is non-zero, it's single-sided
             # Note: browsers return box-shadow as "color x y blur spread" so we need to search not match
@@ -528,7 +592,7 @@ async def test_buttons(page: Page) -> dict[str, Any]:
                         val_str = val_str.replace('px', '').strip()
                     try:
                         return float(val_str)
-                    except:
+                    except (ValueError, TypeError):
                         return 0.0
 
                 x_val = simple_parse_px(x_offset_str)

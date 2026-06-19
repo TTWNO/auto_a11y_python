@@ -251,6 +251,12 @@ class Project:
         except ValueError:
             project_type = ProjectType.WEBSITE
 
+        # Guard status against legacy/unknown values
+        try:
+            status = ProjectStatus(data.get('status', 'active'))
+        except ValueError:
+            status = ProjectStatus.ACTIVE
+
         # Parse nested objects
         testers_data = data.get('lived_experience_testers', [])
         testers = [LivedExperienceTester.from_dict(t) for t in testers_data]
@@ -264,7 +270,7 @@ class Project:
         return cls(
             name=data['name'],
             description=data.get('description'),
-            status=ProjectStatus(data.get('status', 'active')),
+            status=status,
             project_type=project_type,
             website_ids=data.get('website_ids', []),
             app_identifier=data.get('app_identifier'),

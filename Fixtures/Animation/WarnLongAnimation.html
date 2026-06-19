@@ -225,6 +225,17 @@
             margin: 20px 0;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnLongAnimation",
+    "issueId": "WarnLongAnimation",
+    "expectedWarningCount": 4,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "CSS animations whose duration exceeds 5 seconds (8s rotate, 12s pulse, multiple 6/7/9s animations, and an 8s spin) are flagged with a long-animation warning. Short animations of 3s and 4s do not trigger the warning.",
+    "wcag": "2.2.2"
+}
+    </script>
 </head>
 <body>
     <h1>WarnLongAnimation Test Fixture</h1>
@@ -237,19 +248,19 @@
     <div class="test-section should-warn">
         <h2>❌ Test 1: CSS Animation > 5 seconds (8s) - SHOULD WARN</h2>
         <p>A CSS animation with 8-second duration should trigger a warning.</p>
-        <div class="long-css-animation"></div>
+        <div class="long-css-animation" data-expected-warning="true" data-warning-id="WarnLongAnimation" data-warning-reason="8s CSS animation exceeds the 5s long-animation threshold"></div>
     </div>
 
     <div class="test-section should-warn">
         <h2>❌ Test 2: Very Long Animation (12s) - SHOULD WARN</h2>
         <p>A 12-second pulsing animation should trigger a warning.</p>
-        <div class="very-long-animation"></div>
+        <div class="very-long-animation" data-expected-warning="true" data-warning-id="WarnLongAnimation" data-warning-reason="12s CSS animation exceeds the 5s long-animation threshold"></div>
     </div>
 
     <div class="test-section should-warn">
         <h2>❌ Test 3: Multiple Long Animations (6s, 7s, 9s) - SHOULD WARN</h2>
         <p>Element with multiple animations, all exceeding 5 seconds.</p>
-        <div class="multi-long-animation"></div>
+        <div class="multi-long-animation" data-expected-warning="true" data-warning-id="WarnLongAnimation" data-warning-reason="multiple 6s/7s/9s animations all exceed the 5s threshold"></div>
     </div>
 
     <div class="test-section should-warn">
@@ -288,13 +299,13 @@
     <div class="test-section should-pass">
         <h2>✅ Test 7: Short Animation (3s) - SHOULD PASS</h2>
         <p>A 3-second animation should not trigger a warning.</p>
-        <div class="short-animation"></div>
+        <div class="short-animation" data-expected-pass="true" data-pass-reason="3s animation is under the 5s long-animation threshold"></div>
     </div>
 
     <div class="test-section should-pass">
         <h2>✅ Test 8: Medium Duration Animation (4s) - SHOULD PASS</h2>
         <p>A 4-second animation should not trigger a warning.</p>
-        <div class="medium-animation"></div>
+        <div class="medium-animation" data-expected-pass="true" data-pass-reason="4s animation is under the 5s long-animation threshold"></div>
     </div>
 
     <div class="test-section should-pass">
@@ -312,7 +323,7 @@
     <div class="test-section should-pass">
         <h2>✅ Test 11: Long Animation with User Controls (8s) - SHOULD PASS</h2>
         <p>8-second animation with pause/play controls - should pass due to user control.</p>
-        <div id="controlled-animation" class="controlled-long-animation"></div>
+        <div id="controlled-animation" class="controlled-long-animation" data-expected-warning="true" data-warning-id="WarnLongAnimation" data-warning-reason="8s spin animation exceeds the 5s threshold even with play/pause controls present"></div>
         <div class="control-buttons">
             <button onclick="pauseAnimation()">Pause</button>
             <button onclick="playAnimation()">Play</button>

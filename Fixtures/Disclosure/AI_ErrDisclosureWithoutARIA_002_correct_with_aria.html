@@ -56,7 +56,7 @@
                     aria-controls="content1"
                     onclick="toggleDisclosure(this, 'content1')">
                 What is accessibility?
-                <span class="disclosure-icon" aria-hidden="true">¶</span>
+                <span class="disclosure-icon" aria-hidden="true">Â¶</span>
             </button>
             <div id="content1" class="disclosure-content">
                 Accessibility ensures that websites and applications can be used by everyone, including people with disabilities.
@@ -73,7 +73,7 @@
                     id="disclosure2-btn"
                     onclick="toggleDisclosure(this, 'content2')">
                 How do I report an issue?
-                <span class="disclosure-icon" aria-hidden="true">¶</span>
+                <span class="disclosure-icon" aria-hidden="true">Â¶</span>
             </button>
             <div id="content2" class="disclosure-content" role="region" aria-labelledby="disclosure2-btn">
                 You can report issues through our support form or by emailing support@example.com.
@@ -91,7 +91,7 @@
             button.setAttribute('aria-expanded', !isExpanded);
             content.style.display = isExpanded ? 'none' : 'block';
             if (icon) {
-                icon.textContent = isExpanded ? '¶' : '¼';
+                icon.textContent = isExpanded ? 'Â¶' : 'Â¼';
             }
         }
     </script>

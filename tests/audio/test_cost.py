@@ -2,11 +2,24 @@
 from __future__ import annotations
 
 from auto_a11y.audio.cost import (
+    DEFAULT_PRICING_MODEL,
     AnthropicUsage,
     cost_for_anthropic_call,
     cost_for_deepgram_minutes,
     estimate_cost,
 )
+
+
+def test_default_pricing_model_is_opus_4_8() -> None:
+    """Opus 4.8 is the first-class priced model (no fallback warning path)."""
+    assert DEFAULT_PRICING_MODEL == "claude-opus-4-8"
+    usage = AnthropicUsage(input_tokens=10_000, output_tokens=2_000)
+    cost = cost_for_anthropic_call(
+        usage, model="claude-opus-4-8", extended_context=False
+    )
+    # 10000 in @ $5/M = $0.05; 2000 out @ $25/M = $0.05; total $0.10 (same
+    # rates as 4.7).
+    assert abs(cost - 0.10) < 1e-9
 
 
 def _approx(actual: float, expected: float, tol: float = 1e-9) -> bool:

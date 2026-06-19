@@ -4,24 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heading Over 60 Chars Long Test - WarnHeadingOver60CharsLong</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnHeadingOver60CharsLong",
+    "issueId": "WarnHeadingOver60CharsLong",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 4,
+    "expectedInfoCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "Four headings (three h2 elements and one h3 element) whose visible text exceeds 60 characters, each flagged with WarnHeadingOver60CharsLong. The h1 element is well under 60 characters and serves as the correct comparison case.",
+    "wcag": "2.4.6"
+}
+    </script>
 </head>
 <body>
-    <h1>Headings That Exceed Recommended Length</h1>
+    <h1 data-expected-pass="true" data-pass-reason="h1 heading is under 60 characters so it does not trigger WarnHeadingOver60CharsLong">Headings That Exceed Recommended Length</h1>
     
     <!-- Heading with more than 60 characters -->
-    <h2>This Is an Extremely Long Heading That Goes Well Beyond the Recommended Maximum Character Length</h2>
+    <h2 data-expected-warning="true" data-warning-id="WarnHeadingOver60CharsLong" data-warning-reason="h2 visible text exceeds 60 characters">This Is an Extremely Long Heading That Goes Well Beyond the Recommended Maximum Character Length</h2>
     <p>This heading has way more than 60 characters.</p>
     
     <!-- Another overly long heading -->
-    <h2>Complete Comprehensive Guide to Understanding All Web Accessibility Standards and Best Practices</h2>
+    <h2 data-expected-warning="true" data-warning-id="WarnHeadingOver60CharsLong" data-warning-reason="h2 visible text exceeds 60 characters">Complete Comprehensive Guide to Understanding All Web Accessibility Standards and Best Practices</h2>
     <p>Long headings are harder to scan and process.</p>
     
     <!-- Very verbose heading -->
-    <h3>Detailed Step-by-Step Instructions for Implementing Accessible Web Design Patterns in Modern Applications</h3>
+    <h3 data-expected-warning="true" data-warning-id="WarnHeadingOver60CharsLong" data-warning-reason="h3 visible text exceeds 60 characters">Detailed Step-by-Step Instructions for Implementing Accessible Web Design Patterns in Modern Applications</h3>
     <p>This heading is too verbose and should be shortened.</p>
     
     <!-- Extremely long heading -->
-    <h2>The Ultimate Definitive Resource for Learning Everything You Need to Know About Creating Accessible Websites</h2>
+    <h2 data-expected-warning="true" data-warning-id="WarnHeadingOver60CharsLong" data-warning-reason="h2 visible text exceeds 60 characters">The Ultimate Definitive Resource for Learning Everything You Need to Know About Creating Accessible Websites</h2>
     <p>Headings should be concise and scannable.</p>
     
     <p>Keep headings under 60 characters for better readability.</p>

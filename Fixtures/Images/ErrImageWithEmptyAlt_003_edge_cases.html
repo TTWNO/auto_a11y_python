@@ -6,6 +6,7 @@
     <title>ErrImageWithEmptyAlt - Edge Cases</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrImageWithEmptyAlt_003_edge_cases",
     "issueId": "ErrImageWithEmptyAlt",
     "expectedViolationCount": 3,
@@ -30,12 +31,12 @@
     <!-- EDGE 2: Non-breaking space (ERROR) -->
     <h2>Edge 2: Alt with non-breaking space</h2>
     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%2300ff00' width='100' height='100'/%3E%3C/svg%3E"
-         alt=" "
+         alt="&nbsp;"
          data-expected-violation="true"
          data-violation-id="ErrImageWithEmptyAlt"
          data-violation-reason="Alt contains non-breaking space (nbsp) - whitespace character that's not truly empty.">
 
-    <!-- EDGE 3: Zero-width space (would be caught as empty after trim) - Actually passes trim test -->
+    <!-- EDGE 3: Zero-width space (U+200B) - invisible character stripped by the engine before the emptiness check -->
     <h2>Edge 3: Alt with zero-width space</h2>
     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%230000ff' width='100' height='100'/%3E%3C/svg%3E"
          alt="​"

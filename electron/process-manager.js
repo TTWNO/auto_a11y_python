@@ -6,6 +6,17 @@ const http = require('http');
 const { app } = require('electron');
 const log = require('electron-log');
 
+// How long to wait for Flask's /health before giving up. The bundled
+// app imports a large dependency graph (Flask + reporting + the audio
+// pipeline's torch/pyannote stack) under an embedded Python, and on the
+// FIRST launch macOS Gatekeeper also scans the freshly de-quarantined
+// resources. Observed cold-start to "Serving Flask app" is ~30-32s even
+// when warm; the old 30s budget timed out 2-3s before Flask was ready
+// and surfaced a spurious "failed to start". 120s leaves comfortable
+// headroom for a cold first launch without masking a genuine hang
+// (MongoDB is already verified up before we get here).
+const FLASK_HEALTH_TIMEOUT_MS = 120000;
+
 class ProcessManager {
   constructor(settingsManager) {
     this.settings = settingsManager;
@@ -82,7 +93,17 @@ class ProcessManager {
           res.on('end', () => {
             try {
               const data = JSON.parse(body);
-              if (data.status === 'healthy') {
+              // 'healthy'  → the full app is up.
+              // 'recovery' → Settings Recovery mode: a required preflight
+              //   check failed, so Flask is serving ONLY the recovery
+              //   page (and answers /health with 503 + status 'recovery').
+              //   That still means the server is up and reachable, so we
+              //   resolve and let the window open — it lands on /recovery/
+              //   where the user can fix the configuration. Treating it as
+              //   "not ready" would poll until timeout and surface a dead
+              //   "failed to start" dialog, leaving the recovery UI
+              //   permanently unreachable.
+              if (data.status === 'healthy' || data.status === 'recovery') {
                 resolve(data);
               } else {
                 setTimeout(check, intervalMs);
@@ -103,7 +124,7 @@ class ProcessManager {
   /**
    * Clean up stale MongoDB lock file if no mongod process is running.
    */
-  cleanStaleLock() {
+  async cleanStaleLock() {
     const dbPath = path.join(this.settings.userDataDir, 'mongodb', 'data');
     const lockFile = path.join(dbPath, 'mongod.lock');
 
@@ -112,16 +133,87 @@ class ProcessManager {
     const content = fs.readFileSync(lockFile, 'utf8').trim();
     if (!content) return; // Empty lock = clean shutdown
 
-    log.warn(`Found stale mongod.lock with PID ${content}, cleaning up...`);
+    const pid = parseInt(content, 10);
+    const clear = () => {
+      try {
+        fs.writeFileSync(lockFile, '', 'utf8');
+        log.info('Cleared mongod.lock');
+      } catch (err) {
+        log.warn('Could not clear mongod.lock:', err.message);
+      }
+    };
+
+    // Is the recorded owner still alive?
+    let alive = false;
+    if (Number.isInteger(pid) && pid > 0) {
+      try { process.kill(pid, 0); alive = true; } catch { alive = false; }
+    }
+
+    if (!alive) {
+      // Owner gone — just a stale file from an unclean shutdown.
+      log.warn(`Found stale mongod.lock (PID ${content}); owner is gone, clearing.`);
+      clear();
+      return;
+    }
+
+    // A process still holds OUR dbpath. If it's a leftover mongod — a
+    // crashed/orphaned previous launch, or a second app instance — a fresh
+    // mongod would die with DBPathInUse (exit 100) and the app would "fail
+    // to start". Terminate the leftover so this launch can recover. Guard
+    // against PID reuse: only kill if it actually looks like mongod.
+    if (this.isMongodPid(pid)) {
+      log.warn(`A mongod (PID ${pid}) still holds the dbpath; terminating it to recover startup...`);
+      await this.terminatePid(pid);
+      clear();
+    } else {
+      log.warn(`mongod.lock PID ${pid} is held by a non-mongod process; leaving it alone.`);
+    }
+  }
+
+  /**
+   * Best-effort check that `pid` is a mongod process. Guards terminatePid
+   * against killing an unrelated process that happened to reuse a dead
+   * mongod's PID. Returns false (don't kill) if it can't positively
+   * identify mongod.
+   */
+  isMongodPid(pid) {
     try {
-      // Check if the PID is still running
-      process.kill(parseInt(content), 0);
-      // If no error, process is still running — don't clean
-      log.warn('mongod process is still running, skipping lock cleanup');
+      if (process.platform === 'win32') {
+        const out = execSync(`tasklist /fi "PID eq ${pid}" /fo csv /nh`, {
+          encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+        });
+        return /mongod/i.test(out);
+      }
+      const out = execSync(`ps -p ${pid} -o comm=`, {
+        encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      return /mongod/i.test(out);
     } catch {
-      // Process not running — safe to clean
-      fs.writeFileSync(lockFile, '', 'utf8');
-      log.info('Cleaned stale mongod.lock');
+      return false;
+    }
+  }
+
+  /**
+   * SIGTERM a pid, escalate to SIGKILL if it hasn't exited within graceMs,
+   * then wait briefly for the OS to release its file locks. Resolves once
+   * the process is gone (or was never alive). Never throws.
+   */
+  async terminatePid(pid, { graceMs = 4000, killMs = 2000, stepMs = 100 } = {}) {
+    const alive = () => { try { process.kill(pid, 0); return true; } catch { return false; } };
+    if (!alive()) return;
+
+    try { process.kill(pid, 'SIGTERM'); } catch { /* already gone */ }
+    let deadline = Date.now() + graceMs;
+    while (Date.now() < deadline && alive()) {
+      await new Promise((r) => setTimeout(r, stepMs));
+    }
+
+    if (alive()) {
+      try { process.kill(pid, 'SIGKILL'); } catch { /* already gone */ }
+      deadline = Date.now() + killMs;
+      while (Date.now() < deadline && alive()) {
+        await new Promise((r) => setTimeout(r, stepMs));
+      }
     }
   }
 
@@ -136,7 +228,7 @@ class ProcessManager {
 
     onProgress && onProgress('Starting database...');
 
-    this.cleanStaleLock();
+    await this.cleanStaleLock();
 
     const paths = this.getPaths();
     const dbPath = path.join(this.settings.userDataDir, 'mongodb', 'data');
@@ -293,11 +385,21 @@ class ProcessManager {
       }
     });
 
-    // Poll /health until ready
+    // Poll /health until ready. Recovery mode counts as "up" (the server
+    // is serving the recovery page); see pollUrl.
     const healthUrl = `http://127.0.0.1:${port}/health`;
     onProgress && onProgress('Waiting for server...');
-    await this.pollUrl(healthUrl, 30000);
-    log.info(`Flask is ready on port ${port}`);
+    const health = await this.pollUrl(healthUrl, FLASK_HEALTH_TIMEOUT_MS);
+    if (health && health.status === 'recovery') {
+      log.warn(
+        `Flask started in Settings Recovery mode on port ${port} — a required ` +
+        `check failed (e.g. MongoDB unreachable or ffmpeg/ffprobe missing). ` +
+        `Opening the recovery page so the user can fix the configuration.`
+      );
+      onProgress && onProgress('Configuration needed — opening settings...');
+    } else {
+      log.info(`Flask is ready on port ${port}`);
+    }
   }
 
   /**

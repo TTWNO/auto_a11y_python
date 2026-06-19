@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modal Escape Key Test Fixture</title>
+    <!--
+      KNOWN LIMITATION — this fixture is expected to FAIL static validation and that is intentional.
+      Its modals share one document-level keydown handler that closes only whichever modal the
+      runtime variable `currentModal` says is open (see the <script> at the bottom). At rest this is
+      indistinguishable from a fully working Escape handler, so static DOM analysis cannot tell that
+      modal1/3/4 ignore Escape — and correctly does not flag ErrModalWithoutEscape.
+      The code IS validated by the statically-analyzable pair Fixtures/Modals/ErrModalWithoutEscape_001
+      (violation) and _002 (correct), which both pass. Reliable detection of the runtime-gated pattern
+      shown here needs behavioural/AI testing. Decision (June 2026, repo owner): keep this fixture as a
+      documented limitation rather than delete it. See ISSUE_CATALOG.md > ErrModalWithoutEscape.
+    -->
+    <!-- NOTE: deliberately has no <script id="test-metadata"> block; do not add one. -->
+
     <style>
         body {
             font-family: Arial, sans-serif;

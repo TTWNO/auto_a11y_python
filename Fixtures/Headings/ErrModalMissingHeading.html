@@ -4,12 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modal Missing Heading Test - ErrModalMissingHeading</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrModalMissingHeading",
+    "issueId": "ErrModalMissingHeading",
+    "expectedViolationCount": 3,
+    "expectedWarningCount": 0,
+    "expectedInfoCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Three dialog containers (two with role dialog and one with role alertdialog) each lack a heading element to describe their purpose, so each is flagged with ErrModalMissingHeading. This fixture also emits unrelated modal and landmark codes which are ignored for this target.",
+    "wcag": "2.4.6"
+}
+    </script>
 </head>
 <body>
     <h1>Page with Modals</h1>
     
     <!-- Modal dialog without any heading -->
-    <div role="dialog" aria-modal="true" aria-labelledby="modal1-title">
+    <div role="dialog" aria-modal="true" aria-labelledby="modal1-title" data-expected-violation="true" data-violation-id="ErrModalMissingHeading" data-violation-reason="dialog container has no heading element to describe its purpose">
         <div class="modal-content">
             <!-- Missing heading element -->
             <p>This modal has no heading to describe its purpose.</p>
@@ -18,14 +31,14 @@
     </div>
     
     <!-- Alert dialog without heading -->
-    <div role="alertdialog" aria-modal="true">
+    <div role="alertdialog" aria-modal="true" data-expected-violation="true" data-violation-id="ErrModalMissingHeading" data-violation-reason="alertdialog container has no heading element to describe its purpose">
         <p>Are you sure you want to delete this item?</p>
         <button>Yes</button>
         <button>No</button>
     </div>
     
     <!-- Modal with only aria-label, no visible heading -->
-    <div role="dialog" aria-modal="true" aria-label="Settings">
+    <div role="dialog" aria-modal="true" aria-label="Settings" data-expected-violation="true" data-violation-id="ErrModalMissingHeading" data-violation-reason="dialog container has no heading element to describe its purpose">
         <form>
             <label>Username: <input type="text"></label>
             <label>Email: <input type="email"></label>

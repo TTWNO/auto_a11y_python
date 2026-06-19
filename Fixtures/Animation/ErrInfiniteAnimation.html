@@ -183,51 +183,9 @@
             100% { transform: translateX(-100%); }
         }
         
-        /* GOOD EXAMPLE: Animation with controls */
-        .controlled-animation {
-            width: 80px;
-            height: 80px;
-            background-color: #3498db;
-            border-radius: 50%;
-            animation: controlled-spin 2s linear infinite;
-            animation-play-state: paused;
-        }
-        
-        .controlled-animation.playing {
-            animation-play-state: running;
-        }
-        
-        @keyframes controlled-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        .controls {
-            margin-top: 10px;
-        }
-        
-        .control-button {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            margin-right: 10px;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        
-        .control-button:hover {
-            background-color: #27ae60;
-        }
-        
         /* Status indicators */
         .violation {
             color: #e74c3c;
-            font-weight: bold;
-        }
-        
-        .good {
-            color: #27ae60;
             font-weight: bold;
         }
         
@@ -240,6 +198,17 @@
             margin: 20px 0;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrInfiniteAnimation",
+    "issueId": "ErrInfiniteAnimation",
+    "expectedViolationCount": 6,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Infinitely-running CSS animations with no pause, stop, or hide mechanism (pulsing button, sliding banner, bouncing text, rotating element, blinking text, scrolling marquee text). Each flagged element is validated individually. The accessible counter-example (an animation that runs on load but exposes recognized pause/stop controls and respects prefers-reduced-motion) lives in ErrInfiniteAnimation_002_correct_with_controls.html; this engine's control detection is page-global, so a passing example cannot coexist with the violations on a single page.",
+    "wcag": "2.2.2"
+}
+    </script>
 </head>
 <body>
     <h1>Infinite Animation Test Fixture - ErrInfiniteAnimation</h1>
@@ -260,35 +229,35 @@
     <div class="test-section">
         <h2><span class="violation">VIOLATION:</span> Pulsing Call-to-Action Button</h2>
         <p>A button that pulses infinitely to grab attention, with no way to stop it.</p>
-        <button class="pulsing-button">Buy Now!</button>
+        <button class="pulsing-button" data-expected-violation="true" data-violation-id="ErrInfiniteAnimation" data-violation-reason="pulsing button animates infinitely with no pause/stop control">Buy Now!</button>
         <p><em>Impact: Can trigger seizures and cause cognitive overload</em></p>
     </div>
     
     <div class="test-section">
         <h2><span class="violation">VIOLATION:</span> Animated Background Banner</h2>
         <p>A banner with an infinite gradient animation that cannot be paused.</p>
-        <div class="sliding-banner">Special Offer!</div>
+        <div class="sliding-banner" data-expected-violation="true" data-violation-id="ErrInfiniteAnimation" data-violation-reason="sliding banner gradient animates infinitely with no control">Special Offer!</div>
         <p><em>Impact: Can cause vestibular disorders and distraction</em></p>
     </div>
     
     <div class="test-section">
         <h2><span class="violation">VIOLATION:</span> Bouncing Text</h2>
         <p>Text that bounces up and down infinitely without controls.</p>
-        <div class="bouncing-text">🎉 Congratulations! 🎉</div>
+        <div class="bouncing-text" data-expected-violation="true" data-violation-id="ErrInfiniteAnimation" data-violation-reason="bouncing text animates infinitely with no control">🎉 Congratulations! 🎉</div>
         <p><em>Impact: Can cause motion sensitivity and focus issues</em></p>
     </div>
     
     <div class="test-section">
         <h2><span class="violation">VIOLATION:</span> Rotating Element</h2>
         <p>An element that rotates continuously without pause controls.</p>
-        <div class="rotating-image">SALE</div>
+        <div class="rotating-image" data-expected-violation="true" data-violation-id="ErrInfiniteAnimation" data-violation-reason="rotating element animates infinitely with no control">SALE</div>
         <p><em>Impact: Can cause dizziness and vestibular disorders</em></p>
     </div>
     
     <div class="test-section">
         <h2><span class="violation">VIOLATION:</span> Blinking Text (High Risk)</h2>
         <p>Text that blinks rapidly - particularly dangerous for photosensitive epilepsy.</p>
-        <div class="blinking-text">⚡ URGENT ALERT ⚡</div>
+        <div class="blinking-text" data-expected-violation="true" data-violation-id="ErrInfiniteAnimation" data-violation-reason="blinking text animates infinitely with no control">⚡ URGENT ALERT ⚡</div>
         <p><em>Impact: <strong>HIGH SEIZURE RISK</strong> - violates photosensitive epilepsy guidelines</em></p>
     </div>
     
@@ -310,21 +279,9 @@
         <h2><span class="violation">VIOLATION:</span> Infinite Scrolling Text</h2>
         <p>Text that scrolls infinitely like a marquee with no pause option.</p>
         <div class="scrolling-text-container">
-            <div class="scrolling-text">Breaking News: This text scrolls forever and cannot be stopped by the user...</div>
+            <div class="scrolling-text" data-expected-violation="true" data-violation-id="ErrInfiniteAnimation" data-violation-reason="scrolling marquee text animates infinitely with no control">Breaking News: This text scrolls forever and cannot be stopped by the user...</div>
         </div>
         <p><em>Impact: Can cause reading difficulties and vestibular issues</em></p>
-    </div>
-    
-    <div class="test-section">
-        <h2><span class="good">GOOD EXAMPLE:</span> Animation with User Controls</h2>
-        <p>An animation that starts paused and provides user controls to play/pause.</p>
-        <div class="controlled-animation" id="controlledElement"></div>
-        <div class="controls">
-            <button class="control-button" onclick="playAnimation()">Play</button>
-            <button class="control-button" onclick="pauseAnimation()">Pause</button>
-            <button class="control-button" onclick="stopAnimation()">Stop</button>
-        </div>
-        <p><em>This respects user control and accessibility requirements</em></p>
     </div>
     
     <div class="test-section">
@@ -350,28 +307,5 @@
         </ul>
     </div>
     
-    <script>
-        // JavaScript for the controlled animation example
-        function playAnimation() {
-            document.getElementById('controlledElement').classList.add('playing');
-        }
-        
-        function pauseAnimation() {
-            document.getElementById('controlledElement').classList.remove('playing');
-        }
-        
-        function stopAnimation() {
-            const element = document.getElementById('controlledElement');
-            element.classList.remove('playing');
-            // Reset animation
-            element.style.animation = 'none';
-            element.offsetHeight; // Trigger reflow
-            element.style.animation = null;
-        }
-        
-        // Demonstrate that violations don't respect prefers-reduced-motion
-        // (In a real implementation, you should check and respect this preference)
-        console.log('prefers-reduced-motion:', window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    </script>
 </body>
 </html>

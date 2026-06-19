@@ -32,17 +32,27 @@
             font-style: normal;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnColorOnlyLink",
+    "issueId": "WarnColorOnlyLink",
+    "expectedWarningCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Inline links distinguished from surrounding text only by colour, with text-decoration removed so there is no underline or other non-colour indicator. Each demonstrated case is validated individually.",
+    "wcag": "1.4.1"
+}
+    </script>
 </head>
 <body>
     <h1>Links Distinguished Only by Color</h1>
     
     <p>
-        This paragraph contains a <a href="page1.html" class="color-only-link">link that looks like text</a> 
+        This paragraph contains a <a href="page1.html" class="color-only-link" data-expected-warning="true" data-warning-id="WarnColorOnlyLink" data-warning-reason="link has no underline and is distinguished from text only by colour">link that looks like text</a> 
         except for its color. This violates WCAG because color alone shouldn't convey information.
     </p>
     
     <p>
-        Here's another <a href="page2.html" class="no-underline">link without underline</a> that 
+        Here's another <a href="page2.html" class="no-underline" data-expected-warning="true" data-warning-id="WarnColorOnlyLink" data-warning-reason="link relies solely on colour with text-decoration none">link without underline</a> that 
         relies solely on color to indicate it's clickable.
     </p>
     

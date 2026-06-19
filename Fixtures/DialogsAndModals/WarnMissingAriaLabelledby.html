@@ -8,9 +8,10 @@
 {
     "id": "WarnMissingAriaLabelledby",
     "issueId": "WarnMissingAriaLabelledby",
-    "expectedViolationCount": 1,
+    "expectedWarningCount": 1,
     "expectedPassCount": 1,
-    "description": "Basic dialog with and without aria-labelledby",
+    "enforceElementExpectations": true,
+    "description": "Basic dialog role element with and without aria-labelledby. The dialog missing aria-labelledby warns; the one referencing a heading via aria-labelledby passes.",
     "wcag": "4.1.2",
     "impact": "Medium"
 }
@@ -21,9 +22,9 @@
 
     <!-- VIOLATION: Dialog without aria-labelledby -->
     <div role="dialog" aria-modal="true" style="display: block; position: fixed; z-index: 1000;"
-         data-expected-violation="true"
-         data-violation-id="WarnMissingAriaLabelledby"
-         data-violation-reason="Dialog missing aria-labelledby attribute">
+         data-expected-warning="true"
+         data-warning-id="WarnMissingAriaLabelledby"
+         data-warning-reason="Dialog missing aria-labelledby attribute">
         <h2 id="dialog1-title">Confirm Action</h2>
         <p>Are you sure?</p>
         <button>Cancel</button>

@@ -255,8 +255,12 @@ async def test_headings(page: Page) -> dict[str, Any]:
                 }
                 
                 // Check each heading
-                let previousLevel = 0;
                 let previousHeading = null;
+                // First-occurrence tracker for order detection, kept SEPARATE from
+                // headingCounts (whose h1 entry is pre-seeded to the total H1 count
+                // above; reusing it would make an out-of-order first H1 look "already
+                // seen" and silently skip the ErrHeadingOrder check for that H1).
+                const seenInOrder = {};
                 headings.forEach(heading => {
                     const tagName = heading.tagName.toLowerCase();
                     const level = parseInt(tagName.charAt(1));
@@ -267,7 +271,7 @@ async def test_headings(page: Page) -> dict[str, Any]:
                     // But: H1, H2, H3, then H2 again is CORRECT (returning from subsection)
                     if (level <= 2) {
                         // Check if this is the FIRST occurrence of this heading level
-                        const isFirstOccurrence = (headingCounts[tagName] || 0) === 0;
+                        const isFirstOccurrence = !seenInOrder[tagName];
 
                         // Check if we've already seen lower-level (higher number) headings
                         const maxLevelSeenSoFar = headingHierarchy.length > 0 ? Math.max(...headingHierarchy) : 0;
@@ -294,6 +298,7 @@ async def test_headings(page: Page) -> dict[str, Any]:
 
                     // Now update counters
                     headingCounts[tagName]++;
+                    seenInOrder[tagName] = (seenInOrder[tagName] || 0) + 1;
                     headingHierarchy.push(level);
 
                     // Check for empty headings
@@ -331,33 +336,6 @@ async def test_headings(page: Page) -> dict[str, Any]:
                         });
                         results.elements_failed++;
                     } else {
-
-                        // Check for heading hierarchy gaps - ANY skip is a HIGH impact WCAG 1.3.1 failure
-                        if (previousLevel > 0 && level > previousLevel + 1) {
-                            const expectedLevel = previousLevel + 1;
-                            const levelsSkipped = level - previousLevel - 1;
-
-                            results.errors.push({
-                                err: 'ErrSkippedHeadingLevel',
-                                type: 'err',
-                                cat: 'headings',
-                                element: heading.tagName,
-                                xpath: getFullXPath(heading),
-                                html: heading.outerHTML.substring(0, 200),
-                                description: `Heading level skipped from H${previousLevel} to H${level} (skipped ${levelsSkipped} level${levelsSkipped > 1 ? 's' : ''})`,
-                                skippedFrom: previousLevel,
-                                skippedTo: level,
-                                levelsSkipped: levelsSkipped,
-                                expectedLevel: expectedLevel,
-                                previousHeadingHtml: previousHeading ? previousHeading.outerHTML.substring(0, 200) : '',
-                                previousHeadingXpath: previousHeading ? getFullXPath(previousHeading) : '',
-                                previousHeadingText: previousHeading ? previousHeading.textContent.trim().substring(0, 100) : ''
-                            });
-                            results.elements_failed++;
-                        } else {
-                            results.elements_passed++;
-                        }
-
                         previousHeading = heading;
                         
                         // Check for excessively long headings
@@ -468,14 +446,80 @@ async def test_headings(page: Page) -> dict[str, Any]:
                             });
                         }
                     }
-                    
-                    previousLevel = level;
                 });
-                
-                // Check for headings inside display:none elements
+
+                // Check for heading hierarchy gaps - ANY skip is a HIGH impact WCAG 1.3.1 failure.
+                // Native h1-h6 and role="heading" [aria-level] elements form ONE document
+                // outline, so they are checked as a single document-order sequence: ARIA-level
+                // skips are caught, and interleaved native/ARIA structures are judged on the
+                // combined sequence rather than the native headings alone.
+                const outlineHeadings = headings.concat(
+                    roleHeadings.filter(el => !/^H[1-6]$/.test(el.tagName))
+                ).map(el => {
+                    const ariaLevelNum = el.getAttribute('role') === 'heading'
+                        ? parseInt(el.getAttribute('aria-level'), 10)
+                        : NaN;
+                    const outlineLevel = !isNaN(ariaLevelNum) ? ariaLevelNum : parseInt(el.tagName.charAt(1), 10);
+                    return { el: el, level: outlineLevel };
+                }).filter(item => item.level >= 1 && item.level <= 6);
+                outlineHeadings.sort((a, b) =>
+                    (a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+
+                let previousOutlineLevel = 0;
+                let previousOutlineHeading = null;
+                outlineHeadings.forEach(item => {
+                    const heading = item.el;
+                    const level = item.level;
+                    const textContent = heading.textContent.trim();
+                    const images = heading.querySelectorAll('img[alt]');
+                    const hasImageWithAlt = Array.from(images).some(img => img.alt.trim() !== '');
+
+                    // Empty headings are reported separately (ErrEmptyHeading) and are not
+                    // skip-checked, but they still advance the level tracker.
+                    if (textContent || hasImageWithAlt) {
+                        if (previousOutlineLevel > 0 && level > previousOutlineLevel + 1) {
+                            const expectedLevel = previousOutlineLevel + 1;
+                            const levelsSkipped = level - previousOutlineLevel - 1;
+
+                            results.errors.push({
+                                err: 'ErrSkippedHeadingLevel',
+                                type: 'err',
+                                cat: 'headings',
+                                element: heading.tagName,
+                                xpath: getFullXPath(heading),
+                                html: heading.outerHTML.substring(0, 200),
+                                description: `Heading level skipped from H${previousOutlineLevel} to H${level} (skipped ${levelsSkipped} level${levelsSkipped > 1 ? 's' : ''})`,
+                                skippedFrom: previousOutlineLevel,
+                                skippedTo: level,
+                                levelsSkipped: levelsSkipped,
+                                expectedLevel: expectedLevel,
+                                previousHeadingHtml: previousOutlineHeading ? previousOutlineHeading.outerHTML.substring(0, 200) : '',
+                                previousHeadingXpath: previousOutlineHeading ? getFullXPath(previousOutlineHeading) : '',
+                                previousHeadingText: previousOutlineHeading ? previousOutlineHeading.textContent.trim().substring(0, 100) : ''
+                            });
+                            results.elements_failed++;
+                        } else {
+                            results.elements_passed++;
+                        }
+                        previousOutlineHeading = heading;
+                    }
+                    previousOutlineLevel = level;
+                });
+
+                // Check for headings inside display:none elements.
+                // display does not inherit, so a heading whose ANCESTOR is display:none still
+                // computes its own display (e.g. block) — walk up the tree for that case.
+                // visibility DOES inherit, so the heading's own computed style covers it.
                 headings.forEach(heading => {
                     const style = window.getComputedStyle(heading);
-                    if (style.display === 'none' || style.visibility === 'hidden') {
+                    let inDisplayNoneSubtree = false;
+                    for (let el = heading; el; el = el.parentElement) {
+                        if (window.getComputedStyle(el).display === 'none') {
+                            inDisplayNoneSubtree = true;
+                            break;
+                        }
+                    }
+                    if (inDisplayNoneSubtree || style.visibility === 'hidden') {
                         results.warnings.push({
                             err: 'WarnHeadingInsideDisplayNone',
                             type: 'warn',

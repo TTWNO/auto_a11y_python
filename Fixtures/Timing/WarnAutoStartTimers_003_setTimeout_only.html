@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"
+      data-expected-violation="true"
+      data-violation-id="WarnAutoStartTimers"
+      data-violation-reason="Multiple setTimeout calls execute on page load">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>setTimeout Only - Warning</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnAutoStartTimers_003_setTimeout_only",
     "issueId": "WarnAutoStartTimers",
     "expectedViolationCount": 1,
@@ -16,9 +20,7 @@
 }
     </script>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="WarnAutoStartTimers"
-      data-violation-reason="Multiple setTimeout calls execute on page load">
+<body>
     <div class="content">
         <h1>Delayed Content Loading</h1>
         <div id="message1">Loading...</div>

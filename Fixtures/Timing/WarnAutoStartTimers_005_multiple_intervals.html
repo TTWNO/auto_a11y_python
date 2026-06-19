@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"
+      data-expected-violation="true"
+      data-violation-id="WarnAutoStartTimers"
+      data-violation-reason="Multiple setInterval calls with different update frequencies">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiple Intervals - Warning</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnAutoStartTimers_005_multiple_intervals",
     "issueId": "WarnAutoStartTimers",
     "expectedViolationCount": 1,
@@ -34,9 +38,7 @@
         }
     </style>
 </head>
-<body data-expected-violation="true"
-      data-violation-id="WarnAutoStartTimers"
-      data-violation-reason="Multiple setInterval calls with different update frequencies">
+<body>
     <h1>Live Dashboard</h1>
     <div class="dashboard">
         <div class="widget">

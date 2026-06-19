@@ -47,6 +47,11 @@ class Config:
     
     # Flask
     SECRET_KEY: str = os.getenv('SECRET_KEY', '')
+    # Fernet key (urlsafe-base64, from `Fernet.generate_key()`) used to encrypt
+    # test-user credentials at rest. Separate from SECRET_KEY so it can be
+    # rotated/access-controlled independently. Unset = credentials stored
+    # plaintext (backward compatible). See auto_a11y/utils/crypto.py.
+    CREDENTIAL_ENCRYPTION_KEY: str = os.getenv('CREDENTIAL_ENCRYPTION_KEY', '')
     DEBUG: bool = os.getenv('DEBUG', 'False').lower() == 'true'
     HOST: str = os.getenv('HOST', '127.0.0.1')
     PORT: int = int(os.getenv('PORT', 5001))  # Changed from 5000 to avoid macOS AirPlay Receiver conflict
@@ -57,7 +62,7 @@ class Config:
     
     # Claude AI
     CLAUDE_API_KEY: str = os.getenv('CLAUDE_API_KEY', '')
-    CLAUDE_MODEL: str = os.getenv('CLAUDE_MODEL', 'claude-opus-4-20250514')
+    CLAUDE_MODEL: str = os.getenv('CLAUDE_MODEL', 'claude-opus-4-8')
     CLAUDE_MAX_TOKENS: int = int(os.getenv('CLAUDE_MAX_TOKENS', '32000'))
     CLAUDE_BUDGET_TOKENS: int = int(os.getenv('CLAUDE_BUDGET_TOKENS', '10000'))
     CLAUDE_TEMPERATURE: float = float(os.getenv('CLAUDE_TEMPERATURE', 1.0))
@@ -142,6 +147,9 @@ class Config:
     SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', '')
     SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', '')
     SMTP_USE_TLS: bool = os.getenv('SMTP_USE_TLS', 'True').lower() == 'true'
+    # Implicit TLS (SMTP over SSL, typically port 465). Mutually exclusive with
+    # SMTP_USE_TLS (STARTTLS). Port 465 also implies implicit SSL automatically.
+    SMTP_USE_SSL: bool = os.getenv('SMTP_USE_SSL', 'False').lower() == 'true'
     SMTP_FROM_EMAIL: str = os.getenv('SMTP_FROM_EMAIL', '')
     SMTP_FROM_NAME: str = os.getenv('SMTP_FROM_NAME', 'CNIB Access Labs | AutoA11y')
 

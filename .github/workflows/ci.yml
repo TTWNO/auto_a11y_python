@@ -121,6 +121,8 @@ jobs:
         # Update deps
         sudo apt-get update
         # WeasyPrint dependencies (GTK, Pango, etc.) + Ghostscript (PDF audit)
+        # + ffmpeg/ffprobe (audio pipeline; also satisfies the ffmpeg/ffprobe
+        # preflight checks so the app boots in normal mode, not recovery).
         sudo apt-get install -y \
           libpango-1.0-0 \
           libpangoft2-1.0-0 \
@@ -129,7 +131,8 @@ jobs:
           libcairo2 \
           libgirepository1.0-dev \
           gir1.2-pango-1.0 \
-          ghostscript
+          ghostscript \
+          ffmpeg
 
     - name: Install Python dependencies
       run: |
@@ -161,6 +164,13 @@ jobs:
         # Disable AI Analysis for CI
         RUN_AI_ANALYSIS=False
         CLAUDE_API_KEY=
+
+        # Dummy keys so the Anthropic/Deepgram preflight checks pass and the
+        # app boots in normal mode (the checks only construct the SDK client;
+        # they make no API calls). Without these the app starts in Settings
+        # Recovery mode and every route 302s to /recovery/.
+        ANTHROPIC_API_KEY=ci-dummy-anthropic-key
+        DEEPGRAM_API_KEY=ci-dummy-deepgram-key
 
         # Browser Configuration
         BROWSER_HEADLESS=True

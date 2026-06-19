@@ -6,6 +6,7 @@
     <title>WarnMissingRequiredIndication - Mixed Scenarios</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnMissingRequiredIndication_006_violations_mixed",
     "issueId": "WarnMissingRequiredIndication",
     "expectedViolationCount": 3,
@@ -24,55 +25,66 @@
 
     <form>
         <!-- Violation 1: Required but no indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Required field without visual indicator">
+        <div>
             <label for="username">Username</label>
-            <input type="text" id="username" name="username" required>
+            <input type="text" id="username" name="username" required
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="Required field without visual indicator">
         </div>
 
         <!-- Correct 1: Required with asterisk -->
-        <div data-expected-pass="true"
-             data-pass-reason="Required field with asterisk indicator">
+        <div>
             <label for="email">Email *</label>
-            <input type="email" id="email" name="email" required>
+            <input type="email" id="email" name="email" required
+                   data-expected-pass="true"
+                   data-pass-id="WarnMissingRequiredIndication"
+                   data-pass-reason="Required field with asterisk indicator">
         </div>
 
         <!-- Violation 2: aria-required without indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="aria-required='true' without visual indicator">
+        <div>
             <label for="password">Current Password</label>
-            <input type="password" id="password" name="password" aria-required="true">
+            <input type="password" id="password" name="password" aria-required="true"
+                   data-expected-violation="true"
+                   data-violation-id="WarnMissingRequiredIndication"
+                   data-violation-reason="aria-required='true' without visual indicator">
         </div>
 
         <!-- Correct 2: Required with 'required' text -->
-        <div data-expected-pass="true"
-             data-pass-reason="Required field with 'required' text">
+        <div>
             <label for="newPassword">New Password (required)</label>
-            <input type="password" id="newPassword" name="newPassword" required>
+            <input type="password" id="newPassword" name="newPassword" required
+                   data-expected-pass="true"
+                   data-pass-id="WarnMissingRequiredIndication"
+                   data-pass-reason="Required field with 'required' text">
         </div>
 
         <!-- Correct 3: Optional field (no warning expected) -->
-        <div data-expected-pass="true"
-             data-pass-reason="Optional field, no indicator needed">
+        <div>
             <label for="phone">Phone (Optional)</label>
-            <input type="tel" id="phone" name="phone">
+            <input type="tel" id="phone" name="phone"
+                   data-expected-pass="true"
+                   data-pass-id="WarnMissingRequiredIndication"
+                   data-pass-reason="Optional field, no indicator needed">
         </div>
 
         <!-- Violation 3: Required textarea without indicator -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Required textarea without visual indicator">
+        <div>
             <label for="bio">Bio</label>
-            <textarea id="bio" name="bio" required></textarea>
+            <textarea id="bio" name="bio" required
+                      data-expected-violation="true"
+                      data-violation-id="WarnMissingRequiredIndication"
+                      data-violation-reason="Required textarea without visual indicator"></textarea>
         </div>
 
         <!-- Correct 4: Optional textarea -->
-        <div data-expected-pass="true"
-             data-pass-reason="Optional textarea, no warning">
+        <div>
             <label for="notes">Notes</label>
-            <textarea id="notes" name="notes"></textarea>
+            <textarea id="notes" name="notes"
+                      data-expected-pass="true"
+                      data-pass-id="WarnMissingRequiredIndication"
+                      data-pass-reason="Optional textarea, no warning"></textarea>
         </div>
 
         <button type="submit">Save Changes</button>

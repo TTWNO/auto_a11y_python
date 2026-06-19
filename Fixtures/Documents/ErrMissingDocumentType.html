@@ -1,4 +1,4 @@
-<html lang="en">
+<html lang="en" data-expected-violation="true" data-violation-id="ErrMissingDocumentType" data-violation-reason="Root element of a document that has no DOCTYPE declaration">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,6 +48,18 @@
             margin-bottom: 5px;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrMissingDocumentType",
+    "issueId": "ErrMissingDocumentType",
+    "expectedViolationCount": 1,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "The document lacks a DOCTYPE declaration, so it is served without a document type and the root element is flagged. Each demonstrated case is validated individually.",
+    "wcag": "4.1.1"
+}
+    </script>
 </head>
 <body>
     <header>

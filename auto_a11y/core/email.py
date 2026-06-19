@@ -39,8 +39,16 @@ def send_email(config: Config, to: str, subject: str, text_body: str, html_body:
     msg.attach(MIMEText(text_body, 'plain'))
     msg.attach(MIMEText(html_body, 'html'))
 
+    # Implicit TLS (SMTP over SSL) and STARTTLS are mutually exclusive. Use
+    # implicit SSL when explicitly configured or when the standard SMTPS port
+    # (465) is used; otherwise use STARTTLS when enabled; otherwise plain.
+    use_ssl = config.SMTP_USE_SSL or config.SMTP_PORT == 465
+
     try:
-        if config.SMTP_USE_TLS:
+        server: smtplib.SMTP
+        if use_ssl:
+            server = smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT)
+        elif config.SMTP_USE_TLS:
             server = smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT)
             server.starttls()
         else:

@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error: Partial Text Contrast - Some Text Cannot Be Tested</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrPartialTextContrastAA",
+    "issueId": "ErrPartialTextContrastAA",
+    "expectedViolationCount": 9,
+    "expectedWarningCount": 2,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Each case fails contrast inside a solid container AND overflows it (content or box overflow), so part of the text sits on an undefined background. Every example is validated individually via data-expected-* annotations. The gradient and image cases cannot have their inside contrast computed, so they are warnings, not partial-contrast errors.",
+    "wcag": "1.4.3"
+}
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -43,35 +55,34 @@
             margin-top: 10px;
         }
 
-        /* Horizontal Overflow - Failing contrast inside */
+        /* Horizontal Overflow - nowrap text spills out of the coloured box (content overflow) */
         .overflow-horizontal-fail {
             width: 200px;
             background: #999999; /* Gray - fails with light gray text */
             overflow: visible;
             white-space: nowrap;
             padding: 15px;
-            color: #cccccc; /* Light gray - fails 4.5:1 on #999999 (ratio: 1.77:1) */
+            color: #cccccc; /* Light gray - fails 4.5:1 on #999999 (1.77:1) */
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Vertical Overflow - Failing contrast inside */
+        /* Vertical Overflow - fixed height, extra lines spill below the box (content overflow) */
         .overflow-vertical-fail {
             height: 25px;
             background: #888888; /* Medium gray */
             overflow: visible;
             padding: 8px;
-            color: #aaaaaa; /* Light gray - fails 4.5:1 on #888888 (ratio: 1.53:1) */
+            color: #aaaaaa; /* Light gray - fails 4.5:1 on #888888 (1.53:1) */
             font-weight: bold;
             line-height: 1.3;
             font-size: 16px;
         }
 
-        /* Absolute Positioning - Failing contrast inside */
+        /* Absolute Positioning - nowrap text spills out of the absolutely-positioned box */
         .overflow-absolute-parent-fail {
             position: relative;
             height: 100px;
-            background: #777777; /* Dark gray */
             padding: 15px;
         }
 
@@ -79,77 +90,87 @@
             position: absolute;
             top: 15px;
             left: 15px;
-            color: #999999; /* Medium gray - fails 4.5:1 on #777777 (ratio: 1.57:1) */
+            width: 200px;
+            white-space: nowrap;
+            overflow: visible;
+            background: #777777; /* Dark gray box; text overflows it */
+            color: #999999; /* Medium gray - fails 4.5:1 on #777777 (1.57:1) */
+            padding: 5px;
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Negative Margin - Failing contrast inside */
+        /* Negative Margin - the box itself is pushed left, outside its parent (box overflow) */
         .overflow-negative-margin-fail {
             background: #666666; /* Dark gray */
-            color: #888888; /* Medium gray - fails 4.5:1 on #666666 (ratio: 1.62:1) */
+            color: #888888; /* Medium gray - fails 4.5:1 on #666666 (1.62:1) */
             padding: 15px;
             margin-left: -50px;
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Transform Translation - Failing contrast inside */
+        /* Transform Translation - the box is shifted left, outside its parent (box overflow) */
         .overflow-transform-fail {
             background: #555555; /* Dark gray */
-            color: #777777; /* Medium gray - fails 4.5:1 on #555555 (ratio: 1.66:1) */
+            color: #777777; /* Medium gray - fails 4.5:1 on #555555 (1.66:1) */
             padding: 15px;
             transform: translateX(-30px);
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Rotated Text - Failing contrast inside */
+        /* Rotated Text - nowrap text spills out of the coloured box, then the whole thing is rotated */
         .overflow-rotated-fail {
             background: #888888; /* Medium gray */
-            color: #aaaaaa; /* Light gray - fails 4.5:1 on #888888 (ratio: 1.53:1) */
+            color: #aaaaaa; /* Light gray - fails 4.5:1 on #888888 (1.53:1) */
             padding: 15px;
             transform: rotate(-5deg);
             font-weight: bold;
             font-size: 18px;
             width: 200px;
+            white-space: nowrap;
+            overflow: visible;
         }
 
-        /* Floated Element - Failing contrast inside */
+        /* Floated Element - nowrap text spills out of the narrow floated box (content overflow) */
         .overflow-float-fail {
             float: left;
             background: #777777; /* Dark gray */
-            color: #999999; /* Medium gray - fails 4.5:1 on #777777 (ratio: 1.57:1) */
+            color: #999999; /* Medium gray - fails 4.5:1 on #777777 (1.57:1) */
             padding: 15px;
             width: 150px;
+            white-space: nowrap;
+            overflow: visible;
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Mixed scenarios with images/gradients - Failing contrast inside */
+        /* Mixed scenarios with gradients - contrast inside CANNOT be computed -> warning, not partial */
         .overflow-on-gradient-fail {
             width: 250px;
             background: linear-gradient(to right, #888888, #999999); /* Medium grays */
             overflow: visible;
             white-space: nowrap;
             padding: 15px;
-            color: #aaaaaa; /* Light gray - fails across entire gradient */
+            color: #aaaaaa; /* Light gray */
             font-weight: bold;
             font-size: 18px;
         }
 
+        /* Background image - contrast inside CANNOT be computed -> warning, not partial */
         .overflow-on-image-fail {
             width: 200px;
             background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22200%22%20height%3D%22100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22200%22%20height%3D%22100%22%20fill%3D%22%23888888%22%2F%3E%3C%2Fsvg%3E');
             overflow: visible;
             white-space: nowrap;
             padding: 15px;
-            color: #aaaaaa; /* Light gray - fails on gray image (ratio: 2.0:1) */
+            color: #aaaaaa; /* Light gray */
             font-weight: bold;
             font-size: 18px;
         }
 
-        /* Transparent background with overflow - Failing contrast inside */
+        /* Transparent background with overflow - inherits parent's solid colour, nowrap text spills out */
         .overflow-transparent-parent-fail {
             background: #999999; /* Gray background */
             padding: 10px;
@@ -157,7 +178,7 @@
 
         .overflow-transparent-fail {
             background: transparent;
-            color: #cccccc; /* Light gray - fails on #999999 parent (ratio: 2.85:1) */
+            color: #cccccc; /* Light gray - fails 4.5:1 on #999999 parent (2.85:1) */
             font-weight: bold;
             font-size: 18px;
             padding: 10px;
@@ -166,7 +187,7 @@
             white-space: nowrap;
         }
 
-        /* Animation with failing contrast inside */
+        /* Animation with failing contrast - nowrap text spills out of the moving coloured box */
         @keyframes movePositionFail {
             0% { transform: translateX(0px); }
             50% { transform: translateX(300px); }
@@ -176,13 +197,17 @@
         .anim-overflow-parent-fail {
             position: relative;
             height: 80px;
-            background: #888888; /* Medium gray */
             overflow: visible;
         }
 
         .anim-overflow-fail {
             position: absolute;
-            color: #aaaaaa; /* Light gray - fails 4.5:1 on #888888 (ratio: 1.53:1) */
+            width: 200px;
+            white-space: nowrap;
+            overflow: visible;
+            background: #555555; /* Dark gray box; text overflows it */
+            color: #777777; /* Medium gray - fails 4.5:1 on #555555 (1.66:1) */
+            padding: 5px;
             font-weight: bold;
             font-size: 18px;
             animation: movePositionFail 4s infinite;
@@ -191,177 +216,196 @@
 </head>
 <body>
     <h1>Error: Partial Text Contrast - Some Text Cannot Be Tested</h1>
-    <p><strong>Purpose:</strong> These cases have FAILING CONTRAST for text inside the container (less than 4.5:1), AND some text extends outside the container. Result: <code>ErrPartialTextContrastAA</code> with note that some text couldn't be tested.</p>
+    <p><strong>Purpose:</strong> Each case FAILS contrast (&lt; 4.5:1) for text inside a solid container, AND some of that text extends outside the container onto an undefined background. Result: <code>ErrPartialTextContrastAA</code>. The two gradient/image cases cannot have their inside contrast computed at all, so they are reported as <code>WarnTextContrastCannotCalculate</code> instead.</p>
 
     <div class="section">
         <h2>Section 1: Horizontal Overflow with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND text extends beyond container horizontally.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND content extends beyond the box horizontally.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-1: Horizontal Overflow (nowrap) - Failing Inside</span>
-            <div class="overflow-horizontal-fail">
-                Light gray on gray inside (fails 2.85:1), and this text extends beyond the gray container with no background.
+            <div class="overflow-horizontal-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAA"
+                 data-violation-reason="Light gray on gray fails (1.77:1); nowrap text spills past the 200px coloured box onto the page">
+                Light gray on gray inside (fails 1.77:1), and this text extends beyond the gray container with no background.
             </div>
-            <div class="note">✗ Text inside FAILS contrast (2.85:1). ⚠ Text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 2: Vertical Overflow with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND text extends below container.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND content extends below the box.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-2: Vertical Overflow - Failing Inside</span>
-            <div class="overflow-vertical-fail">
-                Fails inside (2.0:1).<br>
+            <div class="overflow-vertical-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAA"
+                 data-violation-reason="Light gray on gray fails (1.53:1); extra lines spill below the fixed-height coloured box">
+                Fails inside (1.53:1).<br>
                 Line 2 overflows.<br>
                 Line 3 overflows.<br>
                 Line 4 overflows.
             </div>
-            <div class="note">✗ Text inside FAILS contrast (2.0:1). ⚠ Lines 2-4 overflow, cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Lines 2-4 overflow, cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 3: Absolute Positioning with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND position: absolute extends text outside.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND nowrap content overflows the absolutely-positioned box.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-3: Absolute Positioning - Failing Inside</span>
             <div class="overflow-absolute-parent-fail">
-                <div class="overflow-absolute-fail">
-                    Medium gray on dark gray fails (1.55:1) and extends beyond the container using position: absolute with large dimensions.
+                <div class="overflow-absolute-fail"
+                     data-expected-violation="true"
+                     data-violation-id="ErrPartialTextContrastAA"
+                     data-violation-reason="Medium gray on dark gray fails (1.57:1); nowrap text overflows the absolutely-positioned coloured box">
+                    Medium gray on dark gray fails (1.57:1) and extends beyond its coloured box; the absolutely-positioned element uses nowrap so the text runs past its background.
                 </div>
             </div>
-            <div class="note">✗ Text inside FAILS contrast (1.55:1). ⚠ Positioned text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Overflowing text cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 4: Negative Margin with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND negative margin pushes text outside.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND negative margin pushes the box outside its parent.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-4: Negative Margin - Failing Inside</span>
-            <div class="overflow-negative-margin-fail">
-                Medium gray on dark gray fails (1.55:1) with negative left margin. Part extends left with no background.
+            <div class="overflow-negative-margin-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAA"
+                 data-violation-reason="Medium gray on dark gray fails (1.62:1); negative left margin pushes the box outside its parent">
+                Medium gray on dark gray fails (1.62:1) with negative left margin. Part extends left with no background.
             </div>
-            <div class="note">✗ Text inside FAILS contrast (1.55:1). ⚠ Text in negative margin cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Text in negative margin cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 5: Transform Translation with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND transform pushes text outside.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND transform pushes the box outside its parent.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-5: Transform Translation - Failing Inside</span>
-            <div class="overflow-transform-fail">
-                Medium gray on dark gray fails (1.55:1) with transform translateX. Part extends left with no background.
+            <div class="overflow-transform-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAA"
+                 data-violation-reason="Medium gray on dark gray fails (1.66:1); transform translateX shifts the box outside its parent">
+                Medium gray on dark gray fails (1.66:1) with transform translateX. Part extends left with no background.
             </div>
-            <div class="note">✗ Text inside FAILS contrast (1.55:1). ⚠ Transformed text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Transformed text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 6: Rotated Text with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND rotation extends text outside.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND nowrap content overflows the box (which is also rotated).</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-6: Rotated Text - Failing Inside</span>
-            <div class="overflow-rotated-fail">
-                Light gray on medium gray fails (2.0:1), rotated -5deg. Corners extend beyond container.
+            <div class="overflow-rotated-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAA"
+                 data-violation-reason="Light gray on medium gray fails (1.53:1); nowrap text overflows the 200px box, which is rotated -5deg">
+                Light gray on medium gray fails (1.53:1); the nowrap text runs past the coloured box, which is rotated -5deg.
             </div>
-            <div class="note">✗ Text inside FAILS contrast (2.0:1). ⚠ Rotated corners outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Overflowing/rotated text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 7: Floated Element with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND float may extend outside.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND nowrap content overflows the narrow floated box.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-7: Floated Element - Failing Inside</span>
-            <div class="overflow-float-fail">
-                Medium gray on dark gray fails (1.55:1) with float. May extend beyond container in float context.
+            <div class="overflow-float-fail"
+                 data-expected-violation="true"
+                 data-violation-id="ErrPartialTextContrastAA"
+                 data-violation-reason="Medium gray on dark gray fails (1.57:1); nowrap text overflows the 150px floated box">
+                Medium gray on dark gray fails (1.57:1); the nowrap text runs past this narrow floated box.
             </div>
             <div style="clear: both;"></div>
-            <div class="note">✗ Text inside FAILS contrast (1.55:1). ⚠ Floated text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Overflowing text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
-        <h2>Section 8: Overflow on Gradient with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast on gradient AND text overflows.</p>
+        <h2>Section 8: Overflow on Gradient (Cannot Compute Inside Contrast)</h2>
+        <p><strong>Detection:</strong> Gradient background means the inside contrast cannot be computed, so this is a warning, not a partial-contrast error.</p>
 
         <div class="case">
-            <span class="case-label">PARTIAL-8: Overflow on Gradient - Failing Inside</span>
-            <div class="overflow-on-gradient-fail">
-                Light gray on gray gradient fails across entire gradient (1.8:1 to 2.3:1), and text extends beyond container with no background.
+            <span class="case-label">PARTIAL-8: Overflow on Gradient - Cannot Calculate</span>
+            <div class="overflow-on-gradient-fail"
+                 data-expected-warning="true"
+                 data-warning-id="WarnTextContrastCannotCalculate"
+                 data-warning-reason="Gradient background - contrast inside cannot be auto-computed (manual review required)">
+                Light gray on a gray gradient - the contrast cannot be computed automatically, and text also extends beyond the container.
             </div>
-            <div class="note">✗ Text inside FAILS contrast on gradient. ⚠ Overflow text cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">⚠ Gradient background: inside contrast cannot be computed. Result: WarnTextContrastCannotCalculate.</div>
         </div>
     </div>
 
     <div class="section">
-        <h2>Section 9: Overflow on Image with Failing Contrast Inside</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast on background image AND text overflows.</p>
+        <h2>Section 9: Overflow on Image (Cannot Compute Inside Contrast)</h2>
+        <p><strong>Detection:</strong> Background image means the inside contrast cannot be computed, so this is a warning, not a partial-contrast error.</p>
 
         <div class="case">
-            <span class="case-label">PARTIAL-9: Overflow on Image - Failing Inside</span>
-            <div class="overflow-on-image-fail">
-                Light gray on gray SVG image fails (2.0:1), and text extends beyond the image container with no background.
+            <span class="case-label">PARTIAL-9: Overflow on Image - Cannot Calculate</span>
+            <div class="overflow-on-image-fail"
+                 data-expected-warning="true"
+                 data-warning-id="WarnTextContrastCannotCalculate"
+                 data-warning-reason="Background image - contrast inside cannot be auto-computed (manual review required)">
+                Light gray on a gray SVG image - the contrast cannot be computed automatically, and text also extends beyond the container.
             </div>
-            <div class="note">✗ Text inside FAILS contrast on image. ⚠ Overflow text cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">⚠ Background image: inside contrast cannot be computed. Result: WarnTextContrastCannotCalculate.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 10: Transparent Background with Overflow and Failing Contrast</h2>
-        <p><strong>Detection:</strong> Text with transparent background fails contrast on parent AND overflows.</p>
+        <p><strong>Detection:</strong> Transparent element resolves to its solid parent background (failing), AND nowrap content overflows.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-10: Transparent with Overflow - Failing Inside</span>
             <div class="overflow-transparent-parent-fail">
-                <div class="overflow-transparent-fail">
-                    Light gray on transparent (gray parent) fails (2.85:1), and text extends beyond parent with potentially different background.
+                <div class="overflow-transparent-fail"
+                     data-expected-violation="true"
+                     data-violation-id="ErrPartialTextContrastAA"
+                     data-violation-reason="Light gray on the gray parent fails (2.85:1); nowrap text overflows past the parent background">
+                    Light gray on transparent (gray parent) fails (2.85:1), and the nowrap text extends beyond the parent onto a different background.
                 </div>
             </div>
-            <div class="note">✗ Text inside FAILS contrast on parent (2.85:1). ⚠ Overflow text on unknown background cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast on parent. ⚠ Overflow text on unknown background cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <div class="section">
         <h2>Section 11: Animation with Overflow and Failing Contrast</h2>
-        <p><strong>Detection:</strong> Text inside fails contrast AND animation moves text outside container.</p>
+        <p><strong>Detection:</strong> Text inside fails contrast AND nowrap content overflows the animated coloured box.</p>
 
         <div class="case">
             <span class="case-label">PARTIAL-11: Animated Overflow - Failing Inside</span>
             <div class="anim-overflow-parent-fail">
-                <div class="anim-overflow-fail">
-                    Light gray on medium gray fails (2.0:1) and moves outside the container during animation.
+                <div class="anim-overflow-fail"
+                     data-expected-violation="true"
+                     data-violation-id="ErrPartialTextContrastAA"
+                     data-violation-reason="Medium gray on dark gray fails (1.66:1); nowrap text overflows the coloured box, which is also animated">
+                    Medium gray on dark gray fails (1.66:1); the nowrap text runs past the coloured box, which also animates across the page.
                 </div>
             </div>
-            <div class="note">✗ Text inside FAILS contrast (2.0:1). ⚠ Animated text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
+            <div class="note">✗ Text inside FAILS contrast. ⚠ Overflowing/animated text outside cannot be tested. Result: ErrPartialTextContrastAA.</div>
         </div>
     </div>
 
     <p style="margin-top: 40px; padding: 20px; background: #ffebee; border: 2px solid #f44336; border-radius: 8px;">
-        <strong>Summary:</strong> All test cases in this fixture demonstrate <strong>PARTIAL FAILURES</strong>:
-        <ul>
-            <li><strong>Text inside container:</strong> FAILS contrast requirements (less than 4.5:1 for normal text)</li>
-            <li><strong>Text outside container:</strong> Cannot be tested due to undefined or unknown background</li>
-        </ul>
-        <strong>Expected Result:</strong> <code>ErrPartialTextContrastAA</code> - Text inside fails contrast, and some text extends outside container where contrast cannot be determined.
-        <br><br>
-        <strong>Contrast Ratios Used:</strong>
-        <ul>
-            <li>#cccccc on #999999 = 2.85:1 (fails 4.5:1)</li>
-            <li>#aaaaaa on #888888 = 2.0:1 (fails 4.5:1)</li>
-            <li>#999999 on #777777 = 1.55:1 (fails 4.5:1)</li>
-            <li>#888888 on #666666 = 1.55:1 (fails 4.5:1)</li>
-            <li>#777777 on #555555 = 1.55:1 (fails 4.5:1)</li>
-        </ul>
+        <strong>Summary:</strong> Sections 1-7, 10 and 11 are <strong>partial-contrast errors</strong>: the text fails contrast inside a solid container (&lt; 4.5:1) and overflows it, so part of the text sits on an undefined background. Sections 8 and 9 use a gradient/image background whose inside contrast cannot be computed, so they are <strong>warnings</strong> (<code>WarnTextContrastCannotCalculate</code>) rather than partial-contrast errors. Each case is validated individually through its <code>data-expected-*</code> annotation.
     </p>
 </body>
 </html>

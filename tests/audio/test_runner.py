@@ -99,6 +99,86 @@ def test_runner_happy_path_sets_status_complete(slot: AllocatedSlot, tmp_path: P
     assert db.update_recording.call_count >= 2
 
 
+def test_missing_api_keys_reports_both_when_unset(tmp_path: Path) -> None:
+    """Both services are reported when neither key is configured."""
+    config = AudioConfig(
+        deepgram_api_key="",
+        anthropic_api_key="",
+        claude_model="claude-opus-4-7",
+        deepgram_model="nova-3",
+        huggingface_token=None,
+        data_dir=tmp_path,
+    )
+    assert config.missing_api_keys() == ["Deepgram", "Anthropic"]
+
+
+def test_missing_api_keys_empty_when_both_set(tmp_path: Path) -> None:
+    """Nothing is reported when both keys are present."""
+    assert _make_audio_config(tmp_path).missing_api_keys() == []
+
+
+def test_missing_api_keys_treats_blank_as_unset(tmp_path: Path) -> None:
+    """A whitespace-only key counts as missing (it would yield ``Token``)."""
+    config = AudioConfig(
+        deepgram_api_key="   ",
+        anthropic_api_key="an-key",
+        claude_model="claude-opus-4-7",
+        deepgram_model="nova-3",
+        huggingface_token=None,
+        data_dir=tmp_path,
+    )
+    assert config.missing_api_keys() == ["Deepgram"]
+
+
+def test_runner_fails_fast_when_api_keys_missing(slot: AllocatedSlot, tmp_path: Path) -> None:
+    """Empty API keys → recording marked failed with a clear message; pipeline never runs.
+
+    Regression test for the cryptic ``Illegal header value b'Token '``
+    Deepgram crash: with no key the SDK built an empty ``Token`` auth
+    header and failed deep in httpx after 3 retries. The runner must
+    instead bail before building any client and record an actionable
+    failure naming the unconfigured services.
+    """
+    from auto_a11y.audio.errors import ConfigurationError
+
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+
+    db = MagicMock()
+    db.get_recording_by_recording_id.return_value = rec
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = AudioConfig(
+        deepgram_api_key="",
+        anthropic_api_key="",
+        claude_model="claude-opus-4-7",
+        deepgram_model="nova-3",
+        huggingface_token=None,
+        data_dir=tmp_path,
+    )
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    with patch("auto_a11y.audio.runner._make_anthropic_client") as anthropic_mock, \
+         patch("auto_a11y.audio.runner._make_deepgram_client") as deepgram_mock, \
+         patch("auto_a11y.audio.runner.run_pipeline") as pipeline_mock:
+        with pytest.raises(ConfigurationError):
+            asyncio.run(runner.run(recording_id))
+
+    # We bail before building clients or entering the pipeline.
+    anthropic_mock.assert_not_called()
+    deepgram_mock.assert_not_called()
+    pipeline_mock.assert_not_called()
+    # The recording is recorded as failed with an actionable message.
+    assert rec.status == "failed"
+    assert rec.error_message is not None
+    assert "Deepgram" in rec.error_message
+    assert "Anthropic" in rec.error_message
+    assert rec.finished_at is not None
+
+
 def test_runner_cancellation_sets_status_cancelled(slot: AllocatedSlot, tmp_path: Path) -> None:
     """A cancel-flag set out-of-band unwinds to status='cancelled'.
 
@@ -140,6 +220,44 @@ def test_runner_cancellation_sets_status_cancelled(slot: AllocatedSlot, tmp_path
     assert rec.finished_at is not None
     # We bailed before stage G — importer must NOT have been called.
     import_mock.assert_not_called()
+
+
+def test_runner_late_cancel_during_complete_marks_cancelled(
+    slot: AllocatedSlot, tmp_path: Path
+) -> None:
+    """A cancel that lands after the last heartbeat isn't overwritten.
+
+    The pipeline completes (no heartbeat observed the cancel), but the
+    live recording shows status='cancelling' at the terminal write. The
+    runner re-checks and persists 'cancelled' rather than clobbering the
+    pending cancel with 'complete'.
+    """
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+    live_cancelling = _make_recording(recording_id)
+    live_cancelling.status = "cancelling"
+
+    db = MagicMock()
+    # Call 1: runner load (-> rec). Call 2: terminal live re-check (-> cancelling).
+    # Pipeline is mocked to do nothing, so there are no heartbeat fetches.
+    db.get_recording_by_recording_id.side_effect = [rec, live_cancelling]
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = _make_audio_config(tmp_path)
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    with patch("auto_a11y.audio.runner._make_anthropic_client", return_value=object()), \
+         patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
+         patch("auto_a11y.audio.runner.run_pipeline", return_value=None), \
+         patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
+        asyncio.run(runner.run(recording_id))
+
+    # Completed work, but the late cancel wins the terminal write.
+    assert rec.status == "cancelled"
+    assert rec.finished_at is not None
 
 
 def test_runner_failure_sets_status_failed_with_message(slot: AllocatedSlot, tmp_path: Path) -> None:
@@ -234,6 +352,9 @@ def test_runner_callouts_failure_marks_only_callouts_status_failed(
     assert rec.status == "complete"
     # Only the callouts video is marked failed.
     assert rec.callouts_status == "failed"
+    # The failure reason is surfaced (not swallowed) so the UI/log can show it.
+    assert rec.callouts_error is not None
+    assert "drawtext blew up" in rec.callouts_error
     # The Mongo ingestion still ran.
     import_mock.assert_called_once()
 
@@ -260,11 +381,47 @@ def test_runner_callouts_success_marks_callouts_status_complete(
          patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
          patch("auto_a11y.audio.runner.run_pipeline") as pipeline_mock, \
          patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
-        pipeline_mock.return_value = None
+        pipeline_mock.return_value = []
         asyncio.run(runner.run(recording_id))
 
     assert rec.status == "complete"
     assert rec.callouts_status == "complete"
+    # No error recorded on the success path.
+    assert rec.callouts_error is None
+    assert rec.analysis_errors == []
+
+
+def test_runner_records_partial_analysis_errors(
+    slot: AllocatedSlot, tmp_path: Path
+) -> None:
+    """Analysis failures returned by run_pipeline are recorded, not fatal.
+
+    A truncated/failed analysis kind no longer nukes the recording — the
+    job completes and ``rec.analysis_errors`` carries what was lost.
+    """
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+
+    db = MagicMock()
+    db.get_recording_by_recording_id.return_value = rec
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = _make_audio_config(tmp_path)
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    failures = ["issues (en/audit): Failed to parse JSON: truncated mid-object"]
+    with patch("auto_a11y.audio.runner._make_anthropic_client", return_value=object()), \
+         patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
+         patch("auto_a11y.audio.runner.run_pipeline", return_value=failures), \
+         patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
+        asyncio.run(runner.run(recording_id))
+
+    # The recording still completed despite the analysis failure.
+    assert rec.status == "complete"
+    assert rec.analysis_errors == failures
 
 
 def test_runner_callouts_not_requested_stays_not_requested(

@@ -133,8 +133,9 @@
             reenable(btn);
             return;
         }
+        const passwordHint = form.querySelector('#password_hint').value.trim();
         try {
-            await window.apiClient.patch('/auth/me', { password: newPassword });
+            await window.apiClient.patch('/auth/me', { password: newPassword, password_hint: passwordHint });
             window.apiClient.showSuccess({{ ftl('auth-password-changed-successfully') | tojson }});
             location.reload();
         } catch (err) {

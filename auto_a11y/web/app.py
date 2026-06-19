@@ -48,6 +48,7 @@ from auto_a11y.web.routes import (
 )
 from auto_a11y.web.routes.demo import demo_bp
 from auto_a11y.web.routes.recovery import recovery_bp
+from auto_a11y.web.fluent import SUPPORTED_LOCALES
 from auto_a11y.web.typed_app import redirect
 
 logger = logging.getLogger(__name__)
@@ -102,12 +103,26 @@ def _build_recovery_only_app(
 
     @app.before_request
     def force_recovery() -> Response | None:
-        """Send every URL except ``/recovery/...`` / ``/static/...`` to /recovery/."""
+        """Send every URL except ``/recovery``, ``/static`` and ``/health`` to /recovery/.
+
+        ``/health`` is answered directly with HTTP 503 rather than redirected:
+        a load balancer / uptime monitor must receive a clear unhealthy signal
+        (distinct from "healthy") instead of following a 302 into an HTML
+        recovery page. The recovery-only app does not register the normal
+        ``/health`` handler, so we serve the signal here.
+        """
         path = request.path
         if path.startswith("/recovery"):
             return None
         if path.startswith("/static"):
             return None
+        if path == "/health":
+            resp = jsonify({
+                'status': 'recovery',
+                'message': 'Settings Recovery mode: configuration must be fixed.',
+            })
+            resp.status_code = 503
+            return resp
         return redirect("/recovery/")
     _ = force_recovery  # registered by @app.before_request
 
@@ -177,14 +192,29 @@ def create_app(config: Any) -> Flask:
     if _user_settings.mongodb_uri:
         config.MONGODB_URI = _user_settings.mongodb_uri
 
-    # Settings Recovery (Phase 10): if preflight detects any missing or
-    # broken configuration, register only the recovery blueprint and a
-    # 302-everything interceptor so the user can fix things via the web
-    # UI without having to edit env vars by hand. The full app finishes
-    # initialising only once preflight passes.
+    # Settings Recovery (Phase 10): if preflight detects a *required* piece
+    # of configuration missing or broken (e.g. MongoDB unreachable), register
+    # only the recovery blueprint and a 302-everything interceptor so the user
+    # can fix things via the web UI without editing env vars by hand. The full
+    # app finishes initialising only once every required check passes.
+    #
+    # Optional checks (Deepgram / Anthropic API keys) gate opt-in features and
+    # must NOT block startup — otherwise a first-launch DMG, which ships with
+    # no keys, could never reach the main UI. We log their absence so it's
+    # discoverable in the logs and continue building the full app; the user
+    # can add the keys later via the settings UI.
     preflight_result = get_registry().run_all()
-    if not preflight_result.all_passed:
-        return _build_recovery_only_app(app, config, preflight_result.failures)
+    if preflight_result.blocking_failures:
+        return _build_recovery_only_app(
+            app, config, preflight_result.blocking_failures
+        )
+    for failure in preflight_result.optional_failures:
+        logger.warning(
+            "Optional preflight check %r not satisfied; the related feature is"
+            + " disabled until configured. %s",
+            failure.name,
+            failure.remediation,
+        )
 
     # Initialize database connection (needed before Flask-Login)
     db = Database(config.MONGODB_URI, config.DATABASE_NAME)
@@ -324,9 +354,22 @@ def create_app(config: Any) -> Flask:
     # Language switching route
     @app.route('/set-language/<language>')
     def set_language(language: str) -> Response:
-        """Set the user's preferred language"""
-        if language in ['en', 'fr']:
-            session['language'] = language
+        """Set the user's preferred language.
+
+        Reject unsupported languages with HTTP 400 so the caller can tell
+        the request was ignored instead of receiving a misleading 200
+        ``success`` for a language that was never applied.
+        """
+        if language not in SUPPORTED_LOCALES:
+            resp = jsonify({
+                'status': 'error',
+                'language': language,
+                'message': 'Unsupported language',
+                'supported': list(SUPPORTED_LOCALES),
+            })
+            resp.status_code = 400
+            return resp
+        session['language'] = language
         return jsonify({'status': 'success', 'language': language})
 
     # Register blueprints

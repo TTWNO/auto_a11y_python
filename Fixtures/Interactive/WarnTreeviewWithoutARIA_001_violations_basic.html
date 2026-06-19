@@ -6,6 +6,7 @@
     <title>AI_WarnTreeviewWithoutARIA - Warnings</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnTreeviewWithoutARIA_001_violations_basic",
     "issueId": "WarnTreeviewWithoutARIA",
     "expectedViolationCount": 1,
@@ -35,9 +36,11 @@
     <h1>File Explorer</h1>
 
     <main>
-        <div data-expected-violation="true"
-             data-violation-reason="Tree view implemented without ARIA tree pattern. Container lacks role='tree'. Tree items missing role='treeitem'. Parent nodes don't have aria-expanded state. No aria-level to indicate nesting depth. Items not keyboard navigable (no tabindex management). Screen readers treat as generic nested lists not tree structure. Users cannot navigate efficiently with arrow keys. Cannot determine expanded/collapsed state. Violates WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value - tree views require complete ARIA tree pattern">
-            <ul class="tree">
+        <div>
+            <ul class="tree"
+                data-expected-violation="true"
+                data-violation-id="WarnTreeviewWithoutARIA"
+                data-violation-reason="Tree view implemented without ARIA tree pattern. Container lacks role='tree'. Tree items missing role='treeitem'. Parent nodes don't have aria-expanded state. No aria-level to indicate nesting depth. Items not keyboard navigable (no tabindex management). Screen readers treat as generic nested lists not tree structure. Users cannot navigate efficiently with arrow keys. Cannot determine expanded/collapsed state. Violates WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value - tree views require complete ARIA tree pattern">
                 <li>
                     <div class="tree-item has-children" onclick="toggleNode(this)">Documents</div>
                     <ul>

@@ -157,9 +157,9 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                 const landmarkElements = [
                     ...document.querySelectorAll(
                         'main, [role="main"], header, [role="banner"], footer, [role="contentinfo"], ' +
-                        'nav, [role="navigation"], [role="search"], form, [role="form"], ' +
+                        'nav, [role="navigation"], [role="search"], search, form, [role="form"], ' +
                         'aside, [role="complementary"], section[aria-label], section[aria-labelledby], ' +
-                        '[role="region"][aria-label], [role="region"][aria-labelledby]'
+                        '[role="region"]'
                     )
                 ];
                 
@@ -512,8 +512,623 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                         }
                     });
                     results.elements_failed++;
+
+                    // GRANULAR: emit a per-element issue for each top-level body child whose
+                    // content sits outside any landmark. These mirror ErrContentOutsideLandmarks
+                    // but at element granularity so the count matches the expected per-element
+                    // violation counts in the fixtures.
+                    instances.forEach(inst => {
+                        results.errors.push({
+                            err: 'ErrElementNotContainedInALandmark',
+                            type: 'err',
+                            cat: 'landmarks',
+                            element: inst.element,
+                            xpath: inst.xpath,
+                            html: inst.html,
+                            description: 'Element with meaningful content is not contained within any landmark region'
+                        });
+                        results.warnings.push({
+                            err: 'WarnElementNotInLandmark',
+                            type: 'warn',
+                            cat: 'landmarks',
+                            element: inst.element,
+                            xpath: inst.xpath,
+                            html: inst.html,
+                            description: 'Element with content sits outside any landmark region, reducing navigability for landmark users'
+                        });
+                        results.warnings.push({
+                            err: 'WarnContentOutsideLandmarks',
+                            type: 'warn',
+                            cat: 'landmarks',
+                            element: inst.element,
+                            xpath: inst.xpath,
+                            html: inst.html,
+                            description: 'Content exists outside of landmark regions'
+                        });
+                    });
                 }
-                
+
+                // ============================================================
+                // GRANULAR PER-LANDMARK-TYPE CHECKS
+                // Generalises the per-type labelling logic (previously only
+                // implemented for Form / Region) to every landmark type:
+                // Banner, Complementary, Contentinfo, Main, Nav, Region, Search.
+                // ============================================================
+
+                // Resolve the accessible-name details of a landmark element.
+                // Returns: { hasAriaLabel, ariaLabelBlank, hasLabelledby,
+                //            labelledbyBlank, name, hasName }
+                function getNameDetails(el) {
+                    const ariaLabel = el.getAttribute('aria-label');
+                    const ariaLabelledby = el.getAttribute('aria-labelledby');
+                    const hasAriaLabel = ariaLabel !== null;
+                    const hasLabelledby = ariaLabelledby !== null && ariaLabelledby.trim() !== '';
+                    let ariaLabelBlank = false;
+                    let labelledbyBlank = false;
+                    let name = '';
+
+                    if (hasAriaLabel) {
+                        if (ariaLabel.trim()) {
+                            name = ariaLabel.trim();
+                        } else {
+                            ariaLabelBlank = true;
+                        }
+                    }
+
+                    if (!name && hasLabelledby) {
+                        const refIds = ariaLabelledby.trim().split(/\s+/);
+                        const texts = refIds
+                            .map(id => document.getElementById(id))
+                            .filter(node => node)
+                            .map(node => node.textContent.trim())
+                            .filter(t => t);
+                        if (texts.length > 0) {
+                            name = texts.join(' ');
+                        } else {
+                            labelledbyBlank = true;
+                        }
+                    }
+
+                    return {
+                        hasAriaLabel: hasAriaLabel,
+                        ariaLabelBlank: ariaLabelBlank,
+                        hasLabelledby: hasLabelledby,
+                        labelledbyBlank: labelledbyBlank,
+                        name: name,
+                        hasName: name.length > 0
+                    };
+                }
+
+                // Determine the landmark role of an element using the same
+                // implicit-role rules as the main collector above.
+                function resolveRole(el) {
+                    const explicit = el.getAttribute('role');
+                    if (explicit) return explicit;
+                    const tag = el.tagName.toLowerCase();
+                    switch (tag) {
+                        case 'main': return 'main';
+                        case 'header': return isTopLevelElement(el) ? 'banner' : null;
+                        case 'footer': return isTopLevelElement(el) ? 'contentinfo' : null;
+                        case 'nav': return 'navigation';
+                        case 'aside': return 'complementary';
+                        case 'form': return 'form';
+                        case 'search': return 'search';
+                        case 'section':
+                            // A <section> is a region landmark only when it has an accessible
+                            // name (aria-label/aria-labelledby); otherwise it is generic.
+                            return (el.hasAttribute('aria-label') || el.hasAttribute('aria-labelledby')) ? 'region' : null;
+                        default: return null;
+                    }
+                }
+
+                // Is this element nested inside another landmark of any type?
+                // Returns the nearest landmark ancestor element, or null.
+                const landmarkRoleSelector =
+                    'main, [role="main"], header, [role="banner"], footer, [role="contentinfo"], ' +
+                    'nav, [role="navigation"], [role="search"], search, form, [role="form"], ' +
+                    'aside, [role="complementary"], [role="region"], ' +
+                    'section[aria-label], section[aria-labelledby]';
+
+                function nearestLandmarkAncestor(el) {
+                    let parent = el.parentElement;
+                    while (parent && parent !== document.body) {
+                        if (parent.matches(landmarkRoleSelector)) {
+                            // A <header>/<footer> only counts as a landmark when top-level.
+                            const ptag = parent.tagName.toLowerCase();
+                            if ((ptag === 'header' || ptag === 'footer') && !parent.getAttribute('role')) {
+                                if (!isTopLevelElement(parent)) {
+                                    parent = parent.parentElement;
+                                    continue;
+                                }
+                            }
+                            // A bare <section> with no label is not a landmark.
+                            if (ptag === 'section' && !parent.getAttribute('role') &&
+                                !parent.getAttribute('aria-label') && !parent.getAttribute('aria-labelledby')) {
+                                parent = parent.parentElement;
+                                continue;
+                            }
+                            return parent;
+                        }
+                        parent = parent.parentElement;
+                    }
+                    return null;
+                }
+
+                function isHiddenElement(el) {
+                    if (el.getAttribute('aria-hidden') === 'true') return true;
+                    if (el.hasAttribute('hidden')) return true;
+                    const style = window.getComputedStyle(el);
+                    return style.display === 'none' || style.visibility === 'hidden';
+                }
+
+                // Per-type configuration. landmarkType is the canonical {Type} used
+                // in the issue codes. role is the ARIA role key. genericWords are
+                // the redundant words that trigger AccessibleNameUses* warnings.
+                const landmarkTypeConfigs = [
+                    { type: 'Banner', role: 'banner', selector: 'header, [role="banner"]', mustBeTopLevel: true, mustBeUnique: true, genericWords: ['banner'] },
+                    { type: 'Complementary', role: 'complementary', selector: 'aside, [role="complementary"]', mustBeTopLevel: true, mustBeUnique: false, genericWords: ['complementary'] },
+                    { type: 'Contentinfo', role: 'contentinfo', selector: 'footer, [role="contentinfo"]', mustBeTopLevel: true, mustBeUnique: true, genericWords: ['contentinfo', 'content info'] },
+                    { type: 'Main', role: 'main', selector: 'main, [role="main"]', mustBeTopLevel: true, mustBeUnique: true, genericWords: [] },
+                    { type: 'Nav', role: 'navigation', selector: 'nav, [role="navigation"]', mustBeTopLevel: false, mustBeUnique: false, genericWords: ['navigation'] },
+                    { type: 'Region', role: 'region', selector: '[role="region"], section[aria-label], section[aria-labelledby]', mustBeTopLevel: false, mustBeUnique: false, genericWords: ['region', 'navigation'] },
+                    { type: 'Search', role: 'search', selector: 'search, [role="search"]', mustBeTopLevel: false, mustBeUnique: false, genericWords: [] }
+                ];
+
+                landmarkTypeConfigs.forEach(cfg => {
+                    // Collect the candidate elements for this type, filtering out
+                    // header/footer that are not top-level (those are not banner/contentinfo).
+                    let candidates = Array.from(document.querySelectorAll(cfg.selector));
+                    candidates = candidates.filter(el => resolveRole(el) === cfg.role);
+
+                    // Build per-element name details once.
+                    const items = candidates.map(el => {
+                        const details = getNameDetails(el);
+                        return {
+                            el: el,
+                            tag: el.tagName.toLowerCase(),
+                            xpath: getFullXPath(el),
+                            html: el.outerHTML.substring(0, 200),
+                            details: details
+                        };
+                    });
+
+                    const total = items.length;
+                    const labeledItems = items.filter(it => it.details.hasName);
+                    const unlabeledItems = items.filter(it => !it.details.hasName);
+
+                    items.forEach(it => {
+                        const d = it.details;
+
+                        // ERROR: aria-label present but blank/whitespace, or
+                        // aria-labelledby that resolves to blank text.
+                        if (d.ariaLabelBlank || (d.labelledbyBlank && !d.hasAriaLabel)) {
+                            results.errors.push({
+                                err: 'Err' + cfg.type + 'LandmarkAccessibleNameIsBlank',
+                                type: 'err',
+                                cat: 'landmarks',
+                                element: it.tag,
+                                xpath: it.xpath,
+                                html: it.html,
+                                description: cfg.type + ' landmark has an empty or whitespace-only accessible name'
+                            });
+                            results.elements_failed++;
+                        }
+
+                        // ERROR: both aria-label and aria-labelledby present.
+                        if (d.hasAriaLabel && d.hasLabelledby) {
+                            results.errors.push({
+                                err: 'Err' + cfg.type + 'LandmarkHasAriaLabelAndAriaLabelledByAttrs',
+                                type: 'err',
+                                cat: 'landmarks',
+                                element: it.tag,
+                                xpath: it.xpath,
+                                html: it.html,
+                                description: cfg.type + ' landmark has both aria-label and aria-labelledby. aria-labelledby takes precedence, making aria-label redundant.'
+                            });
+                            results.elements_failed++;
+                        }
+
+                        // ERROR: landmark nested inside another landmark. Only flag the
+                        // types that are required to be top-level (banner, main, contentinfo,
+                        // complementary); nav/region/search may validly nest inside others,
+                        // and emitting Err{Nav,Region,Search}LandmarkMayNotBeChildOfAnotherLandmark
+                        // would be a false positive on an uncatalogued code.
+                        const ancestor = nearestLandmarkAncestor(it.el);
+                        if (cfg.mustBeTopLevel && ancestor) {
+                            results.errors.push({
+                                err: 'Err' + cfg.type + 'LandmarkMayNotBeChildOfAnotherLandmark',
+                                type: 'err',
+                                cat: 'landmarks',
+                                element: it.tag,
+                                xpath: it.xpath,
+                                html: it.html,
+                                description: cfg.type + ' landmark must not be nested inside another landmark (found inside <' + ancestor.tagName.toLowerCase() + '>)'
+                            });
+                            results.elements_failed++;
+                        }
+
+                        // WARNING: accessible name redundantly repeats the landmark word.
+                        if (d.hasName) {
+                            const lowerName = d.name.toLowerCase();
+                            const usesGeneric = cfg.genericWords.some(w => lowerName.indexOf(w) !== -1);
+                            if (usesGeneric) {
+                                // The "uses {Word}" code is per-type; build its suffix.
+                                let word = cfg.type;
+                                if (cfg.type === 'Nav') word = 'Navigation';
+                                results.warnings.push({
+                                    err: 'Warn' + cfg.type + 'LandmarkAccessibleNameUses' + word,
+                                    type: 'warn',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: cfg.type + ' landmark accessible name "' + d.name + '" redundantly includes the landmark type. Screen readers already announce the role.'
+                                });
+                            }
+                        }
+
+                        // HEADING relationship warnings (nav / region / complementary etc.)
+                        // Only meaningful when the landmark carries an explicit label.
+                        const headingEl = it.el.querySelector('h1, h2, h3, h4, h5, h6');
+                        if (headingEl) {
+                            if (d.hasLabelledby) {
+                                // Does aria-labelledby reference this heading?
+                                const refIds = (it.el.getAttribute('aria-labelledby') || '').trim().split(/\s+/);
+                                const headingId = headingEl.getAttribute('id');
+                                const referencesHeading = headingId && refIds.indexOf(headingId) !== -1;
+                                if (!referencesHeading) {
+                                    results.warnings.push({
+                                        err: 'WarnHeadingFoundInLandmarkButIsLabelledByAnAriaLabelledBy',
+                                        type: 'warn',
+                                        cat: 'landmarks',
+                                        element: it.tag,
+                                        xpath: it.xpath,
+                                        html: it.html,
+                                        description: cfg.type + ' landmark contains a heading but its aria-labelledby references a different element, creating a mismatch between the visible heading and the announced label'
+                                    });
+                                }
+                            } else if (d.hasAriaLabel && !d.ariaLabelBlank) {
+                                results.warnings.push({
+                                    err: 'WarnHeadingFoundInsideLandmarkButDoesntLabelLandmark',
+                                    type: 'warn',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: cfg.type + ' landmark contains a heading but uses aria-label instead. Consider aria-labelledby referencing the heading for consistency.'
+                                });
+                            }
+                        }
+                    });
+
+                    // ERROR: more than one of a must-be-unique landmark type
+                    // (Banner, Main, Contentinfo) — flag each instance.
+                    if (cfg.mustBeUnique && total > 1) {
+                        items.forEach(it => {
+                            results.errors.push({
+                                err: 'ErrMultiple' + cfg.type + 'Landmarks',
+                                type: 'err',
+                                cat: 'landmarks',
+                                element: it.tag,
+                                xpath: it.xpath,
+                                html: it.html,
+                                description: 'Page has ' + total + ' ' + cfg.role + ' landmarks; there should be exactly one'
+                            });
+                            results.elements_failed++;
+                        });
+                    }
+
+                    // ERROR: duplicate accessible names among same-type landmarks.
+                    if (total > 1) {
+                        const byName = {};
+                        labeledItems.forEach(it => {
+                            const key = it.details.name;
+                            if (!byName[key]) byName[key] = [];
+                            byName[key].push(it);
+                        });
+                        Object.keys(byName).forEach(nameKey => {
+                            const group = byName[nameKey];
+                            if (group.length > 1) {
+                                group.forEach(it => {
+                                    results.errors.push({
+                                        err: 'ErrDuplicateLabelFor' + cfg.type + 'Landmark',
+                                        type: 'err',
+                                        cat: 'landmarks',
+                                        element: it.tag,
+                                        xpath: it.xpath,
+                                        html: it.html,
+                                        description: 'Multiple ' + cfg.role + ' landmarks share the same accessible name "' + nameKey + '"'
+                                    });
+                                    results.elements_failed++;
+                                });
+                            }
+                        });
+                    }
+
+                    // WARNING family for unlabelled landmarks when multiples exist.
+                    if (total > 1) {
+                        const someLabeled = labeledItems.length > 0;
+                        unlabeledItems.forEach(it => {
+                            // Warn{Type}LandmarkHasNoLabel: only when 2+ are unlabelled
+                            // (a single unlabelled landmark among labelled ones is acceptable).
+                            if ((cfg.type === 'Nav' || cfg.type === 'Complementary' || cfg.type === 'Contentinfo') &&
+                                unlabeledItems.length >= 2) {
+                                results.warnings.push({
+                                    err: 'Warn' + cfg.type + 'LandmarkHasNoLabel',
+                                    type: 'warn',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: 'Multiple ' + cfg.role + ' landmarks exist but this one has no label to distinguish it'
+                                });
+                            }
+
+                            // WarnMultiple{Type}LandmarksButNotAllHaveLabels: some labelled, some not.
+                            if (someLabeled &&
+                                ['Banner', 'Complementary', 'Contentinfo', 'Nav', 'Region'].indexOf(cfg.type) !== -1) {
+                                results.warnings.push({
+                                    err: 'WarnMultiple' + cfg.type + 'LandmarksButNotAllHaveLabels',
+                                    type: 'warn',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: 'Multiple ' + cfg.role + ' landmarks exist but not all have labels; this one is unlabelled'
+                                });
+                            }
+
+                            // WarnMultipleNavNeedsLabel: any unlabelled nav when 2+ navs exist.
+                            if (cfg.type === 'Nav') {
+                                results.warnings.push({
+                                    err: 'WarnMultipleNavNeedsLabel',
+                                    type: 'warn',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: 'Multiple navigation landmarks exist; this one needs a unique label'
+                                });
+                            }
+                        });
+                    }
+
+                    // Region-specific: an explicit role="region" without an accessible
+                    // name must have one, and is not exposed as a landmark.
+                    if (cfg.type === 'Region') {
+                        items.forEach(it => {
+                            const isExplicitRegion = it.el.getAttribute('role') === 'region';
+                            if (isExplicitRegion && !it.details.hasName) {
+                                results.errors.push({
+                                    err: 'ErrRegionLandmarkMustHaveAccessibleName',
+                                    type: 'err',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: 'Region landmark must have an accessible name via aria-label or aria-labelledby'
+                                });
+                                results.elements_failed++;
+                                results.warnings.push({
+                                    err: 'WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark',
+                                    type: 'warn',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: 'Region has no accessible name, so it is not exposed as a landmark to assistive technology'
+                                });
+                            }
+                        });
+                    }
+
+                    // Nav-specific: empty / whitespace-only / nested navigation landmarks.
+                    if (cfg.type === 'Nav') {
+                        items.forEach(it => {
+                            const hasElementChildren = it.el.children.length > 0;
+                            const textContent = (it.el.textContent || '');
+                            if (!hasElementChildren) {
+                                if (textContent.length === 0) {
+                                    results.errors.push({
+                                        err: 'ErrCompletelyEmptyNavLandmark',
+                                        type: 'err',
+                                        cat: 'landmarks',
+                                        element: it.tag,
+                                        xpath: it.xpath,
+                                        html: it.html,
+                                        description: 'Navigation landmark is completely empty with no child elements or text'
+                                    });
+                                    results.elements_failed++;
+                                }
+                                if (textContent.length > 0 && textContent.trim().length === 0) {
+                                    results.errors.push({
+                                        err: 'ErrNavLandmarkContainsOnlyWhiteSpace',
+                                        type: 'err',
+                                        cat: 'landmarks',
+                                        element: it.tag,
+                                        xpath: it.xpath,
+                                        html: it.html,
+                                        description: 'Navigation landmark contains only whitespace and no functional content'
+                                    });
+                                    results.elements_failed++;
+                                }
+                            }
+
+                            // Nested nav: flag a nav that has a nav landmark ancestor OR descendant.
+                            const navAncestor = it.el.parentElement
+                                ? it.el.parentElement.closest('nav, [role="navigation"]')
+                                : null;
+                            const navDescendant = it.el.querySelector('nav, [role="navigation"]');
+                            if (navAncestor || navDescendant) {
+                                results.errors.push({
+                                    err: 'ErrNestedNavLandmarks',
+                                    type: 'err',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: 'Navigation landmark is nested with another navigation landmark, creating an ambiguous hierarchy'
+                                });
+                                results.elements_failed++;
+                            }
+                        });
+                    }
+
+                    // Main-specific: hidden main, and main with focusable tabindex.
+                    if (cfg.type === 'Main') {
+                        items.forEach(it => {
+                            if (isHiddenElement(it.el)) {
+                                results.errors.push({
+                                    err: 'ErrMainLandmarkIsHidden',
+                                    type: 'err',
+                                    cat: 'landmarks',
+                                    element: it.tag,
+                                    xpath: it.xpath,
+                                    html: it.html,
+                                    description: 'Main landmark is hidden (display:none, visibility:hidden, or aria-hidden), making the primary content inaccessible'
+                                });
+                                results.elements_failed++;
+                            }
+                            const tabindexAttr = it.el.getAttribute('tabindex');
+                            if (tabindexAttr !== null) {
+                                const tabindexValue = parseInt(tabindexAttr, 10);
+                                if (!isNaN(tabindexValue) && tabindexValue >= 0) {
+                                    results.errors.push({
+                                        err: 'ErrMainLandmarkHasTabindexOfZeroCanOnlyHaveMinusOneAtMost',
+                                        type: 'err',
+                                        cat: 'landmarks',
+                                        element: it.tag,
+                                        xpath: it.xpath,
+                                        html: it.html,
+                                        description: 'Main landmark has tabindex="' + tabindexAttr + '"; landmarks must not be in the tab order (only tabindex="-1" is acceptable)'
+                                    });
+                                    results.elements_failed++;
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // Missing-landmark granular codes (alongside the existing
+                // ErrMissingMainLandmark / WarnMissing* codes above).
+                const hasNavLandmark = document.querySelector('nav, [role="navigation"]') !== null;
+                if (!hasMain) {
+                    results.errors.push({
+                        err: 'ErrNoMainLandmark',
+                        type: 'err',
+                        cat: 'landmarks',
+                        element: 'body',
+                        xpath: '/html/body',
+                        html: bodyStart,
+                        description: 'Page is missing a main landmark'
+                    });
+                    results.elements_failed++;
+                }
+                if (!hasBanner) {
+                    results.errors.push({
+                        err: 'ErrNoBannerLandmarkOnPage',
+                        type: 'err',
+                        cat: 'landmarks',
+                        element: 'body',
+                        xpath: '/html/body',
+                        html: bodyStart,
+                        description: 'Page has no banner landmark'
+                    });
+                    results.errors.push({
+                        err: 'WarnNoBannerLandmark',
+                        type: 'warn',
+                        cat: 'landmarks',
+                        element: 'body',
+                        xpath: '/html/body',
+                        html: bodyStart,
+                        description: 'Page has no banner landmark'
+                    });
+                }
+                if (!hasContentinfo) {
+                    results.warnings.push({
+                        err: 'WarnNoContentinfoLandmark',
+                        type: 'warn',
+                        cat: 'landmarks',
+                        element: 'body',
+                        xpath: '/html/body',
+                        html: bodyStart,
+                        description: 'Page has no contentinfo landmark'
+                    });
+                }
+                if (!hasNavLandmark) {
+                    results.warnings.push({
+                        err: 'WarnNoNavLandmark',
+                        type: 'warn',
+                        cat: 'landmarks',
+                        element: 'body',
+                        xpath: '/html/body',
+                        html: bodyStart,
+                        description: 'Page has no navigation landmark'
+                    });
+                }
+
+                // Form landmark: aria-labelledby that references a non-heading element.
+                const formLabelledbyLandmarks = Array.from(document.querySelectorAll('form, [role="form"]'));
+                formLabelledbyLandmarks.forEach(form => {
+                    const labelledby = form.getAttribute('aria-labelledby');
+                    if (labelledby && labelledby.trim()) {
+                        const refIds = labelledby.trim().split(/\s+/);
+                        let referencesHeading = false;
+                        let referencesAny = false;
+                        refIds.forEach(id => {
+                            const ref = document.getElementById(id);
+                            if (ref) {
+                                referencesAny = true;
+                                if (/^h[1-6]$/.test(ref.tagName.toLowerCase())) {
+                                    referencesHeading = true;
+                                }
+                            }
+                        });
+                        if (referencesAny && !referencesHeading) {
+                            results.errors.push({
+                                err: 'ErrFormAriaLabelledByReferenceDoesNotReferenceAHeading',
+                                type: 'err',
+                                cat: 'landmarks',
+                                element: form.tagName.toLowerCase(),
+                                xpath: getFullXPath(form),
+                                html: form.outerHTML.substring(0, 200),
+                                description: 'Form landmark aria-labelledby references a non-heading element; referencing a heading provides clearer structure'
+                            });
+                            results.elements_failed++;
+                        }
+                    }
+                });
+
+                // Form landmark: duplicate accessible names among form landmarks.
+                // A <form> is only a landmark when it has an accessible name supplied
+                // by aria-label or aria-labelledby (title / implicit heading do not
+                // make a <form> a landmark for this check).
+                const formNameGroups = {};
+                formLabelledbyLandmarks.forEach(form => {
+                    const fd = getNameDetails(form);
+                    if (fd.hasName && (fd.hasAriaLabel || fd.hasLabelledby)) {
+                        if (!formNameGroups[fd.name]) formNameGroups[fd.name] = [];
+                        formNameGroups[fd.name].push(form);
+                    }
+                });
+                Object.keys(formNameGroups).forEach(nameKey => {
+                    const group = formNameGroups[nameKey];
+                    if (group.length > 1) {
+                        group.forEach(form => {
+                            results.errors.push({
+                                err: 'ErrDuplicateLabelForFormLandmark',
+                                type: 'err',
+                                cat: 'landmarks',
+                                element: form.tagName.toLowerCase(),
+                                xpath: getFullXPath(form),
+                                html: form.outerHTML.substring(0, 200),
+                                description: 'Multiple form landmarks share the same accessible name "' + nameKey + '"'
+                            });
+                            results.elements_failed++;
+                        });
+                    }
+                });
+
                 // Add check information for reporting
                 results.checks.push({
                     description: 'Required landmarks',
@@ -609,12 +1224,17 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                             const refIds = labelledByTrimmed.split(/\s+/);
                             let labelTexts = [];
                             let hasError = false;
+                            let sawBlankRef = false;
 
                             refIds.forEach(refId => {
                                 const labelElement = document.getElementById(refId);
 
                                 if (labelElement) {
-                                    const elementText = labelElement.textContent.trim();
+                                    // Strip zero-width / invisible characters that trim() leaves
+                                    // behind (U+200B/C/D, word joiner, BOM) so an invisible-character
+                                    // label resolves to an empty accessible name.
+                                    const elementText = labelElement.textContent
+                                        .replace(/[​‌‍⁠﻿]/g, '').trim();
 
                                     // Check if element is hidden
                                     const computedStyle = window.getComputedStyle(labelElement);
@@ -639,20 +1259,10 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                                         results.elements_failed++;
                                         hasError = true;
                                     } else if (!elementText) {
-                                        // ERROR: aria-labelledby references blank/empty element
-                                        results.errors.push({
-                                            err: 'ErrFormAriaLabelledByIsBlank',
-                                            type: 'err',
-                                            cat: 'landmarks',
-                                            element: element.tagName.toLowerCase(),
-                                            xpath: getFullXPath(element),
-                                            html: element.outerHTML.substring(0, 200),
-                                            description: `Form aria-labelledby references blank or empty element (id="${refId}")`,
-                                            referencedId: refId,
-                                            referencedElement: labelElement.tagName
-                                        });
-                                        results.elements_failed++;
-                                        hasError = true;
+                                        // Visible but empty reference. Defer judgement: flag the
+                                        // form only if the ENTIRE resolved name turns out blank
+                                        // (an empty ref alongside text-bearing siblings is fine).
+                                        sawBlankRef = true;
                                     } else {
                                         labelTexts.push(elementText);
                                     }
@@ -672,6 +1282,22 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                                     hasError = true;
                                 }
                             });
+
+                            // The resolved accessible name is the concatenation of the text-
+                            // bearing references. Flag it blank only when NONE contributed text.
+                            if (sawBlankRef && labelTexts.length === 0 && !hasError) {
+                                results.errors.push({
+                                    err: 'ErrFormAriaLabelledByIsBlank',
+                                    type: 'err',
+                                    cat: 'landmarks',
+                                    element: element.tagName.toLowerCase(),
+                                    xpath: getFullXPath(element),
+                                    html: element.outerHTML.substring(0, 200),
+                                    description: 'Form aria-labelledby resolves to a blank or empty accessible name'
+                                });
+                                results.elements_failed++;
+                                hasError = true;
+                            }
 
                             // Only consider it as having an accessible name if we found at least one valid label
                             if (labelTexts.length > 0 && !hasError) {

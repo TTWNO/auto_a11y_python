@@ -6,6 +6,7 @@
     <title>WarnTreeviewWithoutARIA - Complex Trees</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "WarnTreeviewWithoutARIA_003_complex_trees",
     "issueId": "WarnTreeviewWithoutARIA",
     "expectedViolationCount": 2,
@@ -32,6 +33,7 @@
         <!-- Multi-level tree without ARIA -->
         <ul class="tree"
             data-expected-violation="true"
+            data-violation-id="WarnTreeviewWithoutARIA"
             data-violation-reason="Complex multi-level tree without role='tree' on container, role='treeitem' on items, or aria-expanded on parent nodes. Screen readers miss tree semantics and navigation">
             <li>
                 <div class="tree-item" onclick="toggle(this)">src</div>
@@ -64,9 +66,11 @@
         <hr>
 
         <!-- Tree with checkboxes without ARIA -->
-        <div data-expected-violation="true"
-             data-violation-reason="Tree with selectable items (checkboxes) missing tree ARIA roles and aria-checked states. Complex widget combining tree navigation with selection needs complete ARIA implementation">
-            <ul class="tree">
+        <div>
+            <ul class="tree"
+                data-expected-violation="true"
+                data-violation-id="WarnTreeviewWithoutARIA"
+                data-violation-reason="Tree with selectable items (checkboxes) missing tree ARIA roles and aria-checked states. Complex widget combining tree navigation with selection needs complete ARIA implementation">
                 <li>
                     <input type="checkbox" id="cb1">
                     <label for="cb1" class="tree-item" onclick="toggle(this.nextElementSibling)">Documents</label>

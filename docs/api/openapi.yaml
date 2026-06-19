@@ -218,6 +218,12 @@ components:
           - type: 'null'
           default: null
           title: Password
+        password_hint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password Hint
         role:
           anyOf:
           - type: string
@@ -365,6 +371,12 @@ components:
           - type: 'null'
           default: null
           title: Password
+        password_hint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password Hint
         role:
           anyOf:
           - type: string
@@ -405,6 +417,12 @@ components:
           - type: 'null'
           default: null
           title: Password
+        password_hint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password Hint
       title: AuthMePatch
       type: object
     AvailableGroupOut:
@@ -3372,6 +3390,12 @@ components:
           - type: 'null'
           default: null
           title: Logout Url
+        manual_login_wait_seconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Manual Login Wait Seconds
         password_field_selector:
           anyOf:
           - type: string
@@ -3409,11 +3433,11 @@ components:
       description: 'Login-config object on a test-user response.
 
 
-        Mirrors :func:`_serialize_login_config_via_model` byte-for-byte.
+        Mirrors :func:`_serialize_login_config_via_model`.
 
-        11 fields. ``manual_login_wait_seconds`` is intentionally absent
+        ``manual_login_wait_seconds`` IS surfaced so the edit form can
 
-        — the legacy serialiser doesn''t expose it.
+        pre-fill the operator''s saved per-attempt wait for ``manual_login``.
 
 
         ``authentication_method`` is typed ``str`` (not a closed
@@ -3461,6 +3485,9 @@ components:
           - type: 'null'
           default: null
           title: Logout Url
+        manual_login_wait_seconds:
+          title: Manual Login Wait Seconds
+          type: integer
         password_field_selector:
           anyOf:
           - type: string
@@ -3492,6 +3519,7 @@ components:
       - authentication_method
       - additional_steps
       - session_timeout_minutes
+      - manual_login_wait_seconds
       title: LoginConfigOut
       type: object
     LoginIn:
@@ -5253,6 +5281,13 @@ components:
 
         tightening that the v1 surface deliberately commits to.'
       properties:
+        app_identifier:
+          anyOf:
+          - maxLength: 255
+            type: string
+          - type: 'null'
+          default: null
+          title: App Identifier
         config:
           anyOf:
           - additionalProperties: true
@@ -5267,11 +5302,38 @@ components:
           - type: 'null'
           default: ''
           title: Description
+        device_model:
+          anyOf:
+          - maxLength: 255
+            type: string
+          - type: 'null'
+          default: null
+          title: Device Model
+        drupal_audit_name:
+          anyOf:
+          - maxLength: 255
+            type: string
+          - type: 'null'
+          default: null
+          title: Drupal Audit Name
+        location:
+          anyOf:
+          - maxLength: 255
+            type: string
+          - type: 'null'
+          default: null
+          title: Location
         name:
           maxLength: 200
           minLength: 1
           title: Name
           type: string
+        project_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Project Type
       required:
       - name
       title: ProjectIn
@@ -5327,6 +5389,13 @@ components:
           - type: 'null'
           default: null
           title: Description
+        drupal_audit_name:
+          anyOf:
+          - maxLength: 255
+            type: string
+          - type: 'null'
+          default: null
+          title: Drupal Audit Name
         name:
           anyOf:
           - maxLength: 200

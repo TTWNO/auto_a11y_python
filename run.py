@@ -15,6 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from config import config
+from auto_a11y.build_info import get_build_commit
 from auto_a11y.web.app import create_app
 from auto_a11y.core.database import Database
 from auto_a11y.core.logging_config import setup_logging as configure_logging
@@ -190,8 +191,9 @@ def main() -> None:
     
     logger.info("="*60)
     logger.info("Auto A11y Python - Accessibility Testing Tool")
+    logger.info("Build commit: %s", get_build_commit())
     logger.info("="*60)
-    
+
     # Initialize directories
     init_directories()
 

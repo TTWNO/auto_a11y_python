@@ -182,6 +182,15 @@ class Recording:
     speaker_remap_enabled: bool = True
     callouts_requested: bool = False
     callouts_status: CalloutsStatus = "not-requested"
+    # When callouts/branding rendering fails (Stage F), the audit still
+    # completes but this carries the reason (ffmpeg stderr / CalloutsError
+    # message) so the UI can show it instead of a bare "failed" badge.
+    callouts_error: str | None = None
+    # Per-analysis failures (one entry per failed context×language×kind,
+    # e.g. a truncated Claude JSON). The recording still completes with the
+    # analyses that succeeded; these record what was lost so the UI/log can
+    # show it instead of failing the whole recording.
+    analysis_errors: list[str] = field(default_factory=lambda: [])
     status: RecordingStatus = "uploaded"
     progress: dict[str, object] | None = None
     estimated_cost_usd: float | None = None
@@ -293,6 +302,8 @@ class Recording:
             'speaker_remap_enabled': self.speaker_remap_enabled,
             'callouts_requested': self.callouts_requested,
             'callouts_status': self.callouts_status,
+            'callouts_error': self.callouts_error,
+            'analysis_errors': list(self.analysis_errors),
             'status': self.status,
             'progress': self.progress,
             'estimated_cost_usd': self.estimated_cost_usd,
@@ -315,7 +326,13 @@ class Recording:
 
         # Parse recording_type enum (with backward compatibility for old audit_type field)
         recording_type_value = data.get('recording_type') or data.get('audit_type', 'audit')
-        recording_type = RecordingType(recording_type_value) if recording_type_value else RecordingType.AUDIT
+        if recording_type_value:
+            try:
+                recording_type = RecordingType(recording_type_value)
+            except ValueError:
+                recording_type = RecordingType.AUDIT
+        else:
+            recording_type = RecordingType.AUDIT
 
         # Narrow audio-pipeline Literal-typed fields from their Mongo-
         # stored ``str`` form. Missing fields fall back to dataclass
@@ -362,6 +379,12 @@ class Recording:
             else None
         )
 
+        # Guard Drupal sync status against legacy/unknown values
+        try:
+            drupal_sync_status = DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced'))
+        except ValueError:
+            drupal_sync_status = DrupalSyncStatus.NOT_SYNCED
+
         return cls(
             recording_id=data['recording_id'],
             title=data['title'],
@@ -395,7 +418,7 @@ class Recording:
             notes=data.get('notes'),
             drupal_video_uuid=data.get('drupal_video_uuid'),
             drupal_video_nid=data.get('drupal_video_nid'),
-            drupal_sync_status=DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced')),
+            drupal_sync_status=drupal_sync_status,
             drupal_last_synced=data.get('drupal_last_synced'),
             drupal_error_message=data.get('drupal_error_message'),
             # === Audio pipeline state ===
@@ -406,6 +429,15 @@ class Recording:
             speaker_remap_enabled=bool(data.get('speaker_remap_enabled', True)),
             callouts_requested=bool(data.get('callouts_requested', False)),
             callouts_status=_narrow_callouts_status(callouts_status_raw),
+            callouts_error=(
+                data.get('callouts_error')
+                if isinstance(data.get('callouts_error'), str)
+                else None
+            ),
+            analysis_errors=[
+                item for item in data.get('analysis_errors', [])
+                if isinstance(item, str)
+            ] if isinstance(data.get('analysis_errors'), list) else [],
             status=_narrow_recording_status(status_raw),
             progress=progress_val,
             estimated_cost_usd=data.get('estimated_cost_usd'),

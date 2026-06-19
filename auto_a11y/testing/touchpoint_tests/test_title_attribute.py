@@ -151,7 +151,14 @@ async def test_title_attribute(page: Page) -> dict[str, Any]:
             results['not_applicable_reason'] = 'No elements with title attributes and no iframes found on the page'
             return results
 
-        results['elements_tested'] = len(title_data['elementsWithTitle']) + len(title_data['allIframes'])
+        # A titled iframe matches both the iframe selector and the [title]
+        # selector, so it appears in BOTH collections. Count it once: include
+        # only iframes that are not already represented in elementsWithTitle
+        # (i.e. iframes without a title attribute).
+        untitled_iframe_count = sum(
+            1 for iframe in title_data['allIframes'] if not iframe['hasTitle']
+        )
+        results['elements_tested'] = len(title_data['elementsWithTitle']) + untitled_iframe_count
 
         # Test 1: Check iframes for missing title attributes (ErrIframeWithNoTitleAttr)
         # Skip map iframes - they are reported by ErrMapMissingTitle instead

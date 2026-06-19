@@ -8,9 +8,11 @@
 {
     "id": "WarnMissingRequiredIndication",
     "issueId": "WarnMissingRequiredIndication",
-    "expectedViolationCount": 1,
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 1,
     "expectedPassCount": 1,
-    "description": "Basic example: required field without visual indicator vs with indicator",
+    "enforceElementExpectations": true,
+    "description": "Basic example: required field without visual indicator (warning) vs with asterisk indicator (pass)",
     "wcag": "3.3.2",
     "impact": "Medium"
 }
@@ -20,19 +22,21 @@
     <h1>Contact Form</h1>
 
     <form>
-        <!-- Violation: Has required attribute but no visual indicator in label -->
-        <div data-expected-violation="true"
-             data-violation-id="WarnMissingRequiredIndication"
-             data-violation-reason="Field has required attribute but label has no asterisk or 'required' text">
+        <!-- Warning: Has required attribute but no visual indicator in label -->
+        <div>
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
+            <input type="email" id="email" name="email" required
+                   data-expected-warning="true"
+                   data-warning-id="WarnMissingRequiredIndication"
+                   data-warning-reason="Field has required attribute but label has no asterisk or 'required' text">
         </div>
 
         <!-- Correct: Has required attribute AND asterisk in label -->
-        <div data-expected-pass="true"
-             data-pass-reason="Field has required attribute and label contains asterisk">
+        <div>
             <label for="name">Name *</label>
-            <input type="text" id="name" name="name" required>
+            <input type="text" id="name" name="name" required
+                   data-expected-pass="true"
+                   data-pass-reason="Field has required attribute and label contains asterisk">
         </div>
 
         <button type="submit">Submit</button>

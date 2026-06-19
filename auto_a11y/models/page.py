@@ -140,6 +140,16 @@ class Page:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Page:
         """Create from MongoDB document"""
+        # Guard enums against legacy/unknown values
+        try:
+            status = PageStatus(data.get('status', 'discovered'))
+        except ValueError:
+            status = PageStatus.DISCOVERED
+        try:
+            drupal_sync_status = DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced'))
+        except ValueError:
+            drupal_sync_status = DrupalSyncStatus.NOT_SYNCED
+
         return cls(
             website_id=data['website_id'],
             url=data['url'],
@@ -148,7 +158,7 @@ class Page:
             discovered_from=data.get('discovered_from'),
             discovery_run_id=data.get('discovery_run_id'),
             last_tested=data.get('last_tested'),
-            status=PageStatus(data.get('status', 'discovered')),
+            status=status,
             violation_count=data.get('violation_count', 0),
             warning_count=data.get('warning_count', 0),
             info_count=data.get('info_count', 0),
@@ -168,7 +178,7 @@ class Page:
             discovery_notes_private=data.get('discovery_notes_private'),
             discovery_notes_public=data.get('discovery_notes_public'),
             drupal_discovered_page_uuid=data.get('drupal_discovered_page_uuid'),
-            drupal_sync_status=DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced')),
+            drupal_sync_status=drupal_sync_status,
             drupal_last_synced=data.get('drupal_last_synced'),
             drupal_error_message=data.get('drupal_error_message'),
             linked_pdf_document_id=data.get('linked_pdf_document_id'),

@@ -51,6 +51,17 @@ class ProjectIn(StrictModel):
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = Field(default="", max_length=2000)
     config: Optional[dict[str, object]] = None
+    # Optional Drupal "audit_video" node name this project syncs into. The
+    # create form (``projects/create.html``) offers it; without modeling it
+    # here ``StrictModel`` rejects the field and the selection is lost on save.
+    drupal_audit_name: Optional[str] = Field(default=None, max_length=255)
+    # Project type + type-specific identifiers the create form collects.
+    # Without modeling them the v1 create handler always produced a
+    # ``website`` project and dropped app/device/location identifiers.
+    project_type: Optional[str] = None
+    app_identifier: Optional[str] = Field(default=None, max_length=255)
+    device_model: Optional[str] = Field(default=None, max_length=255)
+    location: Optional[str] = Field(default=None, max_length=255)
 
 
 class ProjectPatch(StrictModel):
@@ -65,6 +76,10 @@ class ProjectPatch(StrictModel):
     description: Optional[str] = Field(default=None, max_length=2000)
     status: Optional[str] = None
     config: Optional[dict[str, object]] = None
+    # Drupal "audit_video" node name. The edit form (``projects/edit.html``)
+    # offers this select; it must be modeled + applied here or the choice is
+    # dropped on save. An empty string clears the stored selection.
+    drupal_audit_name: Optional[str] = Field(default=None, max_length=255)
 
 
 class ProjectCreatedOut(StrictModel):

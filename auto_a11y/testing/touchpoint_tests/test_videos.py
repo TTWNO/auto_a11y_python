@@ -170,13 +170,18 @@ async def test_videos(page: Page) -> dict[str, Any]:
                 const iframeVideos = Array.from(document.getElementsByTagName('iframe'))
                     .filter(iframe => {
                         const src = iframe.src || '';
-                        return src.includes('youtube.com') || 
+                        return src.includes('youtube.com') ||
                                src.includes('youtu.be') ||
                                src.includes('vimeo.com') ||
                                src.includes('dailymotion.com') ||
                                src.includes('facebook.com/plugins/video') ||
                                src.includes('brightcove') ||
-                               src.includes('kaltura');
+                               src.includes('kaltura') ||
+                               // Generic/self-hosted players: a src that
+                               // mentions "video" (e.g. /video-player,
+                               // /videos/embed) is treated as a video iframe
+                               // even when no known provider matches.
+                               src.toLowerCase().includes('video');
                     });
 
                 // Find other potential video players

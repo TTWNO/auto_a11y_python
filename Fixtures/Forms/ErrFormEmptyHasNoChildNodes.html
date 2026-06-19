@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Form Empty Child Nodes Test Fixture</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFormEmptyHasNoChildNodes",
+    "issueId": "ErrFormEmptyHasNoChildNodes",
+    "expectedViolationCount": 1,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 1,
+    "enforceElementExpectations": true,
+    "description": "A form element with literally zero child nodes triggers ErrFormEmptyHasNoChildNodes. Forms that contain only whitespace or comment text nodes have child nodes and are instead flagged ErrFormEmptyHasNoInteractiveElements, so they are not target cases here. A valid form containing interactive controls passes.",
+    "wcag": "1.3.1, 4.1.2",
+    "impact": "High"
+}
+    </script>
 </head>
 <body>
     <h1>Form Empty Child Nodes Test Fixture</h1>
@@ -13,7 +26,7 @@
         <h2>ERROR CASES - Should trigger ErrFormEmptyHasNoChildNodes</h2>
         
         <!-- Test Case 1: Completely empty form with no content -->
-        <form id="empty-form-1"></form>
+        <form id="empty-form-1" data-expected-violation="true" data-violation-id="ErrFormEmptyHasNoChildNodes" data-violation-reason="form has no child nodes at all (truly empty element)"></form>
         
         <!-- Test Case 2: Form with only whitespace -->
         <form id="empty-form-2">   
@@ -41,7 +54,7 @@
         <h2>VALID CASES - Should NOT trigger the error</h2>
         
         <!-- Valid Case 1: Form with input elements -->
-        <form id="valid-form-1">
+        <form id="valid-form-1" data-expected-pass="true" data-pass-reason="form contains a labelled input and a submit button, so it has child nodes">
             <label for="name">Name:</label>
             <input type="text" id="name" name="name">
             <button type="submit">Submit</button>

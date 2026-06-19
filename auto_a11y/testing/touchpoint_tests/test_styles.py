@@ -63,6 +63,17 @@ async def test_styles(page: Page) -> dict[str, Any]:
                     checks: []
                 };
 
+                // CSS named colours used to recognise explicit colour values.
+                const CSS_NAMED_COLORS = [
+                    'black', 'white', 'red', 'green', 'lime', 'blue', 'yellow',
+                    'cyan', 'aqua', 'magenta', 'fuchsia', 'silver', 'gray', 'grey',
+                    'maroon', 'olive', 'purple', 'teal', 'navy', 'orange', 'pink',
+                    'brown', 'gold', 'beige', 'coral', 'crimson', 'indigo', 'violet',
+                    'khaki', 'salmon', 'turquoise', 'tan', 'lightblue', 'lightgreen',
+                    'darkblue', 'darkgreen', 'darkred', 'lightgray', 'lightgrey',
+                    'darkgray', 'darkgrey'
+                ];
+
                 // Function to generate XPath for elements
                 function getFullXPath(element) {
                     if (!element) return '';
@@ -138,6 +149,72 @@ async def test_styles(page: Page) -> dict[str, Any]:
                     'font-synthesis'
                 ];
 
+                // Shorthand properties that only set a colour when their value
+                // embeds an explicit colour literal (`border: 1px solid red`).
+                // Presence alone is not enough: `border: 1px solid` or
+                // `border: none` set no colour, so these are checked by value.
+                const colorShorthandProperties = [
+                    'border',
+                    'border-top',
+                    'border-right',
+                    'border-bottom',
+                    'border-left',
+                    'outline'
+                ];
+
+                // Color-related CSS properties whose values we inspect to decide
+                // whether an *explicit* colour literal is hard-coded (as opposed
+                // to a var()/inherit/currentColor reference).
+                const colorValueProperties = [
+                    'color', 'background-color', 'background', 'border-color',
+                    'border-top-color', 'border-right-color', 'border-bottom-color',
+                    'border-left-color', 'border', 'border-top', 'border-right',
+                    'border-bottom', 'border-left', 'outline-color', 'outline',
+                    'text-decoration-color', 'column-rule-color', 'caret-color',
+                    'fill', 'stroke', 'box-shadow', 'text-shadow'
+                ];
+
+                // Does a declaration value contain an explicit colour literal?
+                // Hex, rgb()/rgba(), hsl()/hsla(), a gradient, or a CSS named
+                // colour count. var()/inherit/currentColor/transparent do NOT.
+                function hasExplicitColorValue(value) {
+                    if (!value) return false;
+                    const v = value.trim().toLowerCase();
+                    if (v.includes('var(')) {
+                        // Strip var() references; only flag if a literal remains.
+                        const stripped = v.replace(/var\([^)]*\)/g, '');
+                        if (!/[#]|rgb|hsl|gradient/.test(stripped)) {
+                            // Could still be a bare named colour outside var().
+                            const remainder = stripped.replace(/[^a-z]/g, ' ');
+                            return CSS_NAMED_COLORS.some(c => remainder.split(/\s+/).includes(c));
+                        }
+                        return true;
+                    }
+                    if (/#[0-9a-f]{3,8}\b/.test(v)) return true;
+                    if (/\brgba?\s*\(/.test(v)) return true;
+                    if (/\bhsla?\s*\(/.test(v)) return true;
+                    if (/gradient\s*\(/.test(v)) return true;
+                    const tokens = v.replace(/[^a-z-]/g, ' ').split(/\s+/);
+                    return CSS_NAMED_COLORS.some(c => tokens.includes(c));
+                }
+
+                // Inspect a block of "prop: value; prop: value" declarations and
+                // return true if any non-custom colour property uses an explicit
+                // colour literal.
+                function declarationsHaveExplicitColor(declBlock) {
+                    const decls = declBlock.split(';').map(d => d.trim()).filter(Boolean);
+                    for (const decl of decls) {
+                        const colonIdx = decl.indexOf(':');
+                        if (colonIdx < 0) continue;
+                        const prop = decl.substring(0, colonIdx).trim().toLowerCase();
+                        const value = decl.substring(colonIdx + 1).trim();
+                        if (prop.startsWith('--')) continue; // custom property definition
+                        if (!colorValueProperties.includes(prop)) continue;
+                        if (hasExplicitColorValue(value)) return true;
+                    }
+                    return false;
+                }
+
                 results.elements_tested = elementsWithStyleAttr.length;
                 let colorFontViolations = 0;
                 let otherStyleWarnings = 0;
@@ -152,6 +229,34 @@ async def test_styles(page: Page) -> dict[str, Any]:
                     const truncatedHTML = outerHTML.length > 200
                         ? outerHTML.substring(0, 200) + '...'
                         : outerHTML;
+
+                    // Granular discovery: an inline style attribute is present on
+                    // this element (regardless of which properties it sets).
+                    results.discovery.push({
+                        err: 'DiscoStyleAttrOnElements',
+                        type: 'disco',
+                        cat: 'styles',
+                        element: tagName,
+                        xpath: xpath,
+                        html: truncatedHTML,
+                        description: `Element <${tagName}> uses an inline style attribute. Inline styles are harder to override with user stylesheets (high-contrast, dark mode, custom palettes) than rules in a stylesheet.`,
+                        style: styleAttr
+                    });
+
+                    // Granular warning: the inline style attribute hard-codes an
+                    // explicit colour value (not via a CSS custom property).
+                    if (declarationsHaveExplicitColor(styleAttr)) {
+                        results.warnings.push({
+                            err: 'WarnColorRelatedStyleDefinedExplicitlyInElement',
+                            type: 'warn',
+                            cat: 'styles',
+                            element: tagName,
+                            xpath: xpath,
+                            html: truncatedHTML,
+                            description: `Element <${tagName}> defines colour-related CSS explicitly in an inline style attribute. Define colours in a stylesheet (or via CSS custom properties) so users can override them for their accessibility needs.`,
+                            style: styleAttr
+                        });
+                    }
 
                     // Special handling for <html> element - allow CSS custom properties and color-scheme
                     let hasColor = false;
@@ -213,6 +318,21 @@ async def test_styles(page: Page) -> dict[str, Any]:
                             const regex = new RegExp(`(^|;|\\s)${prop}\\s*:`, 'i');
                             return regex.test(styleLower);
                         });
+                    }
+
+                    // Border/outline shorthands hard-code a colour only when the
+                    // declaration value contains an explicit colour literal.
+                    if (!hasColor) {
+                        for (const decl of styleAttr.split(';')) {
+                            const colonIdx = decl.indexOf(':');
+                            if (colonIdx < 0) continue;
+                            const prop = decl.substring(0, colonIdx).trim().toLowerCase();
+                            if (colorShorthandProperties.includes(prop) &&
+                                hasExplicitColorValue(decl.substring(colonIdx + 1))) {
+                                hasColor = true;
+                                break;
+                            }
+                        }
                     }
 
                     if (hasColor || hasFont) {
@@ -296,6 +416,43 @@ async def test_styles(page: Page) -> dict[str, Any]:
                     const truncatedCSS = cssContent.length > 300
                         ? cssContent.substring(0, 300) + '...'
                         : cssContent;
+
+                    // Granular discovery: an embedded <style> element is present
+                    // on the page (regardless of its contents).
+                    results.discovery.push({
+                        err: 'DiscoStyleElementOnPage',
+                        type: 'disco',
+                        cat: 'styles',
+                        element: 'style',
+                        xpath: xpath,
+                        html: `<style>${truncatedCSS}</style>`,
+                        description: `Page contains an embedded <style> element. Embedded styles are harder for users to override (high-contrast, dark mode, custom palettes) than external stylesheets.`
+                    });
+
+                    // Granular warning: the <style> element hard-codes explicit
+                    // colour values. Inspect each rule's declaration block and
+                    // skip CSS custom-property definitions (var() usage is fine).
+                    let styleTagHasExplicitColor = false;
+                    const ruleBlockRe = /\{([^{}]*)\}/g;
+                    let blockMatch;
+                    while ((blockMatch = ruleBlockRe.exec(cssContent)) !== null) {
+                        if (declarationsHaveExplicitColor(blockMatch[1])) {
+                            styleTagHasExplicitColor = true;
+                            break;
+                        }
+                    }
+
+                    if (styleTagHasExplicitColor) {
+                        results.warnings.push({
+                            err: 'WarnColorRelatedStyleDefinedExplicitlyInStyleTag',
+                            type: 'warn',
+                            cat: 'styles',
+                            element: 'style',
+                            xpath: xpath,
+                            html: `<style>${truncatedCSS}</style>`,
+                            description: `Embedded <style> element defines colour-related CSS with explicit colour literals. Use CSS custom properties (variables) or external stylesheets so users can override colours for their accessibility needs.`
+                        });
+                    }
 
                     // Check if CSS contains color or font property definitions
                     const cssLower = cssContent.toLowerCase();

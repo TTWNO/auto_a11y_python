@@ -104,8 +104,19 @@ async def test_modals(page: Page) -> dict[str, Any]:
                 // Find modal elements
                 function findModals() {
                     const dialogElements = Array.from(document.querySelectorAll('dialog'));
-                    const roleDialogs = Array.from(document.querySelectorAll('[role="dialog"]'));
-                    const modalDivs = Array.from(document.querySelectorAll('div[class*="modal" i]'));
+                    const roleDialogs = Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"]'));
+                    const modalDivs = Array.from(document.querySelectorAll('div[class*="modal" i]'))
+                        // A backdrop/overlay element is the dimmed layer BEHIND a modal, not the
+                        // dialog itself. It has no dialog role and holds no dialog content, so it
+                        // must not be treated as a modal (otherwise it spuriously reports "no
+                        // focusable elements", "missing heading", etc.).
+                        .filter(div => {
+                            const cls = (div.getAttribute('class') || '').toLowerCase();
+                            const isBackdrop = cls.includes('backdrop') || cls.includes('overlay');
+                            const role = (div.getAttribute('role') || '').toLowerCase();
+                            const isDialogRole = role === 'dialog' || role === 'alertdialog';
+                            return !(isBackdrop && !isDialogRole);
+                        });
 
                     // Combine all candidates and deduplicate
                     const allModals = [...dialogElements, ...roleDialogs, ...modalDivs];
@@ -171,6 +182,12 @@ async def test_modals(page: Page) -> dict[str, Any]:
                     );
 
                     interactiveElements.forEach(element => {
+                        // A close control hidden by its OWN display:none is not a usable close
+                        // mechanism. `display` does not inherit, so getComputedStyle reflects the
+                        // element's own value even while the modal itself is display:none (closed),
+                        // avoiding false positives on every closed modal.
+                        if (window.getComputedStyle(element).display === 'none') return;
+
                         const text = element.textContent.trim().toLowerCase();
                         const ariaLabel = element.getAttribute('aria-label')?.toLowerCase();
                         const title = element.getAttribute('title')?.toLowerCase();

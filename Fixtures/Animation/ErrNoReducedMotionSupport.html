@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-expected-violation="true" data-violation-id="ErrNoReducedMotionSupport" data-violation-reason="page has animations but no prefers-reduced-motion media query to honour reduced-motion preference">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -206,6 +206,17 @@
             margin-right: 10px;
         }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrNoReducedMotionSupport",
+    "issueId": "ErrNoReducedMotionSupport",
+    "expectedViolationCount": 1,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Page declares CSS and JavaScript animations but provides no prefers-reduced-motion media query to disable or reduce them. This is reported page-wide on the root element.",
+    "wcag": "2.3.3"
+}
+    </script>
 </head>
 <body>
     <div class="container">

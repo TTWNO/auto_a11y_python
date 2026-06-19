@@ -28,6 +28,18 @@
         .warning { background-color: #fff3cd; }
         .pass { background-color: #e6ffe6; }
     </style>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "ErrFormAriaLabelledByReferenceDIsHidden",
+    "issueId": "ErrFormAriaLabelledByReferenceDIsHidden",
+    "expectedViolationCount": 7,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 2,
+    "enforceElementExpectations": true,
+    "description": "Forms whose aria-labelledby references a hidden element (display:none, visibility:hidden, hidden attribute, multi-id including hidden, nested hidden, CSS-hidden, dynamically hidden) trigger ErrFormAriaLabelledByReferenceDIsHidden. Comparison forms referencing a visible or screen-reader-accessible (visually-hidden) element pass.",
+    "wcag": "1.3.1,4.1.2"
+}
+    </script>
 </head>
 <body>
     <h1>Form aria-labelledby Hidden Element Reference Test Fixture</h1>
@@ -37,7 +49,7 @@
     <div class="test-section error">
         <h2>❌ ERROR: Form with aria-labelledby referencing display:none element</h2>
         <div id="hidden-label-1" class="hidden">User Registration Form</div>
-        <form aria-labelledby="hidden-label-1">
+        <form aria-labelledby="hidden-label-1" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByReferenceDIsHidden" data-violation-reason="aria-labelledby references a display:none element">
             <input type="text" name="username" placeholder="Username">
             <input type="password" name="password" placeholder="Password">
             <button type="submit">Register</button>
@@ -47,7 +59,7 @@
     <div class="test-section error">
         <h2>❌ ERROR: Form with aria-labelledby referencing visibility:hidden element</h2>
         <div id="invisible-label-1" class="invisible">Login Form</div>
-        <form aria-labelledby="invisible-label-1">
+        <form aria-labelledby="invisible-label-1" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByReferenceDIsHidden" data-violation-reason="aria-labelledby references a visibility:hidden element">
             <input type="email" name="email" placeholder="Email">
             <input type="password" name="password" placeholder="Password">
             <button type="submit">Login</button>
@@ -57,7 +69,7 @@
     <div class="test-section error">
         <h2>❌ ERROR: Form with aria-labelledby referencing hidden attribute element</h2>
         <div id="hidden-attr-label-1" hidden>Contact Form</div>
-        <form aria-labelledby="hidden-attr-label-1">
+        <form aria-labelledby="hidden-attr-label-1" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByReferenceDIsHidden" data-violation-reason="aria-labelledby references an element with the hidden attribute">
             <input type="text" name="name" placeholder="Your Name">
             <input type="email" name="contact-email" placeholder="Your Email">
             <button type="submit">Send</button>
@@ -68,7 +80,7 @@
         <h2>❌ ERROR: Form with aria-labelledby referencing multiple IDs including hidden ones</h2>
         <div id="visible-part">Order</div>
         <div id="hidden-part" class="hidden">Checkout Form</div>
-        <form aria-labelledby="visible-part hidden-part">
+        <form aria-labelledby="visible-part hidden-part" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByReferenceDIsHidden" data-violation-reason="aria-labelledby references multiple IDs, one of which is hidden">
             <input type="text" name="product" placeholder="Product">
             <input type="number" name="quantity" placeholder="Quantity">
             <button type="submit">Add to Cart</button>
@@ -80,7 +92,7 @@
         <div>
             <div id="nested-hidden-label" style="display: none;">Nested Form Label</div>
             <div>
-                <form aria-labelledby="nested-hidden-label">
+                <form aria-labelledby="nested-hidden-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByReferenceDIsHidden" data-violation-reason="aria-labelledby references a display:none element in an ancestor block">
                     <input type="search" name="query" placeholder="Search">
                     <button type="submit">Search</button>
                 </form>
@@ -112,7 +124,7 @@
     <div class="test-section pass">
         <h2>✅ PASS: Form with aria-labelledby referencing visible element</h2>
         <div id="visible-label-1">Newsletter Subscription</div>
-        <form aria-labelledby="visible-label-1">
+        <form aria-labelledby="visible-label-1" data-expected-pass="true" data-pass-reason="aria-labelledby references a fully visible element">
             <input type="email" name="newsletter-email" placeholder="Your email">
             <button type="submit">Subscribe</button>
         </form>
@@ -121,7 +133,7 @@
     <div class="test-section pass">
         <h2>✅ PASS: Form with aria-labelledby referencing visually-hidden element (screen reader accessible)</h2>
         <div id="sr-only-label" class="visually-hidden">Accessible Form Label</div>
-        <form aria-labelledby="sr-only-label">
+        <form aria-labelledby="sr-only-label" data-expected-pass="true" data-pass-reason="aria-labelledby references a visually-hidden but screen-reader-accessible element">
             <input type="text" name="accessible-input" placeholder="Accessible input">
             <button type="submit">Submit</button>
         </form>
@@ -168,7 +180,7 @@
             }
         </style>
         <div id="css-hidden-label">CSS Hidden Form Label</div>
-        <form aria-labelledby="css-hidden-label">
+        <form aria-labelledby="css-hidden-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByReferenceDIsHidden" data-violation-reason="aria-labelledby references a CSS display:none element">
             <input type="text" name="css-test" placeholder="CSS test input">
             <button type="submit">Submit</button>
         </form>
@@ -187,7 +199,7 @@
     <div class="test-section error">
         <h2>❌ ERROR: Form with aria-labelledby referencing dynamically hidden element</h2>
         <div id="dynamic-label">Dynamic Label (will be hidden by JavaScript)</div>
-        <form aria-labelledby="dynamic-label">
+        <form aria-labelledby="dynamic-label" data-expected-violation="true" data-violation-id="ErrFormAriaLabelledByReferenceDIsHidden" data-violation-reason="aria-labelledby references an element hidden dynamically after load">
             <input type="text" name="dynamic-test" placeholder="Dynamic test input">
             <button type="submit">Submit</button>
         </form>

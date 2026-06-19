@@ -6,10 +6,11 @@
     <title>ErrLabelMismatchOfAccessibleNameAndLabelText - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrLabelMismatchOfAccessibleNameAndLabelText_001_violations_basic",
     "issueId": "ErrLabelMismatchOfAccessibleNameAndLabelText",
-    "expectedViolationCount": 4,
-    "expectedPassCount": 0,
+    "expectedViolationCount": 3,
+    "expectedPassCount": 1,
     "description": "Form fields where accessible name doesn't match visible label text",
     "wcag": "2.5.3",
     "impact": "Medium"
@@ -36,9 +37,9 @@
                 <input type="email"
                        id="email"
                        aria-label="Your email address"
-                       data-expected-violation="true"
-                       data-violation-id="ErrLabelMismatchOfAccessibleNameAndLabelText"
-                       data-violation-reason="Voice command 'click Email' won't work, accessible name doesn't match visible text">
+                       data-expected-pass="true"
+                       data-pass-id="ErrLabelMismatchOfAccessibleNameAndLabelText"
+                       data-pass-reason="Accessible name 'Your email address' contains the visible label 'Email', so WCAG 2.5.3 Label in Name is satisfied and no violation is reported">
             </section>
 
             <section>

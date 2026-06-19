@@ -6,6 +6,7 @@
     <title>ErrImageWithURLAsAlt - Violations</title>
     <script type="application/json" id="test-metadata">
 {
+    "enforceElementExpectations": true,
     "id": "ErrImageWithURLAsAlt_001_violations_basic",
     "issueId": "ErrImageWithURLAsAlt",
     "expectedViolationCount": 3,
@@ -49,7 +50,7 @@
                 <img src="grand-canyon.jpg"
                      alt="grand-canyon.jpg"
                      data-expected-violation="true"
-                     data-violation-id="ErrImageWithURLAsAlt"
+                     data-violation-id="ErrImageWithImgFileExtensionAlt"
                      data-violation-reason="Image alt text is just the filename. Screen readers announce 'grand-canyon.jpg' which includes file extension. While filename gives a hint, it's not descriptive and includes technical suffix. Users don't need to know file format. Should describe the visual content, not the file. Violates WCAG 1.1.1 by using filename instead of meaningful description">
                 <h3>Grand Canyon, USA</h3>
                 <p>Marvel at one of the world's most spectacular natural wonders.</p>

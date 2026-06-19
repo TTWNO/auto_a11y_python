@@ -4,21 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heading With ID Discovery Test - DiscoHeadingWithID</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "DiscoHeadingWithID",
+    "issueId": "DiscoHeadingWithID",
+    "expectedViolationCount": 0,
+    "expectedWarningCount": 0,
+    "expectedPassCount": 0,
+    "enforceElementExpectations": true,
+    "description": "Discovery of headings that carry an id attribute. The engine flags each heading element with an id; all five headings on this page have ids.",
+    "wcag": "1.3.1,2.4.6"
+}
+    </script>
 </head>
 <body>
-    <h1 id="main-title">Main Page Title with ID</h1>
+    <h1 id="main-title" data-expected-discovery="true" data-discovery-id="DiscoHeadingWithID" data-discovery-reason="h1 carries id main-title">Main Page Title with ID</h1>
     
     <!-- Headings with IDs for potential anchor links -->
-    <h2 id="section-1">Section One</h2>
+    <h2 id="section-1" data-expected-discovery="true" data-discovery-id="DiscoHeadingWithID" data-discovery-reason="h2 carries id section-1">Section One</h2>
     <p>This heading has an ID that could be used for navigation.</p>
     
-    <h2 id="features">Features Section</h2>
+    <h2 id="features" data-expected-discovery="true" data-discovery-id="DiscoHeadingWithID" data-discovery-reason="h2 carries id features">Features Section</h2>
     <p>Another heading with ID for deep linking.</p>
     
-    <h3 id="subsection-a">Subsection A</h3>
+    <h3 id="subsection-a" data-expected-discovery="true" data-discovery-id="DiscoHeadingWithID" data-discovery-reason="h3 carries id subsection-a">Subsection A</h3>
     <p>Nested heading with ID.</p>
     
-    <h2 id="contact">Contact Information</h2>
+    <h2 id="contact" data-expected-discovery="true" data-discovery-id="DiscoHeadingWithID" data-discovery-reason="h2 carries id contact">Contact Information</h2>
     <p>Headings with IDs enable direct navigation.</p>
     
     <p>This is a discovery item to track headings with IDs.</p>

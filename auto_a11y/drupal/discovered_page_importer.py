@@ -65,8 +65,10 @@ class DiscoveredPageImporter:
             all_pages: list[dict[str, Any]] = []
             page_limit = 50
             offset = 0
+            # Hard backstop against a server that ignores page[offset].
+            max_pages = 1000
 
-            while True:
+            for _ in range(max_pages):
                 params['page[limit]'] = page_limit
                 params['page[offset]'] = offset
 
@@ -86,6 +88,11 @@ class DiscoveredPageImporter:
                 # If we got fewer than page_limit, we're done
                 if len(pages) < page_limit:
                     break
+            else:
+                logger.warning(
+                    f"Pagination cap ({max_pages} pages) reached fetching"
+                    + f" discovered pages for audit {audit_uuid}; results may be truncated."
+                )
 
             logger.info(f"Fetched {len(all_pages)} discovered pages")
             return all_pages
@@ -248,8 +255,14 @@ class DiscoveredPageImporter:
         private_notes_list: list[dict[str, str]] = attributes.get('field_notes_in_discovery', [])
         private_notes: str | None = private_notes_list[0].get('value', '') if private_notes_list else None
 
-        public_note_field: dict[str, str] | None = attributes.get('field_public_note_on_page', {})
-        public_notes: str | None = public_note_field.get('value', '') if public_note_field else None
+        # field_public_note_on_page may be serialized as a single dict OR as a
+        # list of value objects (JSON:API text fields vary). Handle both shapes.
+        public_note_field: dict[str, str] | list[dict[str, str]] | None = attributes.get('field_public_note_on_page')
+        public_notes: str | None = None
+        if isinstance(public_note_field, dict):
+            public_notes = public_note_field.get('value', '')
+        elif isinstance(public_note_field, list) and public_note_field:
+            public_notes = public_note_field[0].get('value', '')
 
         # Extract document links
         doc_links_raw: list[dict[str, str]] = attributes.get('field_document_links_on_page', [])

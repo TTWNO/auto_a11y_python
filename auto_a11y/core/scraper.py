@@ -232,6 +232,7 @@ class ScrapingEngine:
         # Track discovered pages (successful only) and failed pages (for error reporting)
         discovered_pages: list[Page] = []
         failed_pages: list[Page] = []  # Track failed discoveries separately - these won't be saved to DB
+        robots_blocked = 0  # URLs skipped due to robots.txt (not a scraper failure; surfaced to the user)
         
         # Start browser once for entire discovery session
         try:
@@ -471,7 +472,12 @@ class ScrapingEngine:
                     # Check robots.txt
                     if website.scraping_config.respect_robots:
                         if not await self._can_fetch(url):
-                            logger.debug(f"Skipping {url} due to robots.txt")
+                            # Not a scraper failure -- the site simply disallows
+                            # crawling. Count it so the run can tell the user why
+                            # nothing was discovered (the silent skip used to look
+                            # like a broken scan / user-agent rejection).
+                            robots_blocked += 1
+                            logger.info(f"Skipping {url} due to robots.txt (robots_blocked={robots_blocked})")
                             continue
                     
                     # Discover page
@@ -604,6 +610,7 @@ class ScrapingEngine:
                 {'url': p.url, 'error_reason': p.error_reason or 'Unknown error'}
                 for p in failed_pages
             ]
+            discovery_run.robots_blocked_count = robots_blocked
             discovery_run.documents_found = self.db.document_references.count_documents({'website_id': website_id})
             discovery_run.duration_seconds = int((discovery_run.completed_at - discovery_run.started_at).total_seconds())
             self.db.update_discovery_run(discovery_run)
@@ -626,6 +633,7 @@ class ScrapingEngine:
                 {'url': p.url, 'error_reason': p.error_reason or 'Unknown error'}
                 for p in failed_pages
             ]
+            discovery_run.robots_blocked_count = robots_blocked
             discovery_run.duration_seconds = int((discovery_run.completed_at - discovery_run.started_at).total_seconds())
             self.db.update_discovery_run(discovery_run)
             

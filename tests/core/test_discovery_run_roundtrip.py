@@ -31,3 +31,18 @@ def test_from_dict_preserves_valid_status() -> None:
     data['status'] = 'completed'
     run = DiscoveryRun.from_dict(data)
     assert run.status == DiscoveryStatus.COMPLETED
+
+
+def test_from_dict_defaults_robots_blocked_count_to_zero_when_missing() -> None:
+    """A legacy document without robots_blocked_count should default to 0."""
+    data = _minimal_data()
+    assert 'robots_blocked_count' not in data
+    run = DiscoveryRun.from_dict(data)
+    assert run.robots_blocked_count == 0
+
+
+def test_robots_blocked_count_survives_round_trip() -> None:
+    """robots_blocked_count must serialize to and deserialize from MongoDB."""
+    run = DiscoveryRun(website_id='w1', robots_blocked_count=7)
+    restored = DiscoveryRun.from_dict(run.to_dict())
+    assert restored.robots_blocked_count == 7

@@ -92,6 +92,22 @@
         </div>
     </section>
 
+    <!-- robots.txt blocked notice -->
+    {% if discovery_run.robots_blocked_count and discovery_run.robots_blocked_count > 0 %}
+    <section aria-labelledby="robots-blocked-heading">
+        <div class="alert alert-medium mb-4">
+            <h2 id="robots-blocked-heading" class="h5">
+                <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+                {{ ftl('websites-discovery-robots-blocked-title') }}
+            </h2>
+            <p class="mb-2">{{ ftl('websites-discovery-robots-blocked-body', count=discovery_run.robots_blocked_count) }}</p>
+            <a href="{{ url_for('websites.edit_website', website_id=website.id) }}" class="btn btn-medium btn-sm">
+                {{ ftl('websites-discovery-robots-blocked-action') }}
+            </a>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- Comparison with Previous Run -->
     {% if comparison %}
     <section aria-labelledby="comparison-heading">

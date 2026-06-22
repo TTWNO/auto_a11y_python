@@ -42,6 +42,7 @@ class DiscoveryRun:
     documents_found: int = 0
     external_links_found: int = 0
     failed_pages_details: list[dict[str, str]] = field(default_factory=lambda: [])  # [{url, error_reason}]
+    robots_blocked_count: int = 0  # URLs skipped because robots.txt disallowed them (only when respect_robots is on)
 
     # Comparison with previous run
     pages_added: int = 0  # New pages not in previous discovery
@@ -110,6 +111,7 @@ class DiscoveryRun:
             'documents_found': self.documents_found,
             'external_links_found': self.external_links_found,
             'failed_pages_details': self.failed_pages_details,
+            'robots_blocked_count': self.robots_blocked_count,
             'pages_added': self.pages_added,
             'pages_removed': self.pages_removed,
             'pages_unchanged': self.pages_unchanged,
@@ -148,6 +150,7 @@ class DiscoveryRun:
             documents_found=data.get('documents_found', 0),
             external_links_found=data.get('external_links_found', 0),
             failed_pages_details=data.get('failed_pages_details', []),
+            robots_blocked_count=data.get('robots_blocked_count', 0),
             pages_added=data.get('pages_added', 0),
             pages_removed=data.get('pages_removed', 0),
             pages_unchanged=data.get('pages_unchanged', 0),

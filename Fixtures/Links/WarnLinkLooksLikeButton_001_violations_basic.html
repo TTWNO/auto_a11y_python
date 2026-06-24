@@ -34,17 +34,23 @@
 
     <a href="submit.php"
        class="button-style"
+       data-expected-warning="true"
+       data-warning-id="WarnLinkLooksLikeButton"
+       data-warning-reason="Link styled as button - semantic mismatch with anchor element"
        data-expected-violation="true"
-       data-violation-id="WarnLinkLooksLikeButton"
-       data-violation-reason="Link styled as button, but Space key won't activate">
+       data-violation-id="ErrLinkButtonMissingSpaceHandler"
+       data-violation-reason="No Space key handler, so Space won't activate this button-styled link">
         Submit Form
     </a>
 
     <a href="delete.php"
        class="button-style"
+       data-expected-warning="true"
+       data-warning-id="WarnLinkLooksLikeButton"
+       data-warning-reason="Action link styled as button, semantic mismatch"
        data-expected-violation="true"
-       data-violation-id="WarnLinkLooksLikeButton"
-       data-violation-reason="Action link styled as button, semantic mismatch">
+       data-violation-id="ErrLinkButtonMissingSpaceHandler"
+       data-violation-reason="No Space key handler, so Space won't activate this button-styled link">
         Delete Account
     </a>
 </body>

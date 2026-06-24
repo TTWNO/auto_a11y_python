@@ -38,7 +38,10 @@
        onclick="deleteAccount()"
        data-expected-warning="true"
        data-warning-id="WarnLinkLooksLikeButton"
-       data-warning-reason="Link styled as button without Space handler">
+       data-warning-reason="Link styled as button without Space handler"
+       data-expected-violation="true"
+       data-violation-id="ErrLinkButtonMissingSpaceHandler"
+       data-violation-reason="No Space key handler, so Space won't activate this button-styled link">
         Delete Account
     </a>
 
@@ -47,7 +50,10 @@
        class="action-btn"
        data-expected-warning="true"
        data-warning-id="WarnLinkLooksLikeButton"
-       data-warning-reason="Button-styled link, semantic mismatch">
+       data-warning-reason="Button-styled link, semantic mismatch"
+       data-expected-violation="true"
+       data-violation-id="ErrLinkButtonMissingSpaceHandler"
+       data-violation-reason="No Space key handler, so Space won't activate this button-styled link">
         Reset Password
     </a>
 

@@ -67,8 +67,8 @@
             <button>
                 <svg tabindex="0" aria-hidden="true"
                      data-expected-violation="true"
-                     data-violation-id="ErrTabindexChildOfInteractive"
-                     data-violation-reason="SVG child with tabindex inside button">
+                     data-violation-id="ErrTabindexChildOfInteractive ErrTabindexAriaHiddenFocusable"
+                     data-violation-reason="Focusable child of a button AND aria-hidden=true on a focusable element - both errors fire on this one node">
                     <circle cx="10" cy="10" r="8" fill="#333"/>
                 </svg>
                 Search
@@ -78,8 +78,8 @@
                 Settings
                 <svg tabindex="0" aria-hidden="true"
                      data-expected-violation="true"
-                     data-violation-id="ErrTabindexChildOfInteractive"
-                     data-violation-reason="SVG child with tabindex=0 inside button">
+                     data-violation-id="ErrTabindexChildOfInteractive ErrTabindexAriaHiddenFocusable"
+                     data-violation-reason="Focusable child of a button AND aria-hidden=true on a focusable element - both errors fire on this one node">
                     <rect x="2" y="2" width="16" height="16" fill="#333"/>
                 </svg>
             </button>
@@ -100,8 +100,8 @@
                 Learn More
                 <span tabindex="0" class="icon" aria-hidden="true"
                       data-expected-violation="true"
-                      data-violation-id="ErrTabindexChildOfInteractive"
-                      data-violation-reason="Icon span with tabindex inside link">→</span>
+                      data-violation-id="ErrTabindexChildOfInteractive ErrTabindexAriaHiddenFocusable"
+                      data-violation-reason="Focusable child of a link AND aria-hidden=true on a focusable element - both errors fire on this one node">→</span>
             </a>
         </section>
 
@@ -112,8 +112,8 @@
             <button>
                 <svg tabindex="-1" aria-hidden="true"
                      data-expected-violation="true"
-                     data-violation-id="ErrTabindexChildOfInteractive"
-                     data-violation-reason="SVG has tabindex inside button (also triggers ErrTabindexAriaHiddenFocusable for aria-hidden on focusable element)">
+                     data-violation-id="ErrTabindexChildOfInteractive ErrTabindexAriaHiddenFocusable"
+                     data-violation-reason="SVG is a focusable child of a button AND has aria-hidden=true on a focusable element - both errors fire on this one node">
                     <path d="M10 0 L20 10 L10 20 L0 10 Z" fill="#333"/>
                 </svg>
                 Submit

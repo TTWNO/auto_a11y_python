@@ -37,6 +37,9 @@
        onkeydown="if(event.keyCode === 32) { event.preventDefault(); alert('Confirm'); }"
        data-expected-warning="true"
        data-warning-id="WarnLinkLooksLikeButton"
+       data-expected-pass="true"
+       data-pass-id="ErrLinkButtonMissingSpaceHandler"
+       data-pass-reason="Inline Space-key handler is detected, so the missing-handler error is correctly NOT emitted"
        data-warning-reason="Button-styled with inline Space handler">
         Confirm
     </a>
@@ -47,6 +50,9 @@
        onkeypress="if(event.key === ' ') { alert('Submit'); }"
        data-expected-warning="true"
        data-warning-id="WarnLinkLooksLikeButton"
+       data-expected-pass="true"
+       data-pass-id="ErrLinkButtonMissingSpaceHandler"
+       data-pass-reason="Inline Space-key handler is detected, so the missing-handler error is correctly NOT emitted"
        data-warning-reason="Button-styled with Space handler">
         Submit
     </a>
@@ -57,6 +63,9 @@
        onkeyup="if(event.which == 32) { alert('Apply'); }"
        data-expected-warning="true"
        data-warning-id="WarnLinkLooksLikeButton"
+       data-expected-pass="true"
+       data-pass-id="ErrLinkButtonMissingSpaceHandler"
+       data-pass-reason="Inline Space-key handler is detected, so the missing-handler error is correctly NOT emitted"
        data-warning-reason="Button-styled with keyup Space handler">
         Apply
     </a>

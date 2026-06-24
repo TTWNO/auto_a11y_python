@@ -61,6 +61,37 @@ Each fixture is an HTML file with embedded metadata:
 - **data-expected-pass**: Marks correct implementations (in "correct" fixtures)
 - **data-pass-reason**: Explains why this implementation is accessible
 
+**Asserting a specific code (and multiple codes per element):**
+
+When `enforceElementExpectations: true` is set in the metadata, each annotated
+element is checked against the exact code(s) it declares, matched by DOM-node
+identity. Name the code with the matching `data-{kind}-id` attribute:
+
+- `data-violation-id` / `data-warning-id` / `data-info-id` / `data-discovery-id` —
+  the code that element must emit (paired with `data-expected-{kind}="true"`).
+- `data-pass-id` — a code that element must **not** emit.
+- If the `*-id` attribute is omitted, the fixture's filename code is used.
+
+Each `data-{kind}-id` accepts a **whitespace-separated list of codes**, so a single
+element can assert several expectations of the same kind. This is how one element
+that legitimately triggers two distinct violations is verified — for example an SVG
+that is both a focusable child of a button *and* `aria-hidden="true"`:
+
+```html
+<svg tabindex="-1" aria-hidden="true"
+     data-expected-violation="true"
+     data-violation-id="ErrTabindexChildOfInteractive ErrTabindexAriaHiddenFocusable">
+```
+
+You can also mix kinds on one element — e.g. a button-styled link with no Space
+handler asserts a warning *and* an error at once:
+
+```html
+<a href="#" class="action-btn"
+   data-expected-warning="true"   data-warning-id="WarnLinkLooksLikeButton"
+   data-expected-violation="true" data-violation-id="ErrLinkButtonMissingSpaceHandler">
+```
+
 ## Running Fixture Tests
 
 ### Basic Usage

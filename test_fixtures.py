@@ -293,11 +293,21 @@ class FixtureTestRunner:
         document.querySelectorAll(sel).forEach(el => {
             const codes = codesByNode.get(el) || new Set();
             const checks = [];
-            if (el.getAttribute('data-expected-violation') === 'true') checks.push(['violation', el.getAttribute('data-violation-id')]);
-            if (el.getAttribute('data-expected-warning') === 'true') checks.push(['warning', el.getAttribute('data-warning-id')]);
-            if (el.getAttribute('data-expected-discovery') === 'true') checks.push(['discovery', el.getAttribute('data-discovery-id')]);
-            if (el.getAttribute('data-expected-info') === 'true') checks.push(['info', el.getAttribute('data-info-id')]);
-            if (el.getAttribute('data-expected-pass') === 'true') checks.push(['pass', el.getAttribute('data-pass-id')]);
+            // data-{kind}-id may carry a whitespace-separated LIST of codes, so a single
+            // element can assert several expectations of the same kind (e.g. an SVG that
+            // is both a focusable child of a button AND aria-hidden emits two error codes).
+            // Each token becomes its own check; an absent/empty id keeps the legacy
+            // fallback to the fixture's filename `target` (resolved via `want` below).
+            const addChecks = (kind, attr) => {
+                const tokens = (attr || '').trim().split(/\s+/).filter(Boolean);
+                if (tokens.length === 0) { checks.push([kind, null]); return; }
+                for (const t of tokens) checks.push([kind, t]);
+            };
+            if (el.getAttribute('data-expected-violation') === 'true') addChecks('violation', el.getAttribute('data-violation-id'));
+            if (el.getAttribute('data-expected-warning') === 'true') addChecks('warning', el.getAttribute('data-warning-id'));
+            if (el.getAttribute('data-expected-discovery') === 'true') addChecks('discovery', el.getAttribute('data-discovery-id'));
+            if (el.getAttribute('data-expected-info') === 'true') addChecks('info', el.getAttribute('data-info-id'));
+            if (el.getAttribute('data-expected-pass') === 'true') addChecks('pass', el.getAttribute('data-pass-id'));
             for (const c of checks) {
                 const kind = c[0];
                 const want = c[1] || target;

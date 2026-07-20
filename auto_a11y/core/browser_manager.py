@@ -283,7 +283,7 @@ class BrowserManager:
             user_agent
             or self.config.get('user_agent')
             or self.config.get('USER_AGENT')
-            or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
         )
 
         # Build keyword arguments explicitly for type safety

@@ -801,6 +801,11 @@ class HTMLFormatter(BaseFormatter):
     
     def _get_css(self) -> str:
         """Get CSS styles for HTML reports"""
+        # Standalone reports cannot link the app stylesheets, so severity/brand
+        # colours mirror the light-mode design tokens in
+        # auto_a11y/web/static/public/css/tokens.css. Every text colour below
+        # meets WCAG 2.2 AA (4.5:1+ on its background; 3:1+ for large text and
+        # non-text indicators) — keep it that way when editing.
         return """
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -818,11 +823,11 @@ class HTMLFormatter(BaseFormatter):
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         header {
-            border-bottom: 2px solid #007bff;
+            border-bottom: 2px solid #1a5276;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
-        h1 { color: #007bff; margin-bottom: 10px; }
+        h1 { color: #1a5276; margin-bottom: 10px; }
         h2 { color: #333; margin: 20px 0 15px; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; }
         h3 { color: #555; margin: 15px 0 10px; }
         
@@ -850,23 +855,23 @@ class HTMLFormatter(BaseFormatter):
         }
         .stat-card h3 {
             font-size: 2em;
-            color: #007bff;
+            color: #1a5276;
             margin: 0;
         }
-        .stat-card.violations h3 { color: #dc3545; }
-        .stat-card.warnings h3 { color: #ffc107; }
-        .stat-card.passes h3 { color: #28a745; }
-        
+        .stat-card.violations h3 { color: #922b21; }
+        .stat-card.warnings h3 { color: #7d6608; }
+        .stat-card.passes h3 { color: #1a7a3e; }
+
         .violation, .warning, .pass, .ai-finding {
             background: #fff;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid #922b21;
             padding: 15px;
             margin: 15px 0;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .warning { border-left-color: #ffc107; }
-        .pass { border-left-color: #28a745; }
+        .warning { border-left-color: #b38600; }
+        .pass { border-left-color: #1a7a3e; }
         .ai-finding { border-left-color: #6f42c1; }
         
         .violation h4, .warning h4, .pass h4, .ai-finding h4 {
@@ -882,7 +887,7 @@ class HTMLFormatter(BaseFormatter):
             font-weight: bold;
             margin-left: 10px;
         }
-        .impact.critical { background: #dc3545; color: white; }
+        .impact.critical { background: #922b21; color: white; }
         .impact.serious { background: #b85700; color: white; }
         .impact.moderate { background: #ffc107; color: #333; }
         .impact.minor { background: #6c757d; color: white; }
@@ -922,7 +927,7 @@ class HTMLFormatter(BaseFormatter):
             color: #6c757d;
         }
         
-        a { color: #007bff; text-decoration: none; }
+        a { color: #0a58ca; text-decoration: none; }
         a:hover { text-decoration: underline; }
     </style>
         """

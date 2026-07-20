@@ -1,0 +1,138 @@
+    /* ==================================================================
+       Shared colour tokens + utility classes for the deduplicated static
+       report (dedup_index / dedup_component / dedup_unassigned templates).
+
+       The static report is fully self-contained, so it cannot link the
+       app stylesheets; the values below mirror the app design tokens
+       (auto_a11y/web/static/public/css/tokens.css, light mode) and the
+       utility classes mirror auto_a11y/web/static/css/style.css. Keep the
+       three in sync — markup in these templates uses the same class names
+       as the app, and a class that exists in the app but not here renders
+       as Bootstrap defaults (e.g. .badge paints white text with no
+       background: white-on-white).
+
+       Every colour pair below meets WCAG 2.2 AA: text 4.5:1+, large text
+       and non-text UI 3:1+ (ratios noted inline).
+       ================================================================== */
+    :root {
+        --color-severity-high: #922b21;          /* text: 7.0:1 on #fff, 7.5:1 on subtle */
+        --color-severity-high-gradient-end: #7b241c;
+        --color-severity-high-bg: #fdedec;       /* w/ high text: 7.1:1 */
+        --color-severity-high-badge: #922b21;    /* w/ white text: 8.1:1 */
+        --color-severity-medium: #7d6608;        /* text: 5.7:1 on #fff, 5.3:1 on subtle */
+        --color-severity-medium-gradient-end: #5e4d06;
+        --color-severity-medium-bg: #fff3cd;     /* w/ medium text: 5.0:1 */
+        --color-severity-medium-border: #b38600; /* non-text: 3.3:1 on #fff */
+        --color-severity-pass: #1a7a3e;          /* text: 5.5:1 on #fff */
+        --color-severity-pass-bg: #f0fcf5;
+        --color-severity-pass-badge: #1e8449;    /* w/ white text: 4.7:1 */
+        --color-severity-low-badge: #2c3e50;     /* w/ white text: 11.0:1 */
+        --color-info: #0e7490;                   /* text: 5.4:1 on #fff, 4.9:1 on subtle */
+        --color-info-gradient-end: #0b5a70;
+        --color-info-bg: #e0f3f8;                /* w/ info text: 4.7:1 */
+        --color-discovery: #6f42c1;              /* text: 6.5:1 on #fff */
+        --color-discovery-gradient-end: #5a32a3;
+        --color-discovery-bg: #f3eefa;           /* w/ discovery text: 5.7:1 */
+        --color-text: #1c1c1c;
+        --color-text-muted: #4a4a4a;             /* text: 9.0:1 on #fff */
+        --color-text-inverse: #ffffff;
+        --color-bg: #ffffff;
+        --color-bg-subtle: #f4f6f7;
+        --color-brand: #1a5276;                  /* w/ white text: 8.4:1 */
+        --color-border: #b0b6bf;
+        --color-border-table: #dee2e6;
+        --color-progress-track: #e9ecef;
+        --color-link: #0a58ca;                   /* text: 6.4:1 on #fff, 5.9:1 on subtle */
+        --color-link-hover: #084298;
+        --color-focus-ring: #0a58ca;
+        --color-focus-ring-inverse: #ffffff;
+    }
+
+    /* Links: Bootstrap's default #0d6efd is only 4.15:1 on the subtle
+       background (breadcrumbs, filter panels). Class-level rules such as
+       .back-link still win over this element selector. */
+    a { color: var(--color-link); }
+    a:hover { color: var(--color-link-hover); }
+
+    /* Badges — mirror style.css. Bootstrap's bare .badge paints white text
+       with no background, so every badge in the report markup must carry
+       one of these classes. */
+    .badge-brand { background-color: var(--color-brand); color: var(--color-text-inverse); }
+    .badge-neutral { background-color: var(--color-severity-low-badge); color: var(--color-text-inverse); }
+    .badge-pass { background-color: var(--color-severity-pass-badge); color: var(--color-text-inverse); }
+    .badge-high { background-color: var(--color-severity-high-badge); color: var(--color-text-inverse); }
+    .badge-medium {
+        background-color: var(--color-severity-medium-bg);
+        color: var(--color-severity-medium);
+        border: 1px solid var(--color-severity-medium-border);
+    }
+    .badge-info {
+        background-color: var(--color-info-bg);
+        color: var(--color-info);
+        border: 1px solid var(--color-info);
+    }
+    .badge-subtle {
+        background-color: var(--color-bg-subtle);
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
+    }
+    .badge-discovery {
+        background-color: var(--color-discovery-bg);
+        color: var(--color-discovery);
+        border: 1px solid var(--color-discovery);
+    }
+
+    /* Text/background utilities — mirror style.css */
+    .text-severity-high { color: var(--color-severity-high) !important; }
+    .text-severity-medium { color: var(--color-severity-medium) !important; }
+    .text-severity-pass { color: var(--color-severity-pass) !important; }
+    .text-info-custom { color: var(--color-info) !important; }
+    .text-discovery { color: var(--color-discovery) !important; }
+    .text-inverse { color: var(--color-text-inverse) !important; }
+    .bg-header { background-color: var(--color-brand) !important; }
+
+    /* Legacy Bootstrap-named hooks still present in some report markup */
+    .bg-info, .badge.bg-info {
+        background-color: var(--color-info) !important;
+        color: var(--color-text-inverse) !important; /* 5.4:1 */
+    }
+    .bg-medium, .badge.bg-medium {
+        background-color: var(--color-severity-medium-bg) !important;
+        color: var(--color-text) !important; /* 14.9:1 */
+    }
+
+    /* Severity section headers: dark gradients with white text; BOTH stops
+       of every gradient meet 4.5:1 against white (see GH #50). */
+    .severity-header-high {
+        background: linear-gradient(135deg, var(--color-severity-high), var(--color-severity-high-gradient-end));
+        color: var(--color-text-inverse); /* 8.1:1 / 10.0:1 */
+    }
+    .severity-header-medium {
+        background: linear-gradient(135deg, var(--color-severity-medium), var(--color-severity-medium-gradient-end));
+        color: var(--color-text-inverse); /* 5.6:1 / 8.3:1 */
+    }
+    .severity-header-info {
+        background: linear-gradient(135deg, var(--color-info), var(--color-info-gradient-end));
+        color: var(--color-text-inverse); /* 5.4:1 / 7.8:1 */
+    }
+    .severity-header-discovery {
+        background: linear-gradient(135deg, var(--color-discovery), var(--color-discovery-gradient-end));
+        color: var(--color-text-inverse); /* 6.5:1 / 8.7:1 */
+    }
+
+    .border-severity-high { border-color: var(--color-severity-high) !important; }
+    .border-severity-medium { border-color: var(--color-severity-medium) !important; }
+    .border-info-custom { border-color: var(--color-info) !important; }
+    .border-discovery { border-color: var(--color-discovery) !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    *:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
+    }

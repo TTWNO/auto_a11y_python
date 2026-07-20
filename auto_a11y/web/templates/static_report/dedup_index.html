@@ -13,6 +13,8 @@
     {{ bootstrap_icons_css|safe }}
     </style>
     <style>
+{% include "static_report/_dedup_shared_styles.html" %}
+
     .summary-cards {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -194,51 +196,6 @@
         display: inline;
     }
 
-    /* WCAG AA Contrast Overrides */
-    .text-info-custom {
-        color: #0e7490 !important; /* Dark cyan with 4.5:1 contrast on white */
-    }
-    .text-severity-medium {
-        color: #856404 !important; /* Dark yellow/brown with 4.6:1 contrast on white */
-    }
-
-    /* Severity color utility classes */
-    :root {
-        --color-discovery: #6f42c1;
-        --color-discovery-bg: #f3eefa;
-        --color-text: #1c1c1c;
-        --color-text-muted: #4a4a4a;
-        --color-bg: #ffffff;
-        --color-bg-subtle: #f4f6f7;
-        --color-brand: #1a5276;
-        --color-border-table: #dee2e6;
-        --color-progress-track: #e9ecef;
-        --color-text-inverse: #ffffff;
-        --color-severity-high: #922b21;
-        --color-severity-high-bg: #fdedec;
-        --color-severity-medium: #7d6608;
-        --color-severity-medium-bg: #fff3cd;
-        --color-severity-pass: #1e8449;
-        --color-info: #0e7490;
-        --color-info-bg: #e0f3f8;
-        /* Link + focus tokens - mirror tokens.css */
-        --color-link: #0a58ca;
-        --color-focus-ring: #0a58ca;
-        --color-focus-ring-inverse: #ffffff;
-    }
-    .text-discovery { color: var(--color-discovery) !important; }
-
-    @media (prefers-reduced-motion: reduce) {
-        * {
-            animation-duration: 0.01ms !important;
-            transition-duration: 0.01ms !important;
-        }
-    }
-
-    *:focus-visible {
-        outline: 2px solid var(--color-focus-ring, #0d6efd);
-        outline-offset: 2px;
-    }
     </style>
 </head>
 <body>

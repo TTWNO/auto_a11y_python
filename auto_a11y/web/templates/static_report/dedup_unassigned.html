@@ -13,6 +13,8 @@
 {{ bootstrap_icons_css|safe }}
 </style>
     <style>
+{% include "static_report/_dedup_shared_styles.html" %}
+
     .touchpoint-header {
         background-color: var(--color-bg-subtle);
         padding: 8px;
@@ -222,89 +224,6 @@
         display: inline;
     }
 
-    /* WCAG AA Contrast Overrides */
-    .bg-info {
-        background-color: var(--color-info) !important;
-        color: var(--color-text-inverse) !important; /* White text on dark cyan background */
-    }
-    .badge.bg-info {
-        background-color: var(--color-info) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    .bg-medium {
-        background-color: var(--color-severity-medium-bg) !important;
-        color: var(--color-text) !important; /* Dark text on yellow background */
-    }
-    .badge.bg-medium {
-        background-color: var(--color-severity-medium-bg) !important;
-        color: var(--color-text) !important;
-    }
-
-    /* Severity color utility classes */
-    :root {
-        /* Aligned to tokens.css light-mode values so report text/badges meet
-           WCAG 2.2 AA; previous Bootstrap-ish values (e.g. #dc3545 = 4.0:1,
-           #ffc107 used as a header bg) failed contrast. See GH #50. */
-        --color-severity-high: #922b21;
-        --color-severity-high-gradient-end: #7b241c;
-        --color-severity-high-bg: #fdedec;
-        --color-severity-medium: #7d6608;
-        --color-severity-medium-gradient-end: #5e4d06;
-        --color-severity-medium-bg: #fff3cd;
-        --color-severity-pass: #1a7a3e;
-        --color-severity-pass-bg: #f0fcf5;
-        --color-info: #0e7490;
-        --color-info-gradient-end: #0b5a70;
-        --color-info-bg: #e0f3f8;
-        --color-discovery: #6f42c1;
-        --color-discovery-gradient-end: #5a32a3;
-        --color-discovery-bg: #f3eefa;
-        --color-text-inverse: #ffffff;
-        --color-text: #212529;
-        --color-text-muted: #4a4a4a;
-        --color-bg: #ffffff;
-        --color-bg-subtle: #f4f6f7;
-        --color-brand: #1a5276;
-        --color-border-table: #dee2e6;
-        --color-progress-track: #e9ecef;
-        /* Link + focus tokens - mirror tokens.css so inline styles below resolve */
-        --color-link: #0a58ca;
-        --color-focus-ring: #0a58ca;
-        --color-focus-ring-inverse: #ffffff;
-    }
-    .severity-header-high {
-        background: linear-gradient(135deg, var(--color-severity-high), var(--color-severity-high-gradient-end));
-        color: var(--color-text-inverse);
-    }
-    .severity-header-medium {
-        background: linear-gradient(135deg, var(--color-severity-medium), var(--color-severity-medium-gradient-end));
-        color: var(--color-text-inverse); /* white on dark gold (#50) */
-    }
-    .severity-header-info {
-        background: linear-gradient(135deg, var(--color-info), var(--color-info-gradient-end));
-        color: var(--color-text-inverse);
-    }
-    .severity-header-discovery {
-        background: linear-gradient(135deg, var(--color-discovery), var(--color-discovery-gradient-end));
-        color: var(--color-text-inverse);
-    }
-    .border-severity-high { border-color: var(--color-severity-high) !important; }
-    .border-severity-medium { border-color: var(--color-severity-medium) !important; }
-    .border-info-custom { border-color: var(--color-info) !important; }
-    .border-discovery { border-color: var(--color-discovery) !important; }
-    .text-discovery { color: var(--color-discovery) !important; }
-
-    @media (prefers-reduced-motion: reduce) {
-        * {
-            animation-duration: 0.01ms !important;
-            transition-duration: 0.01ms !important;
-        }
-    }
-
-    *:focus-visible {
-        outline: 2px solid var(--color-focus-ring, #0d6efd);
-        outline-offset: 2px;
-    }
 </style>
 </head>
 <body>

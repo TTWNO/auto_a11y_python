@@ -10,7 +10,7 @@
     "id": "ErrNoCurrentPageIndicatorScreenReader_003_mixed_scenarios",
     "issueId": "ErrNoCurrentPageIndicatorScreenReader",
     "expectedViolationCount": 4,
-    "expectedPassCount": 0,
+    "expectedPassCount": 1,
     "description": "Various combinations of aria-current and visual indicators",
     "wcag": ["5.2.4", "1.4.13", "2.4.8"],
     "impact": "High"
@@ -68,7 +68,9 @@
 
     <!-- CORRECT: Both aria-current AND visual styling -->
     <h2>Navigation 4: Complete implementation</h2>
-    <nav aria-label="Example 4 - Complete">
+    <nav aria-label="Example 4 - Complete"
+         data-expected-pass="true"
+         data-pass-reason="Current link has both aria-current='page' AND distinct visual styling (.correct: bold, blue background, white text). Screen reader and magnifier users can both identify the current page, so no ErrNoCurrentPageIndicatorScreenReader is emitted.">
         <ul>
             <li><a href="/">Home</a></li>
             <li><a href="/products" aria-current="page" class="correct">Products</a></li>

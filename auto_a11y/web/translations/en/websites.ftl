@@ -38,6 +38,13 @@ websites-discovery-is-already-running-do-you-want-to = Discovery is already runn
 websites-discovery-issue = Discovery Issue
 websites-discovery-issues = Discovery Issues
 websites-discovery-parameters = Discovery Parameters
+websites-discovery-robots-blocked-action = Edit website settings
+websites-discovery-robots-blocked-body =
+    { $count ->
+        [one] { $count } URL was skipped because this site's robots.txt disallows crawling — the most common reason a discovery finds no pages. To test this site anyway, turn off "Respect robots.txt" in the website settings and run discovery again.
+       *[other] { $count } URLs were skipped because this site's robots.txt disallows crawling — the most common reason a discovery finds no pages. To test this site anyway, turn off "Respect robots.txt" in the website settings and run discovery again.
+    }
+websites-discovery-robots-blocked-title = Discovery blocked by robots.txt
 websites-discovery-run = Discovery Run
 websites-discovery-run-details = Discovery Run Details
 websites-discovery-run-history-for-this-website = Discovery run history for this website

@@ -38,6 +38,13 @@ websites-discovery-is-already-running-do-you-want-to = La découverte est déjà
 websites-discovery-issue = Problème de découverte
 websites-discovery-issues = Problèmes de découverte
 websites-discovery-parameters = Paramètres de découverte
+websites-discovery-robots-blocked-action = Modifier les paramètres du site
+websites-discovery-robots-blocked-body =
+    { $count ->
+        [one] { $count } URL a été ignorée parce que le fichier robots.txt de ce site interdit l'exploration — c'est la raison la plus courante pour laquelle une découverte ne trouve aucune page. Pour tester ce site malgré tout, désactivez « Respecter robots.txt » dans les paramètres du site et relancez la découverte.
+       *[other] { $count } URL ont été ignorées parce que le fichier robots.txt de ce site interdit l'exploration — c'est la raison la plus courante pour laquelle une découverte ne trouve aucune page. Pour tester ce site malgré tout, désactivez « Respecter robots.txt » dans les paramètres du site et relancez la découverte.
+    }
+websites-discovery-robots-blocked-title = Découverte bloquée par robots.txt
 websites-discovery-run = Exécution de la découverte
 websites-discovery-run-details = Détails de l'exécution de la découverte
 websites-discovery-run-history-for-this-website = Historique des exécutions de découverte pour ce site Web

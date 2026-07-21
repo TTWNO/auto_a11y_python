@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: white; }
+  svg { display: block; }
+  .box { fill: #eef4fb; stroke: #1a5276; stroke-width: 2; }
+  .box-title { font-size: 17px; font-weight: 700; fill: #12283c; }
+  .box-sub { font-size: 13px; fill: #333f4d; }
+  .arrow { stroke: #1a5276; stroke-width: 2.5; fill: none; marker-end: url(#arr); }
+  .loop { stroke: #6f42c1; stroke-width: 2; fill: none; marker-end: url(#arrp); stroke-dasharray: 6 4; }
+  .loop-label { font-size: 13px; fill: #4a2a80; font-style: italic; }
+  .nest { fill: none; stroke: #1a5276; stroke-width: 2; rx: 10; }
+  .nest-fill1 { fill: #eef4fb; }
+  .nest-fill2 { fill: #ffffff; }
+  .nest-title { font-size: 16px; font-weight: 700; fill: #12283c; }
+  .nest-desc { font-size: 12.5px; fill: #333f4d; }
+</style></head><body>
+
+<!-- Diagram 1: workflow -->
+<svg id="workflow" width="1120" height="360" viewBox="0 0 1120 360" role="img"
+     aria-label="Auto A11y workflow: create a project, add a website, discover pages, run tests, review results, then generate reports. Fix issues on the site and re-test to track progress.">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a5276"/>
+    </marker>
+    <marker id="arrp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6f42c1"/>
+    </marker>
+  </defs>
+
+  <g><rect class="box" x="20" y="90" width="160" height="90" rx="10"/>
+    <text class="box-title" x="100" y="128" text-anchor="middle">1. Project</text>
+    <text class="box-sub" x="100" y="152" text-anchor="middle">Create a container</text>
+    <text class="box-sub" x="100" y="168" text-anchor="middle">for the audit</text></g>
+  <line class="arrow" x1="180" y1="135" x2="205" y2="135"/>
+
+  <g><rect class="box" x="207" y="90" width="160" height="90" rx="10"/>
+    <text class="box-title" x="287" y="128" text-anchor="middle">2. Website</text>
+    <text class="box-sub" x="287" y="152" text-anchor="middle">Add the site URL</text>
+    <text class="box-sub" x="287" y="168" text-anchor="middle">to be audited</text></g>
+  <line class="arrow" x1="367" y1="135" x2="392" y2="135"/>
+
+  <g><rect class="box" x="394" y="90" width="160" height="90" rx="10"/>
+    <text class="box-title" x="474" y="128" text-anchor="middle">3. Discover</text>
+    <text class="box-sub" x="474" y="152" text-anchor="middle">Crawl the site to</text>
+    <text class="box-sub" x="474" y="168" text-anchor="middle">find its pages</text></g>
+  <line class="arrow" x1="554" y1="135" x2="579" y2="135"/>
+
+  <g><rect class="box" x="581" y="90" width="160" height="90" rx="10"/>
+    <text class="box-title" x="661" y="128" text-anchor="middle">4. Test</text>
+    <text class="box-sub" x="661" y="152" text-anchor="middle">Automated checks</text>
+    <text class="box-sub" x="661" y="168" text-anchor="middle">+ AI analysis</text></g>
+  <line class="arrow" x1="741" y1="135" x2="766" y2="135"/>
+
+  <g><rect class="box" x="768" y="90" width="160" height="90" rx="10"/>
+    <text class="box-title" x="848" y="128" text-anchor="middle">5. Review</text>
+    <text class="box-sub" x="848" y="152" text-anchor="middle">Issues by severity</text>
+    <text class="box-sub" x="848" y="168" text-anchor="middle">and touchpoint</text></g>
+  <line class="arrow" x1="928" y1="135" x2="953" y2="135"/>
+
+  <g><rect class="box" x="955" y="90" width="145" height="90" rx="10"/>
+    <text class="box-title" x="1027" y="128" text-anchor="middle">6. Report</text>
+    <text class="box-sub" x="1027" y="152" text-anchor="middle">Executive, offline</text>
+    <text class="box-sub" x="1027" y="168" text-anchor="middle">&amp; dedupe reports</text></g>
+
+  <path class="loop" d="M 1027 180 L 1027 270 L 661 270 L 661 185"/>
+  <text class="loop-label" x="844" y="260" text-anchor="middle">Fix issues on the site, then re-test to track progress</text>
+</svg>
+
+<!-- Diagram 2: concepts -->
+<svg id="concepts" width="1120" height="430" viewBox="0 0 1120 430" role="img"
+     aria-label="Auto A11y data model: a Project contains Websites; each Website contains Pages; each Page accumulates Test Results. Issues found are organized by touchpoint (category) and severity: errors, warnings, info, and discovery items.">
+  <rect class="nest nest-fill1" x="20" y="20" width="700" height="390" rx="10"/>
+  <text class="nest-title" x="40" y="52">Project — “Inaccessibility Matters 2”</text>
+  <text class="nest-desc" x="40" y="74">One audit engagement: settings, WCAG level, test users, reports</text>
+
+  <rect class="nest nest-fill2" x="40" y="92" width="660" height="298" rx="10"/>
+  <text class="nest-title" x="60" y="124">Website — “Main” (https://bobd69.sg-host.com/)</text>
+  <text class="nest-desc" x="60" y="146">A site to crawl and test; holds discovery settings</text>
+
+  <rect class="nest nest-fill1" x="60" y="164" width="620" height="206" rx="10"/>
+  <text class="nest-title" x="80" y="196">Pages — /, /about.html, /a11y.html, …</text>
+  <text class="nest-desc" x="80" y="218">Each page is tested individually and keeps its result history</text>
+
+  <rect class="nest nest-fill2" x="80" y="236" width="580" height="114" rx="10"/>
+  <text class="nest-title" x="100" y="268">Test Results</text>
+  <text class="nest-desc" x="100" y="290">Issues grouped by touchpoint (Forms, Headings, Landmarks, Color &amp; Contrast, …)</text>
+  <text class="nest-desc" x="100" y="310">and by severity:</text>
+  <text class="nest-desc" x="100" y="334">
+    <tspan font-weight="700" fill="#922b21">Errors</tspan>
+    <tspan> (must fix) · </tspan>
+    <tspan font-weight="700" fill="#7d6608">Warnings</tspan>
+    <tspan> (should review) · </tspan>
+    <tspan font-weight="700" fill="#0e7490">Info</tspan>
+    <tspan> · </tspan>
+    <tspan font-weight="700" fill="#6f42c1">Discovery</tspan>
+    <tspan> (manual review)</tspan>
+  </text>
+
+  <g>
+    <rect class="nest nest-fill1" x="760" y="92" width="340" height="130" rx="10"/>
+    <text class="nest-title" x="780" y="124">Automated checks</text>
+    <text class="nest-desc" x="780" y="148">Hundreds of JavaScript tests run in a real</text>
+    <text class="nest-desc" x="780" y="168">browser. Only checks that pass ALL of their</text>
+    <text class="nest-desc" x="780" y="188">validation fixtures are enabled — protecting</text>
+    <text class="nest-desc" x="780" y="208">you from false positives.</text>
+  </g>
+  <g>
+    <rect class="nest nest-fill1" x="760" y="240" width="340" height="130" rx="10"/>
+    <text class="nest-title" x="780" y="272">AI visual analysis</text>
+    <text class="nest-desc" x="780" y="296">Claude AI reviews page screenshots for</text>
+    <text class="nest-desc" x="780" y="316">issues DOM testing can’t see: reading order,</text>
+    <text class="nest-desc" x="780" y="336">visual headings, modal behaviour, motion.</text>
+  </g>
+</svg>
+
+</body></html>

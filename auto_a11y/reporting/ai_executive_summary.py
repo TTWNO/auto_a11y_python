@@ -100,7 +100,24 @@ class AIExecutiveSummaryGenerator:
         all_violations: list[dict[str, Any]] = []
         all_warnings: list[dict[str, Any]] = []
         critical_issues: list[dict[str, Any]] = []
-        
+
+        # Streaming reports pass a bounded, pre-collected sample instead of
+        # the full nested website/page structure (which is never held in
+        # memory there). Each sample is already a plain dict with
+        # description/impact/wcag/category keys.
+        samples = report_data.get('violation_samples')
+        if samples:
+            for sample in samples:
+                sample_info = {
+                    'description': str(sample.get('description', '')),
+                    'impact': str(sample.get('impact', 'unknown')),
+                    'wcag': sample.get('wcag', []),
+                    'category': str(sample.get('category', 'general')),
+                }
+                all_violations.append(sample_info)
+                if sample_info['impact'] == 'high':
+                    critical_issues.append(sample_info)
+
         for website_data in report_data.get('websites', []):
             for page_data in website_data.get('pages', []):
                 test_result = page_data.get('test_result')
@@ -441,9 +458,70 @@ class AIExecutiveSummaryGenerator:
             'ai_model': 'Fallback (AI not available)'
         }
     
-    def format_executive_summary_html(self, ai_summary: dict[str, Any]) -> str:
+    # Static section headings for the rendered summary, per language. The
+    # AI-generated *content* arrives in the requested language via the
+    # prompt; these cover the fixed chrome around it.
+    _HEADINGS: dict[str, dict[str, str]] = {
+        'en': {
+            'overall_assessment': 'Overall Accessibility Assessment',
+            'key_strengths': '✅ Key Strengths',
+            'critical_risks': '⚠️ Critical Risk Areas',
+            'maturity': 'Accessibility Maturity Level',
+            'user_impact': 'User Impact Analysis',
+            'legal_risk': 'Legal & Compliance Risk',
+            'risk_badge': '{level} Risk',
+            'prioritization': 'Recommended Prioritization',
+            'strategic_recommendations': 'Strategic Recommendations',
+            'quick_wins': '🎯 Quick Wins (Immediate)',
+            'short_term': '📅 Short-term Goals (1-3 months)',
+            'long_term': '🎯 Long-term Strategy (3-12 months)',
+            'training': 'Recommended Training',
+            'show_stoppers': '🚫 Show Stoppers - Immediate Action Required',
+            'maturity_just_starting': 'Just Starting',
+            'maturity_developing': 'Developing',
+            'maturity_maturing': 'Maturing',
+            'maturity_advanced': 'Advanced',
+            'maturity_leading': 'Leading',
+            'impact_vision': 'Vision Impairments',
+            'impact_motor': 'Motor Impairments',
+            'impact_hearing': 'Hearing Impairments',
+            'impact_cognitive': 'Cognitive Impairments',
+        },
+        'fr': {
+            'overall_assessment': "Évaluation globale de l'accessibilité",
+            'key_strengths': '✅ Points forts',
+            'critical_risks': '⚠️ Zones de risque critiques',
+            'maturity': "Niveau de maturité en accessibilité",
+            'user_impact': "Analyse de l'impact sur les utilisateurs",
+            'legal_risk': 'Risque juridique et de conformité',
+            'risk_badge': 'Risque : {level}',
+            'prioritization': 'Priorisation recommandée',
+            'strategic_recommendations': 'Recommandations stratégiques',
+            'quick_wins': '🎯 Gains rapides (immédiat)',
+            'short_term': '📅 Objectifs à court terme (1-3 mois)',
+            'long_term': '🎯 Stratégie à long terme (3-12 mois)',
+            'training': 'Formation recommandée',
+            'show_stoppers': '🚫 Obstacles bloquants – action immédiate requise',
+            'maturity_just_starting': 'Débutant',
+            'maturity_developing': 'En développement',
+            'maturity_maturing': 'En maturation',
+            'maturity_advanced': 'Avancé',
+            'maturity_leading': 'Chef de file',
+            'impact_vision': 'Déficiences visuelles',
+            'impact_motor': 'Déficiences motrices',
+            'impact_hearing': 'Déficiences auditives',
+            'impact_cognitive': 'Déficiences cognitives',
+        },
+    }
+
+    def _h(self, key: str, language: str) -> str:
+        """Look up a fixed heading in the requested language."""
+        table = self._HEADINGS.get(language, self._HEADINGS['en'])
+        return table.get(key, self._HEADINGS['en'].get(key, key))
+
+    def format_executive_summary_html(self, ai_summary: dict[str, Any], language: str = 'en') -> str:
         """Format AI executive summary as HTML"""
-        
+
         assessment = ai_summary.get('overall_assessment', {})
         maturity = ai_summary.get('maturity_assessment', {})
         legal_risk = ai_summary.get('legal_risk', {})
@@ -465,7 +543,7 @@ class AIExecutiveSummaryGenerator:
         <section class="executive-summary-analysis">
             
             <div class="assessment-card" style="border-left: 5px solid {rating_color};">
-                <h3>Overall Accessibility Assessment</h3>
+                <h3>{self._h('overall_assessment', language)}</h3>
                 <div class="rating-display">
                     <span class="rating-value" style="color: {rating_color}; font-size: 2em; font-weight: bold;">
                         {html.escape(str(assessment.get('rating', 'Unknown')))}
@@ -476,79 +554,79 @@ class AIExecutiveSummaryGenerator:
             
             <div class="summary-grid">
                 <div class="summary-section">
-                    <h3>✅ Key Strengths</h3>
+                    <h3>{self._h('key_strengths', language)}</h3>
                     <ul>
                         {"".join(f"<li>{html.escape(str(strength))}</li>" for strength in ai_summary.get('key_strengths', []))}
                     </ul>
                 </div>
                 
                 <div class="summary-section critical">
-                    <h3>⚠️ Critical Risk Areas</h3>
+                    <h3>{self._h('critical_risks', language)}</h3>
                     <ul>
                         {"".join(f"<li>{html.escape(str(risk))}</li>" for risk in ai_summary.get('critical_risks', []))}
                     </ul>
                 </div>
             </div>
             
-            {self._format_show_stoppers(ai_summary.get('show_stoppers', []))}
+            {self._format_show_stoppers(ai_summary.get('show_stoppers', []), language)}
             
             <div class="maturity-section">
-                <h3>Accessibility Maturity Level</h3>
+                <h3>{self._h('maturity', language)}</h3>
                 <div class="maturity-indicator">
                     <div class="maturity-scale">
-                        <span class="level {'active' if maturity.get('level') == 'Just Starting' else ''}">Just Starting</span>
-                        <span class="level {'active' if maturity.get('level') == 'Developing' else ''}">Developing</span>
-                        <span class="level {'active' if maturity.get('level') == 'Maturing' else ''}">Maturing</span>
-                        <span class="level {'active' if maturity.get('level') == 'Advanced' else ''}">Advanced</span>
-                        <span class="level {'active' if maturity.get('level') == 'Leading' else ''}">Leading</span>
+                        <span class="level {'active' if maturity.get('level') == 'Just Starting' else ''}">{self._h('maturity_just_starting', language)}</span>
+                        <span class="level {'active' if maturity.get('level') == 'Developing' else ''}">{self._h('maturity_developing', language)}</span>
+                        <span class="level {'active' if maturity.get('level') == 'Maturing' else ''}">{self._h('maturity_maturing', language)}</span>
+                        <span class="level {'active' if maturity.get('level') == 'Advanced' else ''}">{self._h('maturity_advanced', language)}</span>
+                        <span class="level {'active' if maturity.get('level') == 'Leading' else ''}">{self._h('maturity_leading', language)}</span>
                     </div>
                     <p class="maturity-description">{html.escape(str(maturity.get('description', '')))}</p>
                 </div>
             </div>
             
             <div class="impact-analysis">
-                <h3>User Impact Analysis</h3>
+                <h3>{self._h('user_impact', language)}</h3>
                 <div class="impact-grid">
-                    {self._format_user_impact(ai_summary.get('user_impact', {}))}
+                    {self._format_user_impact(ai_summary.get('user_impact', {}), language)}
                 </div>
             </div>
             
             <div class="legal-risk-section" style="border-color: {self._get_risk_color(legal_risk.get('level', 'Unknown'))};">
-                <h3>Legal & Compliance Risk</h3>
+                <h3>{self._h('legal_risk', language)}</h3>
                 <div class="risk-level">
                     <span class="risk-badge" style="background: {self._get_risk_color(legal_risk.get('level', 'Unknown'))};">
-                        {html.escape(str(legal_risk.get('level', 'Unknown')))} Risk
+                        {html.escape(self._h('risk_badge', language).format(level=str(legal_risk.get('level', 'Unknown'))))}
                     </span>
                     <p>{html.escape(str(legal_risk.get('explanation', '')))}</p>
                 </div>
             </div>
             
             <div class="prioritization-section">
-                <h3>Recommended Prioritization</h3>
+                <h3>{self._h('prioritization', language)}</h3>
                 <ol class="priority-list">
                     {"".join(f'<li class="priority-item">{html.escape(str(item))}</li>' for item in ai_summary.get('prioritization', []))}
                 </ol>
             </div>
             
             <div class="recommendations-section">
-                <h3>Strategic Recommendations</h3>
+                <h3>{self._h('strategic_recommendations', language)}</h3>
                 
                 <div class="recommendation-category">
-                    <h4>🎯 Quick Wins (Immediate)</h4>
+                    <h4>{self._h('quick_wins', language)}</h4>
                     <ul>
                         {"".join(f"<li>{html.escape(str(item))}</li>" for item in recommendations.get('quick_wins', []))}
                     </ul>
                 </div>
                 
                 <div class="recommendation-category">
-                    <h4>📅 Short-term Goals (1-3 months)</h4>
+                    <h4>{self._h('short_term', language)}</h4>
                     <ul>
                         {"".join(f"<li>{html.escape(str(item))}</li>" for item in recommendations.get('short_term', []))}
                     </ul>
                 </div>
                 
                 <div class="recommendation-category">
-                    <h4>🎯 Long-term Strategy (3-12 months)</h4>
+                    <h4>{self._h('long_term', language)}</h4>
                     <ul>
                         {"".join(f"<li>{html.escape(str(item))}</li>" for item in recommendations.get('long_term', []))}
                     </ul>
@@ -556,7 +634,7 @@ class AIExecutiveSummaryGenerator:
             </div>
             
             <div class="training-section">
-                <h3>Recommended Training</h3>
+                <h3>{self._h('training', language)}</h3>
                 <ul class="training-list">
                     {"".join(f'<li class="training-item">{html.escape(str(item))}</li>' for item in ai_summary.get('training_needs', []))}
                 </ul>
@@ -566,7 +644,7 @@ class AIExecutiveSummaryGenerator:
 
         return summary_html
     
-    def _format_show_stoppers(self, show_stoppers: list[str]) -> str:
+    def _format_show_stoppers(self, show_stoppers: list[str], language: str = 'en') -> str:
         """Format show stopper issues"""
         if not show_stoppers:
             return ""
@@ -574,14 +652,14 @@ class AIExecutiveSummaryGenerator:
         items = "".join(f"<li class='show-stopper-item'>{html.escape(str(item))}</li>" for item in show_stoppers)
         return f"""
         <div class="show-stoppers-alert">
-            <h3>🚫 Show Stoppers - Immediate Action Required</h3>
+            <h3>{self._h('show_stoppers', language)}</h3>
             <ul class="show-stoppers-list">
                 {items}
             </ul>
         </div>
         """
     
-    def _format_user_impact(self, impact: dict[str, str]) -> str:
+    def _format_user_impact(self, impact: dict[str, str], language: str = 'en') -> str:
         """Format user impact analysis"""
         impact_html = ""
         icons = {
@@ -597,7 +675,7 @@ class AIExecutiveSummaryGenerator:
             <div class="impact-item">
                 <span class="impact-icon">{icon}</span>
                 <div class="impact-details">
-                    <strong>{html.escape(str(key).title())} Impairments</strong>
+                    <strong>{html.escape(self._h(f'impact_{str(key).lower()}', language))}</strong>
                     <p>{html.escape(str(value))}</p>
                 </div>
             </div>

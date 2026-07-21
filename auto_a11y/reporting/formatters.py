@@ -216,6 +216,7 @@ class BaseFormatter:
             'context_note': "Check the 'All Issues' sheet for complete context including Page State, Breakpoint, and Pseudoclass information for each issue.",
             # Executive report sections (streaming HTML report)
             'compliance': 'Compliance',
+            'ai_executive_summary': 'AI Executive Analysis',
             'grade': 'Grade',
             'key_metrics': 'Key Metrics',
             'issues_by_touchpoint': 'Issues by Touchpoint',
@@ -378,6 +379,7 @@ class BaseFormatter:
             'context_note': "Consultez la feuille « Tous les problèmes » pour le contexte complet, y compris l'état de la page, le point de rupture et les informations de pseudoclasse pour chaque problème.",
             # Executive report sections (streaming HTML report)
             'compliance': 'Conformité',
+            'ai_executive_summary': 'Analyse exécutive par IA',
             'grade': 'Note',
             'key_metrics': 'Indicateurs clés',
             'issues_by_touchpoint': 'Problèmes par point de contact',
@@ -581,16 +583,27 @@ class BaseFormatter:
 class HTMLFormatter(BaseFormatter):
     """HTML report formatter"""
 
+    # Upper bound on violation samples retained for AI-summary context;
+    # keeps streaming memory O(1) regardless of site size.
+    _AI_SAMPLE_CAP = 40
+
     def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'html'
         # Pass Claude API key if available
         claude_api_key = config.get('CLAUDE_API_KEY')
         self.comprehensive_generator = ComprehensiveReportGenerator(claude_api_key=claude_api_key)
+        # Streaming report shape. The standalone HTML report is an
+        # executive summary (the offline/deduplicated reports carry the
+        # per-page detail); the PDF formatter flips these when delegating
+        # so its output keeps the detail section and skips the AI call.
+        self.include_page_detail: bool = False
+        self.include_ai_summary: bool = True
         # Streaming state (initialized in begin())
         self._output_file: str = ''
         self._summary: dict[str, Any] = {}
         self._body_tempfile: IO[str] | None = None
+        self._ai_samples: list[dict[str, Any]] = []
 
     @staticmethod
     def _esc(value: object) -> str:
@@ -1345,20 +1358,59 @@ class HTMLFormatter(BaseFormatter):
 
     @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
-        """Open a temp body file for page HTML sections.
+        """Prepare streaming state.
 
-        The final output is NOT written yet — only the temp body file is
-        created so that ``append_page`` can write into it.
+        The final output is NOT written yet. When per-page detail is
+        included (PDF delegation), a temp body file is created so that
+        ``append_page`` can write into it; the standalone HTML report is
+        executive-only, so no body file is needed there.
         """
         self._output_file = output_file
         self._summary = dict(summary) if summary else {}
-        self._body_tempfile = tempfile.NamedTemporaryFile(
-            mode='w', suffix='.html', delete=False, encoding='utf-8'
-        )
+        self._ai_samples = []
+        if self.include_page_detail:
+            self._body_tempfile = tempfile.NamedTemporaryFile(
+                mode='w', suffix='.html', delete=False, encoding='utf-8'
+            )
+        else:
+            self._body_tempfile = None
+
+    def _collect_ai_samples(self, violations: list[Any]) -> None:
+        """Accumulate a bounded sample of violations as AI-summary context.
+
+        High-impact issues are preferred; the cap keeps memory O(1) no
+        matter how many pages stream through.
+        """
+        for v in violations:
+            if len(self._ai_samples) >= self._AI_SAMPLE_CAP:
+                high = [x for x in self._ai_samples if x.get('impact') == 'high']
+                if len(high) >= self._AI_SAMPLE_CAP:
+                    return
+            issue = self.to_enriched_dict(v)
+            impact_raw = issue.get('impact', '')
+            if hasattr(impact_raw, 'value'):
+                impact_raw = impact_raw.value
+            impact = str(impact_raw).lower()
+            sample = {
+                'description': self._best_description(issue),
+                'impact': impact,
+                'wcag': issue.get('wcag_criteria', []),
+                'category': str(issue.get('touchpoint', 'general')),
+            }
+            if len(self._ai_samples) < self._AI_SAMPLE_CAP:
+                self._ai_samples.append(sample)
+            elif impact == 'high':
+                # Displace the first non-high sample to keep the most
+                # severe issues in the window.
+                for idx, existing in enumerate(self._ai_samples):
+                    if existing.get('impact') != 'high':
+                        self._ai_samples[idx] = sample
+                        break
 
     @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
-        """Write one page's violations/warnings as an HTML section to the temp body file."""
+        """Stream one page: collect AI context and (when enabled) write its
+        violations/warnings as an HTML section to the temp body file."""
         page = page_data.get('page', {})
         test_result = page_data.get('test_result')
         if test_result is None:
@@ -1369,6 +1421,12 @@ class HTMLFormatter(BaseFormatter):
 
         violations: list[Any] = self.get_issue_list(test_result, 'violations')
         warnings_list: list[Any] = self.get_issue_list(test_result, 'warnings')
+
+        if self.include_ai_summary:
+            self._collect_ai_samples(violations)
+
+        if not self.include_page_detail:
+            return
 
         section = f'<div class="page-section"><h3><a href="{self._esc_attr(page_url)}">{self._esc(page_title or page_url)}</a></h3>\n'
 
@@ -1422,20 +1480,76 @@ class HTMLFormatter(BaseFormatter):
             out.write(self._render_top_issues(s))
             out.write(self._render_recommendations(s))
 
-            out.write(f'<section class="detailed-results"><h2>{self._t("detailed_results")}</h2>\n')
-            # Stream body from temp file in 64KB chunks
-            body_path = getattr(self, '_body_tempfile', None)
-            if body_path and hasattr(body_path, 'name') and os.path.exists(body_path.name):
-                with open(body_path.name, 'r', encoding='utf-8') as body:
-                    while True:
-                        chunk = body.read(65536)
-                        if not chunk:
-                            break
-                        out.write(chunk)
-            out.write('</section>\n')
+            if self.include_ai_summary:
+                out.write(self._render_ai_summary(s))
+
+            if self.include_page_detail:
+                out.write(f'<section class="detailed-results"><h2>{self._t("detailed_results")}</h2>\n')
+                # Stream body from temp file in 64KB chunks
+                body_path = getattr(self, '_body_tempfile', None)
+                if body_path and hasattr(body_path, 'name') and os.path.exists(body_path.name):
+                    with open(body_path.name, 'r', encoding='utf-8') as body:
+                        while True:
+                            chunk = body.read(65536)
+                            if not chunk:
+                                break
+                            out.write(chunk)
+                out.write('</section>\n')
 
             out.write(self._get_footer())
             out.write('\n</div>\n</body>\n</html>')
+
+    def _render_ai_summary(self, s: dict[str, Any]) -> str:
+        """Render the AI executive analysis from Pass-1 stats plus the
+        bounded violation sample collected while streaming.
+
+        Any failure (no API key, network error) falls back to the
+        generator's deterministic summary; a hard failure skips the
+        section rather than aborting the report.
+        """
+        from auto_a11y.reporting.ai_executive_summary import AIExecutiveSummaryGenerator
+
+        generator: AIExecutiveSummaryGenerator
+        claude_api_key = self.config.get('CLAUDE_API_KEY')
+        if claude_api_key:
+            try:
+                from auto_a11y.ai.claude_client import ClaudeClient, ClaudeConfig
+                claude_config = ClaudeConfig(
+                    api_key=str(claude_api_key),
+                    model=str(self.config.get('CLAUDE_MODEL') or 'claude-opus-4-8'),
+                )
+                generator = AIExecutiveSummaryGenerator(ClaudeClient(config=claude_config))
+            except Exception as e:
+                logger.warning(f"Could not initialize AI summary client: {e}")
+                generator = AIExecutiveSummaryGenerator()
+        else:
+            generator = AIExecutiveSummaryGenerator()
+
+        report_data: dict[str, Any] = {
+            'project': s.get('project', {}),
+            'statistics': {
+                'total_pages': int(s.get('total_pages', 0) or 0),
+                'total_violations': int(s.get('total_violations', 0) or 0),
+                'total_warnings': int(s.get('total_warnings', 0) or 0),
+                'total_info': int(s.get('total_info', 0) or 0),
+                'total_discovery': int(s.get('total_discovery', 0) or 0),
+                'total_passes': int(s.get('total_passes', 0) or 0),
+            },
+            'violation_samples': list(self._ai_samples),
+            'recordings': s.get('recordings', []) or [],
+        }
+
+        try:
+            ai_summary = generator.generate_executive_summary(report_data, self.language)
+            body = generator.format_executive_summary_html(ai_summary, self.language)
+            css = generator.get_ai_summary_css()
+            return (
+                f'<section class="ai-summary"><h2>{self._t("ai_executive_summary")}</h2>\n'
+                f'<style>{css}</style>\n{body}\n</section>\n'
+            )
+        except Exception as e:
+            logger.error(f"AI executive summary rendering failed: {e}", exc_info=True)
+            return ''
 
     @override
     def cleanup(self) -> None:
@@ -3859,6 +3973,11 @@ class PDFFormatter(BaseFormatter):
         """Create an internal HTMLFormatter and a temp HTML file, then delegate."""
         self._pdf_output_file = output_file
         self._internal_html = HTMLFormatter(self.config, self.language)
+        # PDF keeps the per-page detail section and never triggers the AI
+        # call — the AI executive analysis is a feature of the standalone
+        # HTML report only.
+        self._internal_html.include_page_detail = True
+        self._internal_html.include_ai_summary = False
         # Temp HTML file that the internal formatter writes to
         fd, self._temp_html_path = tempfile.mkstemp(suffix='.html')
         os.close(fd)

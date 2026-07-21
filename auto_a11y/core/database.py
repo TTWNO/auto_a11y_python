@@ -977,10 +977,20 @@ class Database:
         items = list(self.test_result_items.find(query))
         return items
 
-    def yield_test_result_items(self, test_result_id: ObjectId, item_type: str | None = None) -> Generator[dict[str, Any], None, None]:
+    def yield_test_result_items(self, test_result_id: ObjectId | str, item_type: str | None = None) -> Generator[dict[str, Any], None, None]:
         """Yield individual test result items from cursor.
-        Each item is a raw dict from MongoDB."""
-        query: dict[str, Any] = {'test_result_id': test_result_id}
+        Each item is a raw dict from MongoDB.
+
+        Items written by older app versions store ``test_result_id`` as a
+        string while newer writes store an ObjectId — match both forms so
+        neither generation of data is silently skipped.
+        """
+        id_forms: list[ObjectId | str] = [test_result_id]
+        if isinstance(test_result_id, str) and ObjectId.is_valid(test_result_id):
+            id_forms.append(ObjectId(test_result_id))
+        elif isinstance(test_result_id, ObjectId):
+            id_forms.append(str(test_result_id))
+        query: dict[str, Any] = {'test_result_id': {'$in': id_forms}}
         if item_type:
             query['item_type'] = item_type
         cursor = self.test_result_items.find(query, no_cursor_timeout=True)

@@ -193,6 +193,20 @@ summary:focus-visible {
    Keeping outline on ALL focus states (mouse + keyboard) is also more
    accessible for power users who navigate via mouse. */
 
+/* Accordion buttons: Bootstrap's .accordion-button:focus outspecifies the
+   baseline above and replaces it with `outline: 0` plus a faint colour-only
+   box-shadow — nearly invisible in dark mode. Restore a strong indicator:
+   a double outline (two lines, a clear shape change that does not rely on
+   colour alone) over a contrast gap ring so it reads on any background
+   (WCAG 2.4.7, 1.4.1, 1.4.11). */
+.accordion-button:focus,
+.accordion-button:focus-visible {
+    outline: 6px double var(--color-focus-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
+    z-index: 3;
+}
+
 /* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline).
    Double-ring (outline + contrast shadow) guarantees visibility on any bg. */
 .form-control:focus,

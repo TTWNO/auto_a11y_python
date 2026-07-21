@@ -49,9 +49,15 @@ main {
     border: none;
 }
 
+/* Hover/focus must not be colour-alone or drop below AA: keep full-contrast
+   text and add an underline (shape change) instead of dimming to grey
+   (WCAG 1.4.1, 1.4.3). Current page stays distinguishable via bold. */
 .navbar-dark .nav-link:hover,
 .navbar-dark .nav-link:focus {
-    color: var(--color-border) !important;
+    color: var(--color-text-inverse) !important;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 2px;
 }
 
 /* Navbar focus styles - element-direct so cloned-element tests pass */

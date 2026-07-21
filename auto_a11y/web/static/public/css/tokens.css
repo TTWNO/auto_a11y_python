@@ -211,8 +211,9 @@
         --color-discovery-border: #b39ddb;
         --color-discovery-hover: #c4b0e0;
 
-        --color-score-good: #3dd9a8;
-        --color-score-poor: #ff9940;
+        /* Used as badge backgrounds behind white text — must stay dark (4.5:1+ with #fff) */
+        --color-score-good: #0b6b4f;
+        --color-score-poor: #a34d00;
 
         /* Badge/gradient backgrounds — darker for white text AAA contrast (6:1+).
            Used as background behind white/inverse text in dark mode. */
@@ -312,8 +313,9 @@
     --color-discovery-border: #b39ddb;
     --color-discovery-hover: #c4b0e0;
 
-    --color-score-good: #3dd9a8;
-    --color-score-poor: #ff9940;
+    /* Used as badge backgrounds behind white text — must stay dark (4.5:1+ with #fff) */
+    --color-score-good: #0b6b4f;
+    --color-score-poor: #a34d00;
 
     /* Badge/gradient backgrounds — darker for white text AAA contrast (6:1+).
        Used as background behind white/inverse text in dark mode. */

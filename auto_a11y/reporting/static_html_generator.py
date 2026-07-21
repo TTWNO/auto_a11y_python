@@ -2021,7 +2021,7 @@ class StaticHTMLReportGenerator:
         (report_dir / 'assets' / 'css').mkdir(parents=True, exist_ok=True)
         (report_dir / 'assets' / 'js').mkdir(parents=True, exist_ok=True)
         (report_dir / 'assets' / 'images' / 'screenshots').mkdir(parents=True, exist_ok=True)
-        (report_dir / 'assets' / 'fonts').mkdir(parents=True, exist_ok=True)
+        (report_dir / 'assets' / 'css' / 'fonts').mkdir(parents=True, exist_ok=True)
         (report_dir / 'data').mkdir(exist_ok=True)
 
     def _copy_assets(self, report_dir: Path, include_screenshots: bool, pages_data: list[dict[str, Any]] | None) -> None:
@@ -2047,11 +2047,14 @@ class StaticHTMLReportGenerator:
             if src.exists():
                 shutil.copy(src, report_dir / 'assets' / 'js' / js_file)
 
-        # Copy fonts (Bootstrap Icons)
-        fonts_dir = static_dir / 'fonts'
+        # Copy fonts (Bootstrap Icons) — bootstrap-icons.css resolves them
+        # relative to itself, so they must land in assets/css/fonts/
+        fonts_dir = static_dir / 'css' / 'fonts'
         if fonts_dir.exists():
+            dest_fonts_dir = report_dir / 'assets' / 'css' / 'fonts'
+            dest_fonts_dir.mkdir(parents=True, exist_ok=True)
             for font_file in fonts_dir.glob('*'):
-                shutil.copy(font_file, report_dir / 'assets' / 'fonts' / font_file.name)
+                shutil.copy(font_file, dest_fonts_dir / font_file.name)
 
         # Copy screenshots
         if include_screenshots and pages_data:

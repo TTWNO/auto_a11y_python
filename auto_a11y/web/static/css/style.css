@@ -2530,7 +2530,7 @@ samp {
 .text-primary,
 .link-primary,
 .alert-link,
-a:not(.btn):not(.nav-link):not(.dropdown-item):not(.page-link):not(.navbar-brand):not(.skip-link) {
+a:not(.btn):not(.nav-link):not(.dropdown-item):not(.page-link):not(.navbar-brand):not(.skip-link):not(.view-details-btn) {
     color: var(--color-link) !important;
 }
 

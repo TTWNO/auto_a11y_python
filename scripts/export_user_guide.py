@@ -53,6 +53,11 @@ def build_body(source: str) -> str:
     # Contents heading is unnumbered so section numbers match its list
     body = body.replace("## Contents\n", "## Contents {.unnumbered}\n", 1)
 
+    # The Markdown keeps manual "N." prefixes on section headings so GitHub
+    # anchor links resolve; pandoc's --number-sections adds its own numbers,
+    # so strip the manual prefix here to avoid "1 1." double numbering.
+    body = re.sub(r"^(#{2,})\s+\d+\.\s+", r"\1 ", body, flags=re.MULTILINE)
+
     # Remove the horizontal rules — page breaks take over the separation
     body = re.sub(r"^---$\n", "", body, flags=re.MULTILINE)
 

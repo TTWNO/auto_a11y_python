@@ -931,7 +931,7 @@
                                                                     {% endfor %}
                                                                 {% endif %}
                                                             </div>
-                                                        </article>
+                                                        </div>
                                                         
                                                         {% if (violation.selector or violation.xpath) and 'ErrDuplicateNavNames' not in violation.id %}
                                                         <p>
@@ -1122,7 +1122,7 @@
                                                             </div> {# Close viol-breakpoint-instances #}
                                                         </div> {# Close accordion-body #}
                                                     </div> {# Close viol-breakpoint collapse #}
-                                                </div> {# Close accordion-item #}
+                                                </article> {# Close accordion-item #}
                                             {% endfor %} {# End breakpoint loop #}
                                             </div> {# Close viol-group-breakpoints #}
                                         {% else %}
@@ -1308,7 +1308,7 @@
                                                                     {% endfor %}
                                                                 {% endif %}
                                                             </div>
-                                                        </article>
+                                                        </div>
                                                         
                                                         {% if (violation.selector or violation.xpath) and 'ErrDuplicateNavNames' not in violation.id %}
                                                         <p>
@@ -1493,14 +1493,14 @@
                                                         {% endif %}
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </article>
                                             {# INSTANCE_HTML_END #}
                                             {% endfor %}
-                                            </article>
+                                            </div>
                                         {% endif %}
                                     </div>
                                 </div>
-                            </div>
+                            </article>
                         {% else %}
                             <!-- Single instance - show as before -->
                             {% for violation in group_list %}
@@ -1692,7 +1692,7 @@
                                         {% endfor %}
                                     {% endif %}
                                 </div>
-                            </article>
+                            </div>
                             
                             {% if (violation.selector or violation.xpath) and 'ErrDuplicateNavNames' not in violation.id %}
                             <p>
@@ -1967,7 +1967,7 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
+                </article>
                             {% endfor %}
                         {% endif %}
                     {% endfor %}
@@ -2209,7 +2209,7 @@
                                                                     {% endfor %}
                                                                 {% endif %}
                                                             </div>
-                                                        </article>
+                                                        </div>
 
                                                         {% if warning.xpath %}
                                                         <p>
@@ -2279,7 +2279,7 @@
                                                             </div> {# Close warn-breakpoint-instances #}
                                                         </div> {# Close accordion-body #}
                                                     </div> {# Close warn-breakpoint collapse #}
-                                                </div> {# Close accordion-item #}
+                                                </article> {# Close accordion-item #}
                                             {% endfor %} {# End breakpoint loop #}
                                             </div> {# Close warn-group-breakpoints #}
                                         {% else %}
@@ -2406,8 +2406,8 @@
                                                         <pre class="bg-header text-inverse p-3 rounded"><code>{{ warning.html|e }}</code></pre>
                                                         {% endif %}
                                                     </div>
-                                                </article>
-                                            </div>
+                                                </div>
+                                            </article>
                                             {% endfor %}
                                             </div> {# Close warn-instances #}
                                         {% endif %}
@@ -2580,7 +2580,7 @@
                                         {% endfor %}
                                     {% endif %}
                                 </div>
-                            </article>
+                            </div>
 
                             {% if warning.xpath %}
                             <p>
@@ -2703,7 +2703,7 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
+                </article>
                             {% endfor %}
                         {% endif %}
                     {% endfor %}
@@ -2917,13 +2917,13 @@
                                                         </figure>
                                                         {% endif %}
                                                     </div>
-                                                </article>
-                                            </div>
+                                                </div>
+                                            </article>
                                             {% endfor %}
                                         </div>
-                                    </article>
+                                    </div>
                                 </div>
-                            </div>
+                            </article>
                         {% else %}
                             <!-- Single instance - show as before -->
                             {% for info in group_list %}
@@ -3124,9 +3124,9 @@
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
                             {% endif %}
-                        </article>
+                        </div>
                     </div>
-                </div>
+                </article>
                             {% endfor %}
                         {% endif %}
                     {% endfor %}
@@ -3380,13 +3380,13 @@
                                                         </figure>
                                                         {% endif %}
                                                     </div>
-                                                </article>
-                                            </div>
+                                                </div>
+                                            </article>
                                             {% endfor %}
                                         </div>
-                                    </article>
+                                    </div>
                                 </div>
-                            </div>
+                            </article>
                         {% else %}
                             <!-- Single instance - show as before -->
                             {% for discovery in group_list %}
@@ -3620,9 +3620,9 @@
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
                             {% endif %}
-                        </article>
+                        </div>
                     </div>
-                </div>
+                </article>
                             {% endfor %}
                         {% endif %}
                     {% endfor %}
@@ -3757,6 +3757,7 @@
         </div>
     </div>
 </dialog>
+</div> {# close container-fluid #}
 {% endblock %}
 
 {% block extra_js %}

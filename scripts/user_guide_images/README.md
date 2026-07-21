@@ -37,5 +37,4 @@ cp /tmp/xlsx_page-001.png docs/images/user-guide/23-excel-report.png
 Screenshots are captured at 1440×900 (light mode, 2× device scale). The
 guide's text references UI labels visible in these images — after
 regenerating, re-read `docs/USER_GUIDE.md` for stale descriptions, then
-re-export the Word/PDF versions (commands in the commit message of
-`docs/Auto_A11y_User_Guide.docx`).
+re-export the Word/PDF versions with `python scripts/export_user_guide.py`.

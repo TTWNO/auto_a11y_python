@@ -198,13 +198,35 @@ summary:focus-visible {
    box-shadow — nearly invisible in dark mode. Restore a strong indicator:
    a double outline (two lines, a clear shape change that does not rely on
    colour alone) over a contrast gap ring so it reads on any background
-   (WCAG 2.4.7, 1.4.1, 1.4.11). */
+   (WCAG 2.4.7, 1.4.1, 1.4.11). Fallback for engines without :has(). */
 .accordion-button:focus,
 .accordion-button:focus-visible {
     outline: 6px double var(--color-focus-ring);
     outline-offset: 2px;
     box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
     z-index: 3;
+}
+
+/* When the focused header's item is expanded, the ring must enclose the
+   whole accordion item (header + body), not just the header — otherwise
+   the expanded body appears to sit outside the focused region. Draw the
+   ring on the parent item and suppress the button-level one. */
+@supports selector(:has(*)) {
+    .accordion-item:has(> .accordion-header .accordion-button:focus),
+    .accordion-item:has(> .accordion-header .accordion-button:focus-visible) {
+        outline: 6px double var(--color-focus-ring);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
+        position: relative;
+        z-index: 3;
+    }
+
+    .accordion-button:focus,
+    .accordion-button:focus-visible {
+        /* @a11y-ignore: focus ring is drawn on the parent .accordion-item above */
+        outline: none;
+        box-shadow: none;
+    }
 }
 
 /* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline).

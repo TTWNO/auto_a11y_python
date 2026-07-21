@@ -367,7 +367,7 @@
                 <div class="card-header bg-subtle">
                     <h2 id="issues-found-heading" class="mb-0">
                         <i class="bi bi-bug" aria-hidden="true"></i> {{ ftl('pages-accessibility-issues-found') }}
-                        <button type="button" class="btn btn-sm btn-link p-0 ms-2"
+                        <button type="button" class="btn btn-sm copy-xpath-btn ms-2"
                                 aria-label="{{ ftl('pages-number-of-unique-issue-types-discovered-each-type') }}">
                             <i class="bi bi-question-circle" aria-hidden="true"></i>
                         </button>
@@ -422,7 +422,7 @@
                 <div class="card-header bg-subtle">
                     <h2 id="checks-performance-heading" class="mb-0">
                         <i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('pages-accessibility-checks-performance') }}
-                        <button type="button" class="btn btn-sm btn-link p-0 ms-2"
+                        <button type="button" class="btn btn-sm copy-xpath-btn ms-2"
                                 aria-label="{{ ftl('pages-total-individual-checks-performed-on-all-page') }}">
                             <i class="bi bi-question-circle" aria-hidden="true"></i>
                         </button>
@@ -936,7 +936,7 @@
                                                         {% if (violation.selector or violation.xpath) and 'ErrDuplicateNavNames' not in violation.id %}
                                                         <p>
                                                             <strong>{{ ftl('pages-location') }}</strong> <code>{{ violation.selector|default(violation.xpath) }}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{ violation.selector|default(violation.xpath)|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{ violation.selector|default(violation.xpath)|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -976,7 +976,7 @@
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             {{ ftl('pages-location') }} <code>{{element.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -989,7 +989,7 @@
                                                             <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{h1.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1021,7 +1021,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1035,7 +1035,7 @@
                                                             <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1050,7 +1050,7 @@
                                                             <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1067,7 +1067,7 @@
                                                             <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{anchor.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1313,7 +1313,7 @@
                                                         {% if (violation.selector or violation.xpath) and 'ErrDuplicateNavNames' not in violation.id %}
                                                         <p>
                                                             <strong>{{ ftl('pages-location') }}</strong> <code>{{ violation.selector|default(violation.xpath) }}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{ violation.selector|default(violation.xpath)|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{ violation.selector|default(violation.xpath)|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1353,7 +1353,7 @@
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             {{ ftl('pages-location') }} <code>{{element.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1366,7 +1366,7 @@
                                                             <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{h1.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1398,7 +1398,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1412,7 +1412,7 @@
                                                             <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1427,7 +1427,7 @@
                                                             <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1444,7 +1444,7 @@
                                                             <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{anchor.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1697,7 +1697,7 @@
                             {% if (violation.selector or violation.xpath) and 'ErrDuplicateNavNames' not in violation.id %}
                             <p>
                                 <strong>Location:</strong> <code>{{violation.selector|default(violation.xpath)}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{violation.selector|default(violation.xpath)|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{violation.selector|default(violation.xpath)|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -1733,7 +1733,7 @@
                                     <p class="mb-1 small">{{ ftl('pages-text-preview') }} "{{ instance.text|truncate(80) }}"</p>
                                     <p class="mb-1 small text-muted">
                                         {{ ftl('pages-location') }} <code>{{ instance.xpath }}</code>
-                                        <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                        <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                             <i class="bi bi-clipboard" aria-hidden="true"></i>
                                         </button>
                                     </p>
@@ -1754,7 +1754,7 @@
                                     <p class="mb-1 small">{{ ftl('pages-content-preview') }} "{{ instance.text|truncate(100) }}"</p>
                                     <p class="mb-1 small text-muted">
                                         {{ ftl('pages-location') }} <code>{{ instance.xpath }}</code>
-                                        <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                        <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                             <i class="bi bi-clipboard" aria-hidden="true"></i>
                                         </button>
                                     </p>
@@ -1818,7 +1818,7 @@
                                     <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{element.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1831,7 +1831,7 @@
                                     <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{h1.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1863,7 +1863,7 @@
                                     <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1877,7 +1877,7 @@
                                     <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1892,7 +1892,7 @@
                                     <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                     Location: <code>{{instance.xpath}}</code>
-                                    <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                    <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                         <i class="bi bi-clipboard" aria-hidden="true"></i>
                                     </button>
                                 </p>
@@ -1909,7 +1909,7 @@
                                     <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                     Location: <code>{{anchor.xpath}}</code>
-                                    <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                    <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                         <i class="bi bi-clipboard" aria-hidden="true"></i>
                                     </button>
                                 </p>
@@ -2214,7 +2214,7 @@
                                                         {% if warning.xpath %}
                                                         <p>
                                 <strong>Location:</strong> <code>{{warning.xpath}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{warning.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{warning.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -2235,7 +2235,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -2396,7 +2396,7 @@
                                                         {% if warning.xpath %}
                                                         <p>
                                 <strong>Location:</strong> <code>{{warning.xpath}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{warning.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{warning.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -2585,7 +2585,7 @@
                             {% if warning.xpath %}
                             <p>
                                 <strong>Location:</strong> <code>{{warning.xpath}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{warning.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{warning.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -2607,7 +2607,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -2858,7 +2858,7 @@
                                                         {% if info.xpath %}
                                                         <p>
                                 <strong>Location:</strong> <code>{{info.xpath}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{info.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{info.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -2879,7 +2879,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -3019,7 +3019,7 @@
                             {% if info.xpath %}
                             <p>
                                 <strong>Location:</strong> <code>{{info.xpath}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{info.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{info.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -3041,7 +3041,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -3305,7 +3305,7 @@
                                                         {% if discovery.xpath %}
                                                         <p>
                                 <strong>Location:</strong> <code>{{discovery.xpath}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{discovery.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{discovery.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -3326,7 +3326,7 @@
                                                             <p class="mb-1"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Instance</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Instance</span> {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Location:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Emplacement :</span> <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -3498,7 +3498,7 @@
                             {% if discovery.xpath %}
                             <p>
                                 <strong>Location:</strong> <code>{{discovery.xpath}}</code>
-                                <button class="btn btn-sm btn-link p-0 ms-2" onclick="copyXpathToClipboard('{{discovery.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                <button class="btn btn-sm copy-xpath-btn ms-2" onclick="copyXpathToClipboard('{{discovery.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             </p>
@@ -3520,7 +3520,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
+                                                            <button class="btn btn-sm copy-xpath-btn ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>

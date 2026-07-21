@@ -193,6 +193,40 @@ summary:focus-visible {
    Keeping outline on ALL focus states (mouse + keyboard) is also more
    accessible for power users who navigate via mouse. */
 
+/* Bootstrap's .btn:focus sets `outline: 0` with a faint colour-only
+   box-shadow, outspecifying the baseline ring above (0-2-0 vs 0-1-1) —
+   buttons looked keyboard-unfocusable. Restore the standard two-tone ring
+   (WCAG 2.4.7). */
+.btn:focus,
+.btn:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
+}
+
+/* Copy-XPath buttons — previously icon-only btn-link p-0 (~18px, borderless):
+   tiny target, nearly invisible, no room for a focus ring. Bordered >=32px
+   target (WCAG 2.5.8) whose affordance does not rely on colour alone. */
+.copy-xpath-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 2px 6px;
+    border: 1.5px solid var(--color-border-input);
+    border-radius: 6px;
+    color: var(--color-link);
+    background-color: transparent;
+    vertical-align: middle;
+}
+
+.copy-xpath-btn:hover {
+    color: var(--color-link-hover);
+    border-color: var(--color-link-hover);
+    background-color: var(--color-bg-subtle);
+}
+
 /* Accordion buttons: Bootstrap's .accordion-button:focus outspecifies the
    baseline above and replaces it with `outline: 0` plus a faint colour-only
    box-shadow — nearly invisible in dark mode. Restore a strong indicator:

@@ -149,5 +149,7 @@ tests/audio/fixtures/*.mp4
 # Generated report directories
 *_Deduplicated_*/
 *.docx
+# Curated documentation exports are tracked despite the blanket *.docx rule
+!docs/Auto_A11y_API_Guide.docx
 ~$*
 .superpowers/

@@ -33,7 +33,7 @@ from typing import Iterator
 REPO = Path(__file__).resolve().parent.parent
 GUIDE = REPO / "docs" / "USER_GUIDE.md"
 REFERENCE = REPO / "docs" / "templates" / "reference.docx"
-LOGO = REPO / "docs" / "images" / "cnib-access-labs-logo.png"
+LOGO = REPO / "docs" / "images" / "cnib-access-labs-logo-dark-safe.png"
 OUT_DOCX = REPO / "docs" / "Auto_A11y_User_Guide.docx"
 OUT_PDF = REPO / "docs" / "Auto_A11y_User_Guide.pdf"
 
@@ -80,7 +80,7 @@ def build_body(source: str) -> str:
     # The trailing backslash keeps the image inline so pandoc does not
     # promote it to a captioned figure (alt text is preserved).
     logo_md = (
-        "![CNIB Access Labs logo](images/cnib-access-labs-logo.png)"
+        "![CNIB Access Labs logo](images/cnib-access-labs-logo-dark-safe.png)"
         "{width=2.8in}\\\n\n"
     )
     body = logo_md + body

@@ -674,14 +674,14 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### ARIA
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrAriaLabelMayNotBeFoundByVoiceControl` | Error | aria-label doesn't match visible text |
 | `ErrLabelMismatchOfAccessibleNameAndLabelText` | Error | Accessible name doesn't match visible label |
 
 ### Buttons
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrButtonClipPathWithOutline` | Error | Button with non-rectangular clip-path uses outline for focus indicator - outline draws rectangular box not following clipped shape |
 | `ErrButtonFocusContrastFail` | Error | Button focus outline has insufficient contrast (less than 3:1) against the button's current background color |
 | `ErrButtonFocusObscured` | Error | Button focus indicator is partially or fully obscured by other elements due to z-index stacking |
@@ -698,7 +698,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Colours & Contrast
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrColorRelatedStyleDefinedExplicitlyInElement` | Warning | Color-related styles defined inline |
 | `ErrColorRelatedStyleDefinedExplicitlyInStyleTag` | Warning | Color-related styles defined in style tag |
 | `ErrTextContrast` | Error | Text color has insufficient contrast ratio with its background color |
@@ -706,13 +706,13 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Electronic Documents
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `DiscoPDFLinksFound` | Discovery | Links to PDF documents detected on page |
 
 ### Event Handling
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `DiscoFoundJS` | Discovery | JavaScript detected on page |
 | `ErrHandlerColorChangeOnly` | Error | Element with event handler indicates focus only through color change without structural change |
 | `ErrHandlerFocusContrastFail` | Error | Focus indicator on element with event handler has less than 3:1 contrast ratio with adjacent colors |
@@ -738,7 +738,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Focus Management
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrNegativeTabIndex` | Error | Negative tabindex on interactive element |
 | `ErrNoOutlineOffsetDefined` | Error | No outline offset defined for focus |
 | `ErrOutlineIsNoneOnInteractiveElement` | Error | Interactive element has CSS outline:none removing the default focus indicator |
@@ -751,14 +751,14 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Fonts & Typography
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `DiscoFontFound` | Discovery | Font usage detected for review |
 | `WarnFontNotInRecommenedListForA11y` | Warning | Font not in recommended accessibility list |
 
 ### Forms
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `DiscoFormOnPage` | Discovery | Form detected on page - needs manual testing |
 | `ErrEmptyAriaLabelOnField` | Error | Form field has empty aria-label attribute |
 | `ErrEmptyAriaLabelledByOnField` | Error | Form field has empty aria-labelledby attribute |
@@ -794,7 +794,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Headings
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrEmptyHeading` | Error | Heading element (h1-h6) contains no text content or only whitespace |
 | `ErrFoundAriaLevelButNoRoleAppliedAtAll` | Error | aria-level attribute without role="heading" |
 | `ErrFoundAriaLevelButRoleIsNotHeading` | Error | aria-level on element without heading role |
@@ -813,7 +813,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Images
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `DiscoFoundInlineSvg` | Discovery | Inline SVG element detected that requires manual review to determine appropriate accessibility implementation based on its purpose and complexity |
 | `DiscoFoundSvgImage` | Discovery | SVG element with role="img" detected that requires manual review to verify appropriate text alternatives are provided |
 | `ErrAltOnElementThatDoesntTakeIt` | Error | Alt attribute placed on HTML elements that don't support it (such as div, span, p, or other non-image elements), making the alternative text inaccessible to assistive technologies |
@@ -825,7 +825,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Landmarks
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrBannerLandmarkAccessibleNameIsBlank` | Error | Banner landmark has blank accessible name |
 | `ErrBannerLandmarkHasAriaLabelAndAriaLabelledByAttrs` | Error | Banner landmark has both aria-label and aria-labelledby |
 | `ErrBannerLandmarkMayNotBeChildOfAnotherLandmark` | Error | Banner landmark nested inside another landmark |
@@ -891,7 +891,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Language
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrElementPrimaryLangNotRecognized` | Error | Element has unrecognized language code |
 | `ErrElementRegionQualifierNotRecognized` | Error | Element lang attribute has unrecognized region qualifier |
 | `ErrEmptyLanguageAttribute` | Error | Element (non-HTML) has a lang attribute present but with no value (lang=""), preventing screen readers from determining language changes |
@@ -910,7 +910,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Links
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrAnchorTargetTabindex` | Error | In-page link target (element with id referenced by href="#id") is not keyboard accessible - non-interactive element needs tabindex="-1" |
 | `ErrDocumentLinkMissingFileType` | Error | Link to downloadable document (PDF, Word, Excel, PowerPoint, etc.) does not indicate the file type in its accessible name |
 | `ErrDocumentLinkWrongLanguage` | Error | Link to a downloadable document in a different language than the page language lacks lang attribute or language indication |
@@ -933,20 +933,20 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Lists
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrListitemEmpty` | Error | List item (`<li>` or role="listitem") is empty or contains only whitespace, providing no content for users |
 
 ### Navigation
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrNoCurrentPageIndicatorMagnification` | Error | Navigation lacks visual current page indicator, preventing screen magnifier users from knowing their location without panning |
 | `ErrNoCurrentPageIndicatorScreenReader` | Error | Navigation lacks aria-current="page" indicator, forcing screen reader users through entire menu to discover current location |
 
 ### Page
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrEmptyPageTitle` | Error | Page title element is empty |
 | `ErrMissingDocumentType` | Error | HTML document is missing the DOCTYPE declaration (<!DOCTYPE html>) at the beginning of the file |
 | `ErrMultiplePageTitles` | Error | Multiple title elements found in document head causing unpredictable behavior |
@@ -955,7 +955,7 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Page Title
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `ErrEmptyTitleAttr` | Error | Empty title attribute |
 | `ErrIframeWithNoTitleAttr` | Error | Iframe element is missing the required title attribute |
 | `ErrImproperTitleAttribute` | Error | Title attribute used in particularly problematic patterns (on non-focusable elements or duplicating visible text) |
@@ -965,13 +965,13 @@ The automated test suite contains **213 checks** across **19 touchpoints**. Whet
 ### Responsive & Reflow
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `DiscoResponsiveBreakpoints` | Discovery | Responsive breakpoints detected on page |
 
 ### Styles
 
 | Check | Type | What it tests |
-| --- | --- | --- |
+| ---------------------------------- | ---------------- | ------------------------------------------------------------ |
 | `DiscoStyleAttrOnElements` | Discovery | Inline styles detected |
 | `DiscoStyleElementOnPage` | Discovery | Style element found in page |
 | `ErrStyleAttrColorFont` | Error | Inline style attributes define color or font properties directly on HTML elements, overriding user stylesheets and preventing users from customizing visual presentation |

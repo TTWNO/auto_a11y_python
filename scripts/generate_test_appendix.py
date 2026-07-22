@@ -108,7 +108,11 @@ def build_appendix() -> str:
         out.append(f"### {touchpoint}")
         out.append("")
         out.append("| Check | Type | What it tests |")
-        out.append("| --- | --- | --- |")
+        # Proportional dash counts set the column widths in the Word export
+        # (pandoc maps them to grid widths): a narrow Type column — just wide
+        # enough to fit its longest value, "Discovery" — with the extra space
+        # split between Check (long code names) and the What-it-tests text.
+        out.append("| " + "-" * 34 + " | " + "-" * 16 + " | " + "-" * 60 + " |")
         for code, issue_type, desc in rows:
             out.append(f"| `{code}` | {issue_type} | {desc} |")
         out.append("")

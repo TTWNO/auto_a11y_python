@@ -123,6 +123,7 @@ reports-failed-to-delete-report = Failed to delete report
 reports-failed-to-drop-job = Failed to drop job
 reports-failed-to-restart-job = Failed to restart job
 reports-failed-to-start-report-generation = Failed to start report generation
+reports-session-expired-refresh = Your session has expired. Please refresh the page and try again.
 reports-filter-by-issue-type = Filter by issue type
 reports-filter-by-impact = Filter by impact level
 reports-filter-issues = Filter Issues

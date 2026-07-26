@@ -1,0 +1,254 @@
+"""Export docs/USER_GUIDE.md to a professional, accessible Word document.
+
+Produces docs/Auto_A11y_User_Guide.docx with:
+- a title page (CNIB Access Labs logo) and a footer watermark on every page
+  (via docs/templates/reference.docx);
+- numbered headings driven by Word's multilevel list bound to the Heading
+  styles, so the number is part of the heading (not literal tabbed text) —
+  see add_numbered_headings();
+- images kept inline with their alt text in the drawing description (real
+  screen-reader alt text, no duplicated visible captions);
+- a Table of Contents field the reader updates in Word (right-click →
+  Update Field); the Markdown keeps its own Contents list for GitHub.
+
+Pass --pdf to also build the TOC and export a tagged PDF/UA via LibreOffice.
+
+Requires: pandoc (and LibreOffice for --pdf), and the repo checked out.
+
+Usage:  python scripts/export_user_guide.py [--pdf]
+"""
+from __future__ import annotations
+
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from contextlib import contextmanager
+from datetime import date
+from pathlib import Path
+from typing import Iterator
+
+REPO = Path(__file__).resolve().parent.parent
+GUIDE = REPO / "docs" / "USER_GUIDE.md"
+REFERENCE = REPO / "docs" / "templates" / "reference.docx"
+LOGO = REPO / "docs" / "images" / "cnib-access-labs-logo-dark-safe.png"
+OUT_DOCX = REPO / "docs" / "Auto_A11y_User_Guide.docx"
+OUT_PDF = REPO / "docs" / "Auto_A11y_User_Guide.pdf"
+
+LO_DIR = "/Applications/LibreOffice.app/Contents"
+SOFFICE = f"{LO_DIR}/MacOS/soffice"
+LO_PYTHON = f"{LO_DIR}/Resources/python"
+BUILD_TOC = REPO / "scripts" / "lo_build_toc.py"
+UNO_PORT = 2002
+
+PAGE_BREAK = '\n```{=openxml}\n<w:p><w:r><w:br w:type="page"/></w:r></w:p>\n```\n'
+
+# A real Word table-of-contents field. `\o "1-3"` lists Heading 1-3, `\h`
+# makes entries hyperlinks, `\u` uses outline levels, and w:dirty="true"
+# tells the reader (LibreOffice, during PDF conversion) to recompute it —
+# which fills in the real page numbers. The "Contents" label uses outline
+# level 9 (body text) so it does not list itself.
+TOC_BLOCK = r'''
+```{=openxml}
+<w:p>
+  <w:pPr><w:outlineLvl w:val="9"/><w:spacing w:after="240"/></w:pPr>
+  <w:r><w:rPr><w:b/><w:sz w:val="40"/><w:color w:val="2E5496"/></w:rPr><w:t>Contents</w:t></w:r>
+</w:p>
+<w:sdt><w:sdtPr><w:docPartObj><w:docPartGallery w:val="Table of Contents"/><w:docPartUnique/></w:docPartObj></w:sdtPr><w:sdtContent>
+<w:p>
+  <w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r>
+  <w:r><w:instrText xml:space="preserve"> TOC \o "1-3" \h \z \u </w:instrText></w:r>
+  <w:r><w:fldChar w:fldCharType="separate"/></w:r>
+  <w:r><w:t>Update this field (select all, then F9) to build the table of contents.</w:t></w:r>
+  <w:r><w:fldChar w:fldCharType="end"/></w:r>
+</w:p>
+</w:sdtContent></w:sdt>
+```
+'''
+
+
+def build_body(source: str) -> str:
+    lines = source.splitlines()
+    # Drop the H1 title — the metadata title block replaces it
+    if lines and lines[0].startswith("# "):
+        lines = lines[1:]
+    body = "\n".join(lines)
+
+    # The logo sits on the title page, under the metadata title block.
+    # The trailing backslash keeps the image inline so pandoc does not
+    # promote it to a captioned figure (alt text is preserved).
+    logo_md = (
+        "![CNIB Access Labs logo](images/cnib-access-labs-logo-dark-safe.png)"
+        "{width=2.8in}\\\n\n"
+    )
+    body = logo_md + body
+
+    # Replace the hand-written Contents list (kept in the Markdown so GitHub
+    # anchor links work) with a real, auto-updating Word TOC field. The list
+    # runs from the "## Contents" heading to just before the next "## ".
+    body = re.sub(
+        r"^## Contents\n.*?(?=^## )",
+        lambda _: TOC_BLOCK.strip("\n") + "\n\n",
+        body,
+        count=1,
+        flags=re.DOTALL | re.MULTILINE,
+    )
+
+    # The Markdown keeps manual "N." prefixes on section headings so GitHub
+    # anchor links resolve; pandoc's --number-sections adds its own numbers,
+    # so strip the manual prefix here to avoid "1 1." double numbering.
+    body = re.sub(r"^(#{2,})\s+\d+\.\s+", r"\1 ", body, flags=re.MULTILINE)
+
+    # Remove the horizontal rules — page breaks take over the separation
+    body = re.sub(r"^---$\n", "", body, flags=re.MULTILINE)
+
+    # Page break before every top-level section, and before the TOC block so
+    # the table of contents starts on its own page after the title page.
+    body = re.sub(r"^## ", PAGE_BREAK + "## ", body, flags=re.MULTILINE)
+    body = body.replace("```{=openxml}\n<w:p>\n  <w:pPr><w:outlineLvl",
+                        PAGE_BREAK + "\n```{=openxml}\n<w:p>\n  <w:pPr><w:outlineLvl", 1)
+    return body
+
+
+# A multilevel list that numbers the Heading 1/2/3 styles as 1, 1.1, 1.1.1.
+# Bound to the styles (each level names its pStyle) and referenced back from
+# each style's numPr, this is Word's native "numbered headings" — the number
+# is generated by the style, integral to the heading, with a single space
+# (w:suff) after it rather than a tab that pushes the title into a column.
+# IDs 9001 are well clear of the low IDs pandoc generates for list items.
+_NUM_ID = "9001"
+_ABSTRACT_NUM = (
+    '<w:abstractNum w:abstractNumId="9001">'
+    '<w:multiLevelType w:val="multilevel"/>'
+    + "".join(
+        f'<w:lvl w:ilvl="{lvl}"><w:start w:val="1"/><w:numFmt w:val="decimal"/>'
+        f'<w:pStyle w:val="Heading{lvl + 1}"/><w:suff w:val="space"/>'
+        f'<w:lvlText w:val="{text}"/><w:lvlJc w:val="left"/>'
+        '<w:pPr><w:ind w:left="0" w:firstLine="0"/></w:pPr></w:lvl>'
+        for lvl, text in enumerate(("%1", "%1.%2", "%1.%2.%3"))
+    )
+    + "</w:abstractNum>"
+)
+_NUM = f'<w:num w:numId="{_NUM_ID}"><w:abstractNumId w:val="9001"/></w:num>'
+
+
+def add_numbered_headings(docx_path: Path) -> None:
+    """Bind Word multilevel-list numbering to the Heading 1-3 styles.
+
+    Pandoc leaves the heading styles unnumbered; this injects the list
+    definition into numbering.xml and a matching numPr into each heading
+    style so Word auto-numbers the headings (and the TOC picks the numbers
+    up when the reader updates it).
+    """
+    import zipfile
+
+    with zipfile.ZipFile(docx_path) as zf:
+        names = zf.namelist()
+        parts = {n: zf.read(n) for n in names}
+
+    numbering = parts["word/numbering.xml"].decode("utf-8")
+    # abstractNum must precede the <w:num> elements; num goes at the end.
+    numbering = numbering.replace("<w:num ", _ABSTRACT_NUM + "<w:num ", 1)
+    numbering = numbering.replace("</w:numbering>", _NUM + "</w:numbering>", 1)
+    parts["word/numbering.xml"] = numbering.encode("utf-8")
+
+    styles = parts["word/styles.xml"].decode("utf-8")
+    for ilvl, heading in enumerate(("Heading1", "Heading2", "Heading3")):
+        numpr = (
+            f'<w:numPr><w:ilvl w:val="{ilvl}"/>'
+            f'<w:numId w:val="{_NUM_ID}"/></w:numPr>'
+        )
+        # numPr must sit before <w:spacing> in the paragraph properties; scope
+        # the substitution to this one style block so only its pPr is touched.
+        pattern = re.compile(
+            r'(<w:style [^>]*w:styleId="' + heading + r'".*?<w:pPr>.*?)(<w:spacing)',
+            re.DOTALL,
+        )
+        styles, n = pattern.subn(lambda m: m.group(1) + numpr + m.group(2), styles, count=1)
+        if n != 1:
+            raise SystemExit(f"could not attach numbering to {heading} style")
+    parts["word/styles.xml"] = styles.encode("utf-8")
+
+    with zipfile.ZipFile(docx_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name in names:
+            zf.writestr(name, parts[name])
+
+
+def main() -> None:
+    source = GUIDE.read_text(encoding="utf-8")
+    body = build_body(source)
+
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8"
+    ) as tf:
+        tf.write(body)
+        tmp_md = tf.name
+
+    subprocess.run(
+        [
+            "pandoc", tmp_md,
+            # implicit_figures off: images stay inline with their alt text in
+            # the drawing's description (screen-reader alt text) rather than
+            # being promoted to figures with the description duplicated as a
+            # visible caption.
+            "--from=markdown-implicit_figures",
+            "-o", str(OUT_DOCX),
+            "--reference-doc", str(REFERENCE),
+            # No --number-sections: heading numbers come from Word's
+            # multilevel list bound to the Heading styles (see
+            # add_numbered_headings), so the number is part of the heading.
+            "--shift-heading-level-by=-1",
+            "--metadata", "title=Auto A11y User Guide",
+            "--metadata", "subtitle=Desktop Application User Manual",
+            "--metadata", "author=CNIB Access Labs",
+            "--metadata", f"date={date.today().strftime('%B %Y')}",
+            "--metadata", "lang=en",
+            "--resource-path", str(REPO / "docs"),
+        ],
+        check=True,
+    )
+    add_numbered_headings(OUT_DOCX)
+    print(f"wrote {OUT_DOCX}")
+
+    if "--pdf" in sys.argv[1:]:
+        # Build the TOC field (real page numbers + hyperlinks) into the docx
+        # and export the tagged PDF. A plain `soffice --convert-to` leaves the
+        # TOC as an unbuilt placeholder, so we drive LibreOffice over a UNO
+        # socket to update the document indexes first (scripts/lo_build_toc.py).
+        with _soffice_listener():
+            subprocess.run(
+                [LO_PYTHON, str(BUILD_TOC), str(OUT_DOCX), str(OUT_PDF)],
+                check=True,
+            )
+        print(f"wrote {OUT_PDF}")
+
+
+@contextmanager
+def _soffice_listener() -> Iterator[None]:
+    """Run a headless soffice UNO listener for the duration of the block."""
+    profile = Path(tempfile.mkdtemp(prefix="lo_profile_"))
+    proc = subprocess.Popen(
+        [
+            SOFFICE, "--headless", "--invisible", "--nologo",
+            "--nofirststartwizard", "--norestore",
+            f"-env:UserInstallation=file://{profile}",
+            f"--accept=socket,host=localhost,port={UNO_PORT};urp;"
+            "StarOffice.ComponentContext",
+        ]
+    )
+    try:
+        time.sleep(6)  # give the listener time to bind the socket
+        yield
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        shutil.rmtree(profile, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

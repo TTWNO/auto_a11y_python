@@ -123,6 +123,7 @@ reports-failed-to-delete-report = Échec de la suppression du rapport
 reports-failed-to-drop-job = Échec de la suppression du travail
 reports-failed-to-restart-job = Échec du redémarrage du travail
 reports-failed-to-start-report-generation = Échec du démarrage de la génération du rapport
+reports-session-expired-refresh = Votre session a expiré. Veuillez actualiser la page et réessayer.
 reports-filter-by-issue-type = Filtrer par type de problème
 reports-filter-by-impact = Filtrer par niveau d'impact
 reports-filter-issues = Filtrer les problèmes

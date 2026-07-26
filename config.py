@@ -94,7 +94,7 @@ class Config:
     # UA is the correct default. Operators who specifically need an honest
     # scanner identifier (allow-listed hosts, internal QA fleets) can still
     # set USER_AGENT in `.env`.
-    USER_AGENT: str = os.getenv('USER_AGENT', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    USER_AGENT: str = os.getenv('USER_AGENT', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36')
     RESPECT_ROBOTS_TXT: bool = os.getenv('RESPECT_ROBOTS_TXT', 'True').lower() == 'true'
     
     # Testing

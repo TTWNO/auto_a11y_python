@@ -129,6 +129,8 @@ tests/audio/fixtures/*.mp4
 # Large binary files - never commit these
 *.mp4
 *.png
+# Documentation images are tracked despite the blanket *.png rule
+!docs/images/**
 *.pptx
 *.mov
 *.avi
@@ -149,5 +151,9 @@ tests/audio/fixtures/*.mp4
 # Generated report directories
 *_Deduplicated_*/
 *.docx
+# Curated documentation exports are tracked despite the blanket *.docx rule
+!docs/Auto_A11y_API_Guide.docx
+!docs/Auto_A11y_User_Guide.docx
+!docs/templates/reference.docx
 ~$*
 .superpowers/

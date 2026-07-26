@@ -541,7 +541,7 @@
 <p class="mt-3">
     <strong data-i18n="location">{{ t.get('location', 'Location:') }}</strong>
     <code>{{ violation.xpath }}</code>
-    <button class="btn btn-sm btn-link p-0 ms-2"
+    <button class="btn btn-sm copy-xpath-btn ms-2"
             onclick="copyXpathToClipboard('{{ violation.xpath|e }}', this)"
             aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
         <i class="bi bi-clipboard" aria-hidden="true"></i>
@@ -1936,7 +1936,6 @@
     {% endif %}
 </div>
 
-</div>
 </main>
 
 <!-- Footer -->

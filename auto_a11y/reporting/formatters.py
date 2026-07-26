@@ -214,6 +214,25 @@ class BaseFormatter:
             'breakpoint_note': "Some issues may have been detected at specific breakpoints (viewport widths). Check the 'Breakpoint (px)' column in the 'All Issues' sheet for breakpoint-specific issues.",
             'context_information': 'Context Information',
             'context_note': "Check the 'All Issues' sheet for complete context including Page State, Breakpoint, and Pseudoclass information for each issue.",
+            # Executive report sections (streaming HTML report)
+            'compliance': 'Compliance',
+            'ai_executive_summary': 'AI Executive Analysis',
+            'grade': 'Grade',
+            'key_metrics': 'Key Metrics',
+            'issues_by_touchpoint': 'Issues by Touchpoint',
+            'issues_by_impact': 'Issues by Impact Level',
+            'top_issues': 'Most Frequent Issues',
+            'occurrences': 'Occurrences',
+            'recommendations': 'Recommendations',
+            'detailed_results': 'Detailed Results by Page',
+            'average_page_score': 'Average Page Score',
+            'compliance_score_desc': 'Share of automated checks that passed across all tested pages.',
+            'exec_summary_text': '{pages} pages were tested: {violations} violations and {warnings} warnings were found, and {passes} automated checks passed.',
+            'rec_high_impact': 'Address the {count} high-impact issues first — they most severely block users with disabilities.',
+            'rec_touchpoint': 'Concentrate remediation on {name} — {count} issues, the largest category found.',
+            'rec_warnings': 'Review the {count} warnings; many indicate real barriers that automated testing cannot fully confirm.',
+            'rec_none': 'No violations were found. Continue periodic testing to maintain compliance.',
+            'rec_retest': 'Re-test after each round of fixes to confirm remediation and catch regressions.',
         },
         'fr': {
             # Section headings
@@ -358,6 +377,65 @@ class BaseFormatter:
             'breakpoint_note': "Certains problèmes peuvent avoir été détectés à des points de rupture spécifiques (largeurs de fenêtre). Vérifiez la colonne « Point de rupture (px) » dans la feuille « Tous les problèmes » pour les problèmes spécifiques aux points de rupture.",
             'context_information': 'Informations contextuelles',
             'context_note': "Consultez la feuille « Tous les problèmes » pour le contexte complet, y compris l'état de la page, le point de rupture et les informations de pseudoclasse pour chaque problème.",
+            # Executive report sections (streaming HTML report)
+            'compliance': 'Conformité',
+            'ai_executive_summary': 'Analyse exécutive par IA',
+            'grade': 'Note',
+            'key_metrics': 'Indicateurs clés',
+            'issues_by_touchpoint': 'Problèmes par point de contact',
+            'issues_by_impact': "Problèmes par niveau d'impact",
+            'top_issues': 'Problèmes les plus fréquents',
+            'occurrences': 'Occurrences',
+            'recommendations': 'Recommandations',
+            'detailed_results': 'Résultats détaillés par page',
+            'average_page_score': 'Score moyen des pages',
+            'compliance_score_desc': 'Part des vérifications automatisées réussies sur l\'ensemble des pages testées.',
+            'exec_summary_text': '{pages} pages ont été testées : {violations} violations et {warnings} avertissements ont été détectés, et {passes} vérifications automatisées ont réussi.',
+            'rec_high_impact': "Corrigez d'abord les {count} problèmes à impact élevé — ce sont eux qui bloquent le plus gravement les personnes en situation de handicap.",
+            'rec_touchpoint': 'Concentrez la remédiation sur {name} — {count} problèmes, la catégorie la plus importante détectée.',
+            'rec_warnings': 'Examinez les {count} avertissements ; beaucoup signalent de véritables obstacles que les tests automatisés ne peuvent pas confirmer entièrement.',
+            'rec_none': "Aucune violation n'a été détectée. Poursuivez les tests périodiques pour maintenir la conformité.",
+            'rec_retest': 'Testez à nouveau après chaque série de corrections pour confirmer la remédiation et détecter les régressions.',
+            # Touchpoint display names
+            'tp_accessible_names': 'Noms accessibles',
+            'tp_animation': 'Animation',
+            'tp_colors_contrast': 'Couleurs et contraste',
+            'tp_color_contrast': 'Contraste des couleurs',
+            'tp_colors': 'Couleurs',
+            'tp_dialogs': 'Dialogues',
+            'tp_electronic_documents': 'Documents électroniques',
+            'tp_event_handling': 'Gestion des événements',
+            'tp_fonts': 'Polices',
+            'tp_forms': 'Formulaires',
+            'tp_headings': 'Titres',
+            'tp_images': 'Images',
+            'tp_landmarks': 'Points de repère',
+            'tp_language': 'Langue',
+            'tp_links': 'Liens',
+            'tp_lists': 'Listes',
+            'tp_maps': 'Cartes',
+            'tp_media': 'Multimédia',
+            'tp_multimedia': 'Multimédia',
+            'tp_navigation': 'Navigation',
+            'tp_page': 'Page',
+            'tp_semantic_structure': 'Structure sémantique',
+            'tp_styles': 'Styles',
+            'tp_tabindex': 'Index de tabulation',
+            'tp_tables': 'Tableaux',
+            'tp_timers': 'Minuteries',
+            'tp_titles': 'Titres de page',
+            'tp_focus_management': 'Gestion du focus',
+            'tp_keyboard': 'Clavier',
+            'tp_carousels': 'Carrousels',
+            'tp_read_more_links': 'Liens « En savoir plus »',
+            'tp_touch_and_gestures': 'Toucher et gestes',
+            'tp_videos': 'Vidéos',
+            'tp_buttons': 'Boutons',
+            'tp_floating_content': 'Contenu flottant',
+            'tp_title_attributes': 'Attributs de titre',
+            'tp_pdf_annotations': 'Annotations PDF',
+            'tp_pdf_document_properties': 'Propriétés du document PDF',
+            'tp_pdf_tagging': 'Balisage PDF',
         },
     }
 
@@ -505,16 +583,27 @@ class BaseFormatter:
 class HTMLFormatter(BaseFormatter):
     """HTML report formatter"""
 
+    # Upper bound on violation samples retained for AI-summary context;
+    # keeps streaming memory O(1) regardless of site size.
+    _AI_SAMPLE_CAP = 40
+
     def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'html'
         # Pass Claude API key if available
         claude_api_key = config.get('CLAUDE_API_KEY')
         self.comprehensive_generator = ComprehensiveReportGenerator(claude_api_key=claude_api_key)
+        # Streaming report shape. The standalone HTML report is an
+        # executive summary (the offline/deduplicated reports carry the
+        # per-page detail); the PDF formatter flips these when delegating
+        # so its output keeps the detail section and skips the AI call.
+        self.include_page_detail: bool = False
+        self.include_ai_summary: bool = True
         # Streaming state (initialized in begin())
         self._output_file: str = ''
         self._summary: dict[str, Any] = {}
         self._body_tempfile: IO[str] | None = None
+        self._ai_samples: list[dict[str, Any]] = []
 
     @staticmethod
     def _esc(value: object) -> str:
@@ -1274,20 +1363,59 @@ class HTMLFormatter(BaseFormatter):
 
     @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
-        """Open a temp body file for page HTML sections.
+        """Prepare streaming state.
 
-        The final output is NOT written yet — only the temp body file is
-        created so that ``append_page`` can write into it.
+        The final output is NOT written yet. When per-page detail is
+        included (PDF delegation), a temp body file is created so that
+        ``append_page`` can write into it; the standalone HTML report is
+        executive-only, so no body file is needed there.
         """
         self._output_file = output_file
         self._summary = dict(summary) if summary else {}
-        self._body_tempfile = tempfile.NamedTemporaryFile(
-            mode='w', suffix='.html', delete=False, encoding='utf-8'
-        )
+        self._ai_samples = []
+        if self.include_page_detail:
+            self._body_tempfile = tempfile.NamedTemporaryFile(
+                mode='w', suffix='.html', delete=False, encoding='utf-8'
+            )
+        else:
+            self._body_tempfile = None
+
+    def _collect_ai_samples(self, violations: list[Any]) -> None:
+        """Accumulate a bounded sample of violations as AI-summary context.
+
+        High-impact issues are preferred; the cap keeps memory O(1) no
+        matter how many pages stream through.
+        """
+        for v in violations:
+            if len(self._ai_samples) >= self._AI_SAMPLE_CAP:
+                high = [x for x in self._ai_samples if x.get('impact') == 'high']
+                if len(high) >= self._AI_SAMPLE_CAP:
+                    return
+            issue = self.to_enriched_dict(v)
+            impact_raw = issue.get('impact', '')
+            if hasattr(impact_raw, 'value'):
+                impact_raw = impact_raw.value
+            impact = str(impact_raw).lower()
+            sample = {
+                'description': self._best_description(issue),
+                'impact': impact,
+                'wcag': issue.get('wcag_criteria', []),
+                'category': str(issue.get('touchpoint', 'general')),
+            }
+            if len(self._ai_samples) < self._AI_SAMPLE_CAP:
+                self._ai_samples.append(sample)
+            elif impact == 'high':
+                # Displace the first non-high sample to keep the most
+                # severe issues in the window.
+                for idx, existing in enumerate(self._ai_samples):
+                    if existing.get('impact') != 'high':
+                        self._ai_samples[idx] = sample
+                        break
 
     @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
-        """Write one page's violations/warnings as an HTML section to the temp body file."""
+        """Stream one page: collect AI context and (when enabled) write its
+        violations/warnings as an HTML section to the temp body file."""
         page = page_data.get('page', {})
         test_result = page_data.get('test_result')
         if test_result is None:
@@ -1298,6 +1426,12 @@ class HTMLFormatter(BaseFormatter):
 
         violations: list[Any] = self.get_issue_list(test_result, 'violations')
         warnings_list: list[Any] = self.get_issue_list(test_result, 'warnings')
+
+        if self.include_ai_summary:
+            self._collect_ai_samples(violations)
+
+        if not self.include_page_detail:
+            return
 
         section = f'<div class="page-section"><h3><a href="{self._esc_attr(page_url)}">{self._esc(page_title or page_url)}</a></h3>\n'
 
@@ -1320,10 +1454,13 @@ class HTMLFormatter(BaseFormatter):
 
     @override
     def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
-        """Assemble the final HTML document.
+        """Assemble the final HTML document as a structured executive report.
 
-        Reads body content from the temp file in 64 KB chunks so the full
-        body is never loaded into memory at once.
+        The Pass-1 summary provides everything the executive sections need
+        (totals, touchpoint/impact distributions, page scores, top issue
+        codes); the per-page detail streamed by ``append_page`` is read back
+        from the temp file in 64 KB chunks so the full body is never loaded
+        into memory at once.
         """
         # Flush and close the temp body file so we can read it back
         if hasattr(self, '_body_tempfile') and self._body_tempfile and not self._body_tempfile.closed:
@@ -1335,38 +1472,89 @@ class HTMLFormatter(BaseFormatter):
         with open(output_file, 'w', encoding='utf-8') as out:
             out.write(f'<!DOCTYPE html>\n<html lang="{self.language}">\n<head>\n')
             out.write('<meta charset="UTF-8">\n')
-            out.write(f'<title>{self._t("accessibility_report")}</title>\n')
+            out.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">\n')
+            out.write(f'<title>{self._report_title(s)}</title>\n')
             out.write(self._get_css())
+            out.write(self._get_exec_css())
             out.write('\n</head>\n<body>\n<div class="container">\n')
-            out.write(f'<header><h1>{self._t("accessibility_report")}</h1></header>\n')
+            out.write(self._render_report_header(s))
+            out.write(self._render_executive_summary(s))
+            out.write(self._render_key_metrics(s))
+            out.write(self._render_touchpoint_chart(s))
+            out.write(self._render_impact_chart(s))
+            out.write(self._render_top_issues(s))
+            out.write(self._render_recommendations(s))
 
-            # Summary dashboard — only render the numeric stat fields
-            out.write('<section class="summary"><div class="stats-grid">\n')
-            stat_cards = [
-                ('total_pages', self._t('total_pages'), ''),
-                ('total_violations', self._t('total_violations'), ' violations'),
-                ('total_warnings', self._t('total_warnings'), ' warnings'),
-                ('total_info', self._t('info'), ''),
-                ('total_discovery', self._t('discovery'), ''),
-                ('total_passes', self._t('passes'), ' passes'),
-            ]
-            for key, label, css_class in stat_cards:
-                val = s.get(key, 0)
-                out.write(f'<div class="stat-card{css_class}"><h3>{val}</h3><p>{label}</p></div>\n')
-            out.write('</div></section>\n')
+            if self.include_ai_summary:
+                out.write(self._render_ai_summary(s))
 
-            # Stream body from temp file in 64KB chunks
-            body_path = getattr(self, '_body_tempfile', None)
-            if body_path and hasattr(body_path, 'name') and os.path.exists(body_path.name):
-                with open(body_path.name, 'r', encoding='utf-8') as body:
-                    while True:
-                        chunk = body.read(65536)
-                        if not chunk:
-                            break
-                        out.write(chunk)
+            if self.include_page_detail:
+                out.write(f'<section class="detailed-results"><h2>{self._t("detailed_results")}</h2>\n')
+                # Stream body from temp file in 64KB chunks
+                body_path = getattr(self, '_body_tempfile', None)
+                if body_path and hasattr(body_path, 'name') and os.path.exists(body_path.name):
+                    with open(body_path.name, 'r', encoding='utf-8') as body:
+                        while True:
+                            chunk = body.read(65536)
+                            if not chunk:
+                                break
+                            out.write(chunk)
+                out.write('</section>\n')
 
             out.write(self._get_footer())
             out.write('\n</div>\n</body>\n</html>')
+
+    def _render_ai_summary(self, s: dict[str, Any]) -> str:
+        """Render the AI executive analysis from Pass-1 stats plus the
+        bounded violation sample collected while streaming.
+
+        Any failure (no API key, network error) falls back to the
+        generator's deterministic summary; a hard failure skips the
+        section rather than aborting the report.
+        """
+        from auto_a11y.reporting.ai_executive_summary import AIExecutiveSummaryGenerator
+
+        generator: AIExecutiveSummaryGenerator
+        claude_api_key = self.config.get('CLAUDE_API_KEY')
+        if claude_api_key:
+            try:
+                from auto_a11y.ai.claude_client import ClaudeClient, ClaudeConfig
+                claude_config = ClaudeConfig(
+                    api_key=str(claude_api_key),
+                    model=str(self.config.get('CLAUDE_MODEL') or 'claude-opus-4-8'),
+                )
+                generator = AIExecutiveSummaryGenerator(ClaudeClient(config=claude_config))
+            except Exception as e:
+                logger.warning(f"Could not initialize AI summary client: {e}")
+                generator = AIExecutiveSummaryGenerator()
+        else:
+            generator = AIExecutiveSummaryGenerator()
+
+        report_data: dict[str, Any] = {
+            'project': s.get('project', {}),
+            'statistics': {
+                'total_pages': int(s.get('total_pages', 0) or 0),
+                'total_violations': int(s.get('total_violations', 0) or 0),
+                'total_warnings': int(s.get('total_warnings', 0) or 0),
+                'total_info': int(s.get('total_info', 0) or 0),
+                'total_discovery': int(s.get('total_discovery', 0) or 0),
+                'total_passes': int(s.get('total_passes', 0) or 0),
+            },
+            'violation_samples': list(self._ai_samples),
+            'recordings': s.get('recordings', []) or [],
+        }
+
+        try:
+            ai_summary = generator.generate_executive_summary(report_data, self.language)
+            body = generator.format_executive_summary_html(ai_summary, self.language)
+            css = generator.get_ai_summary_css()
+            return (
+                f'<section class="ai-summary"><h2>{self._t("ai_executive_summary")}</h2>\n'
+                f'<style>{css}</style>\n{body}\n</section>\n'
+            )
+        except Exception as e:
+            logger.error(f"AI executive summary rendering failed: {e}", exc_info=True)
+            return ''
 
     @override
     def cleanup(self) -> None:
@@ -1397,6 +1585,283 @@ class HTMLFormatter(BaseFormatter):
 
         return f'<tr><td>{self._esc(code)}</td><td>{self._esc(description)}</td><td>{impact_str}</td><td>{self._esc(wcag_str)}</td><td>{self._esc(xpath)}</td></tr>\n'
 
+    # --- executive report sections (HTML streaming report only) ---
+
+    def _report_title(self, s: dict[str, Any]) -> str:
+        """Title for the report: explicit title, else scope name + report label."""
+        explicit = s.get('title')
+        if explicit:
+            return self._esc(explicit)
+        scope = s.get('project') or s.get('website') or {}
+        name = scope.get('name') if isinstance(scope, dict) else None
+        if name:
+            return f'{self._esc(name)} — {self._t("accessibility_report")}'
+        return self._t('accessibility_report')
+
+    def _render_report_header(self, s: dict[str, Any]) -> str:
+        generated = datetime.now().strftime('%Y-%m-%d %H:%M')
+        subtitle_parts: list[str] = []
+        project = s.get('project')
+        if isinstance(project, dict) and project.get('name'):
+            subtitle_parts.append(f'{self._t("project")}: {self._esc(project["name"])}')
+        website = s.get('website')
+        if isinstance(website, dict) and website.get('name'):
+            subtitle_parts.append(f'{self._t("website")}: {self._esc(website["name"])}')
+        subtitle = ' · '.join(subtitle_parts)
+        return (
+            f'<header><h1>{self._report_title(s)}</h1>\n'
+            + (f'<p class="report-subtitle">{subtitle}</p>\n' if subtitle else '')
+            + f'<p class="report-generated">{self._t("generated")}: {generated}</p>\n</header>\n'
+        )
+
+    @staticmethod
+    def _compliance_score(s: dict[str, Any]) -> float:
+        passes = int(s.get('total_passes', 0) or 0)
+        violations = int(s.get('total_violations', 0) or 0)
+        warnings_count = int(s.get('total_warnings', 0) or 0)
+        total = passes + violations + warnings_count
+        return (passes / total * 100.0) if total > 0 else 0.0
+
+    @staticmethod
+    def _average_page_score(s: dict[str, Any]) -> float | None:
+        raw = s.get('page_scores') or []
+        values: list[float] = []
+        for entry in raw:
+            score = entry[1] if isinstance(entry, (tuple, list)) and len(entry) > 1 else None
+            if isinstance(score, (int, float)):
+                values.append(float(score))
+        if not values:
+            return None
+        avg = sum(values) / len(values)
+        # DB scores may be stored as a 0-1 fraction; normalize to percent
+        return avg * 100.0 if avg <= 1.0 else avg
+
+    @staticmethod
+    def _score_color(score: float) -> str:
+        """Ring colour for the compliance circle (non-text UI, 3:1+ on white)."""
+        if score >= 90:
+            return '#1e8449'
+        if score >= 70:
+            return '#b38600'
+        return '#922b21'
+
+    @staticmethod
+    def _grade(score: float) -> str:
+        if score >= 90:
+            return 'A'
+        if score >= 80:
+            return 'B'
+        if score >= 70:
+            return 'C'
+        if score >= 60:
+            return 'D'
+        return 'F'
+
+    def _render_executive_summary(self, s: dict[str, Any]) -> str:
+        compliance = self._compliance_score(s)
+        colour = self._score_color(compliance)
+        dash = compliance * 5.65
+        summary_text = self._t('exec_summary_text').format(
+            pages=int(s.get('total_pages', 0) or 0),
+            violations=int(s.get('total_violations', 0) or 0),
+            warnings=int(s.get('total_warnings', 0) or 0),
+            passes=int(s.get('total_passes', 0) or 0),
+        )
+        return f'''<section class="executive-summary">
+<h2>{self._t('executive_summary')}</h2>
+<div class="exec-grid">
+<div class="compliance-score-card">
+<div class="score-circle" role="img" aria-label="{self._t('compliance')}: {compliance:.1f}% — {self._t('grade')} {self._grade(compliance)}">
+<svg viewBox="0 0 200 200" width="180" height="180" aria-hidden="true">
+<circle cx="100" cy="100" r="90" fill="none" stroke="#e9ecef" stroke-width="20"/>
+<circle cx="100" cy="100" r="90" fill="none" stroke="{colour}" stroke-width="20" stroke-dasharray="{dash:.1f} 565" transform="rotate(-90 100 100)"/>
+</svg>
+<div class="score-text"><span class="score-value">{compliance:.1f}%</span><span class="score-label">{self._t('compliance')}</span></div>
+</div>
+<div class="score-grade">{self._t('grade')}: {self._grade(compliance)}</div>
+<p class="score-desc">{self._t('compliance_score_desc')}</p>
+</div>
+<div class="summary-text"><p>{summary_text}</p></div>
+</div>
+</section>
+'''
+
+    def _render_key_metrics(self, s: dict[str, Any]) -> str:
+        avg_score = self._average_page_score(s)
+        cards: list[tuple[str, str, str]] = [
+            (str(int(s.get('total_pages', 0) or 0)), self._t('total_pages'), ''),
+            (str(int(s.get('total_violations', 0) or 0)), self._t('total_violations'), ' violations'),
+            (str(int(s.get('total_warnings', 0) or 0)), self._t('total_warnings'), ' warnings'),
+            (str(int(s.get('total_info', 0) or 0)), self._t('info'), ''),
+            (str(int(s.get('total_discovery', 0) or 0)), self._t('discovery'), ''),
+            (str(int(s.get('total_passes', 0) or 0)), self._t('passes'), ' passes'),
+        ]
+        if avg_score is not None:
+            cards.append((f'{avg_score:.0f}%', self._t('average_page_score'), ''))
+        html_out = f'<section class="key-metrics"><h2>{self._t("key_metrics")}</h2><div class="stats-grid">\n'
+        for value, label, css_class in cards:
+            html_out += f'<div class="stat-card{css_class}"><h3>{value}</h3><p>{label}</p></div>\n'
+        html_out += '</div></section>\n'
+        return html_out
+
+    def _touchpoint_label(self, tp_id: str) -> str:
+        """Human-readable, translated touchpoint name."""
+        key = f'tp_{tp_id}'
+        translated = self._t(key)
+        if translated != key:
+            return translated
+        try:
+            from auto_a11y.core.touchpoints import TouchpointID, get_touchpoint
+            tp = get_touchpoint(TouchpointID(tp_id))
+            if tp is not None:
+                return tp.name
+        except ValueError:
+            pass
+        return tp_id.replace('_', ' ').title()
+
+    def _render_bar_rows(self, rows: list[tuple[str, int, str]]) -> str:
+        """Render label/count bar rows. Value text sits outside the bar."""
+        if not rows:
+            return ''
+        max_count = max(count for _, count, _ in rows) or 1
+        out = '<ul class="bar-list">\n'
+        for label, count, colour in rows:
+            pct = max(count / max_count * 100.0, 1.5)
+            out += (
+                f'<li><span class="bar-label">{self._esc(label)}</span>'
+                f'<span class="bar-track"><span class="bar" style="width:{pct:.1f}%;background-color:{colour}"></span></span>'
+                f'<span class="bar-value">{count}</span></li>\n'
+            )
+        out += '</ul>\n'
+        return out
+
+    def _render_touchpoint_chart(self, s: dict[str, Any]) -> str:
+        counts_raw = s.get('touchpoint_counts') or {}
+        counts: list[tuple[str, int]] = sorted(
+            ((str(k), int(v)) for k, v in counts_raw.items() if int(v) > 0),
+            key=lambda kv: kv[1], reverse=True
+        )[:12]
+        if not counts:
+            return ''
+        rows = [(self._touchpoint_label(tp), count, '#0a58ca') for tp, count in counts]
+        return (
+            f'<section class="chart-section"><h2>{self._t("issues_by_touchpoint")}</h2>\n'
+            + self._render_bar_rows(rows) + '</section>\n'
+        )
+
+    def _render_impact_chart(self, s: dict[str, Any]) -> str:
+        counts_raw = s.get('impact_counts') or {}
+        impact_colours = {'high': '#922b21', 'medium': '#7d6608', 'low': '#2c3e50'}
+        rows: list[tuple[str, int, str]] = []
+        for impact in ('high', 'medium', 'low'):
+            count = int(counts_raw.get(impact, 0) or 0)
+            if count > 0:
+                rows.append((self._translate_impact(impact), count, impact_colours[impact]))
+        if not rows:
+            return ''
+        return (
+            f'<section class="chart-section"><h2>{self._t("issues_by_impact")}</h2>\n'
+            + self._render_bar_rows(rows) + '</section>\n'
+        )
+
+    def _render_top_issues(self, s: dict[str, Any]) -> str:
+        top_raw = s.get('top_issue_codes') or {}
+        items: list[tuple[str, int]] = sorted(
+            ((str(k), int(v)) for k, v in dict(top_raw).items()),
+            key=lambda kv: kv[1], reverse=True
+        )[:10]
+        if not items:
+            return ''
+        out = (
+            f'<section class="top-issues"><h2>{self._t("top_issues")}</h2>\n'
+            f'<table><thead><tr><th>{self._t("code")}</th><th>{self._t("description")}</th>'
+            f'<th>{self._t("occurrences")}</th></tr></thead><tbody>\n'
+        )
+        for code, count in items:
+            title = IssueCatalog.get_issue(code).get('title', '') or code
+            out += f'<tr><td>{self._esc(code)}</td><td>{self._esc(title)}</td><td>{count}</td></tr>\n'
+        out += '</tbody></table></section>\n'
+        return out
+
+    def _render_recommendations(self, s: dict[str, Any]) -> str:
+        recs: list[str] = []
+        impact_raw = s.get('impact_counts') or {}
+        high_count = int(impact_raw.get('high', 0) or 0)
+        violations = int(s.get('total_violations', 0) or 0)
+        warnings_count = int(s.get('total_warnings', 0) or 0)
+
+        if violations == 0:
+            recs.append(self._t('rec_none'))
+        else:
+            if high_count > 0:
+                recs.append(self._t('rec_high_impact').format(count=high_count))
+            counts_raw = s.get('touchpoint_counts') or {}
+            top_tp = sorted(
+                ((str(k), int(v)) for k, v in counts_raw.items() if int(v) > 0),
+                key=lambda kv: kv[1], reverse=True
+            )[:1]
+            for tp, count in top_tp:
+                recs.append(self._t('rec_touchpoint').format(name=self._touchpoint_label(tp), count=count))
+        if warnings_count > 0:
+            recs.append(self._t('rec_warnings').format(count=warnings_count))
+        recs.append(self._t('rec_retest'))
+
+        out = f'<section class="recommendations"><h2>{self._t("recommendations")}</h2><ol>\n'
+        for rec in recs:
+            out += f'<li>{rec}</li>\n'
+        out += '</ol></section>\n'
+        return out
+
+    @staticmethod
+    def _get_exec_css() -> str:
+        """Styles for the executive sections. HTML streaming report only."""
+        return """
+    <style>
+        .report-subtitle { color: #555; font-size: 1.05em; }
+        .report-generated { color: #555; font-size: 0.9em; }
+        .exec-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 30px;
+            align-items: center;
+        }
+        @media (max-width: 700px) { .exec-grid { grid-template-columns: 1fr; } }
+        .compliance-score-card { text-align: center; }
+        .score-circle { position: relative; display: inline-block; }
+        .score-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex; flex-direction: column;
+        }
+        .score-value { font-size: 1.8em; font-weight: 700; color: #1c1c1c; }
+        .score-label { font-size: 0.9em; color: #555; }
+        .score-grade { font-size: 1.2em; font-weight: 700; margin-top: 6px; }
+        .score-desc { color: #555; font-size: 0.9em; max-width: 240px; margin: 6px auto 0; }
+        .summary-text p { font-size: 1.1em; }
+        .bar-list { list-style: none; margin: 15px 0; padding: 0; }
+        .bar-list li {
+            display: grid;
+            grid-template-columns: minmax(140px, 220px) 1fr 3.5em;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .bar-label { font-size: 0.95em; overflow-wrap: anywhere; }
+        .bar-track {
+            display: block;
+            background: #e9ecef;
+            border-radius: 4px;
+            height: 20px;
+            overflow: hidden;
+        }
+        .bar { display: block; height: 100%; border-radius: 4px; }
+        .bar-value { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+        .recommendations ol { margin: 10px 0 10px 25px; }
+        .recommendations li { margin-bottom: 8px; }
+        .detailed-results { margin-top: 30px; }
+    </style>
+"""
 
 
 class JSONFormatter(BaseFormatter):
@@ -3513,6 +3978,11 @@ class PDFFormatter(BaseFormatter):
         """Create an internal HTMLFormatter and a temp HTML file, then delegate."""
         self._pdf_output_file = output_file
         self._internal_html = HTMLFormatter(self.config, self.language)
+        # PDF keeps the per-page detail section and never triggers the AI
+        # call — the AI executive analysis is a feature of the standalone
+        # HTML report only.
+        self._internal_html.include_page_detail = True
+        self._internal_html.include_ai_summary = False
         # Temp HTML file that the internal formatter writes to
         fd, self._temp_html_path = tempfile.mkstemp(suffix='.html')
         os.close(fd)

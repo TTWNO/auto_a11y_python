@@ -162,7 +162,11 @@ def create_app(config: Any) -> Flask:
         cors_origins = [o.strip() for o in config.CORS_ORIGINS.split(',')]
         CORS(app, resources={r"/api/*": {"origins": cors_origins}})
 
-    # CSRF protection
+    # CSRF protection. Tokens stay valid for the whole session rather than
+    # Flask-WTF's default 1-hour limit — a long-lived Reports page would
+    # otherwise start failing POSTs with an HTML 400 ("CSRF token expired")
+    # that the fetch()->json() callers can't parse.
+    app.config['WTF_CSRF_TIME_LIMIT'] = None
     csrf = CSRFProtect(app)
     csrf.exempt(api_bp)     # API uses token auth, not session cookies
     csrf.exempt(demo_bp)    # Static demo site

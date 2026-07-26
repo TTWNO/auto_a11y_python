@@ -49,9 +49,15 @@ main {
     border: none;
 }
 
+/* Hover/focus must not be colour-alone or drop below AA: keep full-contrast
+   text and add an underline (shape change) instead of dimming to grey
+   (WCAG 1.4.1, 1.4.3). Current page stays distinguishable via bold. */
 .navbar-dark .nav-link:hover,
 .navbar-dark .nav-link:focus {
-    color: var(--color-border) !important;
+    color: var(--color-text-inverse) !important;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 2px;
 }
 
 /* Navbar focus styles - element-direct so cloned-element tests pass */
@@ -192,6 +198,76 @@ summary:focus-visible {
    saw no focus indicator and flagged every interactive element.
    Keeping outline on ALL focus states (mouse + keyboard) is also more
    accessible for power users who navigate via mouse. */
+
+/* Bootstrap's .btn:focus sets `outline: 0` with a faint colour-only
+   box-shadow, outspecifying the baseline ring above (0-2-0 vs 0-1-1) —
+   buttons looked keyboard-unfocusable. Restore the standard two-tone ring
+   (WCAG 2.4.7). */
+.btn:focus,
+.btn:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
+}
+
+/* Copy-XPath buttons — previously icon-only btn-link p-0 (~18px, borderless):
+   tiny target, nearly invisible, no room for a focus ring. Bordered >=32px
+   target (WCAG 2.5.8) whose affordance does not rely on colour alone. */
+.copy-xpath-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 2px 6px;
+    border: 1.5px solid var(--color-border-input);
+    border-radius: 6px;
+    color: var(--color-link);
+    background-color: transparent;
+    vertical-align: middle;
+}
+
+.copy-xpath-btn:hover {
+    color: var(--color-link-hover);
+    border-color: var(--color-link-hover);
+    background-color: var(--color-bg-subtle);
+}
+
+/* Accordion buttons: Bootstrap's .accordion-button:focus outspecifies the
+   baseline above and replaces it with `outline: 0` plus a faint colour-only
+   box-shadow — nearly invisible in dark mode. Restore a strong indicator:
+   a double outline (two lines, a clear shape change that does not rely on
+   colour alone) over a contrast gap ring so it reads on any background
+   (WCAG 2.4.7, 1.4.1, 1.4.11). Fallback for engines without :has(). */
+.accordion-button:focus,
+.accordion-button:focus-visible {
+    outline: 6px double var(--color-focus-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
+    z-index: 3;
+}
+
+/* When the focused header's item is expanded, the ring must enclose the
+   whole accordion item (header + body), not just the header — otherwise
+   the expanded body appears to sit outside the focused region. Draw the
+   ring on the parent item and suppress the button-level one. */
+@supports selector(:has(*)) {
+    .accordion-item:has(> .accordion-header .accordion-button:focus),
+    .accordion-item:has(> .accordion-header .accordion-button:focus-visible) {
+        outline: 6px double var(--color-focus-ring);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
+        position: relative;
+        z-index: 3;
+    }
+
+    .accordion-button:focus,
+    .accordion-button:focus-visible {
+        /* @a11y-ignore: focus ring is drawn on the parent .accordion-item above */
+        outline: none;
+        box-shadow: none;
+    }
+}
 
 /* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline).
    Double-ring (outline + contrast shadow) guarantees visibility on any bg. */
@@ -2530,7 +2606,7 @@ samp {
 .text-primary,
 .link-primary,
 .alert-link,
-a:not(.btn):not(.nav-link):not(.dropdown-item):not(.page-link):not(.navbar-brand):not(.skip-link) {
+a:not(.btn):not(.nav-link):not(.dropdown-item):not(.page-link):not(.navbar-brand):not(.skip-link):not(.view-details-btn) {
     color: var(--color-link) !important;
 }
 

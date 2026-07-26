@@ -283,7 +283,7 @@ class BrowserManager:
             user_agent
             or self.config.get('user_agent')
             or self.config.get('USER_AGENT')
-            or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
         )
 
         # Build keyword arguments explicitly for type safety
@@ -568,11 +568,35 @@ class BrowserManager:
                 css_capture = None
 
         try:
-            response = await page.goto(
-                url,
-                wait_until=resolved_wait,
-                timeout=timeout or self.config.get('timeout', 60000)
-            )
+            if resolved_wait == 'networkidle':
+                # 'networkidle' never fires on pages with continuous or hung
+                # network activity (long-polling, slow third-party images such
+                # as picsum.photos carousels), which made perfectly renderable
+                # pages fail as "Failed to load page". Navigate on
+                # domcontentloaded so we keep the Response, then wait for
+                # load/idle on a best-effort basis and continue regardless.
+                response = await page.goto(
+                    url,
+                    wait_until='domcontentloaded',
+                    timeout=timeout or self.config.get('timeout', 60000)
+                )
+                best_effort_states: tuple[tuple[Literal['load', 'networkidle'], int], ...] = (
+                    ('load', 15000), ('networkidle', 10000)
+                )
+                for state, state_timeout in best_effort_states:
+                    try:
+                        await page.wait_for_load_state(state, timeout=state_timeout)
+                    except PlaywrightTimeoutError:
+                        logger.warning(
+                            f"'{state}' not reached within {state_timeout}ms for {url}; continuing with loaded DOM"
+                        )
+                        break
+            else:
+                response = await page.goto(
+                    url,
+                    wait_until=resolved_wait,
+                    timeout=timeout or self.config.get('timeout', 60000)
+                )
             logger.debug(f"Navigated to: {url}")
 
             if css_capture:

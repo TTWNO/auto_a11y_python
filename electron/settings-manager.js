@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS = {
   llm: {
     mode: 'off',
     claude_api_key: '',
-    claude_model: 'claude-opus-4-20250514',
+    claude_model: 'claude-opus-4-8',
     ollama_url: '',
     ollama_model: ''
   },
@@ -134,7 +134,7 @@ class SettingsManager {
     if (s.llm.mode === 'claude' && s.llm.claude_api_key) {
       env.RUN_AI_ANALYSIS = 'True';
       env.CLAUDE_API_KEY = s.llm.claude_api_key;
-      env.CLAUDE_MODEL = s.llm.claude_model || 'claude-opus-4-20250514';
+      env.CLAUDE_MODEL = s.llm.claude_model || 'claude-opus-4-8';
     } else {
       env.RUN_AI_ANALYSIS = 'False';
     }

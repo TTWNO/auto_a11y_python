@@ -1,10 +1,4 @@
 Code,Title,Type,Touchpoint,Ready,Notes
-AI_ErrAccordionWithoutARIA,Accordion element \,Error (AI),Navigation,,
-AI_ErrCarouselWithoutARIA,Carousel/slider \,Error (AI),Navigation,,
-AI_ErrDropdownWithoutARIA,Dropdown menu \,Error (AI),Navigation,,
-AI_ErrMissingInteractiveRole,Interactive {element_tag} element lacks appropriate ARIA role,Error (AI),Aria,,
-AI_InfoContentOrder,AI_InfoContentOrder,Info (AI),Reading Order,,
-AI_WarnPossibleReadingOrderIssue,AI_WarnPossibleReadingOrderIssue,Warning (AI),Reading Order,,
 DiscoFoundInlineSvg,Inline SVG element detected that requires manual review to determine appropriate accessibility implementation based on its purpose and complexity,Discovery,Images,,
 DiscoFoundSvgImage,SVG element with role=\,Discovery,Images,,
 DiscoHeadingWithID,Heading element has an ID attribute that may be used for in-page navigation,Discovery,Headings,,

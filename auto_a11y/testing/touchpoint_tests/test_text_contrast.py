@@ -335,6 +335,128 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                     return { hasAnimation: false, animationElementXpath: null, animationType: null, animationName: null };
                 }
 
+                // Collect the colour stops a CSS animation cycles the text through.
+                //
+                // getComputedStyle only ever reports the colour showing at the instant
+                // the test runs, so judging that one sample made the same element flip
+                // between a pass and a fail from run to run. Reading the @keyframes
+                // stops instead yields every colour the text actually takes, so the
+                // worst can be judged deterministically.
+                //
+                // Returns { readable, stops }. `readable` is false when a stylesheet is
+                // cross-origin (touching cssRules throws), meaning the cycle cannot be
+                // enumerated and the caller must fall back to "cannot calculate" rather
+                // than trusting a single sample.
+                function getAnimationKeyframeStops(animationNames) {
+                    const wanted = new Set(
+                        String(animationNames || '')
+                            .split(',')
+                            .map(n => n.trim())
+                            .filter(n => n && n !== 'none')
+                    );
+                    if (wanted.size === 0) return { readable: true, stops: [] };
+
+                    const stops = [];
+                    let readable = true;
+
+                    // "0%", "50%", "from", "to", and multi-selector "0%, 100%"
+                    function parseOffsets(keyText) {
+                        return String(keyText || '')
+                            .split(',')
+                            .map(part => {
+                                const t = part.trim().toLowerCase();
+                                if (t === 'from') return 0;
+                                if (t === 'to') return 1;
+                                const m = t.match(/^([\\d.]+)%$/);
+                                return m ? parseFloat(m[1]) / 100 : null;
+                            })
+                            .filter(o => o !== null && !isNaN(o));
+                    }
+
+                    function scanRules(rules) {
+                        for (const rule of rules) {
+                            // CSSKeyframesRule is the only rule type carrying both a
+                            // string `name` and nested cssRules.
+                            const isKeyframes = typeof rule.name === 'string' && rule.cssRules;
+                            if (isKeyframes) {
+                                if (!wanted.has(rule.name)) continue;
+                                for (const frame of rule.cssRules) {
+                                    const declared = frame.style && frame.style.color;
+                                    if (!declared) continue;
+                                    for (const offset of parseOffsets(frame.keyText)) {
+                                        stops.push({ offset: offset, color: declared });
+                                    }
+                                }
+                            } else if (rule.cssRules) {
+                                // @media / @supports wrappers can nest keyframes
+                                scanRules(rule.cssRules);
+                            }
+                        }
+                    }
+
+                    for (const sheet of document.styleSheets) {
+                        let rules = null;
+                        try {
+                            rules = sheet.cssRules;
+                        } catch (e) {
+                            readable = false;
+                            continue;
+                        }
+                        if (rules) scanRules(rules);
+                    }
+
+                    return { readable, stops };
+                }
+
+                // Worst (lowest) contrast the text reaches anywhere in its animation.
+                //
+                // Contrast is not monotonic between two colour stops - a cycle can pass
+                // at both ends and dip below the threshold midway - so this walks the
+                // interpolated colours between consecutive stops as well as the stops
+                // themselves. Interpolation is sRGB, matching how browsers tween colour
+                // by default. Fixed sample points keep the result deterministic.
+                function getWorstAnimatedContrast(stops, bgColor) {
+                    if (!stops.length) return null;
+
+                    const parsed = stops
+                        .map(s => ({ offset: s.offset, color: parseColor(s.color) }))
+                        .filter(s => s.color.a > 0)
+                        .sort((a, b) => a.offset - b.offset);
+                    if (!parsed.length) return null;
+
+                    let worst = null;
+                    let worstColor = null;
+                    const consider = (c) => {
+                        const ratio = getContrastRatio(c, bgColor);
+                        if (worst === null || ratio < worst) {
+                            worst = ratio;
+                            worstColor = c;
+                        }
+                    };
+
+                    for (let i = 0; i < parsed.length; i++) {
+                        consider(parsed[i].color);
+                        if (i === parsed.length - 1) break;
+                        const a = parsed[i].color;
+                        const b = parsed[i + 1].color;
+                        const STEPS = 10;
+                        for (let step = 1; step < STEPS; step++) {
+                            const t = step / STEPS;
+                            consider({
+                                r: Math.round(a.r + (b.r - a.r) * t),
+                                g: Math.round(a.g + (b.g - a.g) * t),
+                                b: Math.round(a.b + (b.b - a.b) * t),
+                                a: a.a + (b.a - a.a) * t
+                            });
+                        }
+                    }
+
+                    return {
+                        contrast: worst,
+                        color: `rgba(${worstColor.r}, ${worstColor.g}, ${worstColor.b}, ${worstColor.a})`
+                    };
+                }
+
                 // Composite two colors (overlay on top of base)
                 function compositeColors(overlay, base) {
                     const a = overlay.a + base.a * (1 - overlay.a);
@@ -720,6 +842,22 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         contrastRatio = getContrastRatio(textColor, bgColor);
                     }
 
+                    // If the colour is animated, contrastRatio above is just whichever
+                    // frame happened to be showing. Enumerate the cycle so the verdict
+                    // does not depend on snapshot timing.
+                    let animatedWorstContrast = null;
+                    let animatedWorstColor = null;
+                    let animationColorsReadable = true;
+                    if (animInfo.hasAnimation && canCalculateInsideContrast) {
+                        const kf = getAnimationKeyframeStops(animInfo.animationName);
+                        animationColorsReadable = kf.readable;
+                        const worst = getWorstAnimatedContrast(kf.stops, bgColor);
+                        if (worst) {
+                            animatedWorstContrast = worst.contrast;
+                            animatedWorstColor = worst.color;
+                        }
+                    }
+
                     // Get pseudoclass styles and prefers-contrast media query styles
                     // Check for ALL elements (not just interactive) because media queries affect all text
                     const pseudoclassStates = {};
@@ -764,6 +902,9 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         animationElementXpath: animInfo.animationElementXpath,
                         animationType: animInfo.animationType,
                         animationName: animInfo.animationName,
+                        animatedWorstContrast: animatedWorstContrast,
+                        animatedWorstColor: animatedWorstColor,
+                        animationColorsReadable: animationColorsReadable,
                         canCalculateInsideContrast: canCalculateInsideContrast,
                         tag: element.tagName.toLowerCase(),
                         pseudoclassStates: pseudoclassStates,
@@ -783,6 +924,31 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                 is_large = text_elem['isLargeText']
                 wcag_level = text_elem.get('wcagLevel', 'AA')
                 can_calculate_inside = text_elem.get('canCalculateInsideContrast', False)
+
+                # A CSS animation cycles text through many colours, but getComputedStyle
+                # only captures whichever one was showing when the snapshot was taken.
+                # Judging that sample made the same element alternate between a pass and
+                # a fail from run to run. The JS side enumerates the cycle, so judge its
+                # worst frame instead: deterministic, and the frame a user is least able
+                # to read. Animations that stay above the threshold throughout still fall
+                # through to the cannot-calculate warning below, which remains the
+                # established treatment for animated text.
+                animated_worst = text_elem.get('animatedWorstContrast')
+                animated_worst_color = text_elem.get('animatedWorstColor')
+                if animated_worst is not None:
+                    contrast = animated_worst
+
+                # A real @keyframes animation whose colour stops sit in a cross-origin
+                # stylesheet cannot be enumerated at all, so no single sample is
+                # trustworthy. Warn for manual review rather than report a verdict that
+                # depends on snapshot timing. (Transitions are excluded: they only change
+                # on hover/focus, so their steady-state colour is already stable.)
+                animation_colors_unreadable = (
+                    bool(text_elem.get('hasAnimation'))
+                    and text_elem.get('animationType') == 'CSS animation'
+                    and not text_elem.get('animationColorsReadable', True)
+                    and animated_worst is None
+                )
 
                 # Determine required ratio based on project's WCAG level
                 if wcag_level == 'AAA':
@@ -863,6 +1029,15 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         warning_reasons.append(f'text overflows container (container: {container_xpath})')
                     # Note: We do NOT warn for stoppedAtZIndex alone - only if combined with other issues
 
+                # Colour stops unreadable (cross-origin): the cycle cannot be enumerated,
+                # so neither a pass nor a fail can be asserted from one sample.
+                if animation_colors_unreadable:
+                    should_warn = True
+                    anim_name = text_elem.get('animationName', 'unknown')
+                    warning_reasons.append(
+                        f'CSS animation ({anim_name}) whose colour stops are in a cross-origin stylesheet and cannot be read'
+                    )
+
                 if should_warn and warning_reasons:
                     warning_data = {
                         'err': 'WarnTextContrastCannotCalculate',
@@ -901,6 +1076,27 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
 
                 # Check contrast against the project's required level ONLY
                 if contrast is not None and contrast < required_ratio:
+                    # For animated text, cite the worst frame of the cycle rather than
+                    # text_elem['textColor'], which is only whichever colour the snapshot
+                    # caught and would otherwise differ between runs.
+                    if animated_worst is not None:
+                        failing_color = animated_worst_color
+                        anim_name = text_elem.get('animationName', 'unknown')
+                        contrast_description = (
+                            f'{"Large" if is_large else "Normal"} text contrast '
+                            f'{contrast:.2f}:1 fails WCAG {wcag_level} requirement '
+                            f'({required_ratio}:1) at the worst point of CSS animation '
+                            f'"{anim_name}". Text color {failing_color} on background '
+                            f'{text_elem["backgroundColor"]}.'
+                        )
+                    else:
+                        failing_color = text_elem['textColor']
+                        contrast_description = (
+                            f'{"Large" if is_large else "Normal"} text contrast '
+                            f'{contrast:.2f}:1 fails WCAG {wcag_level} requirement '
+                            f'({required_ratio}:1). Text color {failing_color} on '
+                            f'background {text_elem["backgroundColor"]}.'
+                        )
                     results['errors'].append({
                         'err': error_code,
                         'type': 'err',
@@ -908,9 +1104,9 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         'element': text_elem['tag'],
                         'xpath': text_elem['xpath'],
                         'html': text_elem['html'],
-                        'description': f'{"Large" if is_large else "Normal"} text contrast {contrast:.2f}:1 fails WCAG {wcag_level} requirement ({required_ratio}:1). Text color {text_elem["textColor"]} on background {text_elem["backgroundColor"]}.',
+                        'description': contrast_description,
                         'text': text_elem['text'],
-                        'textColor': text_elem['textColor'],
+                        'textColor': failing_color,
                         'backgroundColor': text_elem['backgroundColor'],
                         'contrastRatio': f'{contrast:.2f}:1',
                         'required': f'{required_ratio}:1',

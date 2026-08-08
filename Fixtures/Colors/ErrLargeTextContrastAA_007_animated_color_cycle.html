@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ErrLargeTextContrastAA - Animated colour cycles</title>
+    <script type="application/json" id="test-metadata">
+{
+    "enforceElementExpectations": true,
+    "id": "ErrLargeTextContrastAA_007_animated_color_cycle",
+    "issueId": "ErrLargeTextContrastAA",
+    "expectedViolationCount": 2,
+    "expectedWarningCount": 1,
+    "expectedPassCount": 0,
+    "description": "Large text whose colour is driven by a CSS animation. The engine must judge the whole keyframe cycle, not whichever frame getComputedStyle happened to catch, so the verdict is identical on every run. CYCLE-1 dips to blue on black and must always be a violation. CYCLE-2 stays above 3:1 for the entire cycle, so it is not a violation and stays a WarnTextContrastCannotCalculate for manual review (animated text is always warned). CYCLE-3 passes at both keyframe stops but tweens through mid-grey on a mid-grey background, so only interpolating between stops catches it.",
+    "wcag": "1.4.3",
+    "impact": "Medium"
+}
+    </script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #ffffff;
+            color: #1a1a1a;
+        }
+
+        section {
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* CYCLE-1: cycles through #00f, which is 2.44:1 on black - below the 3:1
+           large-text threshold. Red/green/magenta stops all pass, so sampling a
+           single frame gives a pass roughly three quarters of the time. */
+        .cycle-fails {
+            font-size: 48px;
+            background-color: #000000;
+            animation: cycleFails 6s infinite;
+        }
+
+        @keyframes cycleFails {
+            0%   { color: #ff0000; }  /* 5.25:1 on black - passes */
+            25%  { color: #00ff00; }  /* 15.30:1 on black - passes */
+            50%  { color: #0000ff; }  /* 2.44:1 on black - FAILS */
+            75%  { color: #ff00ff; }  /* 6.70:1 on black - passes */
+            100% { color: #ff0000; }
+        }
+
+        /* CYCLE-2: never drops below 3:1 anywhere in the cycle, so it must not be
+           reported as a contrast violation. Animated text still warrants manual
+           review, so it remains a WarnTextContrastCannotCalculate. */
+        .cycle-passes {
+            font-size: 48px;
+            background-color: #000000;
+            animation: cyclePasses 4s infinite;
+        }
+
+        @keyframes cyclePasses {
+            0%   { color: #ffffff; }  /* 21.00:1 on black */
+            50%  { color: #cccccc; }  /* 13.08:1 on black */
+            100% { color: #ffffff; }
+        }
+
+        /* CYCLE-3: both declared stops clear 3:1 on this mid-grey background
+           (white 4.54:1, black 4.62:1) but the tween passes through mid-grey,
+           bottoming out near 1:1. Checking only the declared stops would miss
+           this; the engine has to walk the interpolated colours between them. */
+        .cycle-tween-fails {
+            font-size: 48px;
+            background-color: #767676;
+            animation: cycleTween 5s infinite;
+        }
+
+        @keyframes cycleTween {
+            0%   { color: #ffffff; }  /* 4.54:1 on #767676 - passes */
+            50%  { color: #000000; }  /* 4.62:1 on #767676 - passes */
+            100% { color: #ffffff; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Animated Colour Contrast</h1>
+
+    <main>
+        <section>
+            <h2>Cycle that dips below the threshold</h2>
+            <p class="cycle-fails"
+               data-expected-violation="true"
+               data-violation-id="ErrLargeTextContrastAA"
+               data-violation-reason="Large text (48px) animated by cycleFails reaches #0000ff on a black background, a contrast ratio of 2.44:1 against the 3:1 requirement for large text. The text is unreadable for part of every cycle. Because getComputedStyle only reports the colour showing at the moment of the snapshot, judging one frame makes this alternate between pass and fail between runs; the whole cycle must be evaluated. Violates WCAG 1.4.3 Contrast (Minimum) for large text">
+                Welcome to the Colour Cycle
+            </p>
+        </section>
+
+        <section>
+            <h2>Cycle that stays readable throughout</h2>
+            <p class="cycle-passes"
+               data-expected-warning="true"
+               data-warning-id="WarnTextContrastCannotCalculate"
+               data-warning-reason="Large text (48px) animated by cyclePasses stays between 21:1 and 13.08:1 on black, clearing 3:1 at every point of the cycle, so it is not a contrast violation. Animated text is still surfaced for manual review because motion affects legibility in ways a static ratio cannot capture">
+                Steady and Readable
+            </p>
+        </section>
+
+        <section>
+            <h2>Cycle that only fails between its keyframes</h2>
+            <p class="cycle-tween-fails"
+               data-expected-violation="true"
+               data-violation-id="ErrLargeTextContrastAA"
+               data-violation-reason="Large text (48px) animated by cycleTween declares only #ffffff and #000000, which score 4.54:1 and 4.62:1 on the #767676 background and both pass. The interpolation between them travels through mid-grey, where contrast collapses to 1.15:1 at rgb(128, 128, 128) and the text vanishes into its background. Evaluating only the declared keyframe stops would report a false pass. Violates WCAG 1.4.3 Contrast (Minimum) for large text">
+                Fading Through Grey
+            </p>
+        </section>
+    </main>
+</body>
+</html>

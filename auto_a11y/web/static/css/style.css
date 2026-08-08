@@ -2313,24 +2313,43 @@ table caption {
     font-weight: bold;
 }
 
-/* Manual toggle — darker stat-card backgrounds for WCAG AA white-text contrast */
+/* Manual toggle — darker stat-card backgrounds for WCAG AAA white-text contrast.
+   The ratios below are only real if the text is actually white. It was not:
+   `[data-theme="dark"] .card` sets color: var(--color-text) !important, which
+   outranks the .text-inverse on the card (attribute + class beats one class),
+   so these cards were painting #e0e0e6 and every ratio here was overstated by
+   roughly a point and a half. The explicit white rule below restores the
+   assumption these backgrounds were picked under.
+
+   Listed one background at a time rather than .stat-card:not(.bg-medium),
+   because the static reports reuse .stat-card over pale bg-*-subtle
+   backgrounds and bundle this stylesheet; a blanket rule would paint those
+   white on near-white. */
+[data-theme="dark"] .stat-card.bg-brand,
+[data-theme="dark"] .stat-card.bg-pass,
+[data-theme="dark"] .stat-card.bg-neutral,
+[data-theme="dark"] .stat-card.bg-high,
+[data-theme="dark"] .stat-card.bg-info,
+[data-theme="dark"] .stat-card.bg-discovery {
+    color: var(--color-text-inverse) !important;
+}
 [data-theme="dark"] .stat-card.bg-brand {
-    background-color: #2563a0 !important;  /* white 6.3:1 */
+    background-color: #225a92 !important;  /* white 7.13:1 */
 }
 [data-theme="dark"] .stat-card.bg-pass {
-    background-color: #1a6b38 !important;  /* white 6.6:1 */
+    background-color: #196535 !important;  /* white 7.11:1 */
 }
 [data-theme="dark"] .stat-card.bg-neutral {
-    background-color: #4a535e !important;  /* white 5.8:1 */
+    background-color: #4a535e !important;  /* white 7.81:1 */
 }
 [data-theme="dark"] .stat-card.bg-high {
-    background-color: #9b2335 !important;  /* white 7.8:1 */
+    background-color: #9b2335 !important;  /* white 7.82:1 */
 }
 [data-theme="dark"] .stat-card.bg-info {
-    background-color: #1a6b8a !important;  /* white 6.0:1 */
+    background-color: #175f7b !important;  /* white 7.10:1 */
 }
 [data-theme="dark"] .stat-card.bg-medium {
-    background-color: #f9a825 !important;  /* dark text 7.6:1 */
+    background-color: #f9a825 !important;  /* dark text 7.83:1 */
 }
 /* Keep dark text on the medium (warning) card */
 [data-theme="dark"] .stat-card.bg-medium,
@@ -2344,11 +2363,19 @@ table caption {
 
 /* OS preference */
 @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .stat-card.bg-brand,
+    :root:not([data-theme="light"]) .stat-card.bg-pass,
+    :root:not([data-theme="light"]) .stat-card.bg-neutral,
+    :root:not([data-theme="light"]) .stat-card.bg-high,
+    :root:not([data-theme="light"]) .stat-card.bg-info,
+    :root:not([data-theme="light"]) .stat-card.bg-discovery {
+        color: var(--color-text-inverse) !important;
+    }
     :root:not([data-theme="light"]) .stat-card.bg-brand {
-        background-color: #2563a0 !important;
+        background-color: #225a92 !important;
     }
     :root:not([data-theme="light"]) .stat-card.bg-pass {
-        background-color: #1a6b38 !important;
+        background-color: #196535 !important;
     }
     :root:not([data-theme="light"]) .stat-card.bg-neutral {
         background-color: #4a535e !important;
@@ -2357,7 +2384,7 @@ table caption {
         background-color: #9b2335 !important;
     }
     :root:not([data-theme="light"]) .stat-card.bg-info {
-        background-color: #1a6b8a !important;
+        background-color: #175f7b !important;
     }
     :root:not([data-theme="light"]) .stat-card.bg-medium {
         background-color: #f9a825 !important;

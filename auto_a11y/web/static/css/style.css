@@ -2296,6 +2296,16 @@ table caption {
 .dashboard-stats dt {
     font-weight: normal;
     margin: 0;
+    /* The bare `dt` rule near the top of this file paints every definition
+       term --color-text-muted. That is right for a definition list on the page
+       background, but these terms sit on the saturated stat-card colours, and
+       an element's own rule beats the colour it would otherwise inherit from
+       the card's .text-inverse. The labels were landing at 1.09:1 on the
+       Errors card and 1.24:1 on Total Issues — effectively invisible.
+       Inheriting instead of naming a colour keeps each label matched to its
+       own card: white on the seven inverse cards, and the dark text that
+       .bg-medium sets for itself in dark mode. */
+    color: inherit;
 }
 
 .dashboard-stats dd {

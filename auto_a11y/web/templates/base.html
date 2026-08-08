@@ -75,19 +75,19 @@
                             </a></li>
                         </ul>
                     </li>
-                    <!-- Reports dropdown -->
-                    <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle" id="reportsDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
+                    <!-- Reports - standalone (was a dropdown; Recordings moved out
+                         to the top level, and a menu holding one item is just an
+                         extra keystroke between the user and the page) -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reports.reports_dashboard') }}" {% if request.endpoint and request.endpoint.startswith('reports.') %}aria-current="page"{% endif %}>
                             <i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ ftl('common-reports') }}
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="reportsDropdown" role="menu">
-                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('reports.reports_dashboard') }}" {% if request.endpoint and request.endpoint.startswith('reports.') %}aria-current="page"{% endif %}>
-                                <i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i> {{ ftl('common-reports-dashboard') }}
-                            </a></li>
-                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('recordings.list_recordings') }}" {% if request.endpoint and request.endpoint.startswith('recordings.') %}aria-current="page"{% endif %}>
-                                <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
-                            </a></li>
-                        </ul>
+                        </a>
+                    </li>
+                    <!-- Recordings - standalone -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recordings.list_recordings') }}" {% if request.endpoint and request.endpoint.startswith('recordings.') %}aria-current="page"{% endif %}>
+                            <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
+                        </a>
                     </li>
                     {% endif %}
                 </ul>

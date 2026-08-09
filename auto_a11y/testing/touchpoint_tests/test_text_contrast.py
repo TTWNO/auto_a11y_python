@@ -424,21 +424,49 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         .sort((a, b) => a.offset - b.offset);
                     if (!parsed.length) return null;
 
+                    // Track where in the cycle the worst point sits, not just how bad
+                    // it is. A report that says only "this animation fails somewhere"
+                    // leaves the author to hunt through the keyframes; naming the stop
+                    // (or the pair being tweened between) points straight at the CSS to
+                    // edit. `offset` is the position in the cycle as a fraction, and
+                    // `atStop` distinguishes a declared keyframe from a colour the
+                    // browser only produces mid-tween.
                     let worst = null;
                     let worstColor = null;
-                    const consider = (c) => {
+                    let worstOffset = null;
+                    let worstAtStop = false;
+                    let worstFrom = null;
+                    let worstTo = null;
+                    // Worst among the declared stops alone, tracked separately. A stop is
+                    // a line of CSS the author can edit; a mid-tween colour is not. When
+                    // both fail we want to name the stop, because that is the fix.
+                    let worstStop = null;
+                    let worstStopColor = null;
+                    let worstStopOffset = null;
+                    const consider = (c, offset, atStop, from, to) => {
                         const ratio = getContrastRatio(c, bgColor);
                         if (worst === null || ratio < worst) {
                             worst = ratio;
                             worstColor = c;
+                            worstOffset = offset;
+                            worstAtStop = atStop;
+                            worstFrom = from;
+                            worstTo = to;
+                        }
+                        if (atStop && (worstStop === null || ratio < worstStop)) {
+                            worstStop = ratio;
+                            worstStopColor = c;
+                            worstStopOffset = offset;
                         }
                     };
 
                     for (let i = 0; i < parsed.length; i++) {
-                        consider(parsed[i].color);
+                        consider(parsed[i].color, parsed[i].offset, true, null, null);
                         if (i === parsed.length - 1) break;
                         const a = parsed[i].color;
                         const b = parsed[i + 1].color;
+                        const offA = parsed[i].offset;
+                        const offB = parsed[i + 1].offset;
                         const STEPS = 10;
                         for (let step = 1; step < STEPS; step++) {
                             const t = step / STEPS;
@@ -447,13 +475,27 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                                 g: Math.round(a.g + (b.g - a.g) * t),
                                 b: Math.round(a.b + (b.b - a.b) * t),
                                 a: a.a + (b.a - a.a) * t
-                            });
+                            }, offA + (offB - offA) * t, false, offA, offB);
                         }
                     }
 
+                    const pct = (o) => `${Math.round(o * 1000) / 10}%`;
+                    const rgba = (c) => `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`;
+
                     return {
                         contrast: worst,
-                        color: `rgba(${worstColor.r}, ${worstColor.g}, ${worstColor.b}, ${worstColor.a})`
+                        color: rgba(worstColor),
+                        offset: worstOffset,
+                        atStop: worstAtStop,
+                        // Human-readable position, e.g. "the 50% keyframe" or
+                        // "between the 0% and 50% keyframes".
+                        where: worstAtStop
+                            ? `the ${pct(worstOffset)} keyframe`
+                            : `between the ${pct(worstFrom)} and ${pct(worstTo)} keyframes`,
+                        // The worst colour the author actually wrote down.
+                        stopContrast: worstStop,
+                        stopColor: worstStopColor ? rgba(worstStopColor) : null,
+                        stopWhere: worstStopOffset === null ? null : `the ${pct(worstStopOffset)} keyframe`
                     };
                 }
 
@@ -847,6 +889,11 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                     // does not depend on snapshot timing.
                     let animatedWorstContrast = null;
                     let animatedWorstColor = null;
+                    let animatedWorstWhere = null;
+                    let animatedWorstAtStop = null;
+                    let animatedWorstStopContrast = null;
+                    let animatedWorstStopColor = null;
+                    let animatedWorstStopWhere = null;
                     let animationColorsReadable = true;
                     if (animInfo.hasAnimation && canCalculateInsideContrast) {
                         const kf = getAnimationKeyframeStops(animInfo.animationName);
@@ -855,6 +902,11 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         if (worst) {
                             animatedWorstContrast = worst.contrast;
                             animatedWorstColor = worst.color;
+                            animatedWorstWhere = worst.where;
+                            animatedWorstAtStop = worst.atStop;
+                            animatedWorstStopContrast = worst.stopContrast;
+                            animatedWorstStopColor = worst.stopColor;
+                            animatedWorstStopWhere = worst.stopWhere;
                         }
                     }
 
@@ -904,6 +956,11 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         animationName: animInfo.animationName,
                         animatedWorstContrast: animatedWorstContrast,
                         animatedWorstColor: animatedWorstColor,
+                        animatedWorstWhere: animatedWorstWhere,
+                        animatedWorstAtStop: animatedWorstAtStop,
+                        animatedWorstStopContrast: animatedWorstStopContrast,
+                        animatedWorstStopColor: animatedWorstStopColor,
+                        animatedWorstStopWhere: animatedWorstStopWhere,
                         animationColorsReadable: animationColorsReadable,
                         canCalculateInsideContrast: canCalculateInsideContrast,
                         tag: element.tagName.toLowerCase(),
@@ -1082,12 +1139,55 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                     if animated_worst is not None:
                         failing_color = animated_worst_color
                         anim_name = text_elem.get('animationName', 'unknown')
+                        where = text_elem.get('animatedWorstWhere') or 'a point in the cycle'
+                        bg_color = text_elem['backgroundColor']
+                        stop_contrast = text_elem.get('animatedWorstStopContrast')
+                        stop_color = text_elem.get('animatedWorstStopColor')
+                        stop_where = text_elem.get('animatedWorstStopWhere')
+
+                        # Which fact is actionable depends on where the failure lives. A
+                        # declared keyframe is a line of CSS the author can edit, so when
+                        # one fails, name it. A colour that only exists mid-tween appears
+                        # nowhere in their stylesheet - saying "fix the 30% keyframe" when
+                        # no such keyframe exists would send them looking for something
+                        # that isn't there, so that case has to be spelled out instead.
+                        stop_fails = (
+                            stop_contrast is not None
+                            and stop_where
+                            and stop_contrast < required_ratio
+                        )
+                        lead = (
+                            f'{"Large" if is_large else "Normal"} text is animated by CSS '
+                            f'animation "{anim_name}". '
+                        )
+                        if stop_fails:
+                            detail = (
+                                f'Its declared colour at {stop_where} is {stop_color}, '
+                                f'giving {stop_contrast:.2f}:1 against background '
+                                f'{bg_color} - below the WCAG {wcag_level} requirement of '
+                                f'{required_ratio}:1.'
+                            )
+                            # Only worth mentioning the tween if it is meaningfully worse
+                            # than the stop the author will already be editing.
+                            if animated_worst < stop_contrast - 0.05:
+                                detail += (
+                                    f' Contrast dips further still, to {contrast:.2f}:1, '
+                                    f'{where} where the browser tweens through '
+                                    f'{failing_color}.'
+                                )
+                        else:
+                            detail = (
+                                f'Every declared keyframe colour passes, but contrast '
+                                f'collapses to {contrast:.2f}:1 {where}, below the WCAG '
+                                f'{wcag_level} requirement of {required_ratio}:1. The '
+                                f'failing colour, {failing_color} on background {bg_color}, '
+                                f'is not written in the keyframes - the browser produces it '
+                                f'while tweening between them, so fixing this needs an '
+                                f'intermediate keyframe or a different colour pair.'
+                            )
                         contrast_description = (
-                            f'{"Large" if is_large else "Normal"} text contrast '
-                            f'{contrast:.2f}:1 fails WCAG {wcag_level} requirement '
-                            f'({required_ratio}:1) at the worst point of CSS animation '
-                            f'"{anim_name}". Text color {failing_color} on background '
-                            f'{text_elem["backgroundColor"]}.'
+                            f'{lead}{detail} The text is unreadable for that part of '
+                            f'every cycle.'
                         )
                     else:
                         failing_color = text_elem['textColor']
@@ -1097,7 +1197,7 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                             f'({required_ratio}:1). Text color {failing_color} on '
                             f'background {text_elem["backgroundColor"]}.'
                         )
-                    results['errors'].append({
+                    error_data: dict[str, Any] = {
                         'err': error_code,
                         'type': 'err',
                         'cat': 'colors',
@@ -1114,7 +1214,24 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         'isLargeText': is_large,
                         'breakpoint': breakpoint,
                         'wcag': wcag_criterion
-                    })
+                    }
+                    # Carry the animation facts on the issue itself, not just inside the
+                    # prose. Reports, exports and the issue detail panel all read these
+                    # fields, and without them the only trace that the failure is
+                    # animation-related is a sentence nothing can filter or group on.
+                    if animated_worst is not None:
+                        error_data['isAnimated'] = True
+                        error_data['animationName'] = text_elem.get('animationName')
+                        error_data['animationType'] = text_elem.get('animationType')
+                        error_data['animationElementXpath'] = text_elem.get('animationElementXpath')
+                        error_data['animationWorstPoint'] = text_elem.get('animatedWorstWhere')
+                        error_data['animationWorstAtKeyframe'] = text_elem.get('animatedWorstAtStop')
+                        error_data['animationWorstKeyframe'] = text_elem.get('animatedWorstStopWhere')
+                        error_data['animationWorstKeyframeColor'] = text_elem.get('animatedWorstStopColor')
+                        stop_c = text_elem.get('animatedWorstStopContrast')
+                        if stop_c is not None:
+                            error_data['animationWorstKeyframeContrast'] = f'{stop_c:.2f}:1'
+                    results['errors'].append(error_data)
                     results['elements_failed'] += 1
                 else:
                     # Passes the project's required level

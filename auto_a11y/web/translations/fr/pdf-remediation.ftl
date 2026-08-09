@@ -255,12 +255,16 @@ pdf-remediation-PdfWarnNoPdfUaIdentifier =
     Before
     
     Missing: No PDF/UA identifier
-    <rdf:RDF>\n  <!-- no pdfuaid namespace -->\n</rdf:RDF>
+    <rdf:RDF>
+      <!-- no pdfuaid namespace -->
+    </rdf:RDF>
     
     After
     
     Correct: PDF/UA-1 identifier present
-    <rdf:Description xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">\n  <pdfuaid:part>1</pdfuaid:part>\n</rdf:Description>
+    <rdf:Description xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">
+      <pdfuaid:part>1</pdfuaid:part>
+    </rdf:Description>
     
     The pdfuaid:part element declares PDF/UA conformance level. A value of 1 indicates PDF/UA-1 (ISO 14289-1).
     

@@ -1302,7 +1302,7 @@ ErrInfiniteAnimation =
     .what = L'animation CSS « {"{"}animationName{"}"} » s'exécute avec animation-iteration-count: infinite (ou équivalent) et la page ne fournit ni contrôle pause/arrêt ni prise en charge de prefers-reduced-motion.
     .why = Les animations continues peuvent déclencher des crises, causer des distractions et rendre le contenu inutilisable pour de nombreux utilisateurs. Cette animation est configurée pour se répéter indéfiniment (animation-iteration-count: infinite).
     .who = Utilisateurs avec des troubles vestibulaires, utilisateurs avec TDAH, utilisateurs avec épilepsie photosensible, utilisateurs avec des handicaps cognitifs.
-    .remediation = Fournissez des contrôles de pause/arrêt pour toutes les animations, respectez les paramètres prefers-reduced-motion, ou limitez animation-iteration-count à un nombre fini. CSS actuel :\n%(animationCSS)s
+    .remediation = Fournissez des contrôles de pause/arrêt pour toutes les animations, respectez les paramètres prefers-reduced-motion, ou limitez animation-iteration-count à un nombre fini. CSS actuel :
     .what-generic = L'animation '%(animationName)s' s'exécute indéfiniment sans contrôles de pause
 
 ErrInputBorderChangeInsufficient =
@@ -2718,7 +2718,42 @@ WarnInfiniteAnimationSpinner =
     .what = L'animation de chargement '%(animationName)s' s'exécute indéfiniment sans contrôles et nécessite une inspection manuelle pour assurer l'accessibilité aux lecteurs d'écran
     .why = Bien que les indicateurs de chargement soient courants et souvent acceptables, les animations infinies sans contrôles peuvent encore être problématiques si elles restent visibles pendant des périodes prolongées. Les indicateurs de chargement devraient idéalement être masqués ou arrêtés une fois le chargement terminé. De plus, les indicateurs doivent être perceptibles par les utilisateurs de lecteurs d'écran grâce à des attributs ARIA appropriés. Cela nécessite une inspection manuelle pour vérifier que l'indicateur a : 1) role="status" ou role="alert" sur un élément conteneur, 2) du texte visuellement masqué (par ex., « Chargement... ») pour les utilisateurs de lecteurs d'écran, et 3) des mises à jour dynamiques lorsque le chargement se termine. Sans ces attributs, les utilisateurs de lecteurs d'écran ne sauront pas que le contenu se charge, créant une expérience confuse et inaccessible.
     .who = Utilisateurs avec des troubles vestibulaires, utilisateurs avec TDAH, utilisateurs avec épilepsie photosensible, utilisateurs avec des déficiences cognitives, utilisateurs de lecteurs d'écran qui ont besoin d'annonces sonores de chargement.
-    .remediation = **1. Contrôle visuel :** Assurez-vous que l'indicateur de chargement est masqué (display: none ou visibility: hidden) lorsque le chargement est terminé, ou fournissez des contrôles de pause/arrêt. Considérez respecter les paramètres prefers-reduced-motion pour désactiver complètement les animations pour les utilisateurs qui préfèrent un mouvement réduit.\n\n**2. Accessibilité des lecteurs d'écran (inspection manuelle requise) :** Vérifiez que l'indicateur de chargement inclut les attributs ARIA appropriés :\n\n**Structure HTML :**\n```html\n<div class="spinner-container" role="status">\n  <div class="spinner"></div>\n  <span class="visually-hidden">Chargement...</span>\n</div>\n```\n\n**Attributs ARIA requis :**\n- `role="status"` sur le conteneur pour indiquer une région dynamique fournissant des informations de statut\n- Texte visuellement masqué à l'intérieur du conteneur (par ex., "Chargement...") utilisant une classe comme `.visually-hidden` ou `.sr-only`\n\n**CSS pour le texte visuellement masqué :**\n```css\n.visually-hidden {"{"}\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border-width: 0;\n{"}"}\n```\n\n**Mises à jour dynamiques (optionnel) :** Lorsque l'indicateur de chargement se termine, mettez à jour le texte visuellement masqué vers "Contenu chargé." en utilisant JavaScript pour informer les utilisateurs de lecteurs d'écran que le chargement est terminé.\n\nCSS d'animation actuel :\n%(animationCSS)s
+    .remediation =
+        {""}**1. Contrôle visuel :** Assurez-vous que l'indicateur de chargement est masqué (display: none ou visibility: hidden) lorsque le chargement est terminé, ou fournissez des contrôles de pause/arrêt. Considérez respecter les paramètres prefers-reduced-motion pour désactiver complètement les animations pour les utilisateurs qui préfèrent un mouvement réduit.
+        
+        {""}**2. Accessibilité des lecteurs d'écran (inspection manuelle requise) :** Vérifiez que l'indicateur de chargement inclut les attributs ARIA appropriés :
+        
+        {""}**Structure HTML :**
+        ```html
+        <div class="spinner-container" role="status">
+          <div class="spinner"></div>
+          <span class="visually-hidden">Chargement...</span>
+        </div>
+        ```
+        
+        {""}**Attributs ARIA requis :**
+        {""}- `role="status"` sur le conteneur pour indiquer une région dynamique fournissant des informations de statut
+        {""}- Texte visuellement masqué à l'intérieur du conteneur (par ex., "Chargement...") utilisant une classe comme `.visually-hidden` ou `.sr-only`
+        
+        {""}**CSS pour le texte visuellement masqué :**
+        ```css
+        {""}.visually-hidden {"{"}
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border-width: 0;
+        {"}"}
+        ```
+        
+        {""}**Mises à jour dynamiques (optionnel) :** Lorsque l'indicateur de chargement se termine, mettez à jour le texte visuellement masqué vers "Contenu chargé." en utilisant JavaScript pour informer les utilisateurs de lecteurs d'écran que le chargement est terminé.
+        
+        CSS d'animation actuel :
+        {"{"}animationCSS{"}"}
     .what-generic = L'animation de chargement s'exécute indéfiniment sans contrôles
 
 WarnInputDefaultFocus =
@@ -2822,7 +2857,7 @@ WarnLongAnimation =
     .what = Une animation a une durée de {"{"}duration{"}"}, dépassant le seuil de 5 secondes considéré comme « long » par les WCAG. Les animations longues nécessitent un mécanisme pour les mettre en pause, les arrêter ou les masquer (CS 2.2.2).
     .why = Les animations longues peuvent être distrayantes et peuvent nécessiter des contrôles utilisateur. Les durées d'animation étendues rendent plus difficile pour les utilisateurs de se concentrer sur le contenu et peuvent être accablantes pour les utilisateurs avec des troubles cognitifs.
     .who = Utilisateurs avec des troubles de l'attention (TDAH), utilisateurs avec des troubles cognitifs, utilisateurs avec des troubles vestibulaires.
-    .remediation = Raccourcissez animation-duration à 5 secondes ou moins, ou fournissez des contrôles pause/arrêt. Considérez respecter la requête média prefers-reduced-motion. CSS actuel :\n%(animationCSS)s
+    .remediation = Raccourcissez animation-duration à 5 secondes ou moins, ou fournissez des contrôles pause/arrêt. Considérez respecter la requête média prefers-reduced-motion. CSS actuel :
     .what-generic = La durée d'animation (%(duration)s) dépasse 5 secondes
 
 WarnMapPotentialContentHiding =

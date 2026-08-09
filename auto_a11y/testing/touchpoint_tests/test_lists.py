@@ -465,8 +465,24 @@ async def test_lists(page: Page) -> dict[str, Any]:
                         });
                     }
                     
+                    // A list inside a navigation landmark is a menu or a breadcrumb,
+                    // not prose. Replacing its markers with separators or icons is the
+                    // conventional way to build one - the WAI-ARIA Authoring Practices
+                    // breadcrumb pattern generates its separator with ::before content,
+                    // and virtually every site icon-labels its menu items. Warning on
+                    // those is a false positive; it fired three times on this
+                    // application's own breadcrumb, which is why the separator had been
+                    // deleted from style.css. The list still gets the empty-item,
+                    // nesting and structural checks above; only the marker-styling
+                    // checks are skipped.
+                    const inNavigationLandmark = list.closest('nav, [role="navigation"]') !== null;
+
                     // Check styling of list items for custom bullets and icon fonts
                     items.forEach(item => {
+                        if (inNavigationLandmark) {
+                            return;
+                        }
+
                         const style = window.getComputedStyle(item);
                         const beforePseudo = window.getComputedStyle(item, '::before');
 

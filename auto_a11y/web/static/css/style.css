@@ -2612,12 +2612,18 @@ a a {
     content: "";
 }
 
-/* Suppress Bootstrap breadcrumb separator (::before content) — the test
-   flags it as "custom bullet styling". Use semantic separator via
-   <li aria-hidden="true">/</li> in HTML instead, or rely on landmark
-   structure. */
+/* Breadcrumb separator. This was previously suppressed because our own
+   WarnCustomBulletStyling check flagged the ::before content as a custom
+   bullet, which left the trail reading as undifferentiated text. The check
+   now exempts lists inside a navigation landmark (see test_lists.py), which
+   is where it was wrong — the WAI-ARIA Authoring Practices breadcrumb
+   pattern builds its separator exactly this way. Restored, with a chevron
+   in place of Bootstrap's slash and a token colour so it holds up in both
+   themes. */
 .breadcrumb-item + .breadcrumb-item::before {
-    content: none;
+    content: "\203A";  /* › — decorative; the <nav> landmark conveys the structure */
+    color: var(--color-text-muted);
+    padding-right: 0.5rem;
 }
 
 /* ============================================

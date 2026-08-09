@@ -33,7 +33,7 @@ schedules-error-toggling-schedule = Erreur lors de l'activation/désactivation d
 schedules-error-updating-schedule-error = Erreur lors de la mise à jour de l'horaire : { $error }
 schedules-failed-to-start-test-run = Échec du démarrage de l'exécution du test
 schedules-filter-by-project = Filtrer par projet
-schedules-format-minute-hour-day-month-weekday-e-g-0-2 = Format : minute heure jour mois jour_semaine (ex., \"0 2 * * *\" = tous les jours à 2h)
+schedules-format-minute-hour-day-month-weekday-e-g-0-2 = Format : minute heure jour mois jour_semaine (ex., "0 2 * * *" = tous les jours à 2h)
 schedules-friday = Vendredi
 schedules-javascript-tests = Tests JavaScript
 schedules-job-id = ID de tâche

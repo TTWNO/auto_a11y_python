@@ -33,7 +33,7 @@ schedules-error-toggling-schedule = Error toggling schedule:
 schedules-error-updating-schedule-error = Error updating schedule: { $error }
 schedules-failed-to-start-test-run = Failed to start test run
 schedules-filter-by-project = Filter by Project
-schedules-format-minute-hour-day-month-weekday-e-g-0-2 = Format: minute hour day month weekday (e.g., \"0 2 * * *\" = daily at 2am)
+schedules-format-minute-hour-day-month-weekday-e-g-0-2 = Format: minute hour day month weekday (e.g., "0 2 * * *" = daily at 2am)
 schedules-friday = Friday
 schedules-javascript-tests = JavaScript Tests
 schedules-job-id = Job ID
@@ -74,9 +74,9 @@ schedules-schedule-details = Schedule Details
 schedules-schedule-disabled = Schedule disabled
 schedules-schedule-enabled = Schedule enabled
 schedules-schedule-name = Schedule Name
-schedules-schedule-name-created-successfully = Schedule \"{ $name }\" created successfully
-schedules-schedule-name-deleted = Schedule \"{ $name }\" deleted
-schedules-schedule-name-updated-successfully = Schedule \"{ $name }\" updated successfully
+schedules-schedule-name-created-successfully = Schedule "{ $name }" created successfully
+schedules-schedule-name-deleted = Schedule "{ $name }" deleted
+schedules-schedule-name-updated-successfully = Schedule "{ $name }" updated successfully
 schedules-schedule-not-found = Schedule not found
 schedules-schedule-timing = Schedule Timing
 schedules-schedule-type = Schedule Type

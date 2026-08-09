@@ -2,7 +2,7 @@
 public-account = Compte
 public-affected-html = HTML concerné
 public-breadcrumb = Fil d'Ariane
-public-count-violations = { $count } violations
+public-count-violations = { $count } erreurs
 public-how-to-fix = Comment corriger
 public-last-updated = Dernière mise à jour
 public-no-issues-found-on-this-page = Aucun problème trouvé sur cette page.
@@ -15,6 +15,6 @@ public-project-overview = Aperçu du projet
 public-tested-of-total-pages-tested = { $tested } sur { $total } pages testées
 public-this-page-has-not-been-tested-yet = Cette page n'a pas encore été testée.
 public-understanding-wcag-criterion = Comprendre le critère WCAG
-public-violation = Violation
+public-violation = Erreur
 public-warning = Avertissement
 public-you-do-not-have-permission-to-view-this-page-the = Vous n'avez pas la permission de voir cette page. Le lien a peut-être expiré ou a été révoqué.

@@ -2,7 +2,7 @@
 public-account = Account
 public-affected-html = Affected HTML
 public-breadcrumb = Breadcrumb
-public-count-violations = { $count } violations
+public-count-violations = { $count } errors
 public-how-to-fix = How to fix
 public-last-updated = Last updated
 public-no-issues-found-on-this-page = No issues found on this page.
@@ -15,6 +15,6 @@ public-project-overview = Project Overview
 public-tested-of-total-pages-tested = { $tested } of { $total } pages tested
 public-this-page-has-not-been-tested-yet = This page has not been tested yet.
 public-understanding-wcag-criterion = Understanding WCAG criterion
-public-violation = Violation
+public-violation = Error
 public-warning = Warning
 public-you-do-not-have-permission-to-view-this-page-the = You do not have permission to view this page. The link may have expired or been revoked.

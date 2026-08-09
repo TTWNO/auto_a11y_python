@@ -493,7 +493,7 @@ class StaticHTMLReportGenerator:
 
                 # Misc
                 'language': 'Language',
-                'violation_s': 'violation(s)',
+                'violation_s': 'error(s)',
                 'warning_s': 'warning(s)',
                 'info': 'info',
                 'hidden': 'hidden',
@@ -676,7 +676,7 @@ class StaticHTMLReportGenerator:
 
                 # Misc
                 'language': 'Langue',
-                'violation_s': 'violation(s)',
+                'violation_s': 'erreur(s)',
                 'warning_s': 'avertissement(s)',
                 'info': 'info',
                 'hidden': 'caché',

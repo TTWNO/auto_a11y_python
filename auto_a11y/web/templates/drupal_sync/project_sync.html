@@ -785,7 +785,7 @@ async function applyAutomatedTestFilters() {
         summaryDiv.innerHTML = `
             <strong>{{ ftl('common-total') }}</strong> ${automatedTestStats.totalPages} {{ ftl('drupal-pages-with') }} ${automatedTestStats.totalIssues} {{ ftl('common-issues') }}
             <br>
-            <strong>{{ ftl('drupal-filtered') }}</strong> <span class="text-brand">${data.total_pages} {{ ftl('drupal-pages-with') }} ${data.total_violations} {{ ftl('common-issues') }}</span>
+            <strong>{{ ftl('drupal-filtered') }}</strong> <span class="text-brand">${data.total_pages} {{ ftl('drupal-pages-with') }} ${data.total_violations} {{ ftl('common-errors-2') }}</span>
         `;
 
     } catch (error) {

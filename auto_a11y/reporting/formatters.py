@@ -82,7 +82,7 @@ class BaseFormatter:
             'passes': 'Passes',
             'overview': 'Overview',
             'projects_breakdown': 'Projects Breakdown',
-            'violation_types': 'Violation Types',
+            'violation_types': 'Error Types',
             'pages': 'Pages',
             'websites': 'Websites',
             'projects': 'Projects',
@@ -178,7 +178,7 @@ class BaseFormatter:
             'test_users': 'Test Users',
             # Stat card labels
             'passed': 'Passed',
-            'errors_violations': 'Errors (Violations)',
+            'errors_violations': 'Errors',
             # Phrases
             'manual_inspection_note': 'These items require manual inspection to ensure accessibility.',
             'no_websites_in_project': 'No websites in this project',
@@ -189,7 +189,7 @@ class BaseFormatter:
             'no_description': 'No description',
             'not_specified': 'Not specified',
             'ai_finding': 'AI Finding',
-            'violation': 'Violation',
+            'violation': 'Error',
             'warning': 'Warning',
             'guest': 'Guest',
             'no_login': 'no login',
@@ -202,7 +202,7 @@ class BaseFormatter:
             # Summary sheet labels
             'summary_statistics': 'Summary Statistics',
             'overall_statistics': 'Overall Statistics',
-            'average_violations_per_page': 'Average Violations/Page',
+            'average_violations_per_page': 'Average Errors/Page',
             'page_state_information': 'Page State Information',
             'state_details': 'State Details',
             'scripts_executed': 'Scripts Executed',
@@ -227,11 +227,11 @@ class BaseFormatter:
             'detailed_results': 'Detailed Results by Page',
             'average_page_score': 'Average Page Score',
             'compliance_score_desc': 'Share of automated checks that passed across all tested pages.',
-            'exec_summary_text': '{pages} pages were tested: {violations} violations and {warnings} warnings were found, and {passes} automated checks passed.',
+            'exec_summary_text': '{pages} pages were tested: {violations} errors and {warnings} warnings were found, and {passes} automated checks passed.',
             'rec_high_impact': 'Address the {count} high-impact issues first — they most severely block users with disabilities.',
             'rec_touchpoint': 'Concentrate remediation on {name} — {count} issues, the largest category found.',
             'rec_warnings': 'Review the {count} warnings; many indicate real barriers that automated testing cannot fully confirm.',
-            'rec_none': 'No violations were found. Continue periodic testing to maintain compliance.',
+            'rec_none': 'No errors were found. Continue periodic testing to maintain compliance.',
             'rec_retest': 'Re-test after each round of fixes to confirm remediation and catch regressions.',
         },
         'fr': {
@@ -245,7 +245,7 @@ class BaseFormatter:
             'passes': 'Réussites',
             'overview': "Vue d'ensemble",
             'projects_breakdown': 'Détail des projets',
-            'violation_types': 'Types de violations',
+            'violation_types': "Types d'erreurs",
             'pages': 'Pages',
             'websites': 'Sites web',
             'projects': 'Projets',
@@ -341,7 +341,7 @@ class BaseFormatter:
             'test_users': 'Utilisateurs de test',
             # Stat card labels
             'passed': 'Réussites',
-            'errors_violations': 'Erreurs (Violations)',
+            'errors_violations': 'Erreurs',
             # Phrases
             'manual_inspection_note': "Ces éléments nécessitent une vérification manuelle pour assurer l'accessibilité.",
             'no_websites_in_project': 'Aucun site web dans ce projet',
@@ -352,7 +352,7 @@ class BaseFormatter:
             'no_description': 'Aucune description',
             'not_specified': 'Non spécifié',
             'ai_finding': 'Résultat IA',
-            'violation': 'Violation',
+            'violation': 'Erreur',
             'warning': 'Avertissement',
             'guest': 'Invité',
             'no_login': 'aucune connexion',
@@ -365,7 +365,7 @@ class BaseFormatter:
             # Summary sheet labels
             'summary_statistics': 'Statistiques résumées',
             'overall_statistics': 'Statistiques générales',
-            'average_violations_per_page': 'Violations moyennes/page',
+            'average_violations_per_page': 'Erreurs moyennes/page',
             'page_state_information': "Information sur l'état de la page",
             'state_details': "Détails de l'état",
             'scripts_executed': 'Scripts exécutés',
@@ -390,11 +390,11 @@ class BaseFormatter:
             'detailed_results': 'Résultats détaillés par page',
             'average_page_score': 'Score moyen des pages',
             'compliance_score_desc': 'Part des vérifications automatisées réussies sur l\'ensemble des pages testées.',
-            'exec_summary_text': '{pages} pages ont été testées : {violations} violations et {warnings} avertissements ont été détectés, et {passes} vérifications automatisées ont réussi.',
+            'exec_summary_text': '{pages} pages ont été testées : {violations} erreurs et {warnings} avertissements ont été détectés, et {passes} vérifications automatisées ont réussi.',
             'rec_high_impact': "Corrigez d'abord les {count} problèmes à impact élevé — ce sont eux qui bloquent le plus gravement les personnes en situation de handicap.",
             'rec_touchpoint': 'Concentrez la remédiation sur {name} — {count} problèmes, la catégorie la plus importante détectée.',
             'rec_warnings': 'Examinez les {count} avertissements ; beaucoup signalent de véritables obstacles que les tests automatisés ne peuvent pas confirmer entièrement.',
-            'rec_none': "Aucune violation n'a été détectée. Poursuivez les tests périodiques pour maintenir la conformité.",
+            'rec_none': "Aucune erreur n'a été détectée. Poursuivez les tests périodiques pour maintenir la conformité.",
             'rec_retest': 'Testez à nouveau après chaque série de corrections pour confirmer la remédiation et détecter les régressions.',
             # Touchpoint display names
             'tp_accessible_names': 'Noms accessibles',
@@ -2101,7 +2101,7 @@ class CSVFormatter(BaseFormatter):
         warnings_list: list[Any] = self.get_issue_list(test_result, 'warnings')
 
         for v in violations:
-            self._write_issue_row('Violation', page_url, page_title, v)
+            self._write_issue_row('Error', page_url, page_title, v)
         for w in warnings_list:
             self._write_issue_row('Warning', page_url, page_title, w)
 
@@ -3275,7 +3275,7 @@ class ExcelFormatter(BaseFormatter):
             # Determine fill color based on type
             if issue_type == 'violation':
                 fill_color = styles['violation']['fill']
-                type_label = 'Violation'
+                type_label = 'Error'
             elif issue_type == 'warning':
                 fill_color = styles['warning']['fill']
                 type_label = 'Warning'

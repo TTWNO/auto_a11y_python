@@ -122,44 +122,44 @@
     "what_generic": "Le dialogue modal ne piège pas le focus dans le dialogue"
   },
   "DiscoAsideFound": {
-    "title": "Région complémentaire détectée (signature : %(asideSignature)s) - nécessite une révision manuelle d'accessibilité",
-    "what": "Une région complémentaire (<aside> ou role=\\\"complementary\\\") a été détectée sur cette page. %(asideLabel_description)s La signature %(asideSignature)s permet de suivre cette même région sur différentes pages.",
+    "title": "Région complémentaire détectée (signature : {asideSignature}) - nécessite une révision manuelle d'accessibilité",
+    "what": "Une région complémentaire (<aside> ou role=\\\"complementary\\\") a été détectée sur cette page. {asideLabel_description} La signature {asideSignature} permet de suivre cette même région sur différentes pages.",
     "why": "Les régions complémentaires fournissent du contenu de support lié au contenu principal. Elles doivent être correctement étiquetées lorsque plusieurs existent, contenir des informations supplémentaires pertinentes, et être distinguables du contenu principal pour les utilisateurs de lecteurs d'écran qui naviguent par régions repères. La signature permet aux auditeurs de reconnaître quand le même contenu complémentaire apparaît sur plusieurs pages.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour trouver du contenu de support, utilisateurs avec des déficiences cognitives qui bénéficient d'une organisation claire du contenu et de la séparation entre informations principales et supplémentaires",
     "remediation": "Vérifiez que l'aside contient véritablement du contenu complémentaire (lié au contenu principal mais séparé de celui-ci). Si plusieurs régions complémentaires existent sur la page, assurez-vous que chacune a un nom accessible unique utilisant aria-label ou aria-labelledby. Testez avec un lecteur d'écran pour confirmer que la région est annoncée correctement et que son objectif est clair.",
-    "what_generic": "Une région complémentaire (<aside> ou role=\\\"complementary\\\") a été détectée sur cette page. %(asideLabel_description)s La signature %(asideSignature)s permet de suivre cette même région sur différentes pages."
+    "what_generic": "Une région complémentaire (<aside> ou role=\\\"complementary\\\") a été détectée sur cette page. {asideLabel_description} La signature {asideSignature} permet de suivre cette même région sur différentes pages."
   },
   "DiscoAsideFound_what": {
     "generic": "Une région complémentaire a été détectée sur cette page"
   },
   "DiscoFontFound": {
     "title": "Police détectée en cours d'utilisation sur la page pour révision d'accessibilité",
-    "what": "La police '%(fontName)s' est utilisée à %(sizeCount)s %(sizeCount_singular_size)s sur cette page : %(fontSizes_list)s",
+    "what": "La police '{fontName}' est utilisée à {sizeCount} {sizeCount_singular_size} sur cette page : {fontSizes_list}",
     "why": "Le suivi de l'utilisation des polices aide à identifier les choix typographiques qui peuvent affecter la lisibilité. Bien que ce ne soit pas intrinsèquement un problème d'accessibilité, certaines polices peuvent être plus difficiles à lire pour les utilisateurs dyslexiques, malvoyants ou ayant des troubles de la lecture. Cet élément de découverte documente quelles polices sont utilisées et à quelles tailles afin qu'elles puissent être évaluées pour la lisibilité, la distinction des caractères et la lisibilité globale dans le cadre d'une révision d'accessibilité complète.",
     "who": "Cette information aide les auditeurs d'accessibilité et les développeurs à comprendre le paysage typographique de la page, particulièrement pertinent pour les utilisateurs dyslexiques qui bénéficient de polices sans-serif claires, les utilisateurs malvoyants qui ont besoin d'une bonne distinction des caractères, et les utilisateurs ayant des troubles de la lecture qui bénéficient de polices cohérentes et lisibles",
     "remediation": "Aucune action requise - ceci est informatif uniquement. Pour les bonnes pratiques d'accessibilité, considérez l'utilisation de polices avec une distinction claire des caractères (évitant les caractères ambigus comme I/l/1), un espacement adéquat entre les lettres, et une bonne lisibilité à diverses tailles. Les polices accessibles populaires incluent Arial, Verdana, Tahoma, et des polices spécialisées pour la dyslexie comme OpenDyslexic. Documentez vos choix de polices et testez la lisibilité avec de vrais utilisateurs quand c'est possible.",
-    "what_generic": "La police '%(fontName)s' est utilisée à %(sizeCount)s %(sizeCount_singular_size)s sur cette page : %(fontSizes_list)s"
+    "what_generic": "La police '{fontName}' est utilisée à {sizeCount} {sizeCount_singular_size} sur cette page : {fontSizes_list}"
   },
   "DiscoFontFound_what": {
     "generic": "La police est utilisée à plusieurs tailles sur cette page"
   },
   "DiscoFooterFound": {
-    "title": "Région contentinfo détectée (signature : %(footerSignature)s) - nécessite une révision manuelle d'accessibilité",
-    "what": "Une région repère contentinfo (<footer> au niveau supérieur ou role=\\\"contentinfo\\\") a été détectée sur cette page. %(footerLabel_description)s La signature %(footerSignature)s permet de suivre ce même pied de page sur différentes pages.",
+    "title": "Région contentinfo détectée (signature : {footerSignature}) - nécessite une révision manuelle d'accessibilité",
+    "what": "Une région repère contentinfo (<footer> au niveau supérieur ou role=\\\"contentinfo\\\") a été détectée sur cette page. {footerLabel_description} La signature {footerSignature} permet de suivre ce même pied de page sur différentes pages.",
     "why": "Les régions repères contentinfo identifient les informations de pied de page à l'échelle du site telles que les droits d'auteur, la politique de confidentialité et les liens de contact. Il ne devrait y avoir qu'un seul contentinfo par page. Il doit contenir des informations au niveau du site plutôt que des pieds de page spécifiques à la page, et ne devrait pas être imbriqué dans d'autres régions repères. La signature permet aux auditeurs de reconnaître quand le même pied de page apparaît sur plusieurs pages.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour accéder rapidement aux informations de pied de page à l'échelle du site et aux liens légaux, utilisateurs de clavier qui utilisent les régions repères pour une navigation efficace de la page, utilisateurs avec des déficiences cognitives qui s'appuient sur un placement cohérent du pied de page pour trouver des informations importantes du site",
     "remediation": "Vérifiez qu'il n'y a qu'une seule région repère contentinfo par page. Assurez-vous que le pied de page contient des informations au niveau du site (droits d'auteur, confidentialité, contact) plutôt que des pieds de page spécifiques aux articles ou aux sections. Si plusieurs pieds de page existent, assurez-vous que seul celui au niveau du site est contentinfo. Testez avec un lecteur d'écran pour confirmer que contentinfo est annoncé correctement.",
-    "what_generic": "Une région repère contentinfo (<footer> au niveau supérieur ou role=\\\"contentinfo\\\") a été détectée sur cette page. %(footerLabel_description)s La signature %(footerSignature)s permet de suivre ce même pied de page sur différentes pages."
+    "what_generic": "Une région repère contentinfo (<footer> au niveau supérieur ou role=\\\"contentinfo\\\") a été détectée sur cette page. {footerLabel_description} La signature {footerSignature} permet de suivre ce même pied de page sur différentes pages."
   },
   "DiscoFooterFound_what": {
     "generic": "Une région repère contentinfo a été détectée sur cette page"
   },
   "DiscoFormOnPage": {
-    "title": "Formulaire détecté (signature : %(formSignature)s)%(searchContext_title)s - nécessite des tests manuels complets",
-    "what": "Un formulaire a été détecté sur cette page avec %(fieldCount)s champ%(fieldCount_plural)s (%(fieldTypes_summary)s). Le formulaire soumet vers '%(formAction)s' en utilisant la méthode %(formMethod)s. %(searchContext_description)s La signature de formulaire %(formSignature)s permet de suivre ce même formulaire sur différentes pages.",
+    "title": "Formulaire détecté (signature : {formSignature}){searchContext_title} - nécessite des tests manuels complets",
+    "what": "Un formulaire a été détecté sur cette page avec {fieldCount} champ{fieldCount_plural} ({fieldTypes_summary}). Le formulaire soumet vers '{formAction}' en utilisant la méthode {formMethod}. {searchContext_description} La signature de formulaire {formSignature} permet de suivre ce même formulaire sur différentes pages.",
     "why": "Les formulaires sont des composants interactifs critiques qui nécessitent des tests d'accessibilité manuels complets au-delà de ce que les outils automatisés peuvent vérifier. Chaque formulaire doit être testé avec la navigation au clavier (ordre de tabulation, activation entrée/espace, échappement pour annuler), les lecteurs d'écran (étiquettes de champs annoncées correctement, messages d'erreur associés aux champs, champs requis indiqués), et diverses méthodes de saisie. Les formulaires avec une mauvaise accessibilité créent des barrières importantes - les champs non étiquetés laissent les utilisateurs deviner quoi saisir, une mauvaise gestion des erreurs empêche les utilisateurs de terminer les tâches, et les pièges au clavier peuvent rendre les formulaires complètement inutilisables. Les formulaires de recherche sont particulièrement importants car ils fournissent un mécanisme de navigation critique - les utilisateurs s'appuient sur eux pour trouver du contenu rapidement, et les utilisateurs de lecteurs d'écran naviguent souvent directement vers les régions repères de recherche. La signature de formulaire permet aux auditeurs de reconnaître quand le même formulaire apparaît sur plusieurs pages, assurant des tests et une remédiation cohérents sur l'ensemble du site.",
     "who": "Utilisateurs de lecteurs d'écran qui ont besoin de contrôles de formulaire correctement étiquetés et d'associations d'erreurs, utilisateurs de clavier uniquement qui doivent naviguer et soumettre des formulaires sans souris, utilisateurs avec des handicaps moteurs qui ont besoin de délais suffisants et d'indicateurs de focus clairs, utilisateurs avec des handicaps cognitifs qui ont besoin d'instructions claires et de messages d'erreur utiles, utilisateurs de contrôle vocal qui ont besoin de noms de contrôles de formulaire correctement exposés, utilisateurs mobiles qui ont besoin de formulaires fonctionnant avec les technologies d'assistance sur appareils tactiles, et utilisateurs de lecteurs d'écran qui utilisent la navigation par régions repères pour accéder directement aux formulaires de recherche",
-    "remediation": "Testez manuellement ce formulaire avec la navigation au clavier (assurez-vous que tous les champs sont accessibles via Tab, que le formulaire peut être soumis avec Entrée, et qu'il n'y a pas de pièges clavier), lecteur d'écran (vérifiez que chaque champ a une étiquette claire ou aria-label, que les champs obligatoires sont indiqués, que les messages d'erreur sont associés aux champs via aria-describedby, et que fieldset/legend sont utilisés pour les groupes de boutons radio), testez la validation d'erreur (soumettez des données invalides et vérifiez que les messages d'erreur sont clairs, spécifiques et programmatiquement associés aux champs), testez avec formulaire pré-rempli (assurez-vous que les attributs autocomplete sont utilisés de manière appropriée), vérifiez les avertissements de délai pour toute limite de temps, et confirmez que le formulaire fonctionne sur différents appareils et technologies d'assistance. %(searchContext_remediation)s",
+    "remediation": "Testez manuellement ce formulaire avec la navigation au clavier (assurez-vous que tous les champs sont accessibles via Tab, que le formulaire peut être soumis avec Entrée, et qu'il n'y a pas de pièges clavier), lecteur d'écran (vérifiez que chaque champ a une étiquette claire ou aria-label, que les champs obligatoires sont indiqués, que les messages d'erreur sont associés aux champs via aria-describedby, et que fieldset/legend sont utilisés pour les groupes de boutons radio), testez la validation d'erreur (soumettez des données invalides et vérifiez que les messages d'erreur sont clairs, spécifiques et programmatiquement associés aux champs), testez avec formulaire pré-rempli (assurez-vous que les attributs autocomplete sont utilisés de manière appropriée), vérifiez les avertissements de délai pour toute limite de temps, et confirmez que le formulaire fonctionne sur différents appareils et technologies d'assistance. {searchContext_remediation}",
     "what_generic": "Un formulaire a été détecté sur cette page"
   },
   "DiscoFormOnPage_what": {
@@ -190,12 +190,12 @@
     "what_generic": "Élément SVG avec role=\\\"img\\\" détecté nécessitant une révision manuelle pour vérifier que des textes alternatifs appropriés sont fournis"
   },
   "DiscoHeaderFound": {
-    "title": "Région bannière détectée (signature : %(headerSignature)s) - nécessite une révision manuelle d'accessibilité",
-    "what": "Une région repère bannière (<header> au niveau supérieur ou role=\\\"banner\\\") a été détectée sur cette page. %(headerLabel_description)s La signature %(headerSignature)s permet de suivre cette même bannière sur différentes pages.",
+    "title": "Région bannière détectée (signature : {headerSignature}) - nécessite une révision manuelle d'accessibilité",
+    "what": "Une région repère bannière (<header> au niveau supérieur ou role=\\\"banner\\\") a été détectée sur cette page. {headerLabel_description} La signature {headerSignature} permet de suivre cette même bannière sur différentes pages.",
     "why": "Les régions repères bannière identifient l'en-tête principal de la page, contenant généralement le logo du site, la navigation principale et les utilitaires à l'échelle du site. Il ne devrait y avoir qu'une seule bannière par page. Elle doit être correctement étiquetée si l'identité du site n'est pas évidente, et ne devrait pas être imbriquée dans d'autres régions repères. La signature permet aux auditeurs de reconnaître quand la même bannière apparaît sur plusieurs pages.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour accéder rapidement à la navigation et à l'identité du site, utilisateurs de clavier qui utilisent les régions repères pour une navigation efficace de la page, utilisateurs avec des handicaps cognitifs qui s'appuient sur un placement cohérent de la bannière pour l'orientation",
     "remediation": "Vérifiez qu'il n'y a qu'une seule région repère bannière par page. Assurez-vous que la bannière contient du contenu au niveau du site (logo, navigation principale, utilitaires du site) plutôt que du contenu spécifique à la page. Si plusieurs en-têtes existent, assurez-vous que seul celui au niveau du site est une bannière. Testez avec un lecteur d'écran pour confirmer que la bannière est annoncée correctement.",
-    "what_generic": "Une région repère bannière (<header> au niveau supérieur ou role=\\\"banner\\\") a été détectée sur cette page. %(headerLabel_description)s La signature %(headerSignature)s permet de suivre cette même bannière sur différentes pages."
+    "what_generic": "Une région repère bannière (<header> au niveau supérieur ou role=\\\"banner\\\") a été détectée sur cette page. {headerLabel_description} La signature {headerSignature} permet de suivre cette même bannière sur différentes pages."
   },
   "DiscoHeaderFound_what": {
     "generic": "Une région repère bannière a été détectée sur cette page"
@@ -225,12 +225,12 @@
     "what_generic": "Carte numérique détectée avec métadonnées sur le fournisseur, le type et les fonctionnalités d'accessibilité"
   },
   "DiscoNavFound": {
-    "title": "Région navigation détectée (signature : %(navSignature)s) - nécessite une révision manuelle d'accessibilité",
-    "what": "Une région navigation a été détectée sur cette page avec %(linkCount)s lien%(linkCount_plural)s. %(navLabel_description)s La signature de navigation %(navSignature)s permet de suivre cette même navigation sur différentes pages.",
+    "title": "Région navigation détectée (signature : {navSignature}) - nécessite une révision manuelle d'accessibilité",
+    "what": "Une région navigation a été détectée sur cette page avec {linkCount} lien{linkCount_plural}. {navLabel_description} La signature de navigation {navSignature} permet de suivre cette même navigation sur différentes pages.",
     "why": "Les régions navigation sont des outils de navigation critiques qui doivent être accessibles au clavier, correctement étiquetées et fonctionner avec les lecteurs d'écran. Chaque zone de navigation nécessite une vérification que les liens sont organisés logiquement, que l'ordre de focus est correct, qu'une indication de page actuelle est fournie (aria-current=\\\"page\\\"), et que la navigation peut être facilement comprise et utilisée par tous les utilisateurs. Plusieurs régions navigation doivent être distinguables via des noms accessibles uniques. La signature de navigation permet aux auditeurs de reconnaître quand la même structure de navigation apparaît sur plusieurs pages, assurant des tests et une remédiation cohérents sur l'ensemble du site.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par régions repères et ont besoin d'étiquettes claires pour distinguer les régions navigation, utilisateurs de clavier qui doivent naviguer efficacement à travers les liens de navigation, utilisateurs avec des handicaps moteurs qui ont besoin de modèles de navigation cohérents et prévisibles, utilisateurs avec des handicaps cognitifs qui bénéficient de structures de navigation claires et bien organisées",
     "remediation": "Vérifiez que la navigation a un nom accessible clair (aria-label ou aria-labelledby) si plusieurs régions nav existent. Testez la navigation au clavier à travers tous les liens (l'ordre Tab devrait être logique). Assurez-vous que la page actuelle est indiquée avec aria-current=\\\"page\\\". Vérifiez que les indicateurs de focus sont visibles. Testez avec un lecteur d'écran pour confirmer que la navigation est annoncée correctement et que les liens sont compréhensibles hors contexte.",
-    "what_generic": "Une région navigation a été détectée sur cette page avec %(linkCount)s lien%(linkCount_plural)s. %(navLabel_description)s La signature de navigation %(navSignature)s permet de suivre cette même navigation sur différentes pages."
+    "what_generic": "Une région navigation a été détectée sur cette page avec {linkCount} lien{linkCount_plural}. {navLabel_description} La signature de navigation {navSignature} permet de suivre cette même navigation sur différentes pages."
   },
   "DiscoNavFound_what": {
     "generic": "Une région navigation a été détectée sur cette page"
@@ -253,33 +253,33 @@
   },
   "DiscoResponsiveBreakpoints": {
     "title": "Points de rupture responsive détectés sur la page",
-    "what": "La page définit %(breakpointCount)s point%(breakpointCount_plural)s de rupture responsive dans les requêtes média CSS : %(breakpoints)s. Les points de rupture s'étendent de %(minBreakpoint)spx à %(maxBreakpoint)spx.",
+    "what": "La page définit {breakpointCount} point{breakpointCount_plural} de rupture responsive dans les requêtes média CSS : {breakpoints}. Les points de rupture s'étendent de {minBreakpoint}px à {maxBreakpoint}px.",
     "why": "Les points de rupture responsive indiquent que la mise en page change selon différentes largeurs de fenêtre d'affichage. Ceci est important pour les tests d'accessibilité car les éléments interactifs, menus de navigation et visibilité du contenu peuvent changer à différents points de rupture. Certains problèmes d'accessibilité (comme l'occultation de contenu, l'ordre de focus ou les tailles de cibles tactiles) peuvent n'apparaître qu'à des largeurs de fenêtre spécifiques. Tester à plusieurs points de rupture garantit que la navigation au clavier, les régions repères de lecteurs d'écran et les contrôles interactifs fonctionnent correctement sur toutes les mises en page responsive. Les mises en page spécifiques aux mobiles ont souvent des menus repliables, des modèles de navigation différents ou une présentation de contenu alternative qui nécessite une vérification d'accessibilité séparée.",
     "who": "Utilisateurs d'appareils mobiles qui consultent les pages avec de petites fenêtres d'affichage, utilisateurs de tablettes aux points de rupture moyens, utilisateurs qui zooment le contenu ce qui modifie la fenêtre d'affichage effective, utilisateurs de lecteurs d'écran qui ont besoin d'une navigation cohérente des régions repères entre les points de rupture, utilisateurs de clavier qui ont besoin d'un ordre de focus prévisible à toutes les tailles de fenêtre d'affichage, et utilisateurs d'appareils tactiles qui ont besoin de tailles de cibles adéquates dans les mises en page mobiles",
-    "remediation": "Testez l'accessibilité à chaque point de rupture défini. Vérifiez que l'ordre de navigation au clavier reste logique, tous les éléments interactifs restent accessibles, les indicateurs de focus sont visibles, les régions repères sont correctement étiquetées, les cibles tactiles respectent les exigences de taille minimale (44x44px), et le contenu qui apparaît/disparaît à différents points de rupture ne crée pas de pièges clavier ou ne brise pas la navigation des lecteurs d'écran. Utilisez les outils de développement du navigateur ou page.setViewport() pour tester à : %(breakpoints)spx. Portez une attention particulière aux menus de navigation qui se replient en menus hamburger, au contenu qui se réorganise verticalement, et à tout élément interactif qui change de position ou de visibilité.",
-    "what_generic": "La page définit %(breakpointCount)s point%(breakpointCount_plural)s de rupture responsive dans les requêtes média CSS : %(breakpoints)s. Les points de rupture s'étendent de %(minBreakpoint)spx à %(maxBreakpoint)spx."
+    "remediation": "Testez l'accessibilité à chaque point de rupture défini. Vérifiez que l'ordre de navigation au clavier reste logique, tous les éléments interactifs restent accessibles, les indicateurs de focus sont visibles, les régions repères sont correctement étiquetées, les cibles tactiles respectent les exigences de taille minimale (44x44px), et le contenu qui apparaît/disparaît à différents points de rupture ne crée pas de pièges clavier ou ne brise pas la navigation des lecteurs d'écran. Utilisez les outils de développement du navigateur ou page.setViewport() pour tester à : {breakpoints}px. Portez une attention particulière aux menus de navigation qui se replient en menus hamburger, au contenu qui se réorganise verticalement, et à tout élément interactif qui change de position ou de visibilité.",
+    "what_generic": "La page définit {breakpointCount} point{breakpointCount_plural} de rupture responsive dans les requêtes média CSS : {breakpoints}. Les points de rupture s'étendent de {minBreakpoint}px à {maxBreakpoint}px."
   },
   "DiscoResponsiveBreakpoints_what": {
     "generic": "La page définit des points de rupture responsive dans les requêtes média CSS"
   },
   "DiscoSearchFound": {
-    "title": "Région de recherche détectée (signature : %(searchSignature)s) - nécessite un examen manuel d'accessibilité",
-    "what": "Une région repère de recherche (<search> ou role=\\\"search\\\") a été détectée sur cette page. %(searchLabel_description)s La signature %(searchSignature)s permet de suivre cette même région de recherche sur différentes pages.",
+    "title": "Région de recherche détectée (signature : {searchSignature}) - nécessite un examen manuel d'accessibilité",
+    "what": "Une région repère de recherche (<search> ou role=\\\"search\\\") a été détectée sur cette page. {searchLabel_description} La signature {searchSignature} permet de suivre cette même région de recherche sur différentes pages.",
     "why": "Les régions repères de recherche identifient les fonctionnalités de recherche sur la page. Elles aident les utilisateurs de lecteurs d'écran à localiser rapidement les fonctionnalités de recherche. La région de recherche doit avoir un nom accessible clair si plusieurs régions de recherche existent, contenir des contrôles de formulaire de recherche appropriés, et être facilement découvrable par la navigation par régions repères. La signature permet aux auditeurs de reconnaître quand la même région de recherche apparaît sur plusieurs pages.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour trouver rapidement les fonctionnalités de recherche, utilisateurs de clavier qui utilisent les régions repères pour une navigation efficace dans la page, utilisateurs avec des déficiences cognitives qui bénéficient de zones de recherche clairement marquées",
     "remediation": "Vérifier que la région de recherche contient une fonctionnalité de recherche réelle (généralement un formulaire avec champ de saisie et bouton d'envoi). Si plusieurs régions de recherche existent, s'assurer que chacune a un nom accessible unique utilisant aria-label ou aria-labelledby. S'assurer que les contrôles du formulaire de recherche sont correctement étiquetés et accessibles au clavier. Tester avec un lecteur d'écran pour confirmer que la région de recherche est annoncée correctement et que les contrôles de recherche sont accessibles.",
-    "what_generic": "Une région repère de recherche (<search> ou role=\\\"search\\\") a été détectée sur cette page. %(searchLabel_description)s La signature %(searchSignature)s permet de suivre cette même région de recherche sur différentes pages."
+    "what_generic": "Une région repère de recherche (<search> ou role=\\\"search\\\") a été détectée sur cette page. {searchLabel_description} La signature {searchSignature} permet de suivre cette même région de recherche sur différentes pages."
   },
   "DiscoSearchFound_what": {
     "generic": "Une région repère de recherche a été détectée sur cette page"
   },
   "DiscoSectionFound": {
-    "title": "Région de section détectée (signature : %(sectionSignature)s) - nécessite un examen manuel d'accessibilité",
-    "what": "Une région de section a été détectée sur cette page. %(sectionLabel_description)s La signature %(sectionSignature)s permet de suivre cette même section sur différentes pages.",
+    "title": "Région de section détectée (signature : {sectionSignature}) - nécessite un examen manuel d'accessibilité",
+    "what": "Une région de section a été détectée sur cette page. {sectionLabel_description} La signature {sectionSignature} permet de suivre cette même section sur différentes pages.",
     "why": "Les éléments section avec des noms accessibles deviennent des régions repères. Ils doivent avoir des étiquettes significatives et uniques pour aider les utilisateurs de lecteurs d'écran à naviguer entre les zones distinctes de contenu. Les sections sans noms accessibles ne sont pas des régions repères et n'apparaîtront pas dans la navigation par régions repères. La signature permet aux auditeurs de reconnaître quand la même structure de section apparaît sur plusieurs pages.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour passer entre les sections principales de la page, utilisateurs avec des déficiences cognitives qui bénéficient de régions de contenu clairement étiquetées et organisées",
     "remediation": "Vérifiez que chaque section possède un nom accessible descriptif et unique (aria-label ou aria-labelledby) qui identifie clairement son objectif. Assurez-vous que l'étiquette est concise et significative. Si la section ne représente pas une région de contenu importante, vérifiez si elle devrait être une région repère. Testez avec un lecteur d'écran pour confirmer que la région est annoncée avec son étiquette.",
-    "what_generic": "Une région de section a été détectée sur cette page. %(sectionLabel_description)s La signature %(sectionSignature)s permet de suivre cette même section sur différentes pages."
+    "what_generic": "Une région de section a été détectée sur cette page. {sectionLabel_description} La signature {sectionSignature} permet de suivre cette même section sur différentes pages."
   },
   "DiscoSectionFound_what": {
     "generic": "Une région section a été détectée sur cette page"
@@ -306,7 +306,7 @@
     "why": "Sans aria-expanded, la technologie d'assistance ne peut pas indiquer si une section est ouverte ou fermée ; sans aria-controls et un rôle de bouton, les utilisateurs ne peuvent pas savoir qu'un en-tête est un contrôle utilisable ni quel panneau il révèle. Cela échoue aux critères WCAG 4.1.2 Nom, rôle et valeur, 1.3.1 Information et relations et 2.1.1 Clavier, rendant l'accordéon déroutant ou inutilisable sans la vue.",
     "who": "Les personnes utilisant un lecteur d'écran qui ne peuvent pas percevoir l'état ouvert/fermé, et les personnes utilisant le clavier qui ne peuvent pas savoir que les en-têtes sont des contrôles utilisables.",
     "remediation": "Faites de chaque en-tête d'accordéon un <button> (placé à l'intérieur d'un élément de titre au bon niveau). Ajoutez aria-expanded=\"true\"/\"false\" reflétant l'état du panneau, et aria-controls référençant l'id du panneau qu'il bascule. Mettez à jour aria-expanded en JavaScript à chaque bascule et assurez-vous que l'en-tête est utilisable avec Entrée et Espace.",
-    "what_generic": "L'élément accordéon \\\"%(element_text)s\\\" manque de balisage ARIA approprié"
+    "what_generic": "L'élément accordéon \\\"{element_text}\\\" manque de balisage ARIA approprié"
   },
   "ErrAltOnElementThatDoesntTakeIt": {
     "title": "Attribut alt placé sur des éléments HTML qui ne le supportent pas (comme div, span, p, ou autres éléments non-image), rendant le texte alternatif inaccessible aux technologies d'assistance",
@@ -529,11 +529,11 @@
   },
   "ErrContentObscuring": {
     "title": "La boîte de dialogue/superposition masque le contenu interactif",
-    "what": "La boîte de dialogue ou superposition à %(dialogXpath)s masque %(obscuredCount)s élément(s) interactif(s) à %(breakpoint)spx de largeur de fenêtre, empêchant les utilisateurs d'y accéder",
+    "what": "La boîte de dialogue ou superposition à {dialogXpath} masque {obscuredCount} élément(s) interactif(s) à {breakpoint}px de largeur de fenêtre, empêchant les utilisateurs d'y accéder",
     "why": "Lorsque le contenu est couvert par d'autres éléments, les utilisateurs ne peuvent pas y accéder ou interagir avec, créant des barrières complètes à la fonctionnalité. La boîte de dialogue est positionnée au-dessus d'éléments interactifs auxquels les utilisateurs doivent accéder. Ce problème est spécifique à la fenêtre et peut n'apparaître qu'à certaines tailles d'écran.",
     "who": "Tous les utilisateurs à cette taille de fenêtre, particulièrement les utilisateurs de clavier qui ne peuvent pas utiliser la souris pour contourner les problèmes de mise en page, les utilisateurs de lecteurs d'écran qui peuvent ne pas savoir que le contenu est masqué, les utilisateurs mobiles avec un espace d'écran limité.",
-    "remediation": "Corriger les problèmes de z-index et de positionnement pour empêcher la boîte de dialogue de couvrir le contenu interactif à %(breakpoint)spx de largeur de fenêtre. S'assurer que les modales et superpositions ne couvrent pas le contenu de manière inappropriée. Utiliser du CSS responsive pour ajuster le positionnement de la boîte de dialogue à différents points de rupture. Considérer repositionner la boîte de dialogue, la rendre fermable, ou repenser la mise en page pour cette taille d'écran. Tester que tout le contenu reste accessible lorsque la boîte de dialogue est visible à travers tous les points de rupture responsive.",
-    "what_generic": "La boîte de dialogue ou superposition à %(dialogXpath)s masque %(obscuredCount)s élément(s) interactif(s) à %(breakpoint)spx de largeur de fenêtre, empêchant les utilisateurs d'y accéder"
+    "remediation": "Corriger les problèmes de z-index et de positionnement pour empêcher la boîte de dialogue de couvrir le contenu interactif à {breakpoint}px de largeur de fenêtre. S'assurer que les modales et superpositions ne couvrent pas le contenu de manière inappropriée. Utiliser du CSS responsive pour ajuster le positionnement de la boîte de dialogue à différents points de rupture. Considérer repositionner la boîte de dialogue, la rendre fermable, ou repenser la mise en page pour cette taille d'écran. Tester que tout le contenu reste accessible lorsque la boîte de dialogue est visible à travers tous les points de rupture responsive.",
+    "what_generic": "La boîte de dialogue ou superposition à {dialogXpath} masque {obscuredCount} élément(s) interactif(s) à {breakpoint}px de largeur de fenêtre, empêchant les utilisateurs d'y accéder"
   },
   "ErrContentObscuring_what": {
     "generic": "La boîte de dialogue ou superposition masque des éléments interactifs, empêchant les utilisateurs d'y accéder"
@@ -595,12 +595,12 @@
     "what_generic": "Le texte du lien pour un document téléchargeable (PDF, Word, Excel, etc.) est dans une langue différente de la langue principale de la page mais manque un attribut lang pour identifier correctement le changement de langue, causant une mauvaise prononciation par les lecteurs d'écran"
   },
   "ErrDropdownWithoutARIA": {
-    "title": "Le menu déroulant \\\"%(element_text)s\\\" manque de balisage ARIA approprié",
-    "what": "Le menu déroulant \\\"%(element_text)s\\\" manque de balisage ARIA approprié",
+    "title": "Le menu déroulant \\\"{element_text}\\\" manque de balisage ARIA approprié",
+    "what": "Le menu déroulant \\\"{element_text}\\\" manque de balisage ARIA approprié",
     "why": "Sans aria-expanded, aria-haspopup, et les rôles appropriés, les utilisateurs ne peuvent pas comprendre l'état du menu déroulant ou y naviguer correctement",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs de clavier",
     "remediation": "Ajouter aria-haspopup=\\\"true\\\", l'état aria-expanded, et role=\\\"menu\\\" avec role=\\\"menuitem\\\" pour les options",
-    "what_generic": "Le menu déroulant \\\"%(element_text)s\\\" manque de balisage ARIA approprié"
+    "what_generic": "Le menu déroulant \\\"{element_text}\\\" manque de balisage ARIA approprié"
   },
   "ErrDropdownWithoutARIA_what": {
     "generic": "Le menu déroulant manque de balisage ARIA approprié"
@@ -662,12 +662,12 @@
     "what_generic": "Plusieurs régions repères de recherche ont la même étiquette"
   },
   "ErrDuplicateLandmarkWithoutName": {
-    "title": "Trouvé %(totalCount)s régions repères %(role)s - celle-ci manque d'un nom accessible unique",
-    "what": "Trouvé %(totalCount)s éléments <%(element)s> avec role=\\\"%(role)s\\\" sur cette page, mais cette instance manque d'un nom accessible unique pour la distinguer des autres",
-    "why": "Lorsque plusieurs régions repères %(role)s existent sans noms uniques, les utilisateurs de lecteurs d'écran ne peuvent pas les distinguer. Les lecteurs d'écran annoncent les régions repères par type et nom - sans noms uniques, les utilisateurs entendent la même annonce pour chaque région repère %(role)s, rendant impossible de savoir laquelle mène où.",
+    "title": "Trouvé {totalCount} régions repères {role} - celle-ci manque d'un nom accessible unique",
+    "what": "Trouvé {totalCount} éléments <{element}> avec role=\\\"{role}\\\" sur cette page, mais cette instance manque d'un nom accessible unique pour la distinguer des autres",
+    "why": "Lorsque plusieurs régions repères {role} existent sans noms uniques, les utilisateurs de lecteurs d'écran ne peuvent pas les distinguer. Les lecteurs d'écran annoncent les régions repères par type et nom - sans noms uniques, les utilisateurs entendent la même annonce pour chaque région repère {role}, rendant impossible de savoir laquelle mène où.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par régions repères (une stratégie de navigation courante), utilisateurs de clavier qui utilisent les raccourcis de navigation par régions repères.",
-    "remediation": "Ajoutez des attributs aria-label uniques à chaque région repère %(role)s pour les distinguer. Par exemple, si vous avez plusieurs régions repères de navigation, utilisez aria-label=\\\"Navigation principale\\\" pour l'une et aria-label=\\\"Navigation du pied de page\\\" pour l'autre. Les étiquettes devraient décrire le but ou l'emplacement de chaque région repère afin que les utilisateurs puissent rapidement identifier celle qu'ils veulent.",
-    "what_generic": "Trouvé %(totalCount)s éléments <%(element)s> avec role=\\\"%(role)s\\\" sur cette page, mais cette instance manque d'un nom accessible unique pour la distinguer des autres"
+    "remediation": "Ajoutez des attributs aria-label uniques à chaque région repère {role} pour les distinguer. Par exemple, si vous avez plusieurs régions repères de navigation, utilisez aria-label=\\\"Navigation principale\\\" pour l'une et aria-label=\\\"Navigation du pied de page\\\" pour l'autre. Les étiquettes devraient décrire le but ou l'emplacement de chaque région repère afin que les utilisateurs puissent rapidement identifier celle qu'ils veulent.",
+    "what_generic": "Trouvé {totalCount} éléments <{element}> avec role=\\\"{role}\\\" sur cette page, mais cette instance manque d'un nom accessible unique pour la distinguer des autres"
   },
   "ErrDuplicateLandmarkWithoutName_what": {
     "generic": "Plusieurs régions repères du même type existent, mais cette instance manque d'un nom accessible unique pour la distinguer des autres"
@@ -721,12 +721,12 @@
     "what_generic": "Le champ de formulaire a un attribut aria-labelledby vide"
   },
   "ErrEmptyHeading": {
-    "title": "L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \\\"%(text)s\\\"",
-    "what": "L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \\\"%(text)s\\\"",
-    "why": "Ce titre ne contient que \\\"%(text)s\\\" qui ne fournit aucun contenu significatif. Les titres vides perturbent la structure du document et la navigation. Les utilisateurs de lecteurs d'écran s'appuient sur les titres pour comprendre l'organisation de la page et naviguer efficacement à l'aide des raccourcis de titre. Un titre vide crée un point de navigation sans information, ce qui désoriente les utilisateurs quant à la structure de la page.",
-    "who": "Les utilisateurs de lecteurs d'écran qui naviguent par titres et trouvent un titre ne contenant que \\\"%(text)s\\\", les utilisateurs ayant des déficiences cognitives qui s'appuient sur une structure claire pour comprendre l'organisation du contenu, et les utilisateurs de technologies d'assistance qui génèrent des plans de page",
-    "remediation": "Soit remplacer \\\"%(text)s\\\" par un contenu textuel significatif qui décrit la section, soit supprimer entièrement l'élément de titre vide s'il ne sert aucun objectif structurel. N'utilisez jamais les titres pour l'espacement visuel - utilisez plutôt les marges/remplissages CSS.",
-    "what_generic": "L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \\\"%(text)s\\\""
+    "title": "L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \\\"{text}\\\"",
+    "what": "L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \\\"{text}\\\"",
+    "why": "Ce titre ne contient que \\\"{text}\\\" qui ne fournit aucun contenu significatif. Les titres vides perturbent la structure du document et la navigation. Les utilisateurs de lecteurs d'écran s'appuient sur les titres pour comprendre l'organisation de la page et naviguer efficacement à l'aide des raccourcis de titre. Un titre vide crée un point de navigation sans information, ce qui désoriente les utilisateurs quant à la structure de la page.",
+    "who": "Les utilisateurs de lecteurs d'écran qui naviguent par titres et trouvent un titre ne contenant que \\\"{text}\\\", les utilisateurs ayant des déficiences cognitives qui s'appuient sur une structure claire pour comprendre l'organisation du contenu, et les utilisateurs de technologies d'assistance qui génèrent des plans de page",
+    "remediation": "Soit remplacer \\\"{text}\\\" par un contenu textuel significatif qui décrit la section, soit supprimer entièrement l'élément de titre vide s'il ne sert aucun objectif structurel. N'utilisez jamais les titres pour l'espacement visuel - utilisez plutôt les marges/remplissages CSS.",
+    "what_generic": "L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \\\"{text}\\\""
   },
   "ErrEmptyHeading_what": {
     "generic": "L'élément de titre ne contient que des espaces ou des caractères spéciaux"
@@ -781,11 +781,11 @@
   },
   "ErrFakeListImplementation": {
     "title": "Liste visuelle créée sans balisage de liste approprié",
-    "what": "L'élément contient %(itemCount)s éléments de type liste utilisant %(pattern)s, mais n'utilise pas le balisage approprié <ul>/<ol> et <li>",
+    "what": "L'élément contient {itemCount} éléments de type liste utilisant {pattern}, mais n'utilise pas le balisage approprié <ul>/<ol> et <li>",
     "why": "Les fausses listes ne transmettent pas la structure appropriée aux technologies d'assistance, empêchant les utilisateurs de comprendre les relations entre les éléments. Les lecteurs d'écran ne peuvent pas annoncer le nombre d'éléments, permettre la navigation dans la liste, ou fournir le contexte sur la structure de la liste.",
     "who": "Utilisateurs de lecteurs d'écran qui ne peuvent pas naviguer correctement dans les listes, utilisateurs qui dépendent de la navigation structurelle, utilisateurs de clavier qui ne peuvent pas passer d'un élément de liste à l'autre.",
-    "remediation": "Remplacer la simulation de liste visuelle par un balisage de liste HTML sémantique approprié. Utiliser des éléments <ul> ou <ol> avec des enfants <li> pour chaque élément de liste. Supprimer le %(pattern)s et laisser le navigateur gérer la présentation de la liste grâce à la sémantique HTML appropriée et au style CSS.",
-    "what_generic": "L'élément contient %(itemCount)s éléments de type liste utilisant %(pattern)s, mais n'utilise pas le balisage approprié <ul>/<ol> et <li>"
+    "remediation": "Remplacer la simulation de liste visuelle par un balisage de liste HTML sémantique approprié. Utiliser des éléments <ul> ou <ol> avec des enfants <li> pour chaque élément de liste. Supprimer le {pattern} et laisser le navigateur gérer la présentation de la liste grâce à la sémantique HTML appropriée et au style CSS.",
+    "what_generic": "L'élément contient {itemCount} éléments de type liste utilisant {pattern}, mais n'utilise pas le balisage approprié <ul>/<ol> et <li>"
   },
   "ErrFakeListImplementation_what": {
     "generic": "L'élément contient des éléments de type liste mais n'utilise pas le balisage de liste approprié"
@@ -799,12 +799,12 @@
     "what_generic": "Le champ est étiqueté par un élément qui n'est pas une étiquette appropriée"
   },
   "ErrFieldAriaRefDoesNotExist": {
-    "title": "aria-labelledby fait référence à un ID d'élément inexistant '%(found)s'",
-    "what": "aria-labelledby fait référence à un ID d'élément inexistant '%(found)s'",
-    "why": "L'attribut aria-labelledby fait référence à '%(found)s' mais aucun élément avec id=\\\"%(found)s\\\" n'existe sur la page. Cette référence brisée signifie que le champ n'a pas d'étiquette accessible pour les lecteurs d'écran.",
+    "title": "aria-labelledby fait référence à un ID d'élément inexistant '{found}'",
+    "what": "aria-labelledby fait référence à un ID d'élément inexistant '{found}'",
+    "why": "L'attribut aria-labelledby fait référence à '{found}' mais aucun élément avec id=\\\"{found}\\\" n'existe sur la page. Cette référence brisée signifie que le champ n'a pas d'étiquette accessible pour les lecteurs d'écran.",
     "who": "Utilisateurs de lecteurs d'écran qui ne reçoivent aucune étiquette pour ce champ",
-    "remediation": "Soit créer un élément avec id=\\\"%(found)s\\\" pour servir d'étiquette, corriger la référence ID pour pointer vers un élément existant, ou utiliser une méthode d'étiquetage différente comme un élément <label>",
-    "what_generic": "aria-labelledby fait référence à un ID d'élément inexistant '%(found)s'"
+    "remediation": "Soit créer un élément avec id=\\\"{found}\\\" pour servir d'étiquette, corriger la référence ID pour pointer vers un élément existant, ou utiliser une méthode d'étiquetage différente comme un élément <label>",
+    "what_generic": "aria-labelledby fait référence à un ID d'élément inexistant '{found}'"
   },
   "ErrFieldAriaRefDoesNotExist_what": {
     "generic": "L'attribut ARIA fait référence à un ID d'élément inexistant"
@@ -1002,12 +1002,12 @@
     "what_generic": "Le texte visible du titre ne correspond pas à son nom accessible"
   },
   "ErrHeadingLevelsSkipped": {
-    "title": "Les niveaux de titre sautent de %(fromLevel)s à %(toLevel)s - la hiérarchie des titres doit être séquentielle",
-    "what": "La structure des titres de la page passe du %(fromLevel)s au %(toLevel)s, sautant les niveaux intermédiaires. Une structure de document appropriée nécessite des niveaux de titre séquentiels (h1, h2, h3, etc.) pour représenter fidèlement la hiérarchie du contenu",
+    "title": "Les niveaux de titre sautent de {fromLevel} à {toLevel} - la hiérarchie des titres doit être séquentielle",
+    "what": "La structure des titres de la page passe du {fromLevel} au {toLevel}, sautant les niveaux intermédiaires. Une structure de document appropriée nécessite des niveaux de titre séquentiels (h1, h2, h3, etc.) pour représenter fidèlement la hiérarchie du contenu",
     "why": "Sauter des niveaux de titre brise le plan logique du document et crée de la confusion concernant les relations et la hiérarchie du contenu. Quand vous passez de h1 à h3, les utilisateurs se demandent ce qui est arrivé au niveau h2 - y a-t-il du contenu manquant ou la relation a-t-elle été mal communiquée ? Les lecteurs d'écran annoncent les niveaux de titre numériquement, donc sauter des niveaux sonne comme une erreur ou du contenu manquant. Les utilisateurs qui naviguent par niveaux de titre spécifiques (comme \\\"h2 suivant\\\") manqueront les sections qui utilisent le mauvais niveau. Les technologies d'assistance qui génèrent des plans visuels avec indentation basée sur les niveaux de titre afficheront une indentation incorrecte ou confuse, rendant impossible la compréhension de la structure du contenu d'un coup d'œil.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par niveaux de titre et s'appuient sur la numérotation séquentielle pour comprendre la hiérarchie du contenu, utilisateurs avec des handicaps cognitifs qui ont besoin de modèles structurels cohérents pour comprendre les relations d'information, utilisateurs de technologies d'assistance dont les outils génèrent des tables des matières ou des plans basés sur la structure des titres, utilisateurs naviguant via des raccourcis clavier vers des niveaux de titre spécifiques qui manqueront les sections mal nivelées, et utilisateurs avec des troubles d'apprentissage qui bénéficient de modèles hiérarchiques prévisibles",
     "remediation": "Restructurez votre hiérarchie de titres pour utiliser des niveaux séquentiels sans saut. Chaque niveau de titre doit être un niveau plus profond que son parent (h1 vers h2, h2 vers h3, etc.). Vous pouvez remonter plusieurs niveaux (h4 vers h2 convient quand on commence une nouvelle section majeure), mais ne sautez jamais de niveaux en descendant. Révisez la structure du contenu : h1 doit identifier le sujet principal de la page, h2 doit marquer les sections majeures dans ce sujet, h3 doit marquer les sous-sections dans chaque h2, et ainsi de suite. Ne choisissez pas les niveaux de titre basés sur la taille de police désirée - utilisez CSS pour styliser les titres à n'importe quelle taille tout en maintenant les niveaux sémantiques appropriés. Les niveaux de titre doivent refléter la hiérarchie réelle du contenu, pas les préférences visuelles.",
-    "what_generic": "La structure des titres de la page passe du %(fromLevel)s au %(toLevel)s, sautant les niveaux intermédiaires. Une structure de document appropriée nécessite des niveaux de titre séquentiels (h1, h2, h3, etc.) pour représenter fidèlement la hiérarchie du contenu"
+    "what_generic": "La structure des titres de la page passe du {fromLevel} au {toLevel}, sautant les niveaux intermédiaires. Une structure de document appropriée nécessite des niveaux de titre séquentiels (h1, h2, h3, etc.) pour représenter fidèlement la hiérarchie du contenu"
   },
   "ErrHeadingLevelsSkipped_what": {
     "generic": "La structure des titres de la page saute des niveaux intermédiaires, brisant la hiérarchie du document"
@@ -1021,12 +1021,12 @@
     "what_generic": "Les titres apparaissent dans un ordre illogique - des titres de haut niveau (H1, H2) apparaissent après des titres de niveau inférieur (H3, H4, H5, H6)"
   },
   "ErrHeadingsDontStartWithH1": {
-    "title": "Le premier titre de la page n'est pas h1 - %(firstHeadingLevel)s trouvé à la place",
-    "what": "Le premier élément de titre sur cette page est un %(firstHeadingLevel)s, mais la structure des titres doit toujours commencer par h1 pour établir une hiérarchie de plan de document appropriée",
+    "title": "Le premier titre de la page n'est pas h1 - {firstHeadingLevel} trouvé à la place",
+    "what": "Le premier élément de titre sur cette page est un {firstHeadingLevel}, mais la structure des titres doit toujours commencer par h1 pour établir une hiérarchie de plan de document appropriée",
     "why": "Commencer avec un niveau de titre autre que h1 crée un plan de document brisé avec des niveaux de hiérarchie manquants. Les lecteurs d'écran annoncent les niveaux de titre pour aider les utilisateurs à comprendre les relations du contenu - quand le premier titre est h2 ou h3, les utilisateurs se demandent ce qu'était le h1 et s'ils ont manqué du contenu important. Cela brise le flux logique que les utilisateurs attendent, où h1 représente le sujet principal, h2 représente les sections majeures, h3 représente les sous-sections, et ainsi de suite. Certaines technologies d'assistance génèrent des plans visuels ou des tables des matières à partir de la structure des titres, et manquer le h1 crée de la confusion concernant le focus principal de la page.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par niveaux de titre et s'attendent à une hiérarchie logique commençant par h1, utilisateurs avec des handicaps cognitifs qui s'appuient sur une structure de contenu claire pour comprendre les relations d'information, utilisateurs de technologies d'assistance dont les outils génèrent des plans de page avec indentation visuelle basée sur les niveaux de titre, systèmes SEO qui s'attendent à ce que h1 identifie le sujet principal de la page, et utilisateurs de navigation clavier qui sautent entre les niveaux de titre",
-    "remediation": "Ajoutez un élément h1 avant tous les autres titres qui identifie clairement le sujet ou l'objectif principal de la page. Changez le titre actuel en premier (%(firstHeadingLevel)s) vers un niveau inférieur approprié basé sur sa relation avec le nouveau h1. Révisez tous les niveaux de titre sur la page pour vous assurer qu'ils suivent un ordre séquentiel logique : h1 pour le sujet principal, h2 pour les sections majeures, h3 pour les sous-sections sous h2, etc. Ne sautez jamais de niveaux de titre (comme passer de h1 à h3), bien que vous puissiez remonter des niveaux (comme h3 vers h2) quand vous commencez une nouvelle section majeure.",
-    "what_generic": "Le premier élément de titre sur cette page est un %(firstHeadingLevel)s, mais la structure des titres doit toujours commencer par h1 pour établir une hiérarchie de plan de document appropriée"
+    "remediation": "Ajoutez un élément h1 avant tous les autres titres qui identifie clairement le sujet ou l'objectif principal de la page. Changez le titre actuel en premier ({firstHeadingLevel}) vers un niveau inférieur approprié basé sur sa relation avec le nouveau h1. Révisez tous les niveaux de titre sur la page pour vous assurer qu'ils suivent un ordre séquentiel logique : h1 pour le sujet principal, h2 pour les sections majeures, h3 pour les sous-sections sous h2, etc. Ne sautez jamais de niveaux de titre (comme passer de h1 à h3), bien que vous puissiez remonter des niveaux (comme h3 vers h2) quand vous commencez une nouvelle section majeure.",
+    "what_generic": "Le premier élément de titre sur cette page est un {firstHeadingLevel}, mais la structure des titres doit toujours commencer par h1 pour établir une hiérarchie de plan de document appropriée"
   },
   "ErrHeadingsDontStartWithH1_what": {
     "generic": "La structure des titres de la page ne commence pas par h1"
@@ -1103,12 +1103,12 @@
     "what_generic": "Attribut title utilisé dans des modèles particulièrement problématiques : sur des éléments conteneurs non focalisables (div, span, p) où les utilisateurs ne peuvent même pas déclencher l'info-bulle, ou des titres redondants qui dupliquent le texte visible sans apporter de valeur"
   },
   "ErrInaccessibleFont": {
-    "title": "La police '%(fontName)s' est difficile à lire",
-    "what": "Utilisation de la police %(fontName)s qui est connue pour être difficile à lire",
-    "why": "Cette police est catégorisée comme %(category)s : %(reason)s. Les recherches montrent que ces polices sont plus difficiles à lire, en particulier pour les utilisateurs dyslexiques ou malvoyants.",
+    "title": "La police '{fontName}' est difficile à lire",
+    "what": "Utilisation de la police {fontName} qui est connue pour être difficile à lire",
+    "why": "Cette police est catégorisée comme {category} : {reason}. Les recherches montrent que ces polices sont plus difficiles à lire, en particulier pour les utilisateurs dyslexiques ou malvoyants.",
     "who": "Utilisateurs dyslexiques, malvoyants, ayant des difficultés de lecture",
-    "remediation": "Remplacer %(fontName)s par une police sans-serif claire et lisible comme Arial, Verdana, Helvetica, ou Tahoma. Éviter les polices décoratives, manuscrites, cursives ou très stylisées pour le texte principal.",
-    "what_generic": "Utilisation de la police %(fontName)s qui est connue pour être difficile à lire"
+    "remediation": "Remplacer {fontName} par une police sans-serif claire et lisible comme Arial, Verdana, Helvetica, ou Tahoma. Éviter les polices décoratives, manuscrites, cursives ou très stylisées pour le texte principal.",
+    "what_generic": "Utilisation de la police {fontName} qui est connue pour être difficile à lire"
   },
   "ErrInaccessibleFont_what": {
     "generic": "La police utilisée est connue pour être difficile à lire"
@@ -1130,12 +1130,12 @@
     "what_generic": "Code de langue mal formaté"
   },
   "ErrInfiniteAnimation": {
-    "title": "L'animation '%(animationName)s' s'exécute indéfiniment sans contrôles de pause",
-    "what": "L'animation '%(animationName)s' s'exécute indéfiniment sans contrôles de pause",
+    "title": "L'animation '{animationName}' s'exécute indéfiniment sans contrôles de pause",
+    "what": "L'animation '{animationName}' s'exécute indéfiniment sans contrôles de pause",
     "why": "Les animations continues peuvent déclencher des crises, causer des distractions et rendre le contenu inutilisable pour de nombreux utilisateurs. Cette animation est configurée pour se répéter indéfiniment (animation-iteration-count: infinite).",
     "who": "Utilisateurs avec des troubles vestibulaires, utilisateurs avec TDAH, utilisateurs avec épilepsie photosensible, utilisateurs avec des handicaps cognitifs.",
-    "remediation": "Fournissez des contrôles de pause/arrêt pour toutes les animations, respectez les paramètres prefers-reduced-motion, ou limitez animation-iteration-count à un nombre fini. CSS actuel :\\n%(animationCSS)s",
-    "what_generic": "L'animation '%(animationName)s' s'exécute indéfiniment sans contrôles de pause"
+    "remediation": "Fournissez des contrôles de pause/arrêt pour toutes les animations, respectez les paramètres prefers-reduced-motion, ou limitez animation-iteration-count à un nombre fini. CSS actuel :\\n{animationCSS}",
+    "what_generic": "L'animation '{animationName}' s'exécute indéfiniment sans contrôles de pause"
   },
   "ErrInfiniteAnimation_what": {
     "generic": "L'animation s'exécute indéfiniment sans contrôles de pause"
@@ -1189,12 +1189,12 @@
     "what_generic": "Le champ de saisie utilise box-shadow avec décalage directionnel (valeurs x ou y non nulles) comme indicateur de focus, causant l'apparition de l'ombre sur un ou deux côtés seulement plutôt qu'autour de tout le champ de saisie"
   },
   "ErrInteractiveElementIssue": {
-    "title": "L'élément %(element_tag)s interactif \\\"%(element_text)s\\\" présente des problèmes d'accessibilité",
-    "what": "L'élément %(element_tag)s interactif \\\"%(element_text)s\\\" présente des problèmes d'accessibilité",
+    "title": "L'élément {element_tag} interactif \\\"{element_text}\\\" présente des problèmes d'accessibilité",
+    "what": "L'élément {element_tag} interactif \\\"{element_text}\\\" présente des problèmes d'accessibilité",
     "why": "Les éléments interactifs sans balisage sémantique approprié ou support clavier créent des barrières pour les utilisateurs de technologies d'assistance",
     "who": "Utilisateurs de clavier, utilisateurs de lecteurs d'écran, utilisateurs de contrôle vocal",
     "remediation": "Utilisez des éléments HTML sémantiques ou ajoutez des rôles ARIA appropriés et un support clavier",
-    "what_generic": "L'élément %(element_tag)s interactif \\\"%(element_text)s\\\" présente des problèmes d'accessibilité"
+    "what_generic": "L'élément {element_tag} interactif \\\"{element_text}\\\" présente des problèmes d'accessibilité"
   },
   "ErrInteractiveElementIssue_what": {
     "generic": "L'élément interactif présente des problèmes d'accessibilité"
@@ -1209,22 +1209,22 @@
   },
   "ErrInvalidLangChange": {
     "title": "Code de langue invalide ou non reconnu",
-    "what": "L'élément a lang=\\\"%(found)s\\\" qui n'est pas un code de langue ISO 639 valide",
+    "what": "L'élément a lang=\\\"{found}\\\" qui n'est pas un code de langue ISO 639 valide",
     "why": "Les codes de langue invalides sur les sections de contenu empêchent les lecteurs d'écran de changer correctement de processeur de langue. Cela peut causer la prononciation du contenu en langues étrangères avec les mauvaises règles de langue, le rendant incompréhensible. Par exemple, un texte français pourrait être lu avec les règles de prononciation anglaises. Les utilisateurs s'attendent à ce que les changements de langue soient gérés de manière fluide, et les codes invalides brisent cette fonctionnalité.",
     "who": "Utilisateurs multilingues de lecteurs d'écran qui ont besoin d'un changement de langue approprié, utilisateurs lisant du contenu en plusieurs langues, utilisateurs avec des troubles de lecture utilisant des outils d'assistance, et utilisateurs comptant sur une prononciation correcte pour la compréhension",
-    "remediation": "Remplacez lang=\\\"%(found)s\\\" par un code de langue ISO 639 valide. Les formats valides sont les codes à deux lettres (\\\"en\\\", \\\"fr\\\", \\\"es\\\") ou les codes à deux lettres avec sous-étiquettes régionales (\\\"en-US\\\", \\\"fr-CA\\\", \\\"es-MX\\\"). Corrections courantes : \\\"fre\\\" → \\\"fr\\\", \\\"French\\\" → \\\"fr\\\", \\\"en-us\\\" → \\\"en-US\\\", \\\"EN-CA\\\" → \\\"en-CA\\\". Testez avec des lecteurs d'écran pour vous assurer que les changements de langue sont annoncés et prononcés correctement.",
-    "what_generic": "L'élément a lang=\\\"%(found)s\\\" qui n'est pas un code de langue ISO 639 valide"
+    "remediation": "Remplacez lang=\\\"{found}\\\" par un code de langue ISO 639 valide. Les formats valides sont les codes à deux lettres (\\\"en\\\", \\\"fr\\\", \\\"es\\\") ou les codes à deux lettres avec sous-étiquettes régionales (\\\"en-US\\\", \\\"fr-CA\\\", \\\"es-MX\\\"). Corrections courantes : \\\"fre\\\" → \\\"fr\\\", \\\"French\\\" → \\\"fr\\\", \\\"en-us\\\" → \\\"en-US\\\", \\\"EN-CA\\\" → \\\"en-CA\\\". Testez avec des lecteurs d'écran pour vous assurer que les changements de langue sont annoncés et prononcés correctement.",
+    "what_generic": "L'élément a lang=\\\"{found}\\\" qui n'est pas un code de langue ISO 639 valide"
   },
   "ErrInvalidLangChange_what": {
     "generic": "L'élément a un code de langue invalide qui n'est pas un code de langue ISO 639 valide"
   },
   "ErrInvalidLanguageCode": {
-    "title": "L'attribut de langue contient un code invalide '%(found)s' qui ne se conforme pas aux normes ISO 639",
-    "what": "L'attribut de langue contient un code invalide '%(found)s' qui ne se conforme pas aux normes ISO 639",
-    "why": "Le code de langue '%(found)s' n'est pas reconnu comme un code de langue ISO 639 valide. Cela empêche les technologies d'assistance de traiter correctement le contenu, causant aux lecteurs d'écran de mal prononcer les mots, d'utiliser des modèles d'intonation incorrects, ou d'échouer à changer de moteur de langue. Cela peut rendre le contenu difficile ou impossible à comprendre lorsqu'il est lu à voix haute, surtout si le contenu est dans une langue non anglaise mais est lu avec les règles de prononciation anglaises.",
+    "title": "L'attribut de langue contient un code invalide '{found}' qui ne se conforme pas aux normes ISO 639",
+    "what": "L'attribut de langue contient un code invalide '{found}' qui ne se conforme pas aux normes ISO 639",
+    "why": "Le code de langue '{found}' n'est pas reconnu comme un code de langue ISO 639 valide. Cela empêche les technologies d'assistance de traiter correctement le contenu, causant aux lecteurs d'écran de mal prononcer les mots, d'utiliser des modèles d'intonation incorrects, ou d'échouer à changer de moteur de langue. Cela peut rendre le contenu difficile ou impossible à comprendre lorsqu'il est lu à voix haute, surtout si le contenu est dans une langue non anglaise mais est lu avec les règles de prononciation anglaises.",
     "who": "Utilisateurs aveugles et malvoyants s'appuyant sur les lecteurs d'écran pour une prononciation précise, utilisateurs multilingues qui ont besoin d'une identification appropriée de la langue pour la compréhension, utilisateurs avec des troubles de la lecture utilisant des outils de synthèse vocale, et utilisateurs internationaux accédant au contenu dans plusieurs langues",
-    "remediation": "Remplacez '%(found)s' par un code de langue ISO 639-1 ou ISO 639-2 valide. Si '%(found)s' semble être de l'anglais, utilisez \\\"en\\\". Corrections courantes : \\\"english\\\" → \\\"en\\\", \\\"spanish\\\" → \\\"es\\\", \\\"french\\\" → \\\"fr\\\", \\\"deutsch\\\" → \\\"de\\\", \\\"eng\\\" → \\\"en\\\". Pour les variantes régionales, utilisez le format BCP 47 (par ex., \\\"en-US\\\", \\\"en-GB\\\", \\\"es-MX\\\"). Consultez le registre officiel ISO 639 pour le code correct.",
-    "what_generic": "L'attribut de langue contient un code invalide '%(found)s' qui ne se conforme pas aux normes ISO 639"
+    "remediation": "Remplacez '{found}' par un code de langue ISO 639-1 ou ISO 639-2 valide. Si '{found}' semble être de l'anglais, utilisez \\\"en\\\". Corrections courantes : \\\"english\\\" → \\\"en\\\", \\\"spanish\\\" → \\\"es\\\", \\\"french\\\" → \\\"fr\\\", \\\"deutsch\\\" → \\\"de\\\", \\\"eng\\\" → \\\"en\\\". Pour les variantes régionales, utilisez le format BCP 47 (par ex., \\\"en-US\\\", \\\"en-GB\\\", \\\"es-MX\\\"). Consultez le registre officiel ISO 639 pour le code correct.",
+    "what_generic": "L'attribut de langue contient un code invalide '{found}' qui ne se conforme pas aux normes ISO 639"
   },
   "ErrInvalidLanguageCode_what": {
     "generic": "L'attribut de langue contient un code invalide qui ne se conforme pas aux normes ISO 639"
@@ -1238,12 +1238,12 @@
     "what_generic": "L'élément a un attribut tabindex avec une valeur invalide (non numérique ou décimale)"
   },
   "ErrLabelContainsMultipleFields": {
-    "title": "Une seule étiquette contient %(count)s champs de formulaire",
-    "what": "Une seule étiquette contient %(count)s champs de formulaire",
-    "why": "Une étiquette contenant %(count)s champs crée une ambiguïté sur le champ qu'elle décrit. Les lecteurs d'écran associeront cette étiquette avec tous les %(count)s champs, rendant peu clair quel champ est lequel.",
+    "title": "Une seule étiquette contient {count} champs de formulaire",
+    "what": "Une seule étiquette contient {count} champs de formulaire",
+    "why": "Une étiquette contenant {count} champs crée une ambiguïté sur le champ qu'elle décrit. Les lecteurs d'écran associeront cette étiquette avec tous les {count} champs, rendant peu clair quel champ est lequel.",
     "who": "Utilisateurs de lecteurs d'écran qui ont besoin d'une identification claire des champs, utilisateurs avec des handicaps cognitifs qui ont besoin de relations simples",
-    "remediation": "Divisez l'étiquette pour que chacun des %(count)s champs ait sa propre étiquette dédiée. Utilisez fieldset et legend pour les champs groupés s'ils sont liés.",
-    "what_generic": "Une seule étiquette contient %(count)s champs de formulaire"
+    "remediation": "Divisez l'étiquette pour que chacun des {count} champs ait sa propre étiquette dédiée. Utilisez fieldset et legend pour les champs groupés s'ils sont liés.",
+    "what_generic": "Une seule étiquette contient {count} champs de formulaire"
   },
   "ErrLabelContainsMultipleFields_what": {
     "generic": "Une seule étiquette contient plusieurs champs de formulaire"
@@ -1257,34 +1257,34 @@
     "what_generic": "Le nom accessible ne correspond pas au libellé visible"
   },
   "ErrLargeTextContrastAA": {
-    "title": "Le texte large (%(fontSize)spx) échoue au contraste WCAG AA : %(ratio)s:1 (requis : 3:1)",
-    "what": "Le texte large échoue au WCAG AA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)",
-    "why": "Ce texte large (%(fontSize)spx) avec un ratio de contraste de %(ratio)s:1 ne respecte pas les exigences WCAG Niveau AA. Le texte large (24px+ ou 18,66px+ en gras) nécessite un ratio de contraste minimum de 3:1 pour passer le Niveau AA. La couleur de premier plan (%(fg)s) contre l'arrière-plan (%(bg)s) ne fournit pas assez de distinction.",
+    "title": "Le texte large ({fontSize}px) échoue au contraste WCAG AA : {ratio}:1 (requis : 3:1)",
+    "what": "Le texte large échoue au WCAG AA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})",
+    "why": "Ce texte large ({fontSize}px) avec un ratio de contraste de {ratio}:1 ne respecte pas les exigences WCAG Niveau AA. Le texte large (24px+ ou 18,66px+ en gras) nécessite un ratio de contraste minimum de 3:1 pour passer le Niveau AA. La couleur de premier plan ({fg}) contre l'arrière-plan ({bg}) ne fournit pas assez de distinction.",
     "who": "Utilisateurs malvoyants, daltoniens, ou avec des changements de vision liés à l'âge qui ont du mal à distinguer le texte avec un contraste insuffisant, même lorsque le texte est plus grand",
-    "remediation": "Le contraste actuel est %(ratio)s:1, mais WCAG Niveau AA exige au moins 3:1 pour le texte large (%(fontSize)spx). Pour corriger, ajuster la couleur de premier plan de %(fg)s ou l'arrière-plan de %(bg)s. Considérer l'utilisation de #949494 ou plus sombre sur un arrière-plan blanc pour le texte large.",
-    "what_generic": "Le texte large échoue au WCAG AA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)"
+    "remediation": "Le contraste actuel est {ratio}:1, mais WCAG Niveau AA exige au moins 3:1 pour le texte large ({fontSize}px). Pour corriger, ajuster la couleur de premier plan de {fg} ou l'arrière-plan de {bg}. Considérer l'utilisation de #949494 ou plus sombre sur un arrière-plan blanc pour le texte large.",
+    "what_generic": "Le texte large échoue au WCAG AA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})"
   },
   "ErrLargeTextContrastAA_what": {
     "generic": "Le texte de grande taille ne respecte pas les exigences de contraste WCAG AA"
   },
   "ErrLargeTextContrastAAA": {
-    "title": "Le texte de grande taille (%(fontSize)spx) ne respecte pas le contraste WCAG AAA : %(ratio)s:1 (requis : 4,5:1)",
-    "what": "Le texte de grande taille ne respecte pas WCAG AAA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)",
-    "why": "Ce texte de grande taille (%(fontSize)spx) avec un ratio de contraste de %(ratio)s:1 ne respecte pas les exigences renforcées WCAG Niveau AAA. Le texte de grande taille (24px+ ou 18,66px+ en gras) nécessite un ratio de contraste minimum de 4,5:1 pour satisfaire le Niveau AAA d'accessibilité renforcée.",
+    "title": "Le texte de grande taille ({fontSize}px) ne respecte pas le contraste WCAG AAA : {ratio}:1 (requis : 4,5:1)",
+    "what": "Le texte de grande taille ne respecte pas WCAG AAA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})",
+    "why": "Ce texte de grande taille ({fontSize}px) avec un ratio de contraste de {ratio}:1 ne respecte pas les exigences renforcées WCAG Niveau AAA. Le texte de grande taille (24px+ ou 18,66px+ en gras) nécessite un ratio de contraste minimum de 4,5:1 pour satisfaire le Niveau AAA d'accessibilité renforcée.",
     "who": "Utilisateurs avec des déficiences visuelles modérées qui bénéficient d'un contraste renforcé même pour le texte de grande taille, garantissant une lisibilité optimale dans toutes les conditions",
-    "remediation": "Le contraste actuel est de %(ratio)s:1, mais WCAG Niveau AAA exige au moins 4,5:1 pour le texte de grande taille (%(fontSize)spx). Pour corriger, ajustez les couleurs pour obtenir un contraste plus élevé, comme #767676 ou plus foncé sur fond blanc pour le texte de grande taille au Niveau AAA.",
-    "what_generic": "Le texte de grande taille ne respecte pas WCAG AAA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)"
+    "remediation": "Le contraste actuel est de {ratio}:1, mais WCAG Niveau AAA exige au moins 4,5:1 pour le texte de grande taille ({fontSize}px). Pour corriger, ajustez les couleurs pour obtenir un contraste plus élevé, comme #767676 ou plus foncé sur fond blanc pour le texte de grande taille au Niveau AAA.",
+    "what_generic": "Le texte de grande taille ne respecte pas WCAG AAA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})"
   },
   "ErrLargeTextContrastAAA_what": {
     "generic": "Le texte de grande taille ne respecte pas les exigences de contraste WCAG AAA"
   },
   "ErrLinkAccessibleNameMismatch": {
     "title": "Le nom accessible du lien ne commence pas par son texte visible",
-    "what": "Le lien a un texte visible \\\"%(metadata_visibleText)s\\\" mais un nom accessible \\\"%(metadata_accessibleName)s\\\" - le nom accessible ne commence pas par le texte visible, empêchant les utilisateurs de contrôle vocal de l'activer",
+    "what": "Le lien a un texte visible \\\"{metadata_visibleText}\\\" mais un nom accessible \\\"{metadata_accessibleName}\\\" - le nom accessible ne commence pas par le texte visible, empêchant les utilisateurs de contrôle vocal de l'activer",
     "why": "Les utilisateurs de contrôle vocal activent les liens en prononçant le texte visible qu'ils voient (ex. \\\"Cliquer Lire plus\\\"). Si le nom accessible ne commence pas par le texte visible, la commande vocale échoue. WCAG 2.5.3 exige que le texte visible soit inclus dans le nom accessible (au début), et 2.4.6 exige que les étiquettes correspondent aux attentes des utilisateurs.",
     "who": "Utilisateurs de contrôle vocal qui ne peuvent pas activer les liens, utilisateurs de saisie vocale s'appuyant sur les étiquettes visibles, utilisateurs avec des handicaps moteurs qui utilisent des commandes vocales, utilisateurs avec des handicaps cognitifs qui ont besoin de cohérence entre ce qu'ils voient et ce qu'ils peuvent dire",
     "remediation": "Assurez-vous que le nom accessible commence par le texte visible. Si le texte visible est \\\"Lire plus\\\", aria-label devrait être \\\"Lire plus sur les Groupes de Soutien par les Pairs\\\" et non \\\"Comment les Groupes de Soutien par les Pairs ont Changé la Vie\\\". Alternativement, utilisez du texte visuellement masqué commençant par le texte visible, ou placez le texte descriptif avant le lien dans le DOM.",
-    "what_generic": "Le lien a un texte visible \\\"%(metadata_visibleText)s\\\" mais un nom accessible \\\"%(metadata_accessibleName)s\\\" - le nom accessible ne commence pas par le texte visible, empêchant les utilisateurs de contrôle vocal de l'activer"
+    "what_generic": "Le lien a un texte visible \\\"{metadata_visibleText}\\\" mais un nom accessible \\\"{metadata_accessibleName}\\\" - le nom accessible ne commence pas par le texte visible, empêchant les utilisateurs de contrôle vocal de l'activer"
   },
   "ErrLinkButtonMissingSpaceHandler": {
     "title": "Le lien est stylisé pour ressembler à un bouton mais ne gère pas la touche Espace - les utilisateurs de clavier s'attendent à ce que la touche Espace active les éléments ressemblant à des boutons",
@@ -1466,12 +1466,12 @@
     "what_generic": "Page manquant de région repère principale pour le contenu primaire"
   },
   "ErrMissingTabindex": {
-    "title": "<%(elementTag)s> avec gestionnaire d'événement non accessible au clavier - tabindex manquant",
-    "what": "Cet élément <%(elementTag)s> a un gestionnaire d'événement souris (onclick, onmousedown, etc.) mais manque de tabindex, le rendant complètement inaccessible aux utilisateurs de clavier",
+    "title": "<{elementTag}> avec gestionnaire d'événement non accessible au clavier - tabindex manquant",
+    "what": "Cet élément <{elementTag}> a un gestionnaire d'événement souris (onclick, onmousedown, etc.) mais manque de tabindex, le rendant complètement inaccessible aux utilisateurs de clavier",
     "why": "Les éléments non interactifs comme <div> et <span> ne sont pas focalisables par défaut. Ajouter des gestionnaires d'événements souris sans tabindex=\\\"0\\\" crée une barrière complète - les utilisateurs de clavier ne peuvent pas focaliser l'élément, ne peuvent pas l'activer avec Entrée/Espace, et les lecteurs d'écran peuvent ne pas l'annoncer comme interactif. C'est un échec critique d'accessibilité.",
     "who": "Utilisateurs de clavier qui ne peuvent pas utiliser une souris, utilisateurs de lecteurs d'écran naviguant par la touche Tab, utilisateurs avec des handicaps moteurs qui dépendent de la navigation au clavier, utilisateurs de contrôle vocal.",
-    "remediation": "Option 1 (Recommandée) : Remplacer l'élément <%(elementTag)s> par un élément sémantique <button>, qui est accessible au clavier par défaut et fournit une sémantique appropriée. Option 2 : Ajouter tabindex=\\\"0\\\" pour le rendre focalisable, ET ajouter un gestionnaire d'événement clavier (onkeydown/onkeyup) pour gérer les touches Entrée et Espace. Option 3 : Ajouter role=\\\"button\\\" ET tabindex=\\\"0\\\" ET des gestionnaires d'événements clavier. Les boutons HTML natifs sont fortement préférés car ils fournissent automatiquement toutes les fonctionnalités d'accessibilité.",
-    "what_generic": "Cet élément <%(elementTag)s> a un gestionnaire d'événement souris (onclick, onmousedown, etc.) mais manque de tabindex, le rendant complètement inaccessible aux utilisateurs de clavier"
+    "remediation": "Option 1 (Recommandée) : Remplacer l'élément <{elementTag}> par un élément sémantique <button>, qui est accessible au clavier par défaut et fournit une sémantique appropriée. Option 2 : Ajouter tabindex=\\\"0\\\" pour le rendre focalisable, ET ajouter un gestionnaire d'événement clavier (onkeydown/onkeyup) pour gérer les touches Entrée et Espace. Option 3 : Ajouter role=\\\"button\\\" ET tabindex=\\\"0\\\" ET des gestionnaires d'événements clavier. Les boutons HTML natifs sont fortement préférés car ils fournissent automatiquement toutes les fonctionnalités d'accessibilité.",
+    "what_generic": "Cet élément <{elementTag}> a un gestionnaire d'événement souris (onclick, onmousedown, etc.) mais manque de tabindex, le rendant complètement inaccessible aux utilisateurs de clavier"
   },
   "ErrMissingTabindex_what": {
     "generic": "L'élément a un gestionnaire d'événement souris mais manque de tabindex, le rendant inaccessible aux utilisateurs de clavier"
@@ -1485,11 +1485,11 @@
     "what_generic": "La boîte de dialogue modale n'a aucun moyen de la fermer"
   },
   "ErrModalMissingHeading": {
-    "title": "La modale a un titre h%(foundLevel)s mais devrait utiliser h2 ou h1",
-    "what": "La modale a un titre h%(foundLevel)s (\\\"%(headingText)s\\\") mais devrait utiliser h2 (ou h1) pour une structure de document appropriée",
+    "title": "La modale a un titre h{foundLevel} mais devrait utiliser h2 ou h1",
+    "what": "La modale a un titre h{foundLevel} (\\\"{headingText}\\\") mais devrait utiliser h2 (ou h1) pour une structure de document appropriée",
     "why": "Sans une structure de titres appropriée, les utilisateurs ne connaissent pas l'objectif ou le contexte du contenu de la modale. Les modales devraient commencer par des titres h1 ou h2 pour maintenir la structure du document et fournir un contexte clair.",
     "who": "Utilisateurs de lecteurs d'écran qui ont besoin de comprendre l'objectif de la modale et de naviguer par titres, utilisateurs avec des déficiences cognitives qui s'appuient sur une structure de document claire.",
-    "remediation": "Changer le titre de la modale de h%(foundLevel)s à h2 (ou h1 si c'est le titre principal de la page). Titre actuel : \\\"%(headingText)s\\\". Les modales devraient utiliser h2 pour maintenir une hiérarchie de document appropriée et fournir un contexte clair pour tous les utilisateurs.",
+    "remediation": "Changer le titre de la modale de h{foundLevel} à h2 (ou h1 si c'est le titre principal de la page). Titre actuel : \\\"{headingText}\\\". Les modales devraient utiliser h2 pour maintenir une hiérarchie de document appropriée et fournir un contexte clair pour tous les utilisateurs.",
     "what_generic": "La modale a un niveau de titre incorrect pour une structure de document appropriée"
   },
   "ErrModalMissingHeading_what": {
@@ -1521,11 +1521,11 @@
   },
   "ErrMultipleBannerLandmarksOnPage": {
     "title": "Plusieurs régions repères bannière trouvées - une seule région repère bannière devrait exister par page",
-    "what": "Cette page contient %(count)s régions repères bannière (éléments <header> au niveau de la page ou éléments avec role=\\\"banner\\\"), mais les pages devraient avoir au maximum une région repère bannière identifiant l'en-tête/masthead du site",
+    "what": "Cette page contient {count} régions repères bannière (éléments <header> au niveau de la page ou éléments avec role=\\\"banner\\\"), mais les pages devraient avoir au maximum une région repère bannière identifiant l'en-tête/masthead du site",
     "why": "La région repère bannière représente l'en-tête du site contenant l'identité visuelle, le logo, la navigation du site et la recherche. Avoir plusieurs régions repères bannière crée de la confusion sur quel en-tête est le véritable masthead du site. Les lecteurs d'écran fournissent des raccourcis pour aller à \\\"la\\\" bannière, s'attendant à une cible claire, donc plusieurs bannières causent un comportement peu fiable et de la confusion. Les utilisateurs ne peuvent pas déterminer quelle bannière contient la navigation principale du site par rapport aux en-têtes spécifiques à la page. Cela viole les attentes des utilisateurs basées sur des modèles cohérents sur le web où bannière = en-tête du site.",
     "who": "Utilisateurs de lecteurs d'écran dont le raccourci de navigation bannière devient peu fiable ou confus avec plusieurs bannières, utilisateurs de clavier s'attendant à accéder rapidement à la navigation du site, utilisateurs avec des handicaps cognitifs confus par plusieurs éléments prétendant être l'en-tête du site, et utilisateurs essayant d'accéder rapidement aux modèles de navigation cohérents du site",
     "remediation": "Gardez seulement l'en-tête au niveau du site comme région repère bannière (l'élément <header> qui contient l'identité visuelle et la navigation du site). Supprimez les éléments <header> des sections spécifiques à la page ou à l'article, ou supprimez explicitement leur sémantique de bannière en utilisant role=\\\"presentation\\\" ou en les imbriquant dans des éléments article/section (où ils perdent automatiquement la sémantique de bannière). La bannière devrait être un enfant direct de <body> et ne devrait pas être imbriquée dans des éléments <main>, <article>, ou <section>. Si vous avez des en-têtes spécifiques à une section, utilisez des éléments <div> avec des classes d'en-tête à la place, ou utilisez <header> imbriqué dans des éléments article/section (qui ne créent pas de régions repères bannière).",
-    "what_generic": "Cette page contient %(count)s régions repères bannière (éléments <header> au niveau de la page ou éléments avec role=\\\"banner\\\"), mais les pages devraient avoir au maximum une région repère bannière identifiant l'en-tête/masthead du site"
+    "what_generic": "Cette page contient {count} régions repères bannière (éléments <header> au niveau de la page ou éléments avec role=\\\"banner\\\"), mais les pages devraient avoir au maximum une région repère bannière identifiant l'en-tête/masthead du site"
   },
   "ErrMultipleBannerLandmarksOnPage_what": {
     "generic": "La page contient plusieurs régions repères bannière, mais devrait en avoir au maximum une"
@@ -1540,33 +1540,33 @@
   },
   "ErrMultipleContentinfoLandmarksOnPage": {
     "title": "Plusieurs régions repères contentinfo trouvées - une seule région repère contentinfo devrait exister par page",
-    "what": "Cette page contient %(count)s régions repères contentinfo (éléments <footer> au niveau de la page ou éléments avec role=\\\"contentinfo\\\"), mais les pages devraient avoir au maximum une région repère contentinfo identifiant le pied de page du site",
+    "what": "Cette page contient {count} régions repères contentinfo (éléments <footer> au niveau de la page ou éléments avec role=\\\"contentinfo\\\"), mais les pages devraient avoir au maximum une région repère contentinfo identifiant le pied de page du site",
     "why": "La région repère contentinfo représente le pied de page du site contenant les informations de copyright, les liens de confidentialité, les informations de contact et autre contenu de pied de page du site. Plusieurs régions repères contentinfo créent de la confusion sur quel pied de page contient les véritables informations au niveau du site. Les lecteurs d'écran fournissent des raccourcis pour aller à \\\"la\\\" région repère contentinfo, s'attendant à une cible claire. Les utilisateurs ne peuvent pas déterminer rapidement quel pied de page contient les informations de copyright, les liens de politique de confidentialité ou les informations de contact dont ils ont besoin. Plusieurs régions repères contentinfo suggèrent une architecture d'information peu claire et rendent plus difficile pour les utilisateurs de trouver les informations légales et de contact importantes.",
     "who": "Utilisateurs de lecteurs d'écran dont le raccourci de navigation contentinfo devient peu fiable avec plusieurs régions repères contentinfo, utilisateurs ayant besoin d'accéder rapidement aux informations de pied de page comme les politiques de confidentialité ou les coordonnées, utilisateurs avec des handicaps cognitifs confus par plusieurs pieds de page de site, utilisateurs de clavier s'attendant à une navigation de pied de page cohérente, et utilisateurs recherchant des informations de droits d'auteur ou légales qui ne savent pas quel pied de page vérifier",
     "remediation": "Conservez uniquement le pied de page au niveau du site comme région repère contentinfo (l'élément <footer> qui contient les informations à l'échelle du site comme les droits d'auteur, liens de confidentialité, informations de contact). Supprimez les éléments <footer> des sections spécifiques à la page ou à l'article, ou supprimez explicitement leur sémantique contentinfo en les imbriquant dans des éléments article/section (où ils perdent automatiquement la sémantique contentinfo). Le contentinfo doit être un enfant direct de <body> et doit apparaître après l'élément <main>. Si vous avez des pieds de page spécifiques à l'article ou à la section (comme les informations d'auteur ou la date de publication), utilisez des éléments <div> stylisés comme pieds de page, ou utilisez <footer> imbriqué dans des éléments article/section (qui ne créent pas de régions repères contentinfo).",
-    "what_generic": "Cette page contient %(count)s régions repères contentinfo (éléments <footer> au niveau de la page ou éléments avec role=\\\"contentinfo\\\"), mais les pages devraient avoir au maximum une région repère contentinfo identifiant le pied de page du site"
+    "what_generic": "Cette page contient {count} régions repères contentinfo (éléments <footer> au niveau de la page ou éléments avec role=\\\"contentinfo\\\"), mais les pages devraient avoir au maximum une région repère contentinfo identifiant le pied de page du site"
   },
   "ErrMultipleContentinfoLandmarksOnPage_what": {
     "generic": "La page contient plusieurs régions repères contentinfo, mais ne devrait en avoir qu'une au maximum"
   },
   "ErrMultipleH1": {
-    "title": "La page contient %(count)s éléments h1 au lieu d'un seul",
-    "what": "La page contient %(count)s éléments h1 au lieu d'un seul",
-    "why": "Avoir %(count)s éléments h1 crée une confusion sur le sujet principal de la page. Chaque h1 représente un titre primaire, et plusieurs h1 suggèrent plusieurs sujets principaux, brisant la hiérarchie du document. Les utilisateurs de lecteurs d'écran ne sauront pas quel h1 représente le véritable sujet de la page.",
+    "title": "La page contient {count} éléments h1 au lieu d'un seul",
+    "what": "La page contient {count} éléments h1 au lieu d'un seul",
+    "why": "Avoir {count} éléments h1 crée une confusion sur le sujet principal de la page. Chaque h1 représente un titre primaire, et plusieurs h1 suggèrent plusieurs sujets principaux, brisant la hiérarchie du document. Les utilisateurs de lecteurs d'écran ne sauront pas quel h1 représente le véritable sujet de la page.",
     "who": "Utilisateurs de lecteurs d'écran qui s'attendent à un seul h1 pour identifier le sujet de la page, utilisateurs naviguant par titres qui voient plusieurs éléments de \\\"niveau supérieur\\\", SEO et moteurs de recherche qui cherchent un seul sujet principal",
     "remediation": "Conserver seulement un h1 qui représente le sujet principal de la page. Changer les autres éléments h1 en h2 ou niveaux inférieurs appropriés selon leur relation au sujet principal.",
-    "what_generic": "La page contient %(count)s éléments h1 au lieu d'un seul"
+    "what_generic": "La page contient {count} éléments h1 au lieu d'un seul"
   },
   "ErrMultipleH1_what": {
     "generic": "La page contient plusieurs éléments h1 au lieu d'un seul"
   },
   "ErrMultipleH1HeadingsOnPage": {
     "title": "Plusieurs éléments h1 trouvés sur la page - un seul h1 devrait exister par page",
-    "what": "Cette page contient %(count)s éléments h1 (niveau de titre 1), mais la bonne pratique est d'avoir exactement un h1 par page qui identifie le sujet principal",
+    "what": "Cette page contient {count} éléments h1 (niveau de titre 1), mais la bonne pratique est d'avoir exactement un h1 par page qui identifie le sujet principal",
     "why": "Bien que HTML5 autorise techniquement plusieurs éléments h1 (un par élément de section comme article ou section), les utilisateurs de lecteurs d'écran et les systèmes SEO s'attendent à un seul h1 qui identifie le sujet principal de la page. Plusieurs éléments h1 créent une ambiguïté sur le titre qui représente le contenu principal, rendant plus difficile pour les utilisateurs de comprendre rapidement la structure et l'objectif de la page. Les lecteurs d'écran qui génèrent des plans de page peuvent présenter des hiérarchies confuses avec plusieurs entrées de niveau supérieur. Les moteurs de recherche peuvent avoir des difficultés à déterminer le sujet principal, affectant potentiellement le classement de la page et l'affichage des résultats de recherche.",
     "who": "Utilisateurs de lecteurs d'écran qui naviguent par titres et s'attendent à un identifiant de sujet principal clair, utilisateurs avec des handicaps cognitifs qui bénéficient d'une hiérarchie de contenu non ambiguë, systèmes SEO qui priorisent le h1 principal pour comprendre le contenu de la page, utilisateurs de technologies d'assistance qui génèrent des plans de document s'attendant à un seul titre principal, et utilisateurs avec des difficultés d'attention qui ont besoin d'un focus clair sur un seul sujet",
     "remediation": "Restructurez votre hiérarchie de titres pour avoir exactement un élément h1 qui identifie le sujet principal de la page. Rétrogradez les éléments h1 supplémentaires en h2 ou niveaux inférieurs appropriés selon leur relation au h1 principal et au reste du contenu. Si vous avez plusieurs articles ou sections sur la page, utilisez h2 pour leurs titres au lieu de h1. Le h1 unique doit apparaître près du haut de la page et décrire clairement de quoi traite toute la page. Pour les articles de blog, le titre de l'article doit être le h1. Pour les pages produit, le nom du produit doit être le h1.",
-    "what_generic": "Cette page contient %(count)s éléments h1 (niveau de titre 1), mais la bonne pratique est d'avoir exactement un h1 par page qui identifie le sujet principal"
+    "what_generic": "Cette page contient {count} éléments h1 (niveau de titre 1), mais la bonne pratique est d'avoir exactement un h1 par page qui identifie le sujet principal"
   },
   "ErrMultipleH1HeadingsOnPage_what": {
     "generic": "La page contient plusieurs éléments h1, mais la bonne pratique est d'avoir exactement un h1 par page"
@@ -1581,22 +1581,22 @@
   },
   "ErrMultipleMainLandmarksOnPage": {
     "title": "Plusieurs régions repères principales trouvées sur la page - une seule région repère principale devrait exister",
-    "what": "Cette page contient %(count)s régions repères principales (éléments <main> ou éléments avec role=\\\"main\\\"), mais WCAG exige exactement une région repère principale par page pour identifier le contenu unique principal",
+    "what": "Cette page contient {count} régions repères principales (éléments <main> ou éléments avec role=\\\"main\\\"), mais WCAG exige exactement une région repère principale par page pour identifier le contenu unique principal",
     "why": "Plusieurs régions repères principales créent une ambiguïté sur quelle zone de contenu représente le contenu principal de la page. Les lecteurs d'écran fournissent des raccourcis pour aller à \\\"la\\\" région repère principale, en supposant qu'il n'y en a qu'une, donc plusieurs régions repères principales causent confusion et comportement imprévisible - le lecteur d'écran peut aller à la première, la dernière, ou fournir une erreur. Cela annule l'objectif de la région repère principale, qui est de fournir une cible claire et non ambiguë pour que les utilisateurs accèdent rapidement au contenu principal. Les utilisateurs ne peuvent pas déterminer de manière fiable quelle région repère principale contient le contenu réel qu'ils recherchent, les forçant à vérifier chacune, annulant le bénéfice d'efficacité que les régions repères sont censées fournir.",
     "who": "Utilisateurs de lecteurs d'écran dont les raccourcis de navigation par régions repères deviennent peu fiables avec plusieurs régions repères principales, utilisateurs de clavier qui s'attendent à des cibles de navigation cohérentes, utilisateurs avec des handicaps cognitifs qui sont confus par une structure de page ambiguë, utilisateurs de lecteurs d'écran mobiles dont la navigation basée sur les gestes échoue avec des régions repères peu claires, et développeurs maintenant du code où plusieurs régions repères principales indiquent une architecture de page peu claire",
     "remediation": "Identifiez quelle zone de contenu représente véritablement le contenu unique principal pour cette page et conservez uniquement celle-ci comme région repère principale. Supprimez l'élément main ou role=\\\"main\\\" des autres zones. Si vous avez plusieurs sections qui semblent également importantes, elles devraient toutes être contenues dans une région repère principale unique, utilisant des éléments section avec des en-têtes appropriés pour les distinguer. Pour les pages avec plusieurs articles (comme les pages d'archive de blog), la région repère principale doit envelopper tous les articles ensemble. Pour les applications à page unique avec des changements de vue, mettez à jour le contenu dans une région repère principale plutôt que de créer plusieurs régions repères principales. Considérez si les éléments main dupliqués proviennent de modèles inclus qui ne devraient sortir l'élément main que sur certaines pages.",
-    "what_generic": "Cette page contient %(count)s régions repères principales (éléments <main> ou éléments avec role=\\\"main\\\"), mais WCAG exige exactement une région repère principale par page pour identifier le contenu unique principal"
+    "what_generic": "Cette page contient {count} régions repères principales (éléments <main> ou éléments avec role=\\\"main\\\"), mais WCAG exige exactement une région repère principale par page pour identifier le contenu unique principal"
   },
   "ErrMultipleMainLandmarksOnPage_what": {
     "generic": "La page contient plusieurs régions repères principales, mais devrait en avoir exactement une"
   },
   "ErrMultiplePageTitles": {
-    "title": "%(count)s éléments <title> trouvés dans l'en-tête du document, ce qui cause un comportement imprévisible",
-    "what": "%(count)s éléments <title> trouvés dans l'en-tête du document. La spécification HTML exige exactement un élément <title> par document.",
-    "why": "Avoir %(count)s éléments title fait que les navigateurs choisissent de manière imprévisible entre eux, créant une identification de page incohérente. Différents navigateurs et technologies d'assistance peuvent choisir différents titres parmi les %(count)s disponibles, créant une expérience incohérente entre appareils et outils. Les lecteurs d'écran peuvent annoncer un titre tandis que l'onglet du navigateur en affiche un autre. Les moteurs de recherche peuvent indexer le mauvais titre, nuisant au SEO et à la découvrabilité. Les utilisateurs qui mettent la page en favori peuvent voir un titre différent de celui prévu.",
+    "title": "{count} éléments <title> trouvés dans l'en-tête du document, ce qui cause un comportement imprévisible",
+    "what": "{count} éléments <title> trouvés dans l'en-tête du document. La spécification HTML exige exactement un élément <title> par document.",
+    "why": "Avoir {count} éléments title fait que les navigateurs choisissent de manière imprévisible entre eux, créant une identification de page incohérente. Différents navigateurs et technologies d'assistance peuvent choisir différents titres parmi les {count} disponibles, créant une expérience incohérente entre appareils et outils. Les lecteurs d'écran peuvent annoncer un titre tandis que l'onglet du navigateur en affiche un autre. Les moteurs de recherche peuvent indexer le mauvais titre, nuisant au SEO et à la découvrabilité. Les utilisateurs qui mettent la page en favori peuvent voir un titre différent de celui prévu.",
     "who": "Tous les utilisateurs voyant des titres incohérents dans les onglets du navigateur, utilisateurs de lecteurs d'écran qui peuvent entendre des titres différents de ce qui est affiché visuellement, utilisateurs mettant des pages en favori avec des titres incorrects, utilisateurs de moteurs de recherche qui peuvent voir de mauvais titres dans les résultats de recherche",
     "remediation": "Supprimez tous les éléments <title> sauf un de l'en-tête du document. Gardez seulement le titre le plus descriptif qui représente fidèlement le contenu de la page. Vérifiez les scripts ou modèles qui pourraient ajouter des titres dynamiquement. Assurez-vous que votre CMS ou framework ne crée pas de titres en double via plusieurs inclusions ou composants.",
-    "what_generic": "%(count)s éléments <title> trouvés dans l'en-tête du document. La spécification HTML exige exactement un élément <title> par document."
+    "what_generic": "{count} éléments <title> trouvés dans l'en-tête du document. La spécification HTML exige exactement un élément <title> par document."
   },
   "ErrMultiplePageTitles_what": {
     "generic": "Plusieurs éléments title trouvés dans l'en-tête du document"
@@ -1813,23 +1813,23 @@
     "what_generic": "L'élément interactif a CSS outline:none supprimant l'indicateur de focus par défaut"
   },
   "ErrPartialTextContrastAA": {
-    "title": "Le contraste du texte échoue %(ratio)s:1 dans le conteneur, plus débordement de texte où le contraste ne peut être testé",
-    "what": "Le texte échoue au contraste WCAG AA (%(ratio)s:1, requis : %(required)s) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini",
-    "why": "Ce texte présente deux problèmes : (1) Le texte à l'intérieur du conteneur échoue aux exigences de contraste WCAG AA avec un ratio de %(ratio)s:1 contre l'arrière-plan %(bg)s, et (2) Une partie du texte déborde des limites du conteneur où il n'y a pas d'arrière-plan défini, rendant impossible le calcul du contraste pour la partie débordante par cet outil de test. Les deux problèmes doivent être résolus.",
+    "title": "Le contraste du texte échoue {ratio}:1 dans le conteneur, plus débordement de texte où le contraste ne peut être testé",
+    "what": "Le texte échoue au contraste WCAG AA ({ratio}:1, requis : {required}) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini",
+    "why": "Ce texte présente deux problèmes : (1) Le texte à l'intérieur du conteneur échoue aux exigences de contraste WCAG AA avec un ratio de {ratio}:1 contre l'arrière-plan {bg}, et (2) Une partie du texte déborde des limites du conteneur où il n'y a pas d'arrière-plan défini, rendant impossible le calcul du contraste pour la partie débordante par cet outil de test. Les deux problèmes doivent être résolus.",
     "who": "Utilisateurs malvoyants qui ont besoin d'un contraste plus élevé, utilisateurs daltoniens, et toute personne consultant le contenu dans des conditions d'éclairage difficiles",
-    "remediation": "Corriger les deux problèmes : (1) Augmenter le contraste dans le conteneur de %(ratio)s:1 à au moins %(required)s en ajustant les couleurs de premier plan %(fg)s ou d'arrière-plan %(bg)s, et (2) S'assurer que tout le texte reste dans son conteneur d'arrière-plan en corrigeant le débordement (ajuster la taille du conteneur, la taille de police, ou utiliser overflow: hidden/auto). Pour le texte normal, viser un contraste de 4,5:1 ; pour le texte large (18pt+), viser 3:1.",
-    "what_generic": "Le texte échoue au contraste WCAG AA (%(ratio)s:1, requis : %(required)s) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini"
+    "remediation": "Corriger les deux problèmes : (1) Augmenter le contraste dans le conteneur de {ratio}:1 à au moins {required} en ajustant les couleurs de premier plan {fg} ou d'arrière-plan {bg}, et (2) S'assurer que tout le texte reste dans son conteneur d'arrière-plan en corrigeant le débordement (ajuster la taille du conteneur, la taille de police, ou utiliser overflow: hidden/auto). Pour le texte normal, viser un contraste de 4,5:1 ; pour le texte large (18pt+), viser 3:1.",
+    "what_generic": "Le texte échoue au contraste WCAG AA ({ratio}:1, requis : {required}) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini"
   },
   "ErrPartialTextContrastAA_what": {
     "generic": "Le texte échoue au contraste et déborde des limites du conteneur"
   },
   "ErrPartialTextContrastAAA": {
-    "title": "Le contraste du texte échoue %(ratio)s:1 dans le conteneur, plus débordement de texte où le contraste ne peut être testé",
-    "what": "Le texte échoue au contraste WCAG AAA (%(ratio)s:1, requis : %(required)s) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini",
-    "why": "Ce texte présente deux problèmes : (1) Le texte à l'intérieur du conteneur échoue aux exigences de contraste WCAG AAA avec un ratio de %(ratio)s:1 contre l'arrière-plan %(bg)s, et (2) Une partie du texte déborde des limites du conteneur où il n'y a pas d'arrière-plan défini, rendant impossible le calcul du contraste pour la partie débordante par cet outil de test. Les deux problèmes doivent être résolus.",
+    "title": "Le contraste du texte échoue {ratio}:1 dans le conteneur, plus débordement de texte où le contraste ne peut être testé",
+    "what": "Le texte échoue au contraste WCAG AAA ({ratio}:1, requis : {required}) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini",
+    "why": "Ce texte présente deux problèmes : (1) Le texte à l'intérieur du conteneur échoue aux exigences de contraste WCAG AAA avec un ratio de {ratio}:1 contre l'arrière-plan {bg}, et (2) Une partie du texte déborde des limites du conteneur où il n'y a pas d'arrière-plan défini, rendant impossible le calcul du contraste pour la partie débordante par cet outil de test. Les deux problèmes doivent être résolus.",
     "who": "Utilisateurs malvoyants qui ont besoin d'un contraste plus élevé, utilisateurs daltoniens, et toute personne consultant le contenu dans des conditions d'éclairage difficiles. La conformité AAA offre une accessibilité renforcée.",
-    "remediation": "Corrigez les deux problèmes : (1) Augmentez le contraste dans le conteneur de %(ratio)s:1 à au moins %(required)s en ajustant les couleurs de premier plan %(fg)s ou d'arrière-plan %(bg)s, et (2) Assurez-vous que tout le texte reste dans les limites de son conteneur d'arrière-plan en corrigeant le débordement (ajustez la taille du conteneur, la taille de police, ou utilisez overflow: hidden/auto). Pour le texte normal, visez un contraste de 7:1 ; pour le texte large (18pt+), visez 4,5:1.",
-    "what_generic": "Le texte échoue au contraste WCAG AAA (%(ratio)s:1, requis : %(required)s) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini"
+    "remediation": "Corrigez les deux problèmes : (1) Augmentez le contraste dans le conteneur de {ratio}:1 à au moins {required} en ajustant les couleurs de premier plan {fg} ou d'arrière-plan {bg}, et (2) Assurez-vous que tout le texte reste dans les limites de son conteneur d'arrière-plan en corrigeant le débordement (ajustez la taille du conteneur, la taille de police, ou utilisez overflow: hidden/auto). Pour le texte normal, visez un contraste de 7:1 ; pour le texte large (18pt+), visez 4,5:1.",
+    "what_generic": "Le texte échoue au contraste WCAG AAA ({ratio}:1, requis : {required}) dans le conteneur, et du texte supplémentaire s'étend au-delà des limites du conteneur où l'arrière-plan est indéfini"
   },
   "ErrPartialTextContrastAAA_what": {
     "generic": "Le texte échoue au contraste renforcé et déborde des limites du conteneur"
@@ -1947,23 +1947,23 @@
     "what_generic": "Le SVG intégré manque de nom accessible et de gestion appropriée selon le contexte"
   },
   "ErrSkippedHeadingLevel": {
-    "title": "Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h%(skippedFrom)s à h%(skippedTo)s, en omettant %(levelsSkipped)s niveau(x) intermédiaire(s)",
-    "what": "Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h%(skippedFrom)s à h%(skippedTo)s, en omettant %(levelsSkipped)s niveau(x) intermédiaire(s)",
-    "why": "Les niveaux de titres créent une structure hiérarchique de votre contenu, comme des puces imbriquées. Sauter de h%(skippedFrom)s à h%(skippedTo)s brise cette structure logique. C'est comme avoir le chapitre %(skippedFrom)s, puis sauter à la section %(skippedTo)s sans la section intermédiaire. Les utilisateurs de lecteurs d'écran naviguant par titres seront confus quant à la relation entre les sections - le h%(skippedTo)s est-il une sous-section de quelque chose qui manque ? Cette hiérarchie brisée rend difficile la compréhension de l'organisation du contenu et peut amener les utilisateurs à penser que du contenu manque ou qu'ils ont accidentellement sauté quelque chose. Il s'agit d'un échec WCAG 1.3.1 Niveau A.",
+    "title": "Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h{skippedFrom} à h{skippedTo}, en omettant {levelsSkipped} niveau(x) intermédiaire(s)",
+    "what": "Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h{skippedFrom} à h{skippedTo}, en omettant {levelsSkipped} niveau(x) intermédiaire(s)",
+    "why": "Les niveaux de titres créent une structure hiérarchique de votre contenu, comme des puces imbriquées. Sauter de h{skippedFrom} à h{skippedTo} brise cette structure logique. C'est comme avoir le chapitre {skippedFrom}, puis sauter à la section {skippedTo} sans la section intermédiaire. Les utilisateurs de lecteurs d'écran naviguant par titres seront confus quant à la relation entre les sections - le h{skippedTo} est-il une sous-section de quelque chose qui manque ? Cette hiérarchie brisée rend difficile la compréhension de l'organisation du contenu et peut amener les utilisateurs à penser que du contenu manque ou qu'ils ont accidentellement sauté quelque chose. Il s'agit d'un échec WCAG 1.3.1 Niveau A.",
     "who": "Utilisateurs de lecteurs d'écran naviguant par structure de titres qui s'appuient sur les niveaux pour comprendre les relations de contenu, utilisateurs avec des handicaps cognitifs qui ont besoin d'une organisation de contenu logique et prévisible, utilisateurs de technologies d'assistance qui génèrent des plans de document, et développeurs ou auteurs de contenu maintenant la page qui ont besoin de comprendre la structure prévue",
-    "remediation": "Insérer un titre h%(expectedLevel)s entre le h%(skippedFrom)s et le h%(skippedTo)s, ou changer le h%(skippedTo)s en h%(expectedLevel)s pour maintenir l'ordre séquentiel. Après h%(skippedFrom)s, utiliser h%(expectedLevel)s pour le niveau suivant. Ne pas sauter de niveaux lors de la descente dans la hiérarchie. Si vous avez besoin qu'un titre paraisse plus petit visuellement, utilisez CSS pour le styliser plutôt que de choisir un niveau de titre inférieur. Le niveau de titre doit refléter la structure logique du contenu, pas son apparence visuelle.",
-    "what_generic": "Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h%(skippedFrom)s à h%(skippedTo)s, en omettant %(levelsSkipped)s niveau(x) intermédiaire(s)"
+    "remediation": "Insérer un titre h{expectedLevel} entre le h{skippedFrom} et le h{skippedTo}, ou changer le h{skippedTo} en h{expectedLevel} pour maintenir l'ordre séquentiel. Après h{skippedFrom}, utiliser h{expectedLevel} pour le niveau suivant. Ne pas sauter de niveaux lors de la descente dans la hiérarchie. Si vous avez besoin qu'un titre paraisse plus petit visuellement, utilisez CSS pour le styliser plutôt que de choisir un niveau de titre inférieur. Le niveau de titre doit refléter la structure logique du contenu, pas son apparence visuelle.",
+    "what_generic": "Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h{skippedFrom} à h{skippedTo}, en omettant {levelsSkipped} niveau(x) intermédiaire(s)"
   },
   "ErrSkippedHeadingLevel_what": {
     "generic": "Les niveaux de titres ne sont pas dans un ordre séquentiel"
   },
   "ErrSmallText": {
     "title": "Le texte est trop petit - minimum 16px recommandé",
-    "what": "La taille du texte est de %(fontSize)spx, ce qui est inférieur au minimum recommandé de 16px pour une lecture confortable",
+    "what": "La taille du texte est de {fontSize}px, ce qui est inférieur au minimum recommandé de 16px pour une lecture confortable",
     "why": "Le texte petit est difficile à lire, en particulier pour les utilisateurs malvoyants ou sur appareils mobiles.",
     "who": "Utilisateurs malvoyants, utilisateurs âgés, utilisateurs d'appareils mobiles, utilisateurs ayant des difficultés de lecture.",
-    "remediation": "Augmenter la taille de police à minimum 16px pour le texte de corps (14px minimum absolu). S'assurer que le texte peut être agrandi à 200% sans perte de fonctionnalité. Taille actuelle : %(fontSize)spx.",
-    "what_generic": "La taille du texte est de %(fontSize)spx, ce qui est inférieur au minimum recommandé de 16px pour une lecture confortable"
+    "remediation": "Augmenter la taille de police à minimum 16px pour le texte de corps (14px minimum absolu). S'assurer que le texte peut être agrandi à 200% sans perte de fonctionnalité. Taille actuelle : {fontSize}px.",
+    "what_generic": "La taille du texte est de {fontSize}px, ce qui est inférieur au minimum recommandé de 16px pour une lecture confortable"
   },
   "ErrSmallText_what": {
     "generic": "La taille du texte est inférieure au minimum recommandé pour une lecture confortable"
@@ -2009,12 +2009,12 @@
     "what_generic": "Attribut tabindex sur un élément non interactif"
   },
   "ErrTabOrderViolation": {
-    "title": "L'ordre de tabulation diverge : <%(currentElement_tag)s> visuellement à gauche de l'élément précédent mais tabulé après lui",
-    "what": "L'élément <%(currentElement_tag)s> à la position (%(currentElement_position_x)s, %(currentElement_position_y)s) apparaît visuellement à GAUCHE de l'élément précédent <%(previousElement_tag)s> à (%(previousElement_position_x)s, %(previousElement_position_y)s), mais il vient APRÈS lui dans l'ordre de tabulation (arrêt de tabulation #%(currentElement_tabIndex)s vs #%(previousElement_tabIndex)s). Ces éléments sont sur la même ligne (%(verticalDiff)spx de différence verticale), donc l'ordre de tabulation devrait suivre l'ordre de lecture de gauche à droite.",
+    "title": "L'ordre de tabulation diverge : <{currentElement_tag}> visuellement à gauche de l'élément précédent mais tabulé après lui",
+    "what": "L'élément <{currentElement_tag}> à la position ({currentElement_position_x}, {currentElement_position_y}) apparaît visuellement à GAUCHE de l'élément précédent <{previousElement_tag}> à ({previousElement_position_x}, {previousElement_position_y}), mais il vient APRÈS lui dans l'ordre de tabulation (arrêt de tabulation #{currentElement_tabIndex} vs #{previousElement_tabIndex}). Ces éléments sont sur la même ligne ({verticalDiff}px de différence verticale), donc l'ordre de tabulation devrait suivre l'ordre de lecture de gauche à droite.",
     "why": "Lorsque l'ordre de tabulation ne correspond pas à la disposition visuelle, les utilisateurs de clavier vivent une navigation désorientante. Ils s'attendent à tabuler de gauche à droite et de haut en bas en suivant la disposition visuelle, mais se retrouvent plutôt à sauter vers l'arrière ou dans des directions inattendues. Cette charge cognitive rend l'interface beaucoup plus difficile à utiliser et peut amener les utilisateurs à manquer du contenu ou des contrôles importants.",
     "who": "Utilisateurs de clavier naviguant avec la touche Tab, utilisateurs de lecteurs d'écran qui s'appuient sur l'ordre de tabulation pour comprendre la mise en page, utilisateurs avec des déficiences cognitives qui ont besoin de modèles de navigation prévisibles, utilisateurs avec des déficiences motrices utilisant des commutateurs.",
-    "remediation": "Corrigez l'ordre DOM pour qu'il corresponde à la mise en page visuelle. L'ordre source HTML devrait placer <%(currentElement_tag)s> AVANT <%(previousElement_tag)s> dans le document. Utilisez CSS pour le positionnement visuel (flexbox, grid, float, position) plutôt que de vous appuyer sur tabindex pour corriger la navigation. Évitez entièrement les valeurs tabindex positives - elles indiquent que l'ordre DOM ne correspond pas à l'ordre visuel.",
-    "what_generic": "L'élément <%(currentElement_tag)s> à la position (%(currentElement_position_x)s, %(currentElement_position_y)s) apparaît visuellement à GAUCHE de l'élément précédent <%(previousElement_tag)s> à (%(previousElement_position_x)s, %(previousElement_position_y)s), mais il vient APRÈS lui dans l'ordre de tabulation (arrêt de tabulation #%(currentElement_tabIndex)s vs #%(previousElement_tabIndex)s). Ces éléments sont sur la même ligne (%(verticalDiff)spx de différence verticale), donc l'ordre de tabulation devrait suivre l'ordre de lecture de gauche à droite."
+    "remediation": "Corrigez l'ordre DOM pour qu'il corresponde à la mise en page visuelle. L'ordre source HTML devrait placer <{currentElement_tag}> AVANT <{previousElement_tag}> dans le document. Utilisez CSS pour le positionnement visuel (flexbox, grid, float, position) plutôt que de vous appuyer sur tabindex pour corriger la navigation. Évitez entièrement les valeurs tabindex positives - elles indiquent que l'ordre DOM ne correspond pas à l'ordre visuel.",
+    "what_generic": "L'élément <{currentElement_tag}> à la position ({currentElement_position_x}, {currentElement_position_y}) apparaît visuellement à GAUCHE de l'élément précédent <{previousElement_tag}> à ({previousElement_position_x}, {previousElement_position_y}), mais il vient APRÈS lui dans l'ordre de tabulation (arrêt de tabulation #{currentElement_tabIndex} vs #{previousElement_tabIndex}). Ces éléments sont sur la même ligne ({verticalDiff}px de différence verticale), donc l'ordre de tabulation devrait suivre l'ordre de lecture de gauche à droite."
   },
   "ErrTabOrderViolation_what": {
     "generic": "La position de l'élément dans l'ordre de tabulation ne correspond pas à sa position visuelle à l'écran"
@@ -2143,23 +2143,23 @@
     "what_generic": "La couleur du texte n'a pas un rapport de contraste suffisant avec sa couleur d'arrière-plan, ne respectant pas les exigences WCAG : le texte normal nécessite un rapport de 4.5:1, le texte large (18pt+ ou 14pt+ gras) nécessite un rapport de 3:1"
   },
   "ErrTextContrastAA": {
-    "title": "Le texte normal (%(fontSize)spx) échoue au contraste WCAG AA : %(ratio)s:1 (requis : 4,5:1)",
-    "what": "Le texte normal échoue au WCAG AA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)",
-    "why": "Ce texte de taille normale (%(fontSize)spx) avec un ratio de contraste de %(ratio)s:1 ne respecte pas les exigences WCAG Niveau AA. Le texte normal nécessite un ratio de contraste minimum de 4,5:1 pour passer le Niveau AA. La couleur de premier plan (%(fg)s) contre l'arrière-plan (%(bg)s) ne fournit pas assez de distinction pour les utilisateurs avec des déficiences visuelles.",
+    "title": "Le texte normal ({fontSize}px) échoue au contraste WCAG AA : {ratio}:1 (requis : 4,5:1)",
+    "what": "Le texte normal échoue au WCAG AA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})",
+    "why": "Ce texte de taille normale ({fontSize}px) avec un ratio de contraste de {ratio}:1 ne respecte pas les exigences WCAG Niveau AA. Le texte normal nécessite un ratio de contraste minimum de 4,5:1 pour passer le Niveau AA. La couleur de premier plan ({fg}) contre l'arrière-plan ({bg}) ne fournit pas assez de distinction pour les utilisateurs avec des déficiences visuelles.",
     "who": "Utilisateurs malvoyants qui ont besoin d'un contraste plus élevé pour distinguer le texte, utilisateurs daltoniens, utilisateurs âgés subissant des changements de vision liés à l'âge, et utilisateurs consultant le contenu sous un soleil intense ou sur des écrans de faible qualité",
-    "remediation": "Le contraste actuel est de %(ratio)s:1, mais WCAG Niveau AA exige au moins 4,5:1 pour le texte normal (%(fontSize)spx). Pour corriger, assombrissez la couleur de premier plan de %(fg)s ou éclaircissez l'arrière-plan de %(bg)s. Considérez l'utilisation de #595959 ou plus foncé sur fond blanc, ou #FFFFFF sur des arrière-plans plus foncés que #767676.",
-    "what_generic": "Le texte normal échoue au WCAG AA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)"
+    "remediation": "Le contraste actuel est de {ratio}:1, mais WCAG Niveau AA exige au moins 4,5:1 pour le texte normal ({fontSize}px). Pour corriger, assombrissez la couleur de premier plan de {fg} ou éclaircissez l'arrière-plan de {bg}. Considérez l'utilisation de #595959 ou plus foncé sur fond blanc, ou #FFFFFF sur des arrière-plans plus foncés que #767676.",
+    "what_generic": "Le texte normal échoue au WCAG AA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})"
   },
   "ErrTextContrastAA_what": {
     "generic": "Le texte normal échoue aux exigences de contraste WCAG AA"
   },
   "ErrTextContrastAAA": {
-    "title": "Le texte normal (%(fontSize)spx) échoue au contraste WCAG AAA : %(ratio)s:1 (requis : 7:1)",
-    "what": "Le texte normal échoue au WCAG AAA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)",
-    "why": "Ce texte de taille normale (%(fontSize)spx) avec un ratio de contraste de %(ratio)s:1 ne respecte pas les exigences renforcées WCAG Niveau AAA. Le texte normal nécessite un ratio de contraste minimum de 7:1 pour passer le Niveau AAA. La couleur de premier plan (%(fg)s) contre l'arrière-plan (%(bg)s) ne fournit pas une distinction optimale pour une accessibilité maximale.",
+    "title": "Le texte normal ({fontSize}px) échoue au contraste WCAG AAA : {ratio}:1 (requis : 7:1)",
+    "what": "Le texte normal échoue au WCAG AAA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})",
+    "why": "Ce texte de taille normale ({fontSize}px) avec un ratio de contraste de {ratio}:1 ne respecte pas les exigences renforcées WCAG Niveau AAA. Le texte normal nécessite un ratio de contraste minimum de 7:1 pour passer le Niveau AAA. La couleur de premier plan ({fg}) contre l'arrière-plan ({bg}) ne fournit pas une distinction optimale pour une accessibilité maximale.",
     "who": "Utilisateurs avec des déficiences visuelles modérées, incluant ceux malvoyants, daltoniens, ou avec une sensibilité au contraste qui bénéficient d'un contraste renforcé pour une lisibilité optimale",
-    "remediation": "Le contraste actuel est de %(ratio)s:1, mais WCAG Niveau AAA exige au moins 7:1 pour le texte normal (%(fontSize)spx). Pour corriger, utilisez des combinaisons à contraste élevé comme #333333 ou plus foncé sur fond blanc, ou du texte blanc sur des arrière-plans plus foncés que #565656.",
-    "what_generic": "Le texte normal échoue au WCAG AAA avec un ratio de contraste de %(ratio)s:1 (premier plan : %(fg)s, arrière-plan : %(bg)s)"
+    "remediation": "Le contraste actuel est de {ratio}:1, mais WCAG Niveau AAA exige au moins 7:1 pour le texte normal ({fontSize}px). Pour corriger, utilisez des combinaisons à contraste élevé comme #333333 ou plus foncé sur fond blanc, ou du texte blanc sur des arrière-plans plus foncés que #565656.",
+    "what_generic": "Le texte normal échoue au WCAG AAA avec un ratio de contraste de {ratio}:1 (premier plan : {fg}, arrière-plan : {bg})"
   },
   "ErrTextContrastAAA_what": {
     "generic": "Le texte normal échoue aux exigences de contraste WCAG AAA"
@@ -2229,12 +2229,12 @@
     "what_generic": "L'indicateur de focus de l'élément utilise outline avec un outline-offset de 0px (ou aucun outline-offset spécifié, qui par défaut est 0), causant le positionnement du contour directement contre la bordure de l'élément où il peut être difficile à voir ou masqué par le style propre de l'élément"
   },
   "InfoHeadingNearLengthLimit": {
-    "title": "Le titre fait %(length)s caractères, approchant la limite recommandée de %(limit)s",
-    "what": "Le titre fait %(length)s caractères, approchant la limite recommandée de %(limit)s caractères",
-    "why": "Les titres longs (actuellement %(length)s caractères) sont plus difficiles à parcourir et à comprendre rapidement. Bien qu'ils ne dépassent pas encore la limite de %(limit)s caractères, des titres plus courts améliorent la lisibilité et la compréhension.",
+    "title": "Le titre fait {length} caractères, approchant la limite recommandée de {limit}",
+    "what": "Le titre fait {length} caractères, approchant la limite recommandée de {limit} caractères",
+    "why": "Les titres longs (actuellement {length} caractères) sont plus difficiles à parcourir et à comprendre rapidement. Bien qu'ils ne dépassent pas encore la limite de {limit} caractères, des titres plus courts améliorent la lisibilité et la compréhension.",
     "who": "Utilisateurs avec des handicaps cognitifs qui bénéficient de titres concis, utilisateurs parcourant le contenu rapidement, utilisateurs de lecteurs d'écran qui doivent écouter le texte complet du titre.",
-    "remediation": "Envisagez de raccourcir le titre de %(length)s à moins de %(nearLimit)s caractères pour une lisibilité optimale tout en maintenant la clarté. Texte actuel : \\\"%(text)s\\\"",
-    "what_generic": "Le titre fait %(length)s caractères, approchant la limite recommandée de %(limit)s caractères"
+    "remediation": "Envisagez de raccourcir le titre de {length} à moins de {nearLimit} caractères pour une lisibilité optimale tout en maintenant la clarté. Texte actuel : \\\"{text}\\\"",
+    "what_generic": "Le titre fait {length} caractères, approchant la limite recommandée de {limit} caractères"
   },
   "InfoHeadingNearLengthLimit_what": {
     "generic": "Le titre approche la limite de caractères recommandée"
@@ -2248,12 +2248,12 @@
     "what_generic": "La région repère a un nom accessible vide"
   },
   "WarnAmbiguousTabOrder": {
-    "title": "Problème possible d'ordre de tabulation : <%(currentElement_tag)s> peut être positionné avant <%(previousElement_tag)s> visuellement",
-    "what": "L'élément <%(currentElement_tag)s> à la position (%(currentElement_position_x)s, %(currentElement_position_y)s) apparaît à GAUCHE de <%(previousElement_tag)s> à (%(previousElement_position_x)s, %(previousElement_position_y)s), mais vient APRÈS dans l'ordre de tabulation (arrêt de tabulation #%(currentElement_tabIndex)s vs #%(previousElement_tabIndex)s). Cependant, ces éléments ont des positions verticales qui se chevauchent (différence de %(verticalDiff)spx), rendant ambigu s'ils sont sur la même ligne ou sur des lignes différentes.",
+    "title": "Problème possible d'ordre de tabulation : <{currentElement_tag}> peut être positionné avant <{previousElement_tag}> visuellement",
+    "what": "L'élément <{currentElement_tag}> à la position ({currentElement_position_x}, {currentElement_position_y}) apparaît à GAUCHE de <{previousElement_tag}> à ({previousElement_position_x}, {previousElement_position_y}), mais vient APRÈS dans l'ordre de tabulation (arrêt de tabulation #{currentElement_tabIndex} vs #{previousElement_tabIndex}). Cependant, ces éléments ont des positions verticales qui se chevauchent (différence de {verticalDiff}px), rendant ambigu s'ils sont sur la même ligne ou sur des lignes différentes.",
     "why": "Si ces éléments sont visuellement sur la même ligne, l'ordre de tabulation devrait suivre l'ordre de lecture de gauche à droite. Cependant, avec un chevauchement vertical, ils pourraient être sur des lignes différentes (par ex., un dans un en-tête, un dans le contenu principal), auquel cas l'ordre de tabulation actuel pourrait être correct. Ceci nécessite une vérification manuelle pour déterminer si c'est réellement un problème.",
     "who": "Utilisateurs de clavier qui s'attendent à des modèles de navigation prévisibles de gauche à droite, de haut en bas.",
     "remediation": "Vérifiez manuellement la disposition visuelle : 1) Si ces éléments apparaissent sur la même ligne horizontale, corrigez l'ordre du DOM pour correspondre à l'ordre visuel de gauche à droite. 2) S'ils sont sur des lignes clairement différentes (par ex., navigation d'en-tête vs contenu principal), l'ordre actuel peut être correct et vous pouvez ignorer cet avertissement. Considérez ajouter plus d'espacement vertical entre les lignes pour éviter un chevauchement ambigu.",
-    "what_generic": "L'élément <%(currentElement_tag)s> à la position (%(currentElement_position_x)s, %(currentElement_position_y)s) apparaît à GAUCHE de <%(previousElement_tag)s> à (%(previousElement_position_x)s, %(previousElement_position_y)s), mais vient APRÈS dans l'ordre de tabulation (arrêt de tabulation #%(currentElement_tabIndex)s vs #%(previousElement_tabIndex)s). Cependant, ces éléments ont des positions verticales qui se chevauchent (différence de %(verticalDiff)spx), rendant ambigu s'ils sont sur la même ligne ou sur des lignes différentes."
+    "what_generic": "L'élément <{currentElement_tag}> à la position ({currentElement_position_x}, {currentElement_position_y}) apparaît à GAUCHE de <{previousElement_tag}> à ({previousElement_position_x}, {previousElement_position_y}), mais vient APRÈS dans l'ordre de tabulation (arrêt de tabulation #{currentElement_tabIndex} vs #{previousElement_tabIndex}). Cependant, ces éléments ont des positions verticales qui se chevauchent (différence de {verticalDiff}px), rendant ambigu s'ils sont sur la même ligne ou sur des lignes différentes."
   },
   "WarnAmbiguousTabOrder_what": {
     "generic": "La position de l'élément dans l'ordre de tabulation peut ne pas correspondre à sa position visuelle"
@@ -2436,11 +2436,11 @@
   },
   "WarnCustomBulletStyling": {
     "title": "La liste utilise un style de puce personnalisé qui peut ne pas être accessible",
-    "what": "L'élément de liste utilise %(customType)s pour les puces au lieu du list-style-type standard. Détails : %(customDetails)s",
+    "what": "L'élément de liste utilise {customType} pour les puces au lieu du list-style-type standard. Détails : {customDetails}",
     "why": "Les puces personnalisées utilisant des pseudo-éléments CSS ::before, des images d'arrière-plan ou des images intégrées peuvent ne pas être annoncées correctement par les lecteurs d'écran. Bien que la structure de liste soit préservée, les puces visuelles personnalisées pourraient ne pas fournir les mêmes indices sémantiques ou être disponibles pour les technologies d'assistance. Cela peut réduire la clarté de la navigation de liste pour les utilisateurs de lecteurs d'écran.",
     "who": "Utilisateurs de lecteurs d'écran qui peuvent manquer les indices visuels des puces, utilisateurs avec des feuilles de style personnalisées qui remplacent les styles de l'auteur, utilisateurs s'appuyant sur la sémantique de liste pour la navigation.",
     "remediation": "Envisagez d'utiliser des valeurs standard de list-style-type (disc, circle, square, decimal, etc.) qui sont mieux prises en charge par les technologies d'assistance. Si des puces personnalisées sont nécessaires, utilisez le pseudo-élément CSS ::marker au lieu de ::before, car ::marker est spécifiquement conçu à cet effet et offre un meilleur support d'accessibilité. Assurez-vous que la propriété list-style-type n'est pas définie sur 'none'. Testez avec des lecteurs d'écran pour vérifier que la navigation dans la liste fonctionne correctement.",
-    "what_generic": "L'élément de liste utilise %(customType)s pour les puces au lieu du list-style-type standard. Détails : %(customDetails)s"
+    "what_generic": "L'élément de liste utilise {customType} pour les puces au lieu du list-style-type standard. Détails : {customDetails}"
   },
   "WarnCustomBulletStyling_what": {
     "generic": "L'élément de liste utilise un style personnalisé pour les puces au lieu du list-style-type standard"
@@ -2495,22 +2495,22 @@
   },
   "WarnFieldLabelledUsingAriaLabel": {
     "title": "Le champ est étiqueté en utilisant aria-label, ce qui est valide mais peut avoir des considérations d'utilisabilité",
-    "what": "Le champ est étiqueté en utilisant aria-label=\\\"%(ariaLabel)s\\\", ce qui est valide mais peut avoir des considérations d'utilisabilité",
+    "what": "Le champ est étiqueté en utilisant aria-label=\\\"{ariaLabel}\\\", ce qui est valide mais peut avoir des considérations d'utilisabilité",
     "why": "Bien qu'aria-label soit une façon valide d'étiqueter les champs de formulaire, il a des limitations : l'étiquette n'est pas visible à l'écran ce qui peut confondre les utilisateurs voyants, les utilisateurs de contrôle vocal ne peuvent pas référencer le champ par le texte d'étiquette visible, l'étiquette ne sera pas automatiquement traduite par les outils de traduction du navigateur, et les utilisateurs ayant des troubles cognitifs bénéficient d'étiquettes visibles comme aide-mémoire.",
     "who": "Utilisateurs voyants qui ne peuvent pas voir le texte aria-label, utilisateurs de contrôle vocal qui ont besoin de texte visible pour référencer les champs, utilisateurs s'appuyant sur la traduction du navigateur, utilisateurs ayant des troubles cognitifs qui bénéficient d'étiquettes visibles persistantes",
     "remediation": "Considérez si un élément <label> visible servirait mieux tous les utilisateurs. Si l'espace le permet, utilisez un élément <label> visible. Si aria-label doit être utilisé, assurez-vous qu'il soit clair et descriptif. Considérez l'ajout de texte d'aide visible ou de texte d'espace réservé pour fournir un contexte visuel.",
-    "what_generic": "Le champ est étiqueté en utilisant aria-label=\\\"%(ariaLabel)s\\\", ce qui est valide mais peut avoir des considérations d'utilisabilité"
+    "what_generic": "Le champ est étiqueté en utilisant aria-label=\\\"{ariaLabel}\\\", ce qui est valide mais peut avoir des considérations d'utilisabilité"
   },
   "WarnFieldLabelledUsingAriaLabel_what": {
     "generic": "Le champ est étiqueté en utilisant aria-label, ce qui est valide mais peut avoir des considérations d'utilisabilité"
   },
   "WarnFontNotInRecommenedListForA11y": {
-    "title": "La police '%(fontName)s' ne figure pas dans la liste recommandée pour l'accessibilité - envisagez d'utiliser une alternative plus accessible",
-    "what": "La police '%(fontName)s' est utilisée sur cette page mais n'est pas incluse dans la liste recommandée de polices accessibles qui sont prouvées être hautement lisibles pour les utilisateurs avec dyslexie, malvoyants, ou ayant des troubles de lecture",
+    "title": "La police '{fontName}' ne figure pas dans la liste recommandée pour l'accessibilité - envisagez d'utiliser une alternative plus accessible",
+    "what": "La police '{fontName}' est utilisée sur cette page mais n'est pas incluse dans la liste recommandée de polices accessibles qui sont prouvées être hautement lisibles pour les utilisateurs avec dyslexie, malvoyants, ou ayant des troubles de lecture",
     "why": "Bien que de nombreuses polices soient techniquement lisibles, la recherche et les tests utilisateurs ont identifié des polices spécifiques qui fonctionnent significativement mieux pour les utilisateurs ayant des difficultés de lecture. Les polices non recommandées peuvent avoir des caractéristiques qui les rendent plus difficiles à lire : distinction insuffisante entre caractères similaires (comme 'I', 'l', '1' ou 'O', '0'), espacement des lettres incohérent, éléments décoratifs qui réduisent la clarté, largeurs condensées qui entassent les caractères, ou choix stylistiques qui augmentent la charge cognitive pour les lecteurs dyslexiques. Les polices recommandées comme Arial, Verdana, Tahoma, Calibri, Helvetica, Open Sans, et les polices spécialisées comme OpenDyslexic ont été spécifiquement évaluées pour des caractéristiques comme la différenciation claire des caractères, l'espacement généreux, l'épaisseur de trait cohérente, et l'absence d'embellissements distrayants. L'utilisation de polices non recommandées ne garantit pas de problèmes d'accessibilité, mais augmente le risque que certains utilisateurs éprouvent des difficultés inutiles.",
     "who": "Utilisateurs avec dyslexie (affectant 10-15% de la population) qui ont besoin de distinction claire des caractères et d'espacement cohérent, utilisateurs malvoyants qui ont besoin de haute lisibilité et de formes de lettres claires, utilisateurs avec troubles de lecture qui bénéficient de polices simples et sans ornements, utilisateurs âgés avec changements de vision liés à l'âge qui ont besoin de clarté maximale, utilisateurs avec handicaps cognitifs qui bénéficient de polices familières et faciles à traiter, utilisateurs lisant dans leur langue non native qui ont besoin de clarté maximale des caractères, et utilisateurs avec difficultés d'attention qui sont distraits par les caractéristiques stylistiques des polices",
-    "remediation": "Envisagez de remplacer '%(fontName)s' par une police de la liste d'accessibilité recommandée : Arial, Verdana, Tahoma, Calibri, Helvetica, Open Sans, Roboto, Lato, Noto Sans, ou Source Sans Pro pour le texte de corps. Pour les utilisateurs dyslexiques spécifiquement, OpenDyslexic, Comic Sans, ou Century Gothic sont souvent préférées. Les polices recommandées partagent des caractéristiques clés : distinction claire entre caractères similaires, espacement généreux, largeur moyenne à large, design sans-serif simple, et épaisseur de trait cohérente. Si vous devez utiliser '%(fontName)s' pour des raisons de marque ou de design, assurez-vous qu'elle répond à ces critères : hauteur de ligne d'au moins 1,5, espacement des lettres (tracking) d'au moins 0,12em, distinction claire entre I, l, 1 et entre O, 0, hauteur d'x suffisante pour la lisibilité aux petites tailles, et aucune caractéristique décorative ou script pour le texte de corps. Réservez les polices décoratives aux titres uniquement, jamais pour les paragraphes ou étiquettes de formulaire. Testez votre choix de police avec de vrais utilisateurs dyslexiques ou malvoyants quand possible. Fournissez un sélecteur de police permettant aux utilisateurs de choisir parmi des alternatives accessibles si faisable.",
-    "what_generic": "La police '%(fontName)s' est utilisée sur cette page mais n'est pas incluse dans la liste recommandée de polices accessibles qui sont prouvées être hautement lisibles pour les utilisateurs avec dyslexie, malvoyants, ou ayant des troubles de lecture"
+    "remediation": "Envisagez de remplacer '{fontName}' par une police de la liste d'accessibilité recommandée : Arial, Verdana, Tahoma, Calibri, Helvetica, Open Sans, Roboto, Lato, Noto Sans, ou Source Sans Pro pour le texte de corps. Pour les utilisateurs dyslexiques spécifiquement, OpenDyslexic, Comic Sans, ou Century Gothic sont souvent préférées. Les polices recommandées partagent des caractéristiques clés : distinction claire entre caractères similaires, espacement généreux, largeur moyenne à large, design sans-serif simple, et épaisseur de trait cohérente. Si vous devez utiliser '{fontName}' pour des raisons de marque ou de design, assurez-vous qu'elle répond à ces critères : hauteur de ligne d'au moins 1,5, espacement des lettres (tracking) d'au moins 0,12em, distinction claire entre I, l, 1 et entre O, 0, hauteur d'x suffisante pour la lisibilité aux petites tailles, et aucune caractéristique décorative ou script pour le texte de corps. Réservez les polices décoratives aux titres uniquement, jamais pour les paragraphes ou étiquettes de formulaire. Testez votre choix de police avec de vrais utilisateurs dyslexiques ou malvoyants quand possible. Fournissez un sélecteur de police permettant aux utilisateurs de choisir parmi des alternatives accessibles si faisable.",
+    "what_generic": "La police '{fontName}' est utilisée sur cette page mais n'est pas incluse dans la liste recommandée de polices accessibles qui sont prouvées être hautement lisibles pour les utilisateurs avec dyslexie, malvoyants, ou ayant des troubles de lecture"
   },
   "WarnFontNotInRecommenedListForA11y_what": {
     "generic": "La police n'est pas incluse dans la liste recommandée de polices accessibles"
@@ -2535,12 +2535,12 @@
     "what_generic": "L'élément a un nom accessible générique qui ne décrit pas son objectif"
   },
   "WarnGenericButtonText": {
-    "title": "Le bouton a un texte générique « %(text)s »",
-    "what": "Le bouton a un texte générique « %(text)s »",
-    "why": "Le texte du bouton « %(text)s » ne décrit pas ce que fait le bouton. Lorsque les utilisateurs de lecteurs d'écran naviguent par boutons ou entendent des boutons hors contexte, « %(text)s » ne fournit aucune information sur l'objectif ou l'action du bouton.",
-    "who": "Utilisateurs de lecteurs d'écran naviguant par boutons qui entendent « %(text)s » sans contexte, utilisateurs avec des handicaps cognitifs qui ont besoin de libellés d'action clairs",
-    "remediation": "Changez « %(text)s » pour décrire l'action spécifique, comme « Soumettre l'inscription », « Enregistrer les modifications », ou « Rechercher des produits » au lieu de simplement « %(text)s »",
-    "what_generic": "Le bouton a un texte générique « %(text)s »"
+    "title": "Le bouton a un texte générique « {text} »",
+    "what": "Le bouton a un texte générique « {text} »",
+    "why": "Le texte du bouton « {text} » ne décrit pas ce que fait le bouton. Lorsque les utilisateurs de lecteurs d'écran naviguent par boutons ou entendent des boutons hors contexte, « {text} » ne fournit aucune information sur l'objectif ou l'action du bouton.",
+    "who": "Utilisateurs de lecteurs d'écran naviguant par boutons qui entendent « {text} » sans contexte, utilisateurs avec des handicaps cognitifs qui ont besoin de libellés d'action clairs",
+    "remediation": "Changez « {text} » pour décrire l'action spécifique, comme « Soumettre l'inscription », « Enregistrer les modifications », ou « Rechercher des produits » au lieu de simplement « {text} »",
+    "what_generic": "Le bouton a un texte générique « {text} »"
   },
   "WarnGenericDocumentLinkText": {
     "title": "Le lien de document utilise un texte générique comme \\\"PDF\\\" sans décrire le contenu",
@@ -2591,12 +2591,12 @@
     "what_generic": "Le titre est masqué avec display:none"
   },
   "WarnHeadingOver60CharsLong": {
-    "title": "Le texte du titre fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères",
-    "what": "Le texte du titre fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères",
-    "why": "Ce titre contient %(length)s caractères, ce qui dépasse la recommandation de %(limit)s caractères. Les titres longs sont plus difficiles à parcourir rapidement, plus difficiles à comprendre d'un coup d'œil et peuvent submerger les utilisateurs. Les utilisateurs de lecteurs d'écran qui entendent tout le texte du titre peuvent avoir du mal à saisir le point principal. Les titres longs causent également des problèmes de mise en page sur les appareils mobiles et dans les menus de navigation.",
+    "title": "Le texte du titre fait {length} caractères, dépassant la limite recommandée de {limit} caractères",
+    "what": "Le texte du titre fait {length} caractères, dépassant la limite recommandée de {limit} caractères",
+    "why": "Ce titre contient {length} caractères, ce qui dépasse la recommandation de {limit} caractères. Les titres longs sont plus difficiles à parcourir rapidement, plus difficiles à comprendre d'un coup d'œil et peuvent submerger les utilisateurs. Les utilisateurs de lecteurs d'écran qui entendent tout le texte du titre peuvent avoir du mal à saisir le point principal. Les titres longs causent également des problèmes de mise en page sur les appareils mobiles et dans les menus de navigation.",
     "who": "Utilisateurs avec des handicaps cognitifs qui bénéficient de titres concis et clairs, utilisateurs de lecteurs d'écran qui doivent écouter tout le titre, utilisateurs parcourant rapidement la page pour trouver des informations, et utilisateurs mobiles avec un espace d'écran limité",
-    "remediation": "Raccourcissez le titre de %(length)s à moins de %(limit)s caractères tout en préservant son sens. Texte actuel : \\\"%(text)s\\\" - Considérez diviser en un titre plus court avec du texte explicatif en dessous, ou concentrez-vous sur le message clé. Utilisez un langage descriptif mais concis.",
-    "what_generic": "Le texte du titre fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères"
+    "remediation": "Raccourcissez le titre de {length} à moins de {limit} caractères tout en préservant son sens. Texte actuel : \\\"{text}\\\" - Considérez diviser en un titre plus court avec du texte explicatif en dessous, ou concentrez-vous sur le message clé. Utilisez un langage descriptif mais concis.",
+    "what_generic": "Le texte du titre fait {length} caractères, dépassant la limite recommandée de {limit} caractères"
   },
   "WarnHeadingOver60CharsLong_what": {
     "generic": "Le texte du titre dépasse la limite de caractères recommandée"
@@ -2611,11 +2611,11 @@
   },
   "WarnIconFontBulletsInList": {
     "title": "La liste utilise des éléments de police d'icônes comme puces avec list-style: none",
-    "what": "L'élément de liste utilise des éléments de police d'icônes (%(iconClasses)s) avec list-style: none au lieu de la propriété CSS list-style-type",
+    "what": "L'élément de liste utilise des éléments de police d'icônes ({iconClasses}) avec list-style: none au lieu de la propriété CSS list-style-type",
     "why": "Bien que la structure sémantique de liste soit correcte (utilisant les éléments <ul>/<ol> et <li> appropriés), utiliser des éléments de police d'icônes comme puces visuelles et désactiver le style de liste natif avec list-style: none est considéré comme une mauvaise pratique. Cette approche rend le code plus difficile à maintenir et crée une complexité inutile. La propriété CSS list-style-type fournit un moyen plus propre et plus maintenable de personnaliser les puces de liste.",
     "who": "Développeurs maintenant la base de code, utilisateurs sur connexions lentes qui peuvent voir du contenu non stylé avant le chargement des polices d'icônes.",
     "remediation": "Supprimez les éléments de police d'icônes (par ex., <i class=\\\"fa-...\\\"></i>) des éléments de liste et utilisez plutôt la propriété CSS list-style-type ou les pseudo-éléments ::before avec du contenu CSS pour styliser les puces. Par exemple : li::before {{ content: '\\\\2022'; color: #your-color; }} ou utilisez list-style-type avec des images personnalisées.",
-    "what_generic": "L'élément de liste utilise des éléments de police d'icônes (%(iconClasses)s) avec list-style: none au lieu de la propriété CSS list-style-type"
+    "what_generic": "L'élément de liste utilise des éléments de police d'icônes ({iconClasses}) avec list-style: none au lieu de la propriété CSS list-style-type"
   },
   "WarnIconFontBulletsInList_what": {
     "generic": "L'élément de liste utilise des éléments de police d'icônes au lieu de la propriété CSS list-style-type"
@@ -2629,11 +2629,11 @@
     "what_generic": "L'iframe a un attribut title mais il est générique ou peu descriptif (par exemple, \\\"iframe\\\", \\\"frame\\\", \\\"contenu intégré\\\")"
   },
   "WarnInfiniteAnimationSpinner": {
-    "title": "L'animation de chargement '%(animationName)s' s'exécute indéfiniment sans contrôles",
-    "what": "L'animation de chargement '%(animationName)s' s'exécute indéfiniment sans contrôles et nécessite une inspection manuelle pour assurer l'accessibilité aux lecteurs d'écran",
+    "title": "L'animation de chargement '{animationName}' s'exécute indéfiniment sans contrôles",
+    "what": "L'animation de chargement '{animationName}' s'exécute indéfiniment sans contrôles et nécessite une inspection manuelle pour assurer l'accessibilité aux lecteurs d'écran",
     "why": "Bien que les indicateurs de chargement soient courants et souvent acceptables, les animations infinies sans contrôles peuvent encore être problématiques si elles restent visibles pendant des périodes prolongées. Les indicateurs de chargement devraient idéalement être masqués ou arrêtés une fois le chargement terminé. De plus, les indicateurs doivent être perceptibles par les utilisateurs de lecteurs d'écran grâce à des attributs ARIA appropriés. Cela nécessite une inspection manuelle pour vérifier que l'indicateur a : 1) role=\\\"status\\\" ou role=\\\"alert\\\" sur un élément conteneur, 2) du texte visuellement masqué (par ex., « Chargement... ») pour les utilisateurs de lecteurs d'écran, et 3) des mises à jour dynamiques lorsque le chargement se termine. Sans ces attributs, les utilisateurs de lecteurs d'écran ne sauront pas que le contenu se charge, créant une expérience confuse et inaccessible.",
     "who": "Utilisateurs avec des troubles vestibulaires, utilisateurs avec TDAH, utilisateurs avec épilepsie photosensible, utilisateurs avec des déficiences cognitives, utilisateurs de lecteurs d'écran qui ont besoin d'annonces sonores de chargement.",
-    "remediation": "**1. Contrôle visuel :** Assurez-vous que l'indicateur de chargement est masqué (display: none ou visibility: hidden) lorsque le chargement est terminé, ou fournissez des contrôles de pause/arrêt. Considérez respecter les paramètres prefers-reduced-motion pour désactiver complètement les animations pour les utilisateurs qui préfèrent un mouvement réduit.\\n\\n**2. Accessibilité des lecteurs d'écran (inspection manuelle requise) :** Vérifiez que l'indicateur de chargement inclut les attributs ARIA appropriés :\\n\\n**Structure HTML :**\\n```html\\n<div class=\\\"spinner-container\\\" role=\\\"status\\\">\\n  <div class=\\\"spinner\\\"></div>\\n  <span class=\\\"visually-hidden\\\">Chargement...</span>\\n</div>\\n```\\n\\n**Attributs ARIA requis :**\\n- `role=\\\"status\\\"` sur le conteneur pour indiquer une région dynamique fournissant des informations de statut\\n- Texte visuellement masqué à l'intérieur du conteneur (par ex., \\\"Chargement...\\\") utilisant une classe comme `.visually-hidden` ou `.sr-only`\\n\\n**CSS pour le texte visuellement masqué :**\\n```css\\n.visually-hidden {\\n  position: absolute;\\n  width: 1px;\\n  height: 1px;\\n  padding: 0;\\n  margin: -1px;\\n  overflow: hidden;\\n  clip: rect(0, 0, 0, 0);\\n  white-space: nowrap;\\n  border-width: 0;\\n}\\n```\\n\\n**Mises à jour dynamiques (optionnel) :** Lorsque l'indicateur de chargement se termine, mettez à jour le texte visuellement masqué vers \\\"Contenu chargé.\\\" en utilisant JavaScript pour informer les utilisateurs de lecteurs d'écran que le chargement est terminé.\\n\\nCSS d'animation actuel :\\n%(animationCSS)s",
+    "remediation": "**1. Contrôle visuel :** Assurez-vous que l'indicateur de chargement est masqué (display: none ou visibility: hidden) lorsque le chargement est terminé, ou fournissez des contrôles de pause/arrêt. Considérez respecter les paramètres prefers-reduced-motion pour désactiver complètement les animations pour les utilisateurs qui préfèrent un mouvement réduit.\\n\\n**2. Accessibilité des lecteurs d'écran (inspection manuelle requise) :** Vérifiez que l'indicateur de chargement inclut les attributs ARIA appropriés :\\n\\n**Structure HTML :**\\n```html\\n<div class=\\\"spinner-container\\\" role=\\\"status\\\">\\n  <div class=\\\"spinner\\\"></div>\\n  <span class=\\\"visually-hidden\\\">Chargement...</span>\\n</div>\\n```\\n\\n**Attributs ARIA requis :**\\n- `role=\\\"status\\\"` sur le conteneur pour indiquer une région dynamique fournissant des informations de statut\\n- Texte visuellement masqué à l'intérieur du conteneur (par ex., \\\"Chargement...\\\") utilisant une classe comme `.visually-hidden` ou `.sr-only`\\n\\n**CSS pour le texte visuellement masqué :**\\n```css\\n.visually-hidden {\\n  position: absolute;\\n  width: 1px;\\n  height: 1px;\\n  padding: 0;\\n  margin: -1px;\\n  overflow: hidden;\\n  clip: rect(0, 0, 0, 0);\\n  white-space: nowrap;\\n  border-width: 0;\\n}\\n```\\n\\n**Mises à jour dynamiques (optionnel) :** Lorsque l'indicateur de chargement se termine, mettez à jour le texte visuellement masqué vers \\\"Contenu chargé.\\\" en utilisant JavaScript pour informer les utilisateurs de lecteurs d'écran que le chargement est terminé.\\n\\nCSS d'animation actuel :\\n{animationCSS}",
     "what_generic": "L'animation de chargement s'exécute indéfiniment sans contrôles"
   },
   "WarnInfiniteAnimationSpinner_what": {
@@ -2673,11 +2673,11 @@
   },
   "WarnInvalidLangChange": {
     "title": "Code de langue invalide ou non reconnu (obsolète - utiliser ErrInvalidLangChange)",
-    "what": "L'élément a lang=\\\"%(found)s\\\" qui n'est pas un code de langue ISO 639 valide",
+    "what": "L'élément a lang=\\\"{found}\\\" qui n'est pas un code de langue ISO 639 valide",
     "why": "Les codes de langue invalides sur les sections de contenu empêchent les lecteurs d'écran de changer correctement de processeur de langue. Cela peut causer que le contenu en langues étrangères soit prononcé en utilisant les mauvaises règles de langue, le rendant incompréhensible. Par exemple, un texte français pourrait être lu avec les règles de prononciation anglaises. Les utilisateurs s'attendent à ce que les changements de langue soient gérés en douceur, et les codes invalides brisent cette fonctionnalité.",
     "who": "Utilisateurs multilingues de lecteurs d'écran qui ont besoin d'un changement de langue approprié, utilisateurs lisant du contenu en plusieurs langues, utilisateurs avec des troubles de la lecture utilisant des outils d'assistance, et utilisateurs comptant sur une prononciation correcte pour la compréhension",
-    "remediation": "Remplacez lang=\\\"%(found)s\\\" par un code de langue ISO 639 valide. Les formats valides sont des codes à deux lettres (\\\"en\\\", \\\"fr\\\", \\\"es\\\") ou des codes à deux lettres avec des sous-étiquettes de région (\\\"en-US\\\", \\\"fr-CA\\\", \\\"es-MX\\\"). Corrections courantes : \\\"fre\\\" → \\\"fr\\\", \\\"French\\\" → \\\"fr\\\", \\\"en-us\\\" → \\\"en-US\\\", \\\"EN-CA\\\" → \\\"en-CA\\\". Testez avec des lecteurs d'écran pour vous assurer que les changements de langue sont annoncés et prononcés correctement.",
-    "what_generic": "L'élément a lang=\\\"%(found)s\\\" qui n'est pas un code de langue ISO 639 valide"
+    "remediation": "Remplacez lang=\\\"{found}\\\" par un code de langue ISO 639 valide. Les formats valides sont des codes à deux lettres (\\\"en\\\", \\\"fr\\\", \\\"es\\\") ou des codes à deux lettres avec des sous-étiquettes de région (\\\"en-US\\\", \\\"fr-CA\\\", \\\"es-MX\\\"). Corrections courantes : \\\"fre\\\" → \\\"fr\\\", \\\"French\\\" → \\\"fr\\\", \\\"en-us\\\" → \\\"en-US\\\", \\\"EN-CA\\\" → \\\"en-CA\\\". Testez avec des lecteurs d'écran pour vous assurer que les changements de langue sont annoncés et prononcés correctement.",
+    "what_generic": "L'élément a lang=\\\"{found}\\\" qui n'est pas un code de langue ISO 639 valide"
   },
   "WarnInvalidLangChange_what": {
     "generic": "L'élément a un code de langue invalide qui n'est pas un code de langue ISO 639 valide"
@@ -2739,12 +2739,12 @@
     "what_generic": "L'indicateur de focus du lien utilise une couleur avec canal alpha semi-transparent (opacité inférieure à 0.5 en rgba() ou hsla()), rendant la couleur finale rendue imprévisible et dépendante de la pile de couleurs d'arrière-plan sous le lien"
   },
   "WarnLongAnimation": {
-    "title": "La durée d'animation (%(duration)s) dépasse 5 secondes",
-    "what": "La durée d'animation (%(duration)s) dépasse 5 secondes",
+    "title": "La durée d'animation ({duration}) dépasse 5 secondes",
+    "what": "La durée d'animation ({duration}) dépasse 5 secondes",
     "why": "Les animations longues peuvent être distrayantes et peuvent nécessiter des contrôles utilisateur. Les durées d'animation étendues rendent plus difficile pour les utilisateurs de se concentrer sur le contenu et peuvent être accablantes pour les utilisateurs avec des troubles cognitifs.",
     "who": "Utilisateurs avec des troubles de l'attention (TDAH), utilisateurs avec des troubles cognitifs, utilisateurs avec des troubles vestibulaires.",
-    "remediation": "Raccourcissez animation-duration à 5 secondes ou moins, ou fournissez des contrôles pause/arrêt. Considérez respecter la requête média prefers-reduced-motion. CSS actuel :\\n%(animationCSS)s",
-    "what_generic": "La durée d'animation (%(duration)s) dépasse 5 secondes"
+    "remediation": "Raccourcissez animation-duration à 5 secondes ou moins, ou fournissez des contrôles pause/arrêt. Considérez respecter la requête média prefers-reduced-motion. CSS actuel :\\n{animationCSS}",
+    "what_generic": "La durée d'animation ({duration}) dépasse 5 secondes"
   },
   "WarnLongAnimation_what": {
     "generic": "La durée d'animation dépasse la limite de temps recommandée"
@@ -2878,12 +2878,12 @@
     "what_generic": "Plusieurs régions repères mais pas toutes étiquetées"
   },
   "WarnMultipleTitleElements": {
-    "title": "%(count)s éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible",
-    "what": "%(count)s éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible",
-    "why": "Avoir %(count)s éléments title fait que les navigateurs choisissent de manière imprévisible entre eux, créant une identification de page incohérente. Différents navigateurs et technologies d'assistance peuvent choisir différents titres parmi les %(count)s disponibles, créant une expérience incohérente. Le référencement est négativement affecté car les moteurs de recherche peuvent indexer le mauvais titre.",
+    "title": "{count} éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible",
+    "what": "{count} éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible",
+    "why": "Avoir {count} éléments title fait que les navigateurs choisissent de manière imprévisible entre eux, créant une identification de page incohérente. Différents navigateurs et technologies d'assistance peuvent choisir différents titres parmi les {count} disponibles, créant une expérience incohérente. Le référencement est négativement affecté car les moteurs de recherche peuvent indexer le mauvais titre.",
     "who": "Tous les utilisateurs voyant des titres incohérents dans les onglets du navigateur, utilisateurs de lecteurs d'écran qui peuvent entendre des titres différents de ce qui est affiché visuellement, utilisateurs mettant en signet des pages avec des titres incorrects",
     "remediation": "Supprimez {count-1} éléments <title> en double, en gardant seulement un dans l'en-tête du document. Vérifiez les scripts qui pourraient ajouter des titres dynamiquement. Assurez-vous que votre CMS ou framework ne crée pas de titres en double.",
-    "what_generic": "%(count)s éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible"
+    "what_generic": "{count} éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible"
   },
   "WarnMultipleTitleElements_what": {
     "generic": "Plusieurs éléments title trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible"
@@ -3009,23 +3009,23 @@
     "what_generic": "La page ne contient aucune région repère de navigation pour identifier les zones de navigation"
   },
   "WarnPageTitleTooLong": {
-    "title": "Le titre de la page fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères",
-    "what": "Le titre de la page fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères",
-    "why": "Le titre \\\"%(found)s\\\" avec %(length)s caractères sera tronqué dans les onglets du navigateur (typiquement autour de 30 caractères) et les résultats des moteurs de recherche (typiquement 50-60 caractères), perdant des informations importantes. L'information la plus importante pourrait être à la fin et ne jamais être vue. Les utilisateurs de lecteurs d'écran doivent écouter des titres longs de manière répétée.",
+    "title": "Le titre de la page fait {length} caractères, dépassant la limite recommandée de {limit} caractères",
+    "what": "Le titre de la page fait {length} caractères, dépassant la limite recommandée de {limit} caractères",
+    "why": "Le titre \\\"{found}\\\" avec {length} caractères sera tronqué dans les onglets du navigateur (typiquement autour de 30 caractères) et les résultats des moteurs de recherche (typiquement 50-60 caractères), perdant des informations importantes. L'information la plus importante pourrait être à la fin et ne jamais être vue. Les utilisateurs de lecteurs d'écran doivent écouter des titres longs de manière répétée.",
     "who": "Utilisateurs avec plusieurs onglets ouverts qui voient des titres tronqués, utilisateurs recherchant du contenu qui ne peuvent pas voir les titres complets dans les résultats, utilisateurs de lecteurs d'écran qui doivent écouter des titres longs de manière répétée, utilisateurs mobiles avec encore moins d'espace pour l'affichage du titre",
-    "remediation": "Raccourcissez le titre de %(length)s à moins de %(limit)s caractères. Placez l'information la plus importante et unique en premier. Supprimez les mots inutiles comme \\\"Bienvenue sur\\\" ou \\\"Cette page contient\\\". Testez comment les titres apparaissent dans les onglets du navigateur et les résultats de recherche pour vous assurer que l'information clé est visible.",
-    "what_generic": "Le titre de la page fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères"
+    "remediation": "Raccourcissez le titre de {length} à moins de {limit} caractères. Placez l'information la plus importante et unique en premier. Supprimez les mots inutiles comme \\\"Bienvenue sur\\\" ou \\\"Cette page contient\\\". Testez comment les titres apparaissent dans les onglets du navigateur et les résultats de recherche pour vous assurer que l'information clé est visible.",
+    "what_generic": "Le titre de la page fait {length} caractères, dépassant la limite recommandée de {limit} caractères"
   },
   "WarnPageTitleTooLong_what": {
     "generic": "Le titre de la page dépasse la limite de caractères recommandée"
   },
   "WarnPageTitleTooShort": {
-    "title": "Le titre de page \\\"%(found)s\\\" ne fait que %(length)s caractères, potentiellement pas assez descriptif",
-    "what": "Le titre de page \\\"%(found)s\\\" ne fait que %(length)s caractères, potentiellement pas assez descriptif",
-    "why": "Le titre \\\"%(found)s\\\" avec seulement %(length)s caractères ne fournit pas suffisamment de contexte, surtout quand les utilisateurs ont plusieurs onglets ouverts ou naviguent dans l'historique. Les utilisateurs ne peuvent pas distinguer entre différents sites avec les mêmes titres génériques. Les utilisateurs de lecteurs d'écran qui entendent les titres de page annoncés ont besoin d'informations plus descriptives pour comprendre où ils se trouvent.",
+    "title": "Le titre de page \\\"{found}\\\" ne fait que {length} caractères, potentiellement pas assez descriptif",
+    "what": "Le titre de page \\\"{found}\\\" ne fait que {length} caractères, potentiellement pas assez descriptif",
+    "why": "Le titre \\\"{found}\\\" avec seulement {length} caractères ne fournit pas suffisamment de contexte, surtout quand les utilisateurs ont plusieurs onglets ouverts ou naviguent dans l'historique. Les utilisateurs ne peuvent pas distinguer entre différents sites avec les mêmes titres génériques. Les utilisateurs de lecteurs d'écran qui entendent les titres de page annoncés ont besoin d'informations plus descriptives pour comprendre où ils se trouvent.",
     "who": "Utilisateurs avec plusieurs onglets de navigateur qui doivent distinguer entre les pages, utilisateurs de lecteurs d'écran qui dépendent de titres descriptifs pour le contexte, utilisateurs naviguant dans l'historique ou les favoris, utilisateurs avec des handicaps cognitifs qui ont besoin d'une identification claire des pages",
-    "remediation": "Étendre \\\"%(found)s\\\" pour être plus descriptif en incluant le nom du site et l'objectif de la page. Viser 20-60 caractères qui décrivent clairement le contenu de la page. S'assurer que chaque page a un titre unique et descriptif qui a du sens hors contexte.",
-    "what_generic": "Le titre de page \\\"%(found)s\\\" ne fait que %(length)s caractères, potentiellement pas assez descriptif"
+    "remediation": "Étendre \\\"{found}\\\" pour être plus descriptif en incluant le nom du site et l'objectif de la page. Viser 20-60 caractères qui décrivent clairement le contenu de la page. S'assurer que chaque page a un titre unique et descriptif qui a du sens hors contexte.",
+    "what_generic": "Le titre de page \\\"{found}\\\" ne fait que {length} caractères, potentiellement pas assez descriptif"
   },
   "WarnPageTitleTooShort_what": {
     "generic": "Le titre de page n'est potentiellement pas assez descriptif"
@@ -3040,11 +3040,11 @@
   },
   "WarnRedundantTitleAttr": {
     "title": "L'attribut title duplique le texte visible, créant une infobulle inaccessible",
-    "what": "L'élément a un attribut title qui duplique ou chevauche avec le contenu textuel visible : \\\"%(visibleText)s\\\" avec title=\\\"%(title)s\\\"",
+    "what": "L'élément a un attribut title qui duplique ou chevauche avec le contenu textuel visible : \\\"{visibleText}\\\" avec title=\\\"{title}\\\"",
     "why": "Quand l'attribut title duplique le texte visible, il crée une infobulle redondante qui ne fournit aucune valeur supplémentaire mais cause des problèmes d'accessibilité significatifs. L'infobulle ne peut pas être fermée et disparaît quand les utilisateurs déplacent leur souris vers elle - un problème critique pour les utilisateurs de loupes d'écran qui doivent déplacer leur zone d'affichage pour lire le texte de l'infobulle. L'infobulle n'apparaît pas non plus sur les appareils tactiles, n'est pas accessible aux utilisateurs de clavier, et crée une mauvaise expérience pour les utilisateurs avec des déficiences motrices qui déclenchent les infobulles accidentellement. Cette redondance n'ajoute aucune valeur tout en créant des barrières pour de nombreux utilisateurs. La règle générale est : ne jamais utiliser d'attributs title sauf sur les iframes (où ils servent de noms accessibles) et dans l'élément <head> (où \\\"title\\\" a une signification complètement différente comme élément de titre de page).",
     "who": "Utilisateurs de loupes d'écran qui ne peuvent pas lire les infobulles qui disparaissent en déplaçant la souris, utilisateurs mobiles et d'écrans tactiles qui ne voient jamais les infobulles, utilisateurs de clavier qui ne peuvent pas accéder au contenu dépendant du survol, utilisateurs avec des handicaps moteurs qui déclenchent accidentellement ou ne peuvent maintenir le survol, utilisateurs avec des handicaps cognitifs confus par l'information redondante",
     "remediation": "Supprimer entièrement l'attribut title puisque le texte visible fournit déjà l'information nécessaire. Les attributs title ne devraient être utilisés que : (1) sur les éléments <iframe> pour fournir des noms accessibles, ou (2) dans l'élément <head> comme titre de page. Pour tous les autres cas d'usage, utiliser du texte visible et persistant que tous les utilisateurs peuvent accéder. Si vous avez besoin d'informations supplémentaires, utiliser du texte d'aide visible, aria-describedby, ou des icônes d'information cliquables au lieu d'attributs title.",
-    "what_generic": "L'élément a un attribut title qui duplique ou chevauche avec le contenu textuel visible : \\\"%(visibleText)s\\\" avec title=\\\"%(title)s\\\""
+    "what_generic": "L'élément a un attribut title qui duplique ou chevauche avec le contenu textuel visible : \\\"{visibleText}\\\" avec title=\\\"{title}\\\""
   },
   "WarnRedundantTitleAttr_what": {
     "generic": "L'élément a un attribut title qui duplique ou chevauche avec le contenu textuel visible"
@@ -3091,11 +3091,11 @@
   },
   "WarnSmallLineHeight": {
     "title": "Hauteur de ligne inférieure à 1,5 fois la taille de police",
-    "what": "La hauteur de ligne est de %(lineHeight)spx avec un ratio de %(ratio)s pour une taille de police de %(fontSize)spx. Les bonnes pratiques recommandent une hauteur de ligne d'au moins 1,5 fois la taille de police, particulièrement pour les blocs de texte avec plusieurs lignes adjacentes.",
+    "what": "La hauteur de ligne est de {lineHeight}px avec un ratio de {ratio} pour une taille de police de {fontSize}px. Les bonnes pratiques recommandent une hauteur de ligne d'au moins 1,5 fois la taille de police, particulièrement pour les blocs de texte avec plusieurs lignes adjacentes.",
     "why": "Un espacement de ligne serré rend le texte difficile à lire et à suivre, particulièrement pour les blocs de texte. Un espacement de ligne adéquat (1,5x ou plus) aide les utilisateurs dyslexiques à distinguer les lignes, améliore la compréhension de lecture et réduit la fatigue oculaire. Ceci échoue au critère WCAG 5.2.4 Prise en charge de l'accessibilité car une hauteur de ligne insuffisante force les utilisateurs à recourir aux technologies d'assistance (feuilles de style personnalisées, extensions de navigateur ou modes de lecture) alors qu'ils n'en auraient pas besoin autrement. Le contenu devrait être accessible par défaut, sans obliger les utilisateurs à appliquer des solutions techniques pour le rendre lisible.",
     "who": "Utilisateurs dyslexiques qui ont besoin d'une séparation claire des lignes, utilisateurs malvoyants qui suivent les lignes de texte, utilisateurs âgés, utilisateurs avec des troubles de la lecture, utilisateurs qui éprouvent de la fatigue oculaire.",
-    "remediation": "Définir la hauteur de ligne à au moins 1,5 pour les blocs de texte avec plusieurs lignes. Pour cet élément avec une taille de police de %(fontSize)spx, la hauteur de ligne devrait être d'au moins %(minLineHeight)spx (actuellement %(lineHeight)spx). Note : Bien que WCAG 1.4.12 exige que les ajustements d'espacement appliqués par l'utilisateur ne cassent pas la mise en page, fournir une hauteur de ligne par défaut adéquate (5.2.4 Prise en charge de l'accessibilité) évite aux utilisateurs d'avoir besoin de technologies d'assistance en premier lieu. Les lignes uniques ou les titres peuvent utiliser un espacement plus serré.",
-    "what_generic": "La hauteur de ligne est de %(lineHeight)spx avec un ratio de %(ratio)s pour une taille de police de %(fontSize)spx. Les bonnes pratiques recommandent une hauteur de ligne d'au moins 1,5 fois la taille de police, particulièrement pour les blocs de texte avec plusieurs lignes adjacentes."
+    "remediation": "Définir la hauteur de ligne à au moins 1,5 pour les blocs de texte avec plusieurs lignes. Pour cet élément avec une taille de police de {fontSize}px, la hauteur de ligne devrait être d'au moins {minLineHeight}px (actuellement {lineHeight}px). Note : Bien que WCAG 1.4.12 exige que les ajustements d'espacement appliqués par l'utilisateur ne cassent pas la mise en page, fournir une hauteur de ligne par défaut adéquate (5.2.4 Prise en charge de l'accessibilité) évite aux utilisateurs d'avoir besoin de technologies d'assistance en premier lieu. Les lignes uniques ou les titres peuvent utiliser un espacement plus serré.",
+    "what_generic": "La hauteur de ligne est de {lineHeight}px avec un ratio de {ratio} pour une taille de police de {fontSize}px. Les bonnes pratiques recommandent une hauteur de ligne d'au moins 1,5 fois la taille de police, particulièrement pour les blocs de texte avec plusieurs lignes adjacentes."
   },
   "WarnSmallLineHeight_what": {
     "generic": "Le ratio de hauteur de ligne est en dessous du minimum recommandé pour la lisibilité"

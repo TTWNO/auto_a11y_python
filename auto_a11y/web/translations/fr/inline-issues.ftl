@@ -667,7 +667,7 @@ issue-a-form-landmark-element-has-both-aria-label-and-aria-labelledby-attributes
 issue-a-form-landmark-is-labelled-with-aria-label-text-only-visible-to-assistive-tech-c70299 = Le formulaire utilise aria-label au lieu d'un titre ou d'une étiquette visible
 issue-a-form-landmark-s-accessible-name-includes-the-word-form-e-g-contact-form-screen-083cc7 = Le nom accessible de la région repère de formulaire inclut le mot redondant "formulaire"
 issue-a-group-of-related-radio-buttons-or-checkboxes-was-found-but-they-are-not-wrappe-65a215 = Un groupe de boutons radio ou de cases à cocher liés a été détecté, mais il n'est pas enveloppé dans un <fieldset> accompagné d'un <legend> qui décrirait l'objet du groupe.
-issue-a-heading-element-h1-h6-was-found-whose-visible-text-is-empty-contains-only-whit-00f9eb = L'élément de titre contient uniquement des espaces ou des caractères spéciaux : "%(text)s"
+issue-a-heading-element-h1-h6-was-found-whose-visible-text-is-empty-contains-only-whit-00f9eb = L'élément de titre contient uniquement des espaces ou des caractères spéciaux : "{"{"}text{"}"}"
 issue-a-heading-element-carries-an-id-attribute-which-is-typically-used-as-an-in-page-3efdbb = L'élément de titre possède un attribut ID qui peut être utilisé pour la navigation dans la page
 issue-a-heading-element-exists-in-the-dom-but-is-hidden-via-display-none-most-screen-r-2abaa4 = A heading element exists in the DOM but is hidden via display:none. Most screen readers skip display:none content, so the heading does not appear in the headings list.
 issue-a-heading-s-computed-accessible-name-after-applying-aria-label-aria-labelledby-e-fac2a6 = Le texte visible du titre ne correspond pas à son nom accessible
@@ -747,7 +747,7 @@ issue-colour-related-css-rules-are-defined-in-an-embedded-style-block-inside-the
 issue-heading-levels-declared-in-the-dom-do-not-align-with-the-visual-size-hierarchy-f-963afd = La hiérarchie visuelle ne correspond pas à la structure sémantique
 issue-headings-on-the-page-appear-in-an-illogical-sequence-for-example-a-higher-level-6ec269 = Les titres apparaissent dans un ordre illogique - des titres de haut niveau (H1, H2) apparaissent après des titres de niveau inférieur (H3, H4, H5, H6)
 issue-information-appears-to-be-conveyed-only-by-a-visual-property-colour-icon-positio-c23cd5 = Information appears to be conveyed only by a visual property (colour, icon position, shape, or font weight) without an accompanying text label or non-visual cue.
-issue-more-than-one-h1-element-was-found-on-the-page-wcag-and-document-outline-best-pr-04eb11 = La page contient %(count)s éléments h1 au lieu d'un seul
+issue-more-than-one-h1-element-was-found-on-the-page-wcag-and-document-outline-best-pr-04eb11 = La page contient {"{"}count{"}"} éléments h1 au lieu d'un seul
 issue-more-than-one-main-or-role-main-element-was-found-on-the-page-there-must-be-exac-c7034d = Plusieurs régions repères principales trouvées sur la page
 issue-more-than-one-banner-landmark-was-found-at-the-top-level-of-the-page-the-aria-sp-8169e7 = More than one banner landmark was found at the top level of the page. The ARIA spec allows only a single banner landmark per page.
 issue-more-than-one-contentinfo-landmark-was-found-at-the-top-level-of-the-page-the-ar-f25d62 = More than one contentinfo landmark was found at the top level of the page. The ARIA spec allows only a single contentinfo (footer) landmark per page.

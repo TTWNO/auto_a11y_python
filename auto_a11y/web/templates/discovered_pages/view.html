@@ -7,8 +7,11 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <nav aria-label="breadcrumb">
+            <nav aria-label="{{ ftl('common-breadcrumb') }}">
                 <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a>
+                    </li>
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
                     <li class="breadcrumb-item active" aria-current="page">{{ ftl('pages-discovered-page') }}</li>
                 </ol>

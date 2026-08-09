@@ -4,6 +4,17 @@
 
 {% block content %}
 <div class="container-fluid">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('recordings.list_recordings') }}">{{ ftl('common-recordings') }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('recordings.upload_video') }}">{{ ftl('audio-upload-heading') }}</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('audio-confirm-heading') }}</li>
+        </ol>
+    </nav>
     <div class="mb-4">
         <h1 id="upload-confirm-heading">
             <i class="bi bi-currency-dollar" aria-hidden="true"></i> {{ ftl('audio-confirm-heading') }}

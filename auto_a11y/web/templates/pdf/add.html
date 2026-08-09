@@ -6,6 +6,9 @@
 <div class="container-fluid">
     <nav aria-label="{{ ftl('common-breadcrumb') }}">
         <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a>
+            </li>
             {% if project is not none and project.id %}
             <li class="breadcrumb-item">
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">

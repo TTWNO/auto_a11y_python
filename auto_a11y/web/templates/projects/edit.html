@@ -46,6 +46,17 @@
 
 {% block content %}
 <div class="container">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('projects-edit-project') }}</li>
+        </ol>
+    </nav>
     <div class="row">
         <div class="col-md-8 col-lg-6 mx-auto">
             <h1 class="mb-4" id="edit-project-heading">{{ ftl('projects-edit-project') }}</h1>

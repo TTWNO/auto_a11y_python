@@ -4,6 +4,14 @@
 
 {% block content %}
 <div class="container-fluid">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('recordings.list_recordings') }}">{{ ftl('common-recordings') }}</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('audio-upload-heading') }}</li>
+        </ol>
+    </nav>
     <div class="mb-4">
         <h1 id="upload-video-heading">
             <i class="bi bi-camera-video" aria-hidden="true"></i> {{ ftl('audio-upload-heading') }}

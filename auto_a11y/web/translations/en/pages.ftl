@@ -1,5 +1,5 @@
 # pages — auto-migrated from messages.po
-pages-95-pass-rate-475-500-passed-might-still-mean = 95%% pass rate (475/500 passed) might still mean critical issues exist. Those 25 failed checks could all be \"missing alt text\" affecting every image on the page.
+pages-95-pass-rate-475-500-passed-might-still-mean = 95% pass rate (475/500 passed) might still mean critical issues exist. Those 25 failed checks could all be \"missing alt text\" affecting every image on the page.
 pages-about-test-combinations = About Test Combinations
 pages-about-this-discovery-item = About this discovery item:
 pages-about-this-issue = About this issue:

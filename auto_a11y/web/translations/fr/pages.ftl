@@ -1,5 +1,5 @@
 # pages — auto-migrated from messages.po
-pages-95-pass-rate-475-500-passed-might-still-mean = Un taux de réussite de 95%% (475/500 réussis) peut encore signifier que des problèmes critiques existent. Ces 25 vérifications échouées pourraient toutes être « texte alternatif manquant » affectant chaque image de la page.
+pages-95-pass-rate-475-500-passed-might-still-mean = Un taux de réussite de 95% (475/500 réussis) peut encore signifier que des problèmes critiques existent. Ces 25 vérifications échouées pourraient toutes être « texte alternatif manquant » affectant chaque image de la page.
 pages-about-test-combinations = À propos des combinaisons de test
 pages-about-this-discovery-item = À propos de cet élément découvert :
 pages-about-this-issue = À propos de ce problème :

@@ -1540,6 +1540,7 @@ class Database:
                 continue
             entry = stats.setdefault(project_id, {
                 'pages': 0, 'tested': 0, 'errors': 0, 'warnings': 0, 'last_tested': None,
+                'pdfs_hosted': 0, 'pdfs_external': 0,
             })
             entry['pages'] += row.get('pages', 0)
             entry['tested'] += row.get('tested', 0)
@@ -1548,6 +1549,40 @@ class Database:
             latest = row.get('last_tested')
             if latest and (entry['last_tested'] is None or latest > entry['last_tested']):
                 entry['last_tested'] = latest
+
+        # PDFs the site links to, split by whether the site hosts them. Counted
+        # from document references rather than downloaded PdfDocuments, because a
+        # PDF on someone else's domain is still a document this site sends people
+        # to — it just is not ours to fetch and audit. Distinct URLs, so a PDF
+        # linked from forty pages counts once.
+        pdf_rows = self.document_references.aggregate([
+            {'$match': {
+                'website_id': {'$in': list(website_to_project)},
+                'mime_type': 'application/pdf',
+            }},
+            {'$group': {
+                '_id': {'website_id': '$website_id',
+                        'is_internal': '$is_internal',
+                        'document_url': '$document_url'},
+            }},
+            {'$group': {
+                '_id': {'website_id': '$_id.website_id',
+                        'is_internal': '$_id.is_internal'},
+                'count': {'$sum': 1},
+            }},
+        ])
+        for row in pdf_rows:
+            key = row['_id']
+            project_id = website_to_project.get(str(key.get('website_id')))
+            if project_id is None:
+                continue
+            entry = stats.setdefault(project_id, {
+                'pages': 0, 'tested': 0, 'errors': 0, 'warnings': 0, 'last_tested': None,
+                'pdfs_hosted': 0, 'pdfs_external': 0,
+            })
+            field = 'pdfs_hosted' if key.get('is_internal') else 'pdfs_external'
+            entry[field] += row.get('count', 0)
+
         return stats
 
     def get_project_stats(

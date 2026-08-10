@@ -80,6 +80,17 @@
                             <dt class="text-muted fw-normal d-inline">{{ ftl('common-warnings') }}</dt>
                             <dd class="d-inline mb-0 fw-semibold text-severity-medium">{{ stats.warnings if stats else 0 }}</dd>
                         </div>
+                        {# PDFs the site links to, split by who hosts them: the ones on
+                           this site are ours to audit, the ones elsewhere are still
+                           documents it sends people to but are not ours to fix. #}
+                        <div class="col">
+                            <dt class="text-muted fw-normal d-inline">{{ ftl('projects-pdfs-hosted') }}</dt>
+                            <dd class="d-inline mb-0 fw-semibold">{{ stats.pdfs_hosted if stats else 0 }}</dd>
+                        </div>
+                        <div class="col">
+                            <dt class="text-muted fw-normal d-inline">{{ ftl('projects-pdfs-external') }}</dt>
+                            <dd class="d-inline mb-0 fw-semibold">{{ stats.pdfs_external if stats else 0 }}</dd>
+                        </div>
                     </dl>
 
                     <div class="mb-3">

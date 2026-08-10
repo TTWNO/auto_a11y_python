@@ -339,3 +339,5 @@ projects-why-it-matters = Why It Matters
 projects-why-rationale-template = Why (Rationale) Template:
 projects-will-be-tested-across-multiple-base-urls = will be tested across multiple base URLs.
 projects-stats-document-breakdown = { $html } pages + { $pdfs } PDFs
+projects-pdfs-hosted = PDFs on site
+projects-pdfs-external = PDFs off site

@@ -76,6 +76,43 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# Documents the crawler records but never crawls. Shared by the link scan and by
+# any other caller that needs the same classification (a page fetched outside a
+# crawl still contains the same links, and must classify them identically).
+DOCUMENT_EXTENSIONS: dict[str, str] = {
+    '.pdf': 'application/pdf',
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.document',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.document',
+    '.rtf': 'application/rtf',
+    '.txt': 'text/plain',
+    '.csv': 'text/csv',
+    '.zip': 'application/zip',
+    '.rar': 'application/zip',
+    '.7z': 'application/zip',
+}
+
+
+def _document_extension(path: str) -> str | None:
+    """Return the document extension this path ends with, or None."""
+    lowered = path.lower()
+    for ext in DOCUMENT_EXTENSIONS:
+        if lowered.endswith(ext):
+            return ext
+    return None
+
+
+def _is_internal_host(netloc: str, base_domain: str, include_subdomains: bool) -> bool:
+    """Whether a host counts as part of the site being audited."""
+    if netloc == base_domain:
+        return True
+    return bool(include_subdomains and netloc.endswith(f'.{base_domain}'))
+
+
+
 # Error-reason prefixes that mark a failed-page record as an "expected skip" —
 # a valid outcome of visiting a URL (external redirect, outside base path) that
 # is tracked for reporting but must NOT count toward the failure thresholds
@@ -1046,7 +1083,29 @@ class ScrapingEngine:
                 
                 # Parse URL
                 parsed = urlparse(normalized)
-                
+
+                # Documents are classified before the crawl-scope filters below.
+                # Those filters exist to decide what to *crawl*, and they used to
+                # drop off-domain links outright — which meant a PDF hosted
+                # somewhere else was discarded before anything noticed it was a
+                # document. An audit needs to know about those: they are still
+                # documents the site sends people to, and whether they are hosted
+                # by the site or not is exactly the distinction is_internal
+                # records. Crawling is unaffected — a document is never queued.
+                doc_ext = _document_extension(parsed.path)
+                if doc_ext is not None:
+                    document_refs.append({
+                        'url': normalized,
+                        'mime_type': DOCUMENT_EXTENSIONS[doc_ext],
+                        'is_internal': _is_internal_host(
+                            parsed.netloc, base_domain,
+                            website.scraping_config.include_subdomains,
+                        ),
+                        'link_text': link_text,
+                        'file_extension': doc_ext,
+                    })
+                    continue  # never queued for crawling
+
                 # Check if we should follow this link
                 if not website.scraping_config.follow_external:
                     # Only follow links on same domain
@@ -1066,46 +1125,6 @@ class ScrapingEngine:
                 
                 # Apply path filters
                 path = parsed.path
-                
-                # Check for document files
-                document_extensions = {
-                    '.pdf': 'application/pdf',
-                    '.doc': 'application/msword',
-                    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    '.xls': 'application/vnd.ms-excel',
-                    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.document',
-                    '.ppt': 'application/vnd.ms-powerpoint',
-                    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.document',
-                    '.rtf': 'application/rtf',
-                    '.txt': 'text/plain',
-                    '.csv': 'text/csv',
-                    '.zip': 'application/zip',
-                    '.rar': 'application/zip',
-                    '.7z': 'application/zip'
-                }
-                
-                # Check if this is a document
-                file_ext = None
-                for ext in document_extensions:
-                    if path.lower().endswith(ext):
-                        file_ext = ext
-                        break
-                
-                if file_ext:
-                    # This is a document, capture it
-                    is_internal = parsed.netloc == base_domain or (
-                        website.scraping_config.include_subdomains and 
-                        parsed.netloc.endswith(f'.{base_domain}')
-                    )
-                    
-                    document_refs.append({
-                        'url': normalized,
-                        'mime_type': document_extensions[file_ext],
-                        'is_internal': is_internal,
-                        'link_text': link_text,
-                        'file_extension': file_ext
-                    })
-                    continue  # Don't add to crawl queue
                 
                 # Skip common non-HTML resources (images, videos, etc.)
                 if path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.exe', '.dmg', '.mp4', '.mp3')):

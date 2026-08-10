@@ -14,6 +14,7 @@ from auto_a11y.models.app_user import UserRole
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 from auto_a11y.models.test_result import Violation
 from auto_a11y.web.routes.auth import project_role_required
+import html
 import logging
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,53 @@ def enrich_test_result_with_catalog(test_result: Any) -> Any:
 
         # Store impact detail
         issue.metadata['impact_detail'] = enriched_en.get('impact', '')
+
+        # The catalogue describes the issue type, so the text above has just
+        # replaced the instance-specific sentence the contrast test wrote — which
+        # for an animated colour was the only place the offending keyframe was
+        # named. The test also records that position as structured metadata, so
+        # re-attach it here. Doing it from the metadata rather than keeping the
+        # test's sentence is what makes it available in French too: the test can
+        # only produce English.
+        meta = issue.metadata
+        if meta.get('isAnimated') and meta.get('animationName'):
+            name = str(meta.get('animationName') or '')
+            kf_percent = str(meta.get('animationWorstKeyframePercent') or '')
+            kf_colour = str(meta.get('animationWorstKeyframeColor') or '')
+            kf_ratio = str(meta.get('animationWorstKeyframeContrast') or '')
+            tween_from = str(meta.get('animationTweenFromPercent') or '')
+            tween_to = str(meta.get('animationTweenToPercent') or '')
+            worst_ratio = str(meta.get('animationWorstContrast') or '')
+
+            # Results stored before these fields existed have the animation name
+            # and nothing else. Each branch is guarded on the values it actually
+            # interpolates, so an older result gets a shorter, true sentence
+            # instead of one with empty gaps where the numbers should be.
+            args: dict[str, str]
+            if meta.get('animationKeyframeFails') and kf_percent and kf_colour and kf_ratio:
+                message_id = 'pages-animated-contrast-at-keyframe'
+                args = {'name': name, 'percent': kf_percent,
+                        'colour': kf_colour, 'ratio': kf_ratio}
+            elif (not meta.get('animationKeyframeFails')) and tween_from and tween_to and worst_ratio:
+                message_id = 'pages-animated-contrast-tween-only'
+                args = {'name': name, 'from': tween_from,
+                        'to': tween_to, 'ratio': worst_ratio}
+            else:
+                message_id = 'pages-animated-contrast-generic'
+                args = {'name': name}
+            for locale_code, suffix in (('en', 'en'), ('fr', 'fr')):
+                with force_locale(locale_code):
+                    # ftl() returns Markup, so quotes and apostrophes come back as
+                    # character references. Every other value in this metadata is
+                    # plain text and the templates escape on output, so leaving them
+                    # encoded would print a literal &#34; on the page.
+                    sentence = html.unescape(str(ftl(message_id, **args)))
+                key = f'what_{suffix}'
+                existing = str(issue.metadata.get(key) or '').rstrip()
+                if sentence and sentence not in existing:
+                    joiner = ' ' if existing.endswith(('.', '!', '?')) else '. '
+                    issue.metadata[key] = f'{existing}{joiner}{sentence}' if existing else sentence
+            issue.metadata['what'] = issue.metadata['what_en']
 
         return issue
 

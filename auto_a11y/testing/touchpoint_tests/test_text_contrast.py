@@ -492,10 +492,16 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         where: worstAtStop
                             ? `the ${pct(worstOffset)} keyframe`
                             : `between the ${pct(worstFrom)} and ${pct(worstTo)} keyframes`,
+                        // The same positions as bare percentages. `where` above is
+                        // English prose built here in the browser; these are what the
+                        // server formats into either language.
+                        fromPercent: worstFrom === null ? null : pct(worstFrom),
+                        toPercent: worstTo === null ? null : pct(worstTo),
                         // The worst colour the author actually wrote down.
                         stopContrast: worstStop,
                         stopColor: worstStopColor ? rgba(worstStopColor) : null,
-                        stopWhere: worstStopOffset === null ? null : `the ${pct(worstStopOffset)} keyframe`
+                        stopWhere: worstStopOffset === null ? null : `the ${pct(worstStopOffset)} keyframe`,
+                        stopPercent: worstStopOffset === null ? null : pct(worstStopOffset)
                     };
                 }
 
@@ -894,6 +900,9 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                     let animatedWorstStopContrast = null;
                     let animatedWorstStopColor = null;
                     let animatedWorstStopWhere = null;
+                    let animatedWorstStopPercent = null;
+                    let animatedWorstFromPercent = null;
+                    let animatedWorstToPercent = null;
                     let animationColorsReadable = true;
                     if (animInfo.hasAnimation && canCalculateInsideContrast) {
                         const kf = getAnimationKeyframeStops(animInfo.animationName);
@@ -907,6 +916,9 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                             animatedWorstStopContrast = worst.stopContrast;
                             animatedWorstStopColor = worst.stopColor;
                             animatedWorstStopWhere = worst.stopWhere;
+                            animatedWorstStopPercent = worst.stopPercent;
+                            animatedWorstFromPercent = worst.fromPercent;
+                            animatedWorstToPercent = worst.toPercent;
                         }
                     }
 
@@ -961,6 +973,9 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         animatedWorstStopContrast: animatedWorstStopContrast,
                         animatedWorstStopColor: animatedWorstStopColor,
                         animatedWorstStopWhere: animatedWorstStopWhere,
+                        animatedWorstStopPercent: animatedWorstStopPercent,
+                        animatedWorstFromPercent: animatedWorstFromPercent,
+                        animatedWorstToPercent: animatedWorstToPercent,
                         animationColorsReadable: animationColorsReadable,
                         canCalculateInsideContrast: canCalculateInsideContrast,
                         tag: element.tagName.toLowerCase(),
@@ -1133,6 +1148,10 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
 
                 # Check contrast against the project's required level ONLY
                 if contrast is not None and contrast < required_ratio:
+                    # Bound here rather than only inside the animated branch below:
+                    # the payload block reads it under the same condition, but that
+                    # is not something a type checker can prove.
+                    stop_fails = False
                     # For animated text, cite the worst frame of the cycle rather than
                     # text_elem['textColor'], which is only whichever colour the snapshot
                     # caught and would otherwise differ between runs.
@@ -1231,6 +1250,16 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         stop_c = text_elem.get('animatedWorstStopContrast')
                         if stop_c is not None:
                             error_data['animationWorstKeyframeContrast'] = f'{stop_c:.2f}:1'
+                        # Bare percentages, so the server can phrase the position in
+                        # whichever language the reader is using rather than shipping
+                        # the English prose built in the browser.
+                        error_data['animationWorstKeyframePercent'] = text_elem.get('animatedWorstStopPercent')
+                        error_data['animationTweenFromPercent'] = text_elem.get('animatedWorstFromPercent')
+                        error_data['animationTweenToPercent'] = text_elem.get('animatedWorstToPercent')
+                        error_data['animationWorstContrast'] = f'{contrast:.2f}:1'
+                        # Whether a colour the author actually declared is the
+                        # problem, or only the tween between two passing ones.
+                        error_data['animationKeyframeFails'] = bool(stop_fails)
                     results['errors'].append(error_data)
                     results['elements_failed'] += 1
                 else:

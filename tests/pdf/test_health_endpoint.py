@@ -9,24 +9,23 @@ from auto_a11y.pdf.health import (
 )
 
 
-def test_health_ok_when_gs_and_storage_present(tmp_path: Path) -> None:
-    health = check_pdf_health(gs_override=None, storage_dir=tmp_path / "pdfs")
-    # Real /usr/bin/gs is present in this env; storage dir is writable
-    assert health.ghostscript.found is True
-    assert health.ghostscript.path is not None
+def test_health_ok_when_renderer_and_storage_present(tmp_path: Path) -> None:
+    health = check_pdf_health(storage_dir=tmp_path / "pdfs")
+    # pypdfium2 is a pinned requirement, so the renderer is available in any
+    # environment installed from requirements.txt; storage dir is writable.
+    assert health.renderer.available is True
+    assert health.renderer.engine == "pdfium"
     assert health.storage.writable is True
     assert health.ok is True
     assert (tmp_path / "pdfs").is_dir()
 
 
-def test_health_503_when_gs_missing(tmp_path: Path) -> None:
-    from auto_a11y.pdf.audit.ghostscript import invalidate_detection_cache
-    invalidate_detection_cache()
-    with patch('auto_a11y.pdf.audit.ghostscript.shutil.which', return_value=None):
-        health = check_pdf_health(gs_override=None, storage_dir=tmp_path / "pdfs")
-    invalidate_detection_cache()  # clean up so other tests aren't affected
-    assert health.ghostscript.found is False
-    assert health.ghostscript.path is None
+def test_health_503_when_renderer_unavailable(tmp_path: Path) -> None:
+    # There is no binary to hide any more — the only way rasterisation can be
+    # unavailable is a stripped environment where the wheel is not installed.
+    with patch('auto_a11y.pdf.health.renderer_available', return_value=False):
+        health = check_pdf_health(storage_dir=tmp_path / "pdfs")
+    assert health.renderer.available is False
     assert health.ok is False
 
 
@@ -34,15 +33,6 @@ def test_health_503_when_storage_unwritable(tmp_path: Path) -> None:
     # Create a file at the path so .mkdir() raises and we cannot probe.
     blocker = tmp_path / "blocker"
     blocker.write_text("file not directory")
-    health = check_pdf_health(gs_override=None, storage_dir=blocker)
+    health = check_pdf_health(storage_dir=blocker)
     assert health.storage.writable is False
     assert health.ok is False
-
-
-def test_health_uses_override_path(tmp_path: Path) -> None:
-    fake_gs = tmp_path / "gs"
-    fake_gs.write_text("#!/bin/sh\necho fake\n")
-    fake_gs.chmod(0o755)
-    health = check_pdf_health(gs_override=str(fake_gs), storage_dir=tmp_path / "pdfs")
-    assert health.ghostscript.path == str(fake_gs)
-    assert health.ghostscript.found is True

@@ -6,7 +6,7 @@ Mocks the synchronous ``run_audit`` pipeline so these tests exercise
 * magic-byte and size validation;
 * dedup-or-create flow against a mocked :class:`Database`;
 * status transitions around a mocked audit;
-* exception paths (``GhostscriptMissing``, ``CorruptPdf``, generic);
+* exception paths (``CorruptPdf``, generic);
 * pre-allocated ObjectId pattern keeps storage paths and Mongo ``_id`` aligned;
 * ``CheckResult`` → ``Violation`` mapping routes by impact.
 
@@ -47,7 +47,6 @@ from auto_a11y.models.test_result import TestResult as _TestResult
 from auto_a11y.pdf.errors import (
     CannotAuditFetchFailedDocument,
     CorruptPdf,
-    GhostscriptMissing,
     NotAPdf,
     PdfDocumentNotFound,
     PdfTooLarge,
@@ -454,31 +453,6 @@ async def test_audit_corrupt_pdf_marks_audit_failed(
 
 
 @pytest.mark.asyncio
-async def test_audit_ghostscript_missing_marks_audit_failed(
-    runner: PdfRunner,
-    mock_db: MagicMock,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """:class:`GhostscriptMissing` flips the doc to AUDIT_FAILED and re-raises."""
-    doc = _make_doc()
-    mock_db.get_pdf_document.return_value = doc
-
-    def _boom(*args: Any, **kwargs: Any) -> AuditResult:
-        raise GhostscriptMissing(["/usr/bin/gs"])
-
-    monkeypatch.setattr(
-        "auto_a11y.testing.pdf_runner.run_audit", _boom
-    )
-
-    with pytest.raises(GhostscriptMissing):
-        await runner.audit_pdf_document(str(doc.mongo_id))
-
-    assert doc.status == PdfDocumentStatus.AUDIT_FAILED
-    assert doc.error_reason == "Ghostscript not installed"
-    mock_db.create_test_result.assert_not_called()
-
-
-@pytest.mark.asyncio
 async def test_audit_generic_exception_marks_audit_failed(
     runner: PdfRunner,
     mock_db: MagicMock,
@@ -535,37 +509,6 @@ async def test_audit_passes_correct_paths_to_run_audit(
     assert captured['images_out_dir'] == tmp_path / "w1" / str(oid) / "images"
     # gs override defaults to None.
     assert captured['gs_path_override'] is None
-
-
-@pytest.mark.asyncio
-async def test_audit_propagates_ghostscript_override(
-    mock_db: MagicMock,
-    storage: PdfStorage,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A constructor-supplied gs override reaches ``run_audit``."""
-    r = PdfRunner(
-        mock_db, storage, max_parallel=1, ghostscript_path_override="/opt/gs/bin/gs"
-    )
-    try:
-        doc = _make_doc()
-        mock_db.get_pdf_document.return_value = doc
-        mock_db.create_test_result.return_value = "tr"
-
-        captured: dict[str, Any] = {}
-
-        def _capture(pdf_path: Path, **kwargs: Any) -> AuditResult:
-            captured['gs_path_override'] = kwargs.get('gs_path_override')
-            return _make_audit_result()
-
-        monkeypatch.setattr(
-            "auto_a11y.testing.pdf_runner.run_audit", _capture
-        )
-
-        await r.audit_pdf_document(str(doc.mongo_id))
-        assert captured['gs_path_override'] == "/opt/gs/bin/gs"
-    finally:
-        r.shutdown()
 
 
 # ---------------------------------------------------------------------------

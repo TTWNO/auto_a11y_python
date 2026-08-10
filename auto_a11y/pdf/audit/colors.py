@@ -5,7 +5,7 @@ Ports two top-level functions from pdfMax's
 
 * :func:`extract_text_colors` — uses pdfminer.six for character-level
   ``(foreground, background)`` color pairs, with backgrounds sampled from
-  Ghostscript-rendered page rasters.
+  rendered page rasters.
 * :func:`extract_form_field_colors` — extracts text + background colors
   from form-widget /DA, /MK and /AP appearance metadata, falling back to
   rendered-page sampling when no explicit /MK /BG is present.
@@ -58,7 +58,7 @@ from pdfminer.psparser import PSException
 from PIL import Image
 
 from auto_a11y.pdf.audit import pikepdf_helpers
-from auto_a11y.pdf.audit.ghostscript import render_page_to_png
+from auto_a11y.pdf.audit.rasterize import render_page_to_png
 
 logger = logging.getLogger(__name__)
 
@@ -263,22 +263,17 @@ def sample_background(
 def _render_page_image(
     pdf_path: Path,
     page_num: int,
-    *,
-    gs_path_override: str | None,
 ) -> Image.Image | None:
-    """Render a page via Ghostscript and load it as an RGB PIL image.
+    """Render a page and load it as an RGB PIL image.
 
-    Returns ``None`` when Ghostscript fails or the PNG can't be parsed.
-    Mirrors the Phase 2 helper inside pdfMax's ``extract_text_colors``,
-    but routes through :func:`auto_a11y.pdf.audit.ghostscript.render_page_to_png`
-    rather than calling the gs subprocess directly.
+    Returns ``None`` when the page cannot be rendered or the PNG can't be
+    parsed; callers treat that as "no colour data for this page".
     """
     try:
         png_bytes = render_page_to_png(
             pdf_path,
             page_num,
             dpi=_RENDER_DPI,
-            gs_path_override=gs_path_override,
         )
     except (OSError, ValueError, TypeError):
         return None
@@ -394,7 +389,6 @@ def _update_fg_only(
 def extract_text_colors(
     pdf_path: Path,
     *,
-    gs_path_override: str | None = None,
     progress: Callable[[str, float], None] | None = None,
 ) -> tuple[
     dict[tuple[RgbColor, RgbColor], ColorPairInfo],
@@ -406,16 +400,11 @@ def extract_text_colors(
 
     * ``color_pairs`` keyed by ``(fg_rgb, bg_rgb)`` tuples (each rgb tuple
       is normalised 0.0-1.0 floats). Backgrounds come from sampling a
-      Ghostscript-rendered raster of each page; if rendering fails the
+      rendered raster of each page; if rendering fails the
       pair is recorded against pure white ``(1.0, 1.0, 1.0)``.
     * ``fg_only_colors`` keyed by foreground rgb only. Provided for
       backward compatibility with pdfMax consumers that pre-date the
       background detection pass.
-
-    ``gs_path_override`` lets callers (notably tests) point at an
-    explicit Ghostscript binary; passing ``None`` uses
-    :func:`auto_a11y.pdf.audit.ghostscript.detect_ghostscript`'s cached
-    auto-detection.
     """
     fg_only: dict[RgbColor, FgOnlyColorInfo] = {}
     page_chars: list[tuple[int, float, list[CharEntry]]] = []
@@ -448,7 +437,7 @@ def extract_text_colors(
         return {}, fg_only
 
     # Phase 2: render each page that has at least one char. This is the
-    # long pole on multi-page PDFs (one Ghostscript subprocess per page),
+    # long pole on multi-page PDFs (every page is rasterised),
     # so we tick the progress callback per page.
     pages_with_chars = [
         (pn, ph, ch) for (pn, ph, ch) in page_chars if ch
@@ -462,9 +451,7 @@ def extract_text_colors(
                 idx / total_renders,
             )
         if page_num not in page_images:
-            page_images[page_num] = _render_page_image(
-                pdf_path, page_num, gs_path_override=gs_path_override
-            )
+            page_images[page_num] = _render_page_image(pdf_path, page_num)
     if progress is not None:
         progress("Sampling backgrounds", 1.0)
 
@@ -901,9 +888,7 @@ def _page_height(pdf: pikepdf.Pdf, page_num: int) -> float | None:
 
 def extract_form_field_colors(
     pdf: pikepdf.Pdf,
-    pdf_path: Path,
-    *,
-    gs_path_override: str | None = None,
+    pdf_path: Path
 ) -> dict[tuple[RgbColor, RgbColor], FormColorPairInfo]:
     """Extract text & background colours from form-widget appearance metadata.
 
@@ -911,7 +896,7 @@ def extract_form_field_colors(
     for explicit widget background colour, and /AP /N appearance streams
     for the actual rendered text colours (which catches placeholders and
     custom-styled buttons that diverge from /DA). When no explicit /MK
-    /BG is present, falls back to sampling a Ghostscript-rendered raster
+    /BG is present, falls back to sampling a rendered raster
     of the page at the field's rect.
 
     Returns ``{(fg_rgb, bg_rgb): FormColorPairInfo}``.
@@ -982,7 +967,6 @@ def extract_form_field_colors(
                     field_dict=field_dict,
                     page_num=page_num,
                     page_images=page_images,
-                    gs_path_override=gs_path_override,
                 )
 
             if bg_color is None:
@@ -1005,9 +989,8 @@ def _sample_field_background(
     field_dict: pikepdf.Dictionary,
     page_num: int,
     page_images: dict[int, Image.Image | None],
-    gs_path_override: str | None,
 ) -> RgbColor | None:
-    """Sample a field-area background from a Ghostscript-rendered raster.
+    """Sample a field-area background from a rendered raster.
 
     Returns ``None`` when the field has no rect, the page can't be
     rendered, or the page height is unknown — callers fall back to white.
@@ -1018,9 +1001,7 @@ def _sample_field_background(
     x0, y0, x1, y1 = rect
 
     if page_num not in page_images:
-        page_images[page_num] = _render_page_image(
-            pdf_path, page_num, gs_path_override=gs_path_override
-        )
+        page_images[page_num] = _render_page_image(pdf_path, page_num)
     img = page_images.get(page_num)
     if img is None:
         return None

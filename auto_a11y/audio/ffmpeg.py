@@ -1,6 +1,6 @@
 """ffmpeg / ffprobe detection.
 
-Mirrors :mod:`auto_a11y.pdf.audit.ghostscript`: a small caching detector
+A small caching detector
 with an ``override`` escape hatch and a ``raise_if_missing`` toggle.
 The duration probe and silence-detection wrappers come in Phase 2.
 

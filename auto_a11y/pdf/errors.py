@@ -6,17 +6,6 @@ class PdfError(Exception):
     """Base class for PDF subsystem errors."""
 
 
-class GhostscriptMissing(PdfError):
-    """Ghostscript binary could not be located."""
-
-    def __init__(self, searched: list[str]) -> None:
-        self.searched = searched
-        super().__init__(
-            f"Ghostscript not found on PATH (searched: {', '.join(searched)}). "
-            + "Install Ghostscript or set GHOSTSCRIPT_PATH in config."
-        )
-
-
 class CorruptPdf(PdfError):
     """pikepdf could not open the PDF."""
 

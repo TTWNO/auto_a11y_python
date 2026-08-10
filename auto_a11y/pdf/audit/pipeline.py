@@ -13,7 +13,7 @@ Resilience model:
   check yields a synthetic ``FAIL`` :class:`CheckResult` carrying the
   exception type and message, and the audit continues with the
   remaining checks.
-* Color and image extraction use third-party tools (Ghostscript,
+* Color and image extraction use third-party libraries (PDFium,
   pdfminer, PIL) that occasionally fail on perfectly readable PDFs;
   failures inside those collectors degrade gracefully (empty result),
   they don't abort the audit.
@@ -71,7 +71,6 @@ def run_audit(
     locale: str = "en",
     images_out_dir: Path | None = None,
     progress: ProgressCallback | None = None,
-    gs_path_override: str | None = None,
 ) -> AuditResult:
     """Audit a PDF for accessibility. Sync entry point.
 
@@ -102,8 +101,6 @@ def run_audit(
             ``fraction`` is in ``[0.0, 1.0]``. Called periodically.
             Fractions are monotonically non-decreasing within a single
             run.
-        gs_path_override: Force a specific Ghostscript binary; passed
-            through to the colour collectors. ``None`` uses the cached
             auto-detection.
 
     Returns:
@@ -126,7 +123,6 @@ def run_audit(
                 locale=locale,
                 images_out_dir=images_out_dir,
                 progress=progress,
-                gs_path_override=gs_path_override,
             )
     except pikepdf.PdfError as exc:
         raise CorruptPdf(str(pdf_path), str(exc)) from exc
@@ -145,7 +141,6 @@ def _run_audit_with_pdf(
     locale: str,
     images_out_dir: Path | None,
     progress: ProgressCallback | None,
-    gs_path_override: str | None,
 ) -> AuditResult:
     """Body of :func:`run_audit` once the PDF is open.
 
@@ -176,23 +171,21 @@ def _run_audit_with_pdf(
         pdf, progress=sub_font_meta,
     )
 
-    # ---- Step 5: colours (best-effort; Ghostscript-dependent) -----------
-    # Colours rasterises every page via Ghostscript — easily the long pole
+    # ---- Step 5: colours (best-effort; needs page rasterisation) --------
+    # Colours rasterises every page — easily the long pole
     # on multi-page PDFs. We hand the collector a scaled sub-progress
     # callback that maps its 0.0-1.0 fraction onto the band 0.45-0.65 of
     # the overall pipeline so the SSE consumer sees per-page ticks.
     _emit(progress, "Extracting colors", 0.45)
     sub_colors = _scale_progress(progress, 0.45, 0.65)
     color_pairs, fg_only = colors.extract_text_colors(
-        pdf_path, gs_path_override=gs_path_override, progress=sub_colors,
+        pdf_path, progress=sub_colors,
     )
     # ``extract_form_field_colors`` doesn't have its own broad swallow.
     # We absorb the same family of failures here so a missing or
     # malformed AcroForm never aborts the audit.
     try:
-        form_pairs = colors.extract_form_field_colors(
-            pdf, pdf_path, gs_path_override=gs_path_override
-        )
+        form_pairs = colors.extract_form_field_colors(pdf, pdf_path)
     except (pikepdf.PdfError, OSError, ValueError, TypeError, KeyError, AttributeError):
         form_pairs = {}
 

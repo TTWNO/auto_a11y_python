@@ -5,7 +5,6 @@ from auto_a11y.pdf.errors import (
     CannotAuditFetchFailedDocument,
     CorruptPdf,
     FetchFailed,
-    GhostscriptMissing,
     NotAPdf,
     PdfDocumentNotFound,
     PdfError,
@@ -14,19 +13,12 @@ from auto_a11y.pdf.errors import (
 
 
 def test_all_errors_inherit_pdf_error() -> None:
-    assert issubclass(GhostscriptMissing, PdfError)
     assert issubclass(CorruptPdf, PdfError)
     assert issubclass(FetchFailed, PdfError)
     assert issubclass(PdfTooLarge, PdfError)
     assert issubclass(NotAPdf, PdfError)
     assert issubclass(PdfDocumentNotFound, PdfError)
     assert issubclass(CannotAuditFetchFailedDocument, PdfError)
-
-
-def test_ghostscript_missing_carries_searched_paths() -> None:
-    err = GhostscriptMissing(searched=['gs', 'gswin64c'])
-    assert 'gs' in str(err)
-    assert err.searched == ['gs', 'gswin64c']
 
 
 def test_fetch_failed_carries_url_and_reason() -> None:

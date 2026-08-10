@@ -9,7 +9,7 @@ This module covers two sub-surfaces:
   orchestrators, and operator scripts. ``/health`` reports overall
   app+database liveness (``"healthy"`` ⇒ DB ping succeeded,
   ``"degraded"`` ⇒ DB ping failed but the Flask app is still up).
-  ``/health/pdf`` reports the PDF audit subsystem (Ghostscript +
+  ``/health/pdf`` reports the PDF audit subsystem (page renderer +
   storage dir) and returns 503 when either check fails.
 
 - **Jobs** — the legacy administrative tools (``stats``, ``clear-all``,
@@ -110,17 +110,21 @@ class HealthOut(StrictModel):
     timestamp: str
 
 
-class GhostscriptHealthOut(StrictModel):
-    """Ghostscript-detection sub-block of :class:`HealthPdfOut`.
+class RendererHealthOut(StrictModel):
+    """Page-rasterisation sub-block of :class:`HealthPdfOut`.
 
-    Mirrors the dataclass ``GhostscriptHealth`` from
-    ``auto_a11y.pdf.health``: ``found`` reports whether the binary
-    was detected and ``path`` is the resolved absolute path (or
-    ``null`` when not found).
+    Mirrors the dataclass ``RendererHealth`` from
+    ``auto_a11y.pdf.health``: ``available`` reports whether pages can be
+    rasterised for the colour and contrast checks, and ``engine`` names the
+    renderer.
+
+    Replaced the former ``ghostscript`` block when rasterisation moved from a
+    Ghostscript subprocess to in-process PDFium. There is no longer a binary to
+    locate, so the block no longer carries a path.
     """
 
-    found: bool
-    path: Optional[str] = None
+    available: bool
+    engine: str
 
 
 class StorageHealthOut(StrictModel):
@@ -139,14 +143,13 @@ class StorageHealthOut(StrictModel):
 class HealthPdfOut(StrictModel):
     """Response body for ``GET /health/pdf``.
 
-    Mirrors the legacy ``pdf_health`` projection byte-for-byte:
-    nested ``ghostscript`` and ``storage`` sub-blocks. The HTTP
+    Nested ``renderer`` and ``storage`` sub-blocks. The HTTP
     status code (200 vs 503) reflects ``PdfHealth.ok`` — the body
     itself is the same shape regardless of status so a 503 still
     surfaces actionable diagnostics.
     """
 
-    ghostscript: GhostscriptHealthOut
+    renderer: RendererHealthOut
     storage: StorageHealthOut
 
 

@@ -170,7 +170,7 @@ from auto_a11y.web.api.schemas.issues import (
     IssuePatch,
 )
 from auto_a11y.web.api.schemas.health import (
-    GhostscriptHealthOut,
+    RendererHealthOut,
     HealthOut,
     HealthPdfOut,
     JobCancelOut,
@@ -1671,8 +1671,8 @@ def get_page_test_sessions(
     summary="PDF subsystem health probe",
     description=(
         "Unauthenticated health probe for the PDF audit subsystem. "
-        "Returns the Ghostscript detection result (``found``, "
-        "``path``) and the storage directory writability "
+        "Returns the page-renderer status (``available``, ``engine``) "
+        "and the storage directory writability "
         "(``dir``, ``writable``). HTTP status is 200 when both "
         "checks pass and 503 when either fails — the body shape is "
         "the same regardless of status so a 503 still surfaces "
@@ -1687,13 +1687,12 @@ def pdf_health() -> tuple[HealthPdfOut, int]:
 
     cfg = get_app_config()
     health = check_pdf_health(
-        gs_override=cfg.GHOSTSCRIPT_PATH,
         storage_dir=Path(cfg.PDF_STORAGE_DIR),
     )
     payload = HealthPdfOut(
-        ghostscript=GhostscriptHealthOut(
-            found=health.ghostscript.found,
-            path=health.ghostscript.path,
+        renderer=RendererHealthOut(
+            available=health.renderer.available,
+            engine=health.renderer.engine,
         ),
         storage=StorageHealthOut(
             dir=health.storage.dir,

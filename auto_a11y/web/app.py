@@ -296,7 +296,6 @@ def create_app(config: Any) -> Flask:
         storage=_pdf_storage,
         max_parallel=config.PDF_AUDIT_MAX_PARALLEL,
         max_size_mb=config.PDF_MAX_SIZE_MB,
-        ghostscript_path_override=config.GHOSTSCRIPT_PATH,
     ))
 
     # Initialize AudioA11y video runner (Phase 7 of audioA11y integration).

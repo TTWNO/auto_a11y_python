@@ -48,7 +48,6 @@ from auto_a11y.pdf.errors import (
     CannotAuditFetchFailedDocument,
     CorruptPdf,
     FetchFailed,
-    GhostscriptMissing,
     NotAPdf,
     PdfDocumentNotFound,
     PdfTooLarge,
@@ -92,12 +91,10 @@ class PdfRunner:
         *,
         max_parallel: int = 2,
         max_size_mb: int = 100,
-        ghostscript_path_override: str | None = None,
     ) -> None:
         self._db = database
         self._storage = storage
         self._max_size_bytes = max_size_mb * 1024 * 1024
-        self._gs_override = ghostscript_path_override
         self._executor = ThreadPoolExecutor(
             max_workers=max_parallel,
             thread_name_prefix="pdf-audit",
@@ -286,7 +283,6 @@ class PdfRunner:
         Raises:
             PdfDocumentNotFound: ``pdf_document_id`` doesn't exist.
             CannotAuditFetchFailedDocument: doc is in ``FETCH_FAILED``.
-            GhostscriptMissing: bubbled up from :func:`run_audit`.
             CorruptPdf: bubbled up from :func:`run_audit`.
         """
         doc = self._db.get_pdf_document(pdf_document_id)
@@ -319,14 +315,8 @@ class PdfRunner:
                     locale=locale,
                     images_out_dir=images_dir,
                     progress_cb=progress_cb,
-                    gs_override=self._gs_override,
                 ),
             )
-        except GhostscriptMissing:
-            doc.status = PdfDocumentStatus.AUDIT_FAILED
-            doc.error_reason = "Ghostscript not installed"
-            self._db.update_pdf_document(doc)
-            raise
         except CorruptPdf as exc:
             doc.status = PdfDocumentStatus.AUDIT_FAILED
             doc.error_reason = f"Corrupt PDF: {exc}"
@@ -445,7 +435,6 @@ def _run_audit_call(
     locale: str,
     images_out_dir: Path,
     progress_cb: ProgressCallback | None,
-    gs_override: str | None,
 ) -> Callable[[], AuditResult]:
     """Build a zero-arg callable for :meth:`asyncio.AbstractEventLoop.run_in_executor`.
 
@@ -464,7 +453,6 @@ def _run_audit_call(
             locale=locale,
             images_out_dir=images_out_dir,
             progress=progress_cb,
-            gs_path_override=gs_override,
         )
 
     return _call

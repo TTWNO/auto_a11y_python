@@ -18,7 +18,6 @@ def test_config_exposes_pdf_defaults() -> None:
     assert cfg.PDF_MAX_SIZE_MB == 100
     assert cfg.PDF_DOWNLOAD_TIMEOUT_SECONDS == 60
     assert cfg.PDF_AUDIT_MAX_PARALLEL == 2
-    assert cfg.GHOSTSCRIPT_PATH is None
 
 
 def test_pdf_storage_dir_absolute_env_passes_through(

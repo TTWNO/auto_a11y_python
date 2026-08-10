@@ -176,7 +176,6 @@ class Config:
     PDF_DOWNLOAD_TIMEOUT_SECONDS: int = int(os.getenv('PDF_DOWNLOAD_TIMEOUT_SECONDS', 60))
     PDF_AUDIT_MAX_PARALLEL: int = int(os.getenv('PDF_AUDIT_MAX_PARALLEL', 2))
     # Ghostscript binary path — None means auto-detect on PATH; empty env var treated as unset
-    GHOSTSCRIPT_PATH: str | None = os.getenv('GHOSTSCRIPT_PATH') or None
 
     # Verbatim pdfMax report viewer (see auto_a11y/pdf/pdfmax_runner.py).
     # Path to the pdfMax ``python/checker`` directory that ships

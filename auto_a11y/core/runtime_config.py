@@ -202,7 +202,6 @@ CONFIG_SECTIONS: Final[tuple[ConfigSection, ...]] = (
             _f("PDF_MAX_SIZE_MB", "max_size_mb", FieldType.INT, "admin-settings-pdf-max-size-mb", default="100"),
             _f("PDF_DOWNLOAD_TIMEOUT_SECONDS", "download_timeout_seconds", FieldType.INT, "admin-settings-pdf-download-timeout-seconds", default="60"),
             _f("PDF_AUDIT_MAX_PARALLEL", "audit_max_parallel", FieldType.INT, "admin-settings-pdf-audit-max-parallel", default="2"),
-            _f("GHOSTSCRIPT_PATH", "ghostscript_path", FieldType.STRING, "admin-settings-ghostscript-path", help_id="admin-settings-ghostscript-path-help"),
             _f("PDFMAX_CHECKER_DIR", "pdfmax_checker_dir", FieldType.STRING, "admin-settings-pdfmax-checker-dir", help_id="admin-settings-pdfmax-checker-dir-help"),
         ),
     ),

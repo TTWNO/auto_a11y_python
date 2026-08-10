@@ -3978,8 +3978,13 @@ function testPage(pageId) {
                 trackPageTest(pageId, pageTitle);
             }
             startStatusPolling(pageId);
-            if (window.showNotification) {
-                showNotification(i18n.testStarted, i18n.testStartedMsg, 'info');
+            // Show the in-page progress alert straight away rather than waiting for
+            // the first poll, so there is one immediate, persistent, in-context
+            // signal. A toast used to fire here as well, saying the same thing at
+            // the same moment but vanishing - three notices for one event.
+            const progressAlertEl = document.getElementById('test-progress-alert');
+            if (progressAlertEl) {
+                progressAlertEl.classList.remove('d-none');
             }
         })
         .catch(err => {

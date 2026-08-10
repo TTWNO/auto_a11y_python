@@ -413,6 +413,18 @@
             document.getElementById('global-test-status').classList.add('d-none');
         },
 
+        // Is this activity the thing the user is already looking at? The detail
+        // view carries its own status badge and progress alert, so repeating it
+        // in the global banner is a third notice for one event.
+        isCurrentlyViewed: function(test) {
+            const path = window.location.pathname;
+            if (test.type === 'page') return path.includes(`/pages/${test.id}`);
+            if (test.type === 'website' || test.type === 'discovery') {
+                return path.includes(`/websites/${test.id}`);
+            }
+            return false;
+        },
+
         // Check status of all active activities
         checkTests: async function() {
             const tests = this.getActiveTests();
@@ -423,9 +435,12 @@
                 return;
             }
 
-            // Show global indicator
+            // Keep polling every tracked activity — completion still has to be
+            // detected for the page you are on — but only surface the banner for
+            // activities you cannot already see.
+            const elsewhere = Object.values(tests).filter(t => !this.isCurrentlyViewed(t));
             const statusDiv = document.getElementById('global-test-status');
-            statusDiv.classList.remove('d-none');
+            statusDiv.classList.toggle('d-none', elsewhere.length === 0);
 
             let activeCount = 0;
             let completedInThisCheck = [];
@@ -509,16 +524,21 @@
                 }
             }
 
-            // Update UI
-            if (activeCount > 0) {
+            // Update UI. Built from the off-page activities only, matching what the
+            // banner's visibility was decided on just above — otherwise it could
+            // announce "1 test running" while showing nothing, or name the very
+            // page whose own progress alert is already on screen.
+            const visibleTests = this.getActiveTests();
+            const offPage = Object.values(visibleTests).filter(t => !this.isCurrentlyViewed(t));
+            if (offPage.length > 0) {
                 const message = document.getElementById('global-test-message');
                 const link = document.getElementById('global-test-link');
                 const titleElement = document.getElementById('global-activity-title');
 
                 // Count different types of activities
-                const allTests = this.getActiveTests();
-                const discoveryCount = Object.values(allTests).filter(t => t.type === 'discovery').length;
-                const testCount = Object.values(allTests).filter(t => t.type === 'page' || t.type === 'website').length;
+                const allTests = offPage;
+                const discoveryCount = allTests.filter(t => t.type === 'discovery').length;
+                const testCount = allTests.filter(t => t.type === 'page' || t.type === 'website').length;
 
                 // Update title based on activity types
                 if (discoveryCount > 0 && testCount === 0) {
@@ -531,8 +551,8 @@
                     titleElement.textContent = '{{ ftl('common-activity-in-progress') }}';
                 }
 
-                if (activeCount === 1) {
-                    const remainingTest = Object.values(allTests)[0];
+                if (allTests.length === 1) {
+                    const remainingTest = allTests[0];
                     message.textContent = remainingTest.description + (remainingTest.progress ? ` - ${remainingTest.progress}` : '');
 
                     if (remainingTest.type === 'page') {
@@ -552,6 +572,11 @@
                     message.textContent = messages.join(' {{ ftl('common-and') }} ') + ' {{ ftl('common-running') }}';
                     link.href = '/testing';
                 }
+            } else {
+                // The poll above may have dropped the last off-page activity as
+                // stale or finished; without this the banner would stay on screen
+                // describing work that is no longer running.
+                statusDiv.classList.add('d-none');
             }
 
             // Show completion notification and refresh if on relevant page

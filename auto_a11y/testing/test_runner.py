@@ -381,6 +381,14 @@ class TestRunner:
         # Testing page
         start_time = time.time()
 
+        # Move the page out of QUEUED now that it is actually being tested. The
+        # single-page path queued it and nothing ever advanced it, so a page read
+        # "Queued" for the whole run and only jumped to "Tested" at the end -
+        # which reads as a stuck job rather than a working one. The batch path in
+        # testing_job.py already does this; doing it here covers every caller.
+        page.status = PageStatus.TESTING
+        self.db.update_page(page)
+
         # Start browser if needed
         if not await self.browser_manager.is_running():
             await self.browser_manager.start()
@@ -1237,6 +1245,11 @@ class TestRunner:
             # Fall back to single-state testing
             result = await self.test_page(page, take_screenshot, run_ai_analysis, ai_api_key, website_user_id)
             return [result]
+
+        # Same transition as test_page: this branch does not delegate to it, so
+        # without this a multi-state run would sit at QUEUED throughout.
+        page.status = PageStatus.TESTING
+        self.db.update_page(page)
 
         # Start browser if needed
         if not await self.browser_manager.is_running():

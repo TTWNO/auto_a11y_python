@@ -52,7 +52,6 @@ class _Cfg:
     PDF_STORAGE_DIR = "/tmp/pdf"
     PDF_AUDIT_MAX_PARALLEL = 1
     PDF_MAX_SIZE_MB = 100
-    GHOSTSCRIPT_PATH = None
     AUDIO_STORAGE_DIR = "/tmp/audio"
 
 

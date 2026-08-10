@@ -167,7 +167,5 @@ admin-settings-pdf-storage-dir-help = Emplacement où sont conservés les PDF t�
 admin-settings-pdf-max-size-mb = Taille maximale d'un PDF (Mo)
 admin-settings-pdf-download-timeout-seconds = Délai de téléchargement (secondes)
 admin-settings-pdf-audit-max-parallel = Audits PDF parallèles maximum
-admin-settings-ghostscript-path = Chemin du binaire Ghostscript
-admin-settings-ghostscript-path-help = Laisser vide pour détection automatique sur le PATH.
 admin-settings-pdfmax-checker-dir = Répertoire du vérificateur pdfMax
 admin-settings-pdfmax-checker-dir-help = Chemin vers le répertoire pdfMax python/checker contenant pdf_accessibility_audit.py.

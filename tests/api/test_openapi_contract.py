@@ -116,7 +116,7 @@ def contract_app() -> Iterator[Flask]:
     flask_app.config["TESTING"] = True
 
     # Attach the production Config so handlers that read ``current_app.app_config``
-    # (e.g. /health/pdf reading PDF_STORAGE_DIR / GHOSTSCRIPT_PATH) can run
+    # (e.g. /health/pdf reading PDF_STORAGE_DIR) can run
     # without falling over with AttributeError. We do **not** attach a Mongo
     # ``db`` — handlers that need one must skip when MongoDB is unavailable.
     from config import Config

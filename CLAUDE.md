@@ -40,7 +40,9 @@ python run.py --download-browser
 
 ### Fixture Testing (Critical)
 
-**Only accessibility tests that pass ALL their fixtures are enabled in production.** The fixture system validates test accuracy against ~900 known HTML test cases.
+**Applies to the web (HTML/DOM) touchpoint tests only.** The PDF audit engine is a separate subsystem with its own validation approach — see [PDF Audit Engine](#pdf-audit-engine-different-rules). Do not apply the fixture gate below to PDF checks.
+
+**Only web accessibility tests that pass ALL their fixtures are enabled in production.** The fixture system validates test accuracy against ~900 known HTML test cases.
 
 ```bash
 # Quick validation (~5 minutes) - USE THIS DURING DEVELOPMENT
@@ -198,9 +200,43 @@ Python touchpoint tests (`auto_a11y/testing/touchpoint_tests/`) process JavaScri
 - `AI` - AI-powered detection (requires Claude API)
 
 **Production Gates:**
-- A test is ONLY enabled in production if ALL its fixtures pass
+
+- A web test is ONLY enabled in production if ALL its fixtures pass
 - Partial pass = disabled (prevents false positives)
 - Check status: Web UI at `/testing/fixture-status`
+- **Scope:** this gate governs the web (HTML/DOM) touchpoint tests. It does not
+  apply to the PDF audit engine — see below.
+
+### PDF Audit Engine (Different Rules)
+
+**The PDF audit engine is complete and in production use. It is not gated on
+fixtures, and it does not need a fixture corpus.**
+
+It is a separate subsystem from the web touchpoint tests, deliberately designed
+and validated differently:
+
+- **Location:** `auto_a11y/pdf/` — 13 check modules under `audit/checks/`,
+  orchestrated by `audit/pipeline.py` via the `ALL_CHECKS` registry.
+- **Validation:** unit tests under `tests/pdf/`, which construct PDFs
+  programmatically with `pikepdf` to exercise each check against precisely the
+  structure it targets. This is the intended approach, not a stand-in for
+  something else.
+- **No fixture corpus.** There is no `Fixtures/` equivalent for PDFs and none is
+  required. Do not add one expecting it to act as a gate, and do not treat the
+  absence of sample PDFs in the repository as a coverage gap.
+- **No enable/disable gate.** PDF checks ship enabled. There is no PDF equivalent
+  of `/testing/fixture-status`, and a check is not held back pending fixture
+  results.
+
+The distinction exists because the two engines test different things. A web test
+runs against live, arbitrary, author-written markup, where false positives are
+the main risk and a broad corpus is the way to catch them. A PDF check inspects a
+structured document object model defined by the PDF specification, where the
+condition being checked is unambiguous and a constructed document exercises it
+exactly.
+
+**When changing PDF checks:** run `pytest tests/pdf` and keep it green. That is
+the standard the engine is held to.
 
 ### Touchpoint System
 
@@ -232,7 +268,11 @@ Python touchpoint tests (`auto_a11y/testing/touchpoint_tests/`) process JavaScri
 
 ## Key Development Patterns
 
-### Adding a New Accessibility Test
+### Adding a New Accessibility Test (web)
+
+For a new PDF check, see [PDF Audit Engine](#pdf-audit-engine-different-rules) —
+add the check to its module's registry and cover it in `tests/pdf/`. Steps 3–5
+below do not apply.
 
 1. **Create/Update JavaScript test** in `auto_a11y/scripts/tests/`
 2. **Create Python touchpoint test** in `auto_a11y/testing/touchpoint_tests/`
@@ -240,13 +280,16 @@ Python touchpoint tests (`auto_a11y/testing/touchpoint_tests/`) process JavaScri
 4. **Run fixture tests** to validate: `python test_fixtures.py --code YourCode`
 5. **Only enable in production** after all fixtures pass
 
-### Modifying Existing Tests
+### Modifying Existing Tests (web)
 
 1. **Update JavaScript** if DOM logic changes
 2. **Update Python touchpoint test** if processing logic changes
 3. **Validate with fixtures:** `python test_fixtures.py --code ExistingCode`
 4. **If fixtures fail:** Fix code OR update fixture expectations
 5. **Never enable tests with failing fixtures**
+
+For PDF checks, the equivalent is `pytest tests/pdf` — keep it green. There are
+no fixtures to update and no gate to satisfy.
 
 ### Working with Browser Automation
 
@@ -291,11 +334,16 @@ Python touchpoint tests (`auto_a11y/testing/touchpoint_tests/`) process JavaScri
 1. **JavaScript tests in browser** - Fast, accurate DOM testing
 2. **Claude AI visual analysis** - Catches what DOM testing misses
 
-**Fixture-Driven Development:**
+**Fixture-Driven Development (web touchpoint tests):**
+
 - Write fixtures FIRST (TDD approach)
 - Test against fixtures CONTINUOUSLY
 - Only enable tests that pass ALL fixtures
 - This prevents false positives in production
+
+**PDF audit engine:** validated by unit tests in `tests/pdf/` that build documents
+with `pikepdf`. No fixtures, no gate — see
+[PDF Audit Engine (Different Rules)](#pdf-audit-engine-different-rules).
 
 **Why JavaScript + Python:**
 - JavaScript: Direct DOM access, W3C spec compliance, browser APIs
@@ -564,7 +612,7 @@ The fixture tests in this repo validate that the *testing engine* catches issues
 1. **Port Conflict:** macOS AirPlay Receiver uses 5000 → We use 5001
 2. **MongoDB Document Size:** 16MB limit → Large results use references
 3. **Playwright vs Pyppeteer:** Codebase uses Playwright (some docs outdated)
-4. **Fixture Failures:** NEVER enable tests with partial fixture pass
+4. **Fixture Failures:** NEVER enable web tests with partial fixture pass (PDF checks are not fixture-gated — see [PDF Audit Engine](#pdf-audit-engine-different-rules))
 5. **Browser Download:** First run requires: `python -m playwright install chromium`
 6. **AI Analysis:** Costs money per request → Test with `RUN_AI_ANALYSIS=False` first
 7. **Async Operations:** Most browser/AI operations use async/await

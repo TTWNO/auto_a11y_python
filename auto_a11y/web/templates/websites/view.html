@@ -60,7 +60,7 @@
                 </ul>
             </div>
             {% endif %}
-            <button class="btn btn-pass" id="discoverBtn">
+            <button class="btn btn-brand" id="discoverBtn">
                 <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}
             </button>
             <button class="btn btn-high" id="cancelDiscoveryBtn" style="display: none;">
@@ -111,7 +111,7 @@
                 <span class="badge badge-subtle">{{ documents.untested }}</span>
                 {% endif %}
             </button>
-            <button class="btn btn-medium" id="cancelTestingBtn" style="display: none;">
+            <button class="btn btn-high" id="cancelTestingBtn" style="display: none;">
                 <i class="bi bi-stop-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
             </button>
         </div>
@@ -127,10 +127,10 @@
             <a href="{{ url_for('scripts.list_website_scripts', website_id=website.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('common-setup-scripts') }}
             </a>
-            <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-outline-pass">
+            <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-test-users') }}
             </a>
-            <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}" class="btn btn-outline-medium">
+            <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}" class="btn btn-outline-neutral">
                 <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ ftl('common-schedules') }}
             </a>
             <div class="btn-group">
@@ -168,7 +168,7 @@
                         <i class="bi bi-play-fill" aria-hidden="true"></i>
                         {{ ftl('websites-manual-start') }}
                     </button>
-                    <button type="button" class="btn btn-sm btn-pass" id="manualCaptureBtn" disabled>
+                    <button type="button" class="btn btn-sm btn-brand" id="manualCaptureBtn" disabled>
                         <i class="bi bi-plus-circle" aria-hidden="true"></i>
                         {{ ftl('websites-manual-capture') }}
                     </button>
@@ -462,7 +462,7 @@
                             <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                         </button>
                         {% else %}
-                        <button class="btn btn-sm btn-pass page-test-btn" data-page-id="{{ page.id }}" onclick="testPage('{{ page.id }}')">
+                        <button class="btn btn-sm btn-brand page-test-btn" data-page-id="{{ page.id }}" onclick="testPage('{{ page.id }}')">
                             <i class="bi bi-play" aria-hidden="true"></i> {{ ftl('common-test-2') }}
                         </button>
                         {% endif %}
@@ -552,7 +552,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-pass">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('common-start-discovery') }}
                     </button>
                 </div>
@@ -1235,6 +1235,8 @@ function testPage(pageId) {
 }
 
 function cancelPageTest(pageId) {
+    // Stopping a run throws away work in progress, so ask first.
+    if (!confirm({{ ftl('pages-confirm-cancel-test') | tojson }})) return;
     const btn = event.target ? event.target.closest('button') : document.querySelector(`button[data-page-id="${pageId}"]`);
     if (btn) {
         btn.disabled = true;

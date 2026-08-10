@@ -282,3 +282,5 @@ testing-why-is-this-important = Pourquoi est-ce important ?
 testing-help-all-pass = Aide : Tous les tests réussissent
 testing-help-partial-pass = Aide : Réussite partielle des tests
 testing-help-all-fail = Aide : Tous les tests échouent
+testing-confirm-clear-all-jobs = Effacer tous les enregistrements de tâches ? Cette action est irréversible.
+testing-confirm-clear-stale-jobs = Effacer les enregistrements de tâches obsolètes ? Cette action est irréversible.

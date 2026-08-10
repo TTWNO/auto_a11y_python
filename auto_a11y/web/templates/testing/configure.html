@@ -154,7 +154,7 @@
                     <div class="mb-3">
                         <h3>{{ ftl('testing-clear-stale-jobs') }}</h3>
                         <p class="text-muted small">{{ ftl('testing-remove-jobs-that-have-been-running-for-more-than') }}</p>
-                        <button class="btn btn-medium" onclick="clearStaleJobs()">
+                        <button class="btn btn-high" onclick="clearStaleJobs()">
                             <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('testing-clear-stale-jobs') }}
                         </button>
                     </div>
@@ -162,7 +162,7 @@
                     <div class="mb-3">
                         <h3>{{ ftl('testing-clean-page-data') }}</h3>
                         <p class="text-muted small">{{ ftl('testing-reset-violation-counts-for-pages-that-haven-t') }}</p>
-                        <button class="btn btn-info" onclick="cleanupPageCounts()">
+                        <button class="btn btn-brand" onclick="cleanupPageCounts()">
                             <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('testing-clean-page-data') }}
                         </button>
                     </div>
@@ -236,6 +236,7 @@ function loadJobStats() {
 
 // Clear all jobs
 function clearAllJobs() {
+    if (!confirm({{ ftl('testing-confirm-clear-all-jobs') | tojson }})) return;
     document.getElementById('confirmMessage').textContent =
         {{ ftl('testing-this-will-clear-all-running-and-pending-jobs-this') | tojson }};
 
@@ -269,6 +270,7 @@ function clearAllJobs() {
 
 // Clear stale jobs
 function clearStaleJobs() {
+    if (!confirm({{ ftl('testing-confirm-clear-stale-jobs') | tojson }})) return;
     document.getElementById('confirmMessage').textContent =
         {{ ftl('testing-this-will-clear-all-jobs-that-have-been-running') | tojson }};
 

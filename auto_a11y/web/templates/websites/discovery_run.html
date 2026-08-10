@@ -104,7 +104,7 @@
                 {{ ftl('websites-discovery-robots-blocked-title') }}
             </h2>
             <p class="mb-2">{{ ftl('websites-discovery-robots-blocked-body', count=discovery_run.robots_blocked_count) }}</p>
-            <a href="{{ url_for('websites.edit_website', website_id=website.id) }}" class="btn btn-medium btn-sm">
+            <a href="{{ url_for('websites.edit_website', website_id=website.id) }}" class="btn btn-brand btn-sm">
                 {{ ftl('websites-discovery-robots-blocked-action') }}
             </a>
         </div>

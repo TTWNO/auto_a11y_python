@@ -216,7 +216,7 @@
                         <td>—</td>
                         <td>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-medium" onclick="restartJob('{{ job.job_id }}')" aria-label="{{ ftl('reports-restart') }}">
+                                <button class="btn btn-sm btn-brand" onclick="restartJob('{{ job.job_id }}')" aria-label="{{ ftl('reports-restart') }}">
                                     <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                                 </button>
                                 <button class="btn btn-sm btn-high" onclick="dropJob('{{ job.job_id }}')" aria-label="{{ ftl('reports-drop') }}">
@@ -526,7 +526,7 @@ function startJobPoll(jobId, displayName) {
             <td>\u2014</td>
             <td>
                 <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-medium" onclick="restartJob('${jobId}')" aria-label="${_i18n.restart}">
+                    <button class="btn btn-sm btn-brand" onclick="restartJob('${jobId}')" aria-label="${_i18n.restart}">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
                     <button class="btn btn-sm btn-high" onclick="dropJob('${jobId}')" aria-label="${_i18n.drop}">

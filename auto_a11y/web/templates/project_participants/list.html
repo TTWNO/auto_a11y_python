@@ -210,7 +210,7 @@
             <div class="text-center py-4">
                 <i class="bi bi-person-check text-placeholder empty-state-icon" aria-hidden="true"></i>
                 <p class="text-muted mt-3">{{ ftl('projects-no-test-supervisors-yet') }}</p>
-                <a href="{{ url_for('project_participants.create_supervisor', project_id=project.id) }}" class="btn btn-pass">
+                <a href="{{ url_for('project_participants.create_supervisor', project_id=project.id) }}" class="btn btn-brand">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('projects-add-your-first-supervisor') }}
                 </a>
             </div>

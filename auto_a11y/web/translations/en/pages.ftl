@@ -229,3 +229,4 @@ pages-you-must-have-at-least-one-combination = You must have at least one combin
 pages-animated-contrast-at-keyframe = Animated by CSS animation "{ $name }": the declared colour at the { $percent } keyframe is { $colour }, giving { $ratio }.
 pages-animated-contrast-tween-only = Animated by CSS animation "{ $name }": every declared keyframe colour passes, but contrast falls to { $ratio } between the { $from } and { $to } keyframes, on a colour the browser produces while tweening rather than one written in the keyframes.
 pages-animated-contrast-generic = Animated by CSS animation "{ $name }", so the colour changes over the cycle. Re-test this page to record which keyframe is responsible.
+pages-confirm-cancel-test = Cancel this test? The run will stop and no results will be recorded for it.

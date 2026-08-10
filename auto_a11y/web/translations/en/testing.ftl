@@ -282,3 +282,5 @@ testing-why-is-this-important = Why is this important?
 testing-help-all-pass = Help: All fixtures pass
 testing-help-partial-pass = Help: Partial fixture pass
 testing-help-all-fail = Help: All fixtures fail
+testing-confirm-clear-all-jobs = Clear all job records? This cannot be undone.
+testing-confirm-clear-stale-jobs = Clear stale job records? This cannot be undone.

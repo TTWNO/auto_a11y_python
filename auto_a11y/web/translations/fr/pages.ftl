@@ -229,3 +229,4 @@ pages-you-must-have-at-least-one-combination = Vous devez avoir au moins une com
 pages-animated-contrast-at-keyframe = Animé par l'animation CSS « { $name } » : la couleur déclarée à l'image clé { $percent } est { $colour }, soit { $ratio }.
 pages-animated-contrast-tween-only = Animé par l'animation CSS « { $name } » : toutes les couleurs des images clés déclarées sont conformes, mais le contraste tombe à { $ratio } entre les images clés { $from } et { $to }, sur une couleur que le navigateur produit lors de l'interpolation et qui n'est écrite dans aucune image clé.
 pages-animated-contrast-generic = Animé par l'animation CSS « { $name } », la couleur change donc au cours du cycle. Relancez le test de cette page pour identifier l'image clé en cause.
+pages-confirm-cancel-test = Annuler ce test ? L'exécution s'arrêtera et aucun résultat ne sera enregistré.

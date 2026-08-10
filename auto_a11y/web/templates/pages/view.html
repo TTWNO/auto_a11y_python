@@ -171,7 +171,7 @@
             <a href="{{ url_for('pages.edit_page', page_id=page.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </a>
-            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-pass">
+            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral">
                 <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('common-scripts') }}
             </a>
         </div>
@@ -198,7 +198,7 @@
                 <a href="{{ url_for('pages.edit_page', page_id=page.id) }}" class="btn btn-outline-brand">
                     <i class="bi bi-pencil" aria-hidden="true"></i>
                 </a>
-                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-pass">
+                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral">
                     <i class="bi bi-code-square" aria-hidden="true"></i>
                 </a>
             </div>
@@ -3911,6 +3911,8 @@ function updateActionButtons(mode) {
 }
 
 function cancelPageTest(pageId) {
+    // Stopping a run throws away work in progress, so ask first.
+    if (!confirm({{ ftl('pages-confirm-cancel-test') | tojson }})) return;
     const cancelBtn = document.getElementById('cancel-test-btn');
     if (cancelBtn) {
         cancelBtn.disabled = true;

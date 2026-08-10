@@ -545,8 +545,61 @@ class WebsiteManager:
         page_id_str = self.db.create_page(page)
         object.__setattr__(page, '_id', ObjectId(page_id_str))
 
+        # A manually-added page is never crawled, so nothing would otherwise
+        # notice the documents it links to and the project's PDF counts would
+        # under-report. Scan it in the background: the fetch is a network call
+        # and must not hold up the request that added the page. Testing the page
+        # later records the same links, so this failing is not load-bearing —
+        # it just means the counts fill in at first test instead of now.
+        self._scan_page_for_documents_async(website, page)
+
         logger.info(f"Manually added page: {url} to website {website_id}")
         return page
+
+    def _scan_page_for_documents_async(self, website: Website, page: Page) -> None:
+        """Fetch a page off-thread and record any documents it links to."""
+        import threading
+
+        def _scan() -> None:
+            try:
+                import re
+                from urllib.request import Request, urlopen
+                from urllib.parse import urljoin
+
+                from auto_a11y.core.document_refs import record_document_references
+
+                request = Request(page.url, headers={'User-Agent': 'Auto A11y'})
+                with urlopen(request, timeout=30) as response:  # noqa: S310 — http(s) only
+                    if response.status != 200:
+                        return
+                    # Cap the read: a document scan does not justify pulling an
+                    # arbitrarily large body into memory.
+                    html = response.read(5_000_000).decode('utf-8', errors='replace')
+
+                hrefs: list[tuple[str, str | None]] = []
+                for match in re.finditer(
+                    r'<a\b[^>]*\bhref\s*=\s*["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+                    html, re.I | re.S,
+                ):
+                    absolute = urljoin(page.url, match.group(1).strip())
+                    text = re.sub(r'<[^>]+>', '', match.group(2))
+                    text = re.sub(r'\s+', ' ', text).strip()[:200]
+                    hrefs.append((absolute, text or None))
+
+                recorded = record_document_references(
+                    self.db, website, page.url, hrefs
+                )
+                if recorded:
+                    logger.info(
+                        "Recorded %d document reference(s) from manually added page %s",
+                        recorded, page.url,
+                    )
+            except Exception as exc:  # noqa: BLE001 — background, best-effort
+                logger.debug(
+                    "Background document scan failed for %s: %s", page.url, exc
+                )
+
+        threading.Thread(target=_scan, daemon=True, name='doc-scan').start()
     
     def list_pages(
         self,

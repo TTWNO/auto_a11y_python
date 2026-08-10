@@ -357,6 +357,38 @@ class TestRunner:
         self._logged_in_user: WebsiteUser | ProjectUser | None = None  # Track currently logged in user
         self._pdf_runner: "PdfRunner | None" = pdf_runner
     
+    async def _record_document_links(self, page: Page, browser_page: Any) -> None:
+        """Record documents linked from a page that has just been loaded.
+
+        Mirrors what the crawler does with the links it finds, for pages the
+        crawler never sees: manually-added ones, and pages whose links have
+        changed since discovery. Failures are swallowed — a document reference
+        is a by-product of testing, never a reason for a test to fail.
+        """
+        try:
+            website = self.db.get_website(page.website_id)
+            if website is None:
+                return
+            raw = await browser_page.evaluate(
+                """() => [...document.querySelectorAll('a[href]')].map(a => [
+                       a.href, (a.textContent || '').trim().slice(0, 200)
+                   ])"""
+            )
+            hrefs = [(str(u), str(t) if t else None) for u, t in raw]
+            if not hrefs:
+                return
+            from auto_a11y.core.document_refs import record_document_references
+
+            recorded = record_document_references(
+                self.db, website, page.url, hrefs
+            )
+            if recorded:
+                logger.debug(
+                    "Recorded %d document reference(s) from %s", recorded, page.url
+                )
+        except Exception as exc:  # noqa: BLE001 — never fail a test over this
+            logger.debug("Could not record document links for %s: %s", page.url, exc)
+
     async def test_page(
         self,
         page: Page,
@@ -654,6 +686,13 @@ class TestRunner:
                 # Some tests (like text_contrast and floating_dialogs) change viewport for breakpoint testing
                 original_viewport = await browser_page.evaluate('() => ({ width: window.innerWidth, height: window.innerHeight })')
                 logger.debug(f"Stored original viewport: {original_viewport}")
+
+                # The page is loaded and its links are right here, so record any
+                # documents it points at. A page can gain a PDF link long after
+                # discovery ran, and a manually-added page was never crawled at
+                # all — without this, neither would ever appear in the project's
+                # document counts. Best-effort: this must never fail a test run.
+                await self._record_document_links(page, browser_page)
 
                 # Run all tests
                 # Running JavaScript tests
@@ -1002,6 +1041,8 @@ class TestRunner:
             original_viewport: dict[str, int] | None = await browser_page.evaluate(
                 "() => ({ width: window.innerWidth, height: window.innerHeight })"
             )
+
+            await self._record_document_links(page, browser_page)
 
             raw_results = await self.script_injector.run_all_tests(
                 browser_page
@@ -1428,6 +1469,10 @@ class TestRunner:
                 original_viewport = await browser_page.evaluate('() => ({ width: window.innerWidth, height: window.innerHeight })')
                 logger.debug(f"DEBUG run_single_test: viewport stored, about to run tests")
                 logger.debug(f"Stored original viewport: {original_viewport}")
+
+                # Same document capture as the single-state path — multi-state
+                # runs its own flow and would otherwise never record links.
+                await self._record_document_links(page, browser_page)
 
                 # Run tests
                 raw_results = await self.script_injector.run_all_tests(browser_page)

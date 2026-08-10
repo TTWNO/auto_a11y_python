@@ -689,7 +689,11 @@ class Database:
                 {"_id": ObjectId(page.website_id)},
                 {"$inc": {"page_count": -1}}
             )
-        
+            # A removed page takes its document references with it. Documents
+            # still linked from other pages survive; ones only this page pointed
+            # at are dropped, so the project's document counts stay accurate.
+            self.remove_page_document_references(page.website_id, page.url)
+
         # Delete page
         result = self.pages.delete_one({"_id": ObjectId(page_id)})
         return result.deleted_count > 0
@@ -1702,6 +1706,32 @@ class Database:
             result = self.document_references.insert_one(doc_data)
             return str(result.inserted_id)
     
+    def remove_page_document_references(self, website_id: str, page_url: str) -> int:
+        """Drop a deleted page's contribution to the website's document references.
+
+        References are deduped per ``(website_id, document_url)`` and accumulate
+        the pages that link to them in ``referring_pages``, so removing a page
+        means removing it from that list — not deleting the reference, which
+        other pages may still point at. A reference whose last referring page has
+        gone is deleted outright, which is what keeps the project's document
+        counts honest after a page is removed.
+
+        Returns the number of references deleted entirely.
+        """
+        self.document_references.update_many(
+            {'website_id': website_id, 'referring_pages': page_url},
+            {'$pull': {'referring_pages': page_url}, '$inc': {'seen_count': -1}},
+        )
+        result = self.document_references.delete_many({
+            'website_id': website_id,
+            '$or': [
+                {'referring_pages': {'$size': 0}},
+                {'referring_pages': {'$exists': False},
+                 'referring_page_url': page_url},
+            ],
+        })
+        return int(result.deleted_count)
+
     def get_document_references(self, website_id: str, internal_only: bool | None = None) -> list[DocumentReference]:
         """Get document references for a website"""
 

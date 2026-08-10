@@ -275,7 +275,13 @@ def list_projects() -> str:
             status = ProjectStatus(status_filter)
             projects = [p for p in projects if p.status == status]
     
-    return render_template('projects/list.html', projects=projects)
+    # Enough to choose a project by without opening it: size, coverage, how many
+    # errors and warnings, and when it last ran. Two queries for the whole list.
+    project_stats = get_db().get_project_card_stats(
+        [p.id for p in projects if p.id]
+    )
+    return render_template('projects/list.html', projects=projects,
+                           project_stats=project_stats)
 
 
 @projects_bp.route('/create', methods=['GET', 'POST'])

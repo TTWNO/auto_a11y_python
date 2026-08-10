@@ -41,7 +41,7 @@
         {% for project in projects %}
         <div class="col-md-6 col-lg-4 mb-4">
             <article class="card h-100">
-                <div class="card-body" style="overflow: hidden;">
+                <div class="card-body d-flex flex-column" style="overflow: hidden;">
                     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
                         <h2 class="card-title mb-0 me-2" style="word-break: break-word; min-width: 0; flex: 1 1 auto;">{{ project.name }}</h2>
                         <div class="d-flex flex-wrap gap-1 flex-shrink-0">
@@ -56,14 +56,45 @@
                     </div>
                     <p class="card-text text-muted">{{ project.description or ftl('projects-no-description') }}</p>
 
+                    {# What you would actually pick a project by: how big it is, how
+                       much of it has been tested, what it found, and how stale that
+                       is. Previously this card carried only the two dates, so none of
+                       it was visible until you opened the project. Presented as a
+                       definition list so the figures are announced with their labels
+                       rather than as loose numbers. #}
+                    {% set stats = project_stats.get(project.id) if project_stats else None %}
+                    <dl class="row row-cols-2 g-1 mb-2 small">
+                        <div class="col">
+                            <dt class="text-muted fw-normal d-inline">{{ ftl('common-pages') }}</dt>
+                            <dd class="d-inline mb-0 fw-semibold">{{ stats.pages if stats else 0 }}</dd>
+                        </div>
+                        <div class="col">
+                            <dt class="text-muted fw-normal d-inline">{{ ftl('common-tested') }}</dt>
+                            <dd class="d-inline mb-0 fw-semibold">{{ stats.tested if stats else 0 }}</dd>
+                        </div>
+                        <div class="col">
+                            <dt class="text-muted fw-normal d-inline">{{ ftl('common-errors') }}</dt>
+                            <dd class="d-inline mb-0 fw-semibold text-severity-high">{{ stats.errors if stats else 0 }}</dd>
+                        </div>
+                        <div class="col">
+                            <dt class="text-muted fw-normal d-inline">{{ ftl('common-warnings') }}</dt>
+                            <dd class="d-inline mb-0 fw-semibold text-severity-medium">{{ stats.warnings if stats else 0 }}</dd>
+                        </div>
+                    </dl>
+
                     <div class="mb-3">
                         <small class="text-muted">
+                            <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('common-last-tested') }}
+                            {{ stats.last_tested.strftime('%Y-%m-%d') if stats and stats.last_tested else ftl('common-never') }}<br>
                             <i class="bi bi-calendar" aria-hidden="true"></i> {{ ftl('common-created-2') }} {{ project.created_at.strftime('%Y-%m-%d') }}<br>
                             <i class="bi bi-clock" aria-hidden="true"></i> {{ ftl('common-updated') }} {{ project.updated_at.strftime('%Y-%m-%d') }}
                         </small>
                     </div>
 
-                    <div class="d-flex justify-content-between">
+                    {# mt-auto pins the actions to the bottom of every card, so a
+                       two-line project name no longer leaves its neighbours' buttons
+                       sitting at a different height. #}
+                    <div class="d-flex justify-content-between mt-auto">
                         <a href="{{ url_for('projects.view_project', project_id=project.id) }}"
                            class="btn btn-sm btn-brand">
                             <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}

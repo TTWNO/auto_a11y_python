@@ -1493,6 +1493,63 @@ class Database:
 
     # Statistics
     
+    def get_project_card_stats(self, project_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """Summary figures for every project on the projects list, in two queries.
+
+        The projects list needs enough to choose a project by — how much is in it,
+        how much has been tested, how many errors and warnings, and when it last
+        ran. :meth:`get_project_stats` answers that for one project but walks every
+        website and page to do it, which on a list of twenty-odd projects is a lot
+        of round trips for a summary.
+
+        This reads the counters already stored on each page instead, so the whole
+        list costs one website lookup and one aggregation. Counts are of pages, not
+        PDFs; the project page remains the place for the full picture.
+
+        Returns a dict keyed by project id. Projects with no websites are absent,
+        so callers should treat a missing key as "nothing here yet".
+        """
+        if not project_ids:
+            return {}
+
+        website_to_project: dict[str, str] = {}
+        for site in self.websites.find(
+            {'project_id': {'$in': project_ids}}, {'_id': 1, 'project_id': 1}
+        ):
+            website_to_project[str(site['_id'])] = str(site['project_id'])
+
+        if not website_to_project:
+            return {}
+
+        rows = self.pages.aggregate([
+            {'$match': {'website_id': {'$in': list(website_to_project)}}},
+            {'$group': {
+                '_id': '$website_id',
+                'pages': {'$sum': 1},
+                'tested': {'$sum': {'$cond': [{'$eq': ['$status', 'tested']}, 1, 0]}},
+                'errors': {'$sum': {'$ifNull': ['$violation_count', 0]}},
+                'warnings': {'$sum': {'$ifNull': ['$warning_count', 0]}},
+                'last_tested': {'$max': '$last_tested'},
+            }},
+        ])
+
+        stats: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            project_id = website_to_project.get(str(row['_id']))
+            if project_id is None:
+                continue
+            entry = stats.setdefault(project_id, {
+                'pages': 0, 'tested': 0, 'errors': 0, 'warnings': 0, 'last_tested': None,
+            })
+            entry['pages'] += row.get('pages', 0)
+            entry['tested'] += row.get('tested', 0)
+            entry['errors'] += row.get('errors', 0)
+            entry['warnings'] += row.get('warnings', 0)
+            latest = row.get('last_tested')
+            if latest and (entry['last_tested'] is None or latest > entry['last_tested']):
+                entry['last_tested'] = latest
+        return stats
+
     def get_project_stats(
         self,
         project_id: str,

@@ -5,6 +5,7 @@ Generated with all 287 issues from the catalog
 """
 from __future__ import annotations
 
+from functools import lru_cache
 from enum import Enum
 from typing import Any
 
@@ -17,39 +18,16 @@ class ImpactScale(Enum):
     INFO = "Info"
 
 
-def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
-    """
-    Get detailed description for an issue code with contextual metadata
-    
-    Args:
-        issue_code: The issue code (e.g., 'headings_ErrEmptyHeading')
-        metadata: Additional context about the specific issue instance
-        
-    Returns:
-        Dictionary with detailed description fields
-    """
-    
-    if metadata is None:
-        metadata = {}
-    
-    # Extract the error type from the issue code
-    # Handle AI_ prefixed codes specially
-    if issue_code.startswith('AI_'):
-        error_type = issue_code  # Use full code for AI issues
-    elif '_' in issue_code:
-        # Find the actual error code (starts with Err, Warn, Info, Disco, or AI)
-        parts = issue_code.split('_')
-        error_type = issue_code  # Default to full code
+@lru_cache(maxsize=1)
+def _all_issue_descriptions() -> dict[str, dict[str, str | list[str]]]:
+    """Return the issue-description catalogue, built once.
 
-        for i, part in enumerate(parts):
-            if part.startswith(('Err', 'Warn', 'Info', 'Disco')):
-                # Found the error code, join from here to end
-                error_type = '_'.join(parts[i:])
-                break
-    else:
-        error_type = issue_code
-    
-    # Generated descriptions from template
+    This literal is ~4,200 lines and was previously constructed inside
+    get_detailed_issue_description, so it was rebuilt on every call — over
+    four thousand times to render a single results page. It depends on no
+    per-call state, and callers copy the entry they take before mutating it,
+    so one shared instance is safe.
+    """
     descriptions: dict[str, dict[str, str | list[str]]] = {
         # --- AI codes wired to fixtures (2026-06-15 audit follow-up) ---
         "ErrOrientationLocked": {
@@ -4252,6 +4230,43 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Remove the explicit role=\"list\" attribute from <ul> and <ol> elements — their native semantics already provide the list role. For <dl> elements, remove role=\"list\" entirely to preserve the description list semantics, or use a more appropriate role if the element is not being used as a description list."
         },
     }
+    return descriptions
+
+
+def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    """
+    Get detailed description for an issue code with contextual metadata
+    
+    Args:
+        issue_code: The issue code (e.g., 'headings_ErrEmptyHeading')
+        metadata: Additional context about the specific issue instance
+        
+    Returns:
+        Dictionary with detailed description fields
+    """
+    
+    if metadata is None:
+        metadata = {}
+    
+    # Extract the error type from the issue code
+    # Handle AI_ prefixed codes specially
+    if issue_code.startswith('AI_'):
+        error_type = issue_code  # Use full code for AI issues
+    elif '_' in issue_code:
+        # Find the actual error code (starts with Err, Warn, Info, Disco, or AI)
+        parts = issue_code.split('_')
+        error_type = issue_code  # Default to full code
+
+        for i, part in enumerate(parts):
+            if part.startswith(('Err', 'Warn', 'Info', 'Disco')):
+                # Found the error code, join from here to end
+                error_type = '_'.join(parts[i:])
+                break
+    else:
+        error_type = issue_code
+    
+    # Generated descriptions from template
+    descriptions = _all_issue_descriptions()
     
     # Get the specific description for this error type
     if error_type in descriptions:

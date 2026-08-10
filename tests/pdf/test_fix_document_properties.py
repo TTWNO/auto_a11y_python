@@ -34,6 +34,34 @@ def _blank_pdf() -> pikepdf.Pdf:
     return pdf
 
 
+def _pdf_with_text(text: str) -> pikepdf.Pdf:
+    """A one-page PDF whose content stream shows ``text``.
+
+    Enough of a document for the language sampler to read real words back
+    out of a content stream, which a blank page cannot exercise.
+    """
+    pdf = pikepdf.Pdf.new()
+    page = pdf.add_blank_page(page_size=(400, 400))
+    font = pdf.make_indirect(
+        Dictionary(
+            Type=Name("/Font"),
+            Subtype=Name("/Type1"),
+            BaseFont=Name("/Helvetica"),
+        )
+    )
+    page[Name("/Resources")] = Dictionary(Font=Dictionary(F1=font))
+    escaped = (
+        text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    )
+    # pikepdf.Stream rather than Pdf.make_stream: the latter is only
+    # partially typed upstream, and a test is not a reason to patch a stub.
+    page[Name("/Contents")] = pikepdf.Stream(
+        pdf,
+        f"BT /F1 12 Tf 20 200 Td ({escaped}) Tj ET".encode("latin-1", "replace"),
+    )
+    return pdf
+
+
 @pytest.fixture
 def opts(tmp_path: Path) -> FixOptions:
     return FixOptions(pdf_path=tmp_path / "annual_report-2025.pdf")
@@ -104,19 +132,72 @@ def test_language_leaves_an_existing_declaration_alone(opts: FixOptions) -> None
     assert str(pdf.Root[Name("/Lang")]) == "fr", "must not relabel a declared language"
 
 
-def test_language_declines_rather_than_guessing_english(opts: FixOptions) -> None:
-    """The divergence from pdfMax, which defaults an unknown document to "en".
+def test_language_is_derived_from_the_document_text(
+    tmp_path: Path, opts: FixOptions
+) -> None:
+    """The main path: no declaration, no input, so derive it and carry on.
 
-    A blank page yields no text to sample. Writing "en" here would make a
-    screen reader read a French document in an English voice, and nothing
-    in the UI would reveal that the value was a guess.
+    This has to work unattended — the fixer runs across whole sites — so
+    the verdict goes into the result rather than into a prompt.
+    """
+    source = tmp_path / "french.pdf"
+    _pdf_with_text(
+        "Le rapport est disponible sur le site et il peut être lu par tous"
+        + " ceux qui veulent savoir ce que nous avons dit à ce sujet."
+    ).save(source)
+
+    with pikepdf.open(source) as pdf:
+        result = fix_language(pdf, FixOptions(pdf_path=source))
+
+        assert result.success
+        assert str(pdf.Root[Name("/Lang")]) == "fr"
+        assert "derived" in result.description.lower()
+
+
+def test_language_sampling_reaches_past_a_wordless_cover(
+    tmp_path: Path,
+) -> None:
+    """Sampling the first pages only would read a cover and find nothing.
+
+    Reports routinely open with a title page carrying a logo and a date,
+    and bilingual documents often front-load one language. The sample is
+    spread through the document so the body decides the verdict.
+    """
+    pdf = pikepdf.Pdf.new()
+    for _ in range(8):
+        pdf.add_blank_page(page_size=(400, 400))
+    body = _pdf_with_text(
+        "Le rapport est disponible sur le site et il peut être lu par tous"
+        + " ceux qui veulent savoir ce que nous avons dit à ce sujet."
+    )
+    for _ in range(4):
+        pdf.pages.append(body.pages[0])
+
+    source = tmp_path / "cover_then_body.pdf"
+    pdf.save(source)
+
+    with pikepdf.open(source) as saved:
+        result = fix_language(saved, FixOptions(pdf_path=source))
+
+        assert result.success
+        assert str(saved.Root[Name("/Lang")]) == "fr"
+
+
+def test_language_reports_and_continues_when_there_is_no_text(
+    opts: FixOptions,
+) -> None:
+    """A pure scan yields no words, so there is nothing to derive from.
+
+    It must not stall the queue, and it must not invent a value: a wrong
+    /Lang makes a screen reader read the document in the wrong voice and
+    nothing downstream reveals it was a guess.
     """
     pdf = _blank_pdf()
     result = fix_language(pdf, opts)
 
-    assert not result.success
+    assert not result.success, "reported, not silently skipped"
     assert Name("/Lang") not in pdf.Root
-    assert "language" in result.description.lower()
+    assert "no language could be derived" in result.description.lower()
 
 
 # ---------------------------------------------------------------------------

@@ -18,17 +18,15 @@ from pikepdf import Dictionary, Name, String
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
 from auto_a11y.pdf.language import detect_language_from_text
 
-# Pages sampled when guessing the document language. The opening pages
-# carry running prose; sampling the whole document would cost far more
-# for no better guess.
-_LANG_SAMPLE_PAGES = 3
+# Pages sampled when deriving the document language. Reading every page
+# of a long report costs far more than it improves the verdict, so we take
+# a representative set — see :func:`_sample_pages` for why they are spread
+# through the document rather than taken from the front.
+_LANG_SAMPLE_PAGES = 5
 
 # Characters of sampled text fed to the detector. Enough for a stable
 # word-frequency ratio without holding a whole book in memory.
-_LANG_SAMPLE_CHARS = 3000
-
-# Minimum detector confidence before we write a guessed /Lang.
-_LANG_MIN_CONFIDENCE = 0.7
+_LANG_SAMPLE_CHARS = 6000
 
 
 def _ensure_dict(parent: pikepdf.Object, key: str, pdf: pikepdf.Pdf) -> pikepdf.Object:
@@ -79,16 +77,32 @@ def fix_title(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
     )
 
 
-def _sample_text(pdf: pikepdf.Pdf) -> str:
-    """Concatenate show-text operands from the opening pages.
+def _sample_pages(page_count: int) -> list[int]:
+    """Pick up to :data:`_LANG_SAMPLE_PAGES` page indices spread evenly.
 
-    Deliberately crude: this feeds a word-frequency guess, which needs a
+    Taking the first N pages is the cheap choice and the wrong one: page
+    one of a report is often a cover — a title, a logo and a date — which
+    carries almost no function words, and a bilingual document commonly
+    front-loads one language. Spreading the sample across the document
+    costs the same and represents it far better.
+    """
+    if page_count <= _LANG_SAMPLE_PAGES:
+        return list(range(page_count))
+    step = page_count / _LANG_SAMPLE_PAGES
+    return [min(page_count - 1, int(i * step)) for i in range(_LANG_SAMPLE_PAGES)]
+
+
+def _sample_text(pdf: pikepdf.Pdf) -> str:
+    """Concatenate show-text operands from a representative set of pages.
+
+    Deliberately crude: this feeds a word-frequency verdict, which needs a
     representative bag of words rather than correct reading order.
     """
     parts: list[str] = []
+    wanted = set(_sample_pages(len(pdf.pages)))
     for index, page in enumerate(pdf.pages):
-        if index >= _LANG_SAMPLE_PAGES:
-            break
+        if index not in wanted:
+            continue
         try:
             for inst in pikepdf.parse_content_stream(page):
                 if isinstance(inst, pikepdf.ContentStreamInlineImage):
@@ -115,14 +129,19 @@ def _sample_text(pdf: pikepdf.Pdf) -> str:
 
 
 def fix_language(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
-    """Set the document ``/Lang`` from user input, or a confident guess.
+    """Set the document ``/Lang``: declared, else supplied, else derived.
 
-    Divergence from pdfMax: where its fixer falls back to ``"en"`` for any
-    document it cannot identify, this one declines and asks. Declaring the
-    wrong language is not a neutral default — it makes a screen reader
-    pronounce the entire document with the wrong voice, which is worse for
-    the reader than declaring nothing and is invisible to the person who
-    applied the fix.
+    Resolution order is declared → supplied → derived from the document's
+    own text, and it never stops to ask. This fix has to run unattended
+    across whole sites, so a prompt would stall a queue of hundreds of
+    documents; instead the derived language and the evidence for it go
+    into the result, where the report shows them.
+
+    A document with no extractable text — a pure scan, an empty file —
+    yields no verdict. That case reports what happened and leaves ``/Lang``
+    unset rather than inventing a value, because a wrong declaration makes
+    a screen reader read the whole document in the wrong voice and nothing
+    downstream would reveal it was a guess.
     """
     existing = _entry_text(pdf.Root, "/Lang")
     if existing:
@@ -137,21 +156,20 @@ def fix_language(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
             "fix_language", True, f'Document language set to "{lang_code}"',
         )
 
-    guess, confidence = detect_language_from_text(_sample_text(pdf))
-    if guess in ("en", "fr") and confidence > _LANG_MIN_CONFIDENCE:
-        pdf.Root[Name("/Lang")] = String(guess)
+    derived, share = detect_language_from_text(_sample_text(pdf))
+    if derived in ("en", "fr"):
+        pdf.Root[Name("/Lang")] = String(derived)
         return FixResult(
             "fix_language", True,
-            f'Document language detected as "{guess}"'
-            + f" (confidence {confidence:.0%}) and set",
+            f'Document language derived as "{derived}" and set'
+            + f" ({share:.0%} of sampled words matched)",
         )
 
     return FixResult(
         "fix_language", False,
-        "Could not identify the document language with confidence."
-        + " Choose the language and apply this fix again — guessing"
-        + " would make a screen reader read the document in the wrong"
-        + " voice.",
+        "No language could be derived from the document text"
+        + f" ({derived}); /Lang left unset. Supply a language to set it"
+        + " explicitly.",
     )
 
 

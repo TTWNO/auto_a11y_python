@@ -175,9 +175,9 @@
     }
 
     function showAlert(message, severity) {
-        const container = document.querySelector(
-            'section[aria-label][class*="container-fluid"][class*="mt-3"]'
-        );
+        // The notifications region is always in the document now, so target it by
+        // id rather than by matching on its classes.
+        const container = document.getElementById('notification-region');
         const alertClass =
             severity === 'success'
                 ? 'alert-pass'
@@ -195,7 +195,9 @@
         close.type = 'button';
         close.className = 'btn-close';
         close.setAttribute('data-bs-dismiss', 'alert');
-        close.setAttribute('aria-label', 'Dismiss');
+        // This is the accessible name of the only control that clears the message,
+        // so it must not be hardcoded English. base.html publishes the translation.
+        close.setAttribute('aria-label', window.i18nDismiss || 'Dismiss');
         div.appendChild(close);
 
         if (container) {

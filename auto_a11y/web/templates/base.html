@@ -213,19 +213,22 @@
         </div>
     </section>
 
-    <!-- Flash Messages -->
+    <!-- Notifications. The region is always present, even when empty, for two
+         reasons: it is a stable landmark a screen reader user can navigate back
+         to in order to re-read a message they have already been told about, and
+         it gives client-side messages a guaranteed destination instead of being
+         appended to the end of <body> where they are hard to find again. -->
+    <section id="notification-region" class="container-fluid mt-3"
+             aria-label="{{ ftl('common-notifications-region') }}">
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <section class="container-fluid mt-3" aria-label="{{ ftl('common-notifications-region') }}">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
-                    </div>
-                {% endfor %}
-            </section>
-        {% endif %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
+            </div>
+        {% endfor %}
     {% endwith %}
+    </section>
 
     <!-- Main Content -->
     <main id="main-content" tabindex="-1" class="container-fluid mt-4">
@@ -301,6 +304,8 @@
     <!-- Global Test Tracking System -->
     <script>
     window.i18nNewWindow = {{ ftl('common-opens-in-new-tab') | tojson }};
+    // Used by api-client.js, which cannot read Fluent directly.
+    window.i18nDismiss = {{ ftl('common-dismiss') | tojson }};
 
     // Global service-unavailable banner controls. Polling code anywhere in
     // the app can call these when consecutive fetches fail, so the user
@@ -627,17 +632,20 @@
     // Show notification helper (if not already defined)
     if (typeof showNotification === 'undefined') {
         window.showNotification = function(title, message, type) {
-            // Simple notification using Bootstrap toast or alert
             const alertDiv = document.createElement('div');
             const alertMap = {error: 'high', danger: 'high', success: 'pass', warning: 'medium', info: 'info'};
-            alertDiv.className = `alert alert-${alertMap[type] || 'info'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-            alertDiv.style.zIndex = '9999';
+            // In flow inside the notifications region rather than pinned over the
+            // page: it used to be position-fixed at top-right, where it covered the
+            // navigation, sat at the very end of the DOM, and was effectively
+            // unfindable once the announcement had passed. It stays until dismissed.
+            alertDiv.className = `alert alert-${alertMap[type] || 'info'} alert-dismissible fade show`;
             alertDiv.setAttribute('role', 'alert');
             alertDiv.innerHTML = `
                 <strong>${title}</strong> ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
             `;
-            document.body.appendChild(alertDiv);
+            const region = document.getElementById('notification-region');
+            (region || document.body).appendChild(alertDiv);
 
             // Announce to screen readers via live region
             var liveRegion = document.getElementById('notification-live-region');

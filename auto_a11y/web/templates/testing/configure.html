@@ -364,13 +364,17 @@ function showAlert(type, message) {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
     `;
     
-    const container = document.querySelector('.container');
+    // Prefer the shared notifications region so the message is somewhere a
+    // screen reader user can navigate back to, not just wherever this page
+    // happens to put it.
+    const container = document.getElementById('notification-region')
+        || document.querySelector('.container');
     container.insertBefore(alertDiv, container.firstChild);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 5000);
+
+    // Deliberately no auto-dismiss. This message reports the outcome of an
+    // action the user asked for, so it stays until they close it: a timeout
+    // takes it away from anyone who reads slowly, is using a screen reader, or
+    // simply looked elsewhere (WCAG 2.2.1).
 }
 </script>
 {% endblock %}

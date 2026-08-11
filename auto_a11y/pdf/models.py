@@ -112,6 +112,17 @@ class CheckResult:
     extras: dict[str, object] = field(
         default_factory=lambda: {}, compare=False, hash=False,
     )
+    elements: tuple[int, ...] = field(default=(), compare=False)
+    """Structure elements this verdict is about, by
+    :attr:`~auto_a11y.pdf.audit.structure.StructElement.index`.
+
+    Empty for checks that describe the document as a whole. Where it is
+    populated the viewer can draw the finding on the page: the
+    reading-order collector already knows where each element sits, so an
+    index is all a check has to supply to be locatable.
+
+    Excluded from equality for the same reason as ``extras`` — two
+    verdicts are the same when they say the same thing."""
 
 
 # pdfMax used a separate ``StructElement`` class; we reuse the one from

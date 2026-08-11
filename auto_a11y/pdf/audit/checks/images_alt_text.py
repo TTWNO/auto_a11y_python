@@ -168,6 +168,10 @@ def check_alt_text_on_figure_art(ctx: AuditContext) -> list[CheckResult]:
             standard="PDF/UA, WCAG 1.1.1",
             result="FAIL",
             details=detail,
+            # Naming the figures makes this finding locatable: the viewer
+            # joins each index to the element's position and draws the
+            # overlay there.
+            elements=tuple(e.index for e in figures_without_alt),
         )
     ]
 

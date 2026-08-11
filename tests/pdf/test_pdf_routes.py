@@ -678,33 +678,60 @@ def test_image_redirects_when_not_found(
 # ---------------------------------------------------------------------------
 
 
-def test_issue_map_streams_cached_json(
-    app: Flask, client: FlaskClient, mock_db: MagicMock, tmp_path: Path
+def test_issue_map_is_served_from_the_stored_audit(
+    app: Flask, client: FlaskClient, mock_db: MagicMock
 ) -> None:
-    """``/issue-map`` streams the cached pdfMax issue_map.json."""
+    """The overlays come from the audit, not from a file on disk.
+
+    They used to be read from JSON written by an external pdfMax
+    subprocess, which no packaged build contained — so the viewer's
+    overlays only ever appeared under Docker.
+    """
     doc = _make_doc()
+    doc.last_audit_result_id = 'result123'
     mock_db.get_pdf_document.return_value = doc
 
-    storage_root = Path(getattr(app, 'app_config').PDF_STORAGE_DIR)
-    pdf_path = storage_root / doc.storage_relpath
-    pdf_path.parent.mkdir(parents=True, exist_ok=True)
-    pdf_path.write_bytes(_TINY_PDF_BYTES)
-    cache_dir = pdf_path.parent / 'pdfmax-report'
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    json_path = cache_dir / 'document_issue_map.json'
-    json_path.write_text(
-        '{"version": 1, "page_dimensions": {"1": [612, 792]}, '
-        + '"issues": [{"id": "issue-0", "check_name": "Test",'
-        + ' "check_result": "FAIL", "page": 1, "bbox": [10, 20, 110, 60]}]}',
-        encoding='utf-8',
-    )
+    stored = MagicMock()
+    stored.metadata = {
+        'report_sections': {
+            'issue_map': {
+                'version': 1,
+                'page_dimensions': {'1': [612, 792]},
+                'issues': [{
+                    'id': 'issue-0',
+                    'check_name': 'Alt text on all Figure/Art tags',
+                    'check_result': 'FAIL',
+                    'page': 1,
+                    'bbox': [10, 20, 110, 60],
+                }],
+            }
+        }
+    }
+    mock_db.get_test_result.return_value = stored
 
     resp = client.get(f'/pdfs/{doc.id}/issue-map')
+
     assert resp.status_code == 200
     assert resp.mimetype == 'application/json'
     payload = resp.get_json()
     assert payload['version'] == 1
     assert payload['issues'][0]['id'] == 'issue-0'
+
+
+def test_issue_map_is_absent_for_an_audit_that_predates_it(
+    app: Flask, client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """404 rather than a redirect, so the viewer shows its own notice."""
+    doc = _make_doc()
+    doc.last_audit_result_id = 'result123'
+    mock_db.get_pdf_document.return_value = doc
+    stored = MagicMock()
+    stored.metadata = {'report_sections': {}}
+    mock_db.get_test_result.return_value = stored
+
+    resp = client.get(f'/pdfs/{doc.id}/issue-map')
+
+    assert resp.status_code == 404
 
 
 def test_issue_map_returns_404_when_no_audit_run(

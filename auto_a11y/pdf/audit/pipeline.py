@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 from auto_a11y.pdf.audit import (
     content_classification,
+    issue_map as issue_map_builder,
     colors,
     content_streams,
     font_metadata as font_metadata_collector,
@@ -336,6 +337,16 @@ def _run_audit_with_pdf(
             exc,
         )
         report_sections = {}
+
+    # The viewer's overlays. Built here because it is the only place that
+    # holds both the verdicts and the element geometry; stored alongside
+    # the report sections so serving it needs no cache file on disk.
+    try:
+        report_sections["issue_map"] = issue_map_builder.build_issue_map(
+            list(check_results), element_positions, page_dims,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Failed to build the issue map: %s", exc)
 
     _emit(progress, "Done", 1.0)
     return AuditResult.from_checks(

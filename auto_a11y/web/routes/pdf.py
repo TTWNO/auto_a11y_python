@@ -32,7 +32,7 @@ from flask import (
 from flask_login import current_user, login_required
 from werkzeug.wrappers import Response
 
-from typing import Any
+from typing import Any, cast
 
 from auto_a11y.core.job_manager import JobManager, JobStatus, JobType
 from auto_a11y.models.app_user import UserRole
@@ -782,17 +782,18 @@ def export(pdf_document_id: str, fmt: str) -> Response:
 
 @pdf_bp.route('/pdfs/<pdf_document_id>/issue-map', methods=['GET'])
 @login_required
-def issue_map(pdf_document_id: str) -> Response:
-    """Stream the cached pdfMax ``*_issue_map.json`` for the viewer overlays.
+def issue_map(pdf_document_id: str) -> Response | tuple[Response, int]:
+    """Serve the viewer's issue overlays for this document.
 
-    pdfMax's audit subprocess writes one issue-map JSON per run alongside
-    the Markdown report (see :meth:`PdfAuditJob._build_pdfmax_report_cache`).
-    The Viewer JS fetches this to position issue overlays on each PDF
-    page and to know which sidebar card to highlight on click.
+    The viewer fetches this to draw each finding over the page and to
+    connect it to its sidebar card. It comes from the stored audit — the
+    pipeline builds it where the verdicts and the element geometry are
+    both in hand — rather than from a file on disk. The previous source
+    was a JSON file written by an external pdfMax subprocess, which no
+    packaged build contained, so overlays only ever appeared in Docker.
 
-    Returns ``404`` (not a flash + redirect) so the viewer JS can fall
-    back to a "no overlays available — re-audit to enable" notice without
-    crashing the page.
+    Returns 404 rather than redirecting, so the viewer can fall back to
+    its "no overlays available" notice instead of navigating away.
     """
     db = get_db()
     pdf = db.get_pdf_document(pdf_document_id)
@@ -803,27 +804,28 @@ def issue_map(pdf_document_id: str) -> Response:
     if denied is not None:
         return denied
 
-    # PdfDocument.status is the source of truth for "has a usable audit"
-    # (see auto_a11y/pdf/issue_map_counts.py). After "Clear Test Results"
-    # the status flips to PENDING but the cache files may still exist on
-    # disk; serving them here would leak stale issues into the viewer.
-    if pdf.status is not PdfDocumentStatus.AUDITED:
+    # Status is the source of truth for "has a usable audit": after
+    # clearing results it flips to PENDING, and stale overlays would
+    # point at findings the user has been told are gone.
+    if pdf.status is not PdfDocumentStatus.AUDITED or not pdf.last_audit_result_id:
         abort(404)
 
-    storage = _get_storage()
-    pdf_path = storage.local_path(pdf)
-    cache_dir = pdf_path.parent / 'pdfmax-report'
-
-    if not cache_dir.is_dir():
+    test_result = db.get_test_result(pdf.last_audit_result_id)
+    if test_result is None:
         abort(404)
 
-    candidates = sorted(cache_dir.glob('*_issue_map.json'))
-    if not candidates:
+    stored = test_result.metadata.get('report_sections')
+    if not isinstance(stored, dict):
+        abort(404)
+    # metadata round-trips through Mongo untyped; narrowed the same way
+    # the detail route narrows report_sections.
+    sections = cast('dict[str, object]', stored)
+    payload = sections.get('issue_map')
+    if not isinstance(payload, dict):
+        # Audited before the map was generated in-app; a re-audit fixes it.
         abort(404)
 
-    response = send_file(candidates[0], mimetype='application/json')
-    # The issue-map mirrors the audit's persisted state — safe to cache
-    # in the user's browser within a session.
+    response = jsonify(payload)
     response.headers['Cache-Control'] = 'private, max-age=60'
     return response
 

@@ -20,6 +20,7 @@ from auto_a11y.pdf.fix import (
     headings,
     lists,
     metadata,
+    role_mapping,
     tables,
 )
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
@@ -58,6 +59,10 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_list_structure": lists.fix_list_structure,
     "fix_list_nesting": lists.fix_list_nesting,
     "fix_list_labels": lists.fix_list_labels,
+    # Role mapping
+    "fix_circular_roles": role_mapping.fix_circular_roles,
+    "fix_standard_remap": role_mapping.fix_standard_remap,
+    "fix_role_mapping": role_mapping.fix_role_mapping,
     # Tables
     "fix_table_headers": tables.fix_table_headers,
     "fix_table_scope": tables.fix_table_scope,

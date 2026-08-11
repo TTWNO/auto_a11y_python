@@ -17,6 +17,7 @@ from pikepdf import Array, Dictionary, Name
 from auto_a11y.pdf.audit.structure import walk_structure_tree
 from auto_a11y.pdf.fix.models import FixOptions
 from auto_a11y.pdf.fix.tables import (
+    fix_table_captions,
     fix_table_headers,
     fix_table_scope,
     fix_table_sections,
@@ -357,3 +358,105 @@ def test_sections_preserve_a_caption_ahead_of_the_rows(
     assert result.success
     tags = [tag for _, tag in _depth_shape(pdf)]
     assert tags.index("Caption") < tags.index("THead")
+
+
+# ---------------------------------------------------------------------------
+# fix_table_captions
+# ---------------------------------------------------------------------------
+
+def _caption_text(pdf: pikepdf.Pdf) -> list[str]:
+    elements, _ = walk_structure_tree(pdf)
+    out: list[str] = []
+    for element in elements:
+        if element.resolved_tag != "Span":
+            continue
+        value = element.obj.get(Name("/ActualText"))
+        if value is not None:
+            out.append(str(value))
+    return out
+
+
+def test_a_caption_is_added_as_the_tables_first_child(
+    opts: FixOptions,
+) -> None:
+    """Where the specification requires it, and where a reader meets it."""
+    pdf = _table_pdf([["TH", "TH"], ["TD", "TD"]])
+    elements, _ = walk_structure_tree(pdf)
+    table = next(e for e in elements if e.resolved_tag == "Table")
+
+    result = fix_table_captions(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            table_captions_map={str(table.index + 1): "Quarterly revenue"},
+        ),
+    )
+
+    assert result.success
+    shape = _depth_shape(pdf)
+    assert shape[1] == (1, "Caption"), "first child of the table"
+    assert _caption_text(pdf) == ["Quarterly revenue"]
+
+
+def test_a_caption_is_refused_on_something_that_is_not_a_table(
+    opts: FixOptions,
+) -> None:
+    pdf = _table_pdf([["TD"]])
+    elements, _ = walk_structure_tree(pdf)
+    cell = next(e for e in elements if e.resolved_tag == "TD")
+
+    result = fix_table_captions(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            table_captions_map={str(cell.index + 1): "Not a table"},
+        ),
+    )
+
+    assert not result.success
+    assert "not a table" in result.description
+    assert _caption_text(pdf) == []
+
+
+def test_a_table_that_already_has_a_caption_is_left_alone(
+    opts: FixOptions,
+) -> None:
+    # Replacing it would discard whatever the author wrote.
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(200, 200))
+    table = _elem(pdf, "Table", [
+        _elem(pdf, "Caption"),
+        _elem(pdf, "TR", [_elem(pdf, "TD")]),
+    ])
+    struct_root = pdf.make_indirect(Dictionary(Type=Name("/StructTreeRoot")))
+    struct_root[Name("/K")] = Array([table])
+    pdf.Root[Name("/StructTreeRoot")] = struct_root
+    elements, _ = walk_structure_tree(pdf)
+    table_element = next(e for e in elements if e.resolved_tag == "Table")
+
+    result = fix_table_captions(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            table_captions_map={str(table_element.index + 1): "New"},
+        ),
+    )
+
+    assert not result.success
+    assert "already has a caption" in result.description
+
+
+def test_captions_reject_a_zero_reference(opts: FixOptions) -> None:
+    pdf = _table_pdf([["TD"]])
+
+    result = fix_table_captions(
+        pdf, FixOptions(pdf_path=opts.pdf_path, table_captions_map={"0": "x"})
+    )
+
+    assert not result.success
+
+
+def test_captions_decline_with_nothing_supplied(opts: FixOptions) -> None:
+    result = fix_table_captions(_table_pdf([["TD"]]), opts)
+
+    assert not result.success

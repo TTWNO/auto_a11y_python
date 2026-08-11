@@ -14,10 +14,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 import pikepdf
-from pikepdf import Dictionary, Name
+from pikepdf import Dictionary, Name, String
 
 from auto_a11y.pdf.audit.structure import StructElement, walk_structure_tree
-from auto_a11y.pdf.fix._pdf_objects import write_kids
+from auto_a11y.pdf.fix._pdf_objects import kids, write_kids
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
 
 # Structure tags that group rows inside a table.
@@ -257,4 +257,96 @@ def fix_table_sections(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
     return FixResult(
         "fix_table_sections", True,
         "No tables needed row sections added",
+    )
+
+
+def fix_table_captions(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Add a ``<Caption>`` to chosen tables from supplied text.
+
+    A caption is what tells a reader what a table is before they start
+    navigating it — without one, a screen reader announces "table, four
+    columns, twelve rows" and leaves them to infer the subject from the
+    cells.
+
+    The caption is inserted as the table's first child, which is where
+    the specification requires it and where a reader expects to meet it.
+    Element references are 1-based, matching the report.
+    """
+    if not opts.table_captions_map:
+        return FixResult(
+            "fix_table_captions", False, "No table captions provided",
+        )
+
+    targets: dict[int, str] = {}
+    rejected: list[str] = []
+    for key, text in opts.table_captions_map.items():
+        try:
+            position = int(key)
+        except (TypeError, ValueError):
+            rejected.append(str(key))
+            continue
+        if position < 1:
+            rejected.append(str(key))
+            continue
+        targets[position - 1] = text
+
+    if rejected:
+        return FixResult(
+            "fix_table_captions", False,
+            "Not a 1-based element reference: " + ", ".join(sorted(rejected)),
+        )
+
+    elements, _role_map = walk_structure_tree(pdf)
+    if not elements:
+        return FixResult("fix_table_captions", False, "No structure tree found")
+    by_index = {e.index: e for e in elements}
+
+    added = 0
+    problems: list[str] = []
+    for index, text in sorted(targets.items()):
+        element = by_index.get(index)
+        if element is None:
+            problems.append(f"{index + 1} not found")
+            continue
+        if element.resolved_tag != "Table":
+            problems.append(
+                f"{index + 1} is <{element.resolved_tag or '?'}>, not a table"
+            )
+            continue
+        if any(
+            by_index[i].resolved_tag == "Caption"
+            for i in element.children_indices
+            if i in by_index
+        ):
+            problems.append(f"{index + 1} already has a caption")
+            continue
+
+        caption = pdf.make_indirect(
+            Dictionary(Type=Name.StructElem, S=Name("/Caption"), P=element.obj)
+        )
+        span = pdf.make_indirect(
+            Dictionary(
+                Type=Name.StructElem,
+                S=Name("/Span"),
+                P=caption,
+                ActualText=String(text),
+            )
+        )
+        write_kids(caption, [span])
+        write_kids(element.obj, [caption, *(kids(element.obj) or [])])
+        added += 1
+
+    if added and not problems:
+        return FixResult(
+            "fix_table_captions", True, f"Added a caption to {added} table(s)",
+        )
+    if added:
+        return FixResult(
+            "fix_table_captions", True,
+            f"Added a caption to {added} of {len(targets)} table(s) — "
+            + "; ".join(problems),
+        )
+    return FixResult(
+        "fix_table_captions", False,
+        "Added no captions — " + "; ".join(problems),
     )

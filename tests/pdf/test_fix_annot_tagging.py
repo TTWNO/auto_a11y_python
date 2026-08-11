@@ -16,6 +16,7 @@ from pikepdf import Array, Dictionary, Name
 
 from auto_a11y.pdf.fix.annot_tagging import (
     fix_annot_tagged,
+    fix_link_annotations,
     fix_widget_form_tags,
 )
 from auto_a11y.pdf.fix.models import FixOptions
@@ -305,6 +306,84 @@ def test_annot_tagged_also_refuses_to_flatten_a_branching_parent_tree(
     _document(pdf, _elem(pdf, "Document"), parent_tree=branching)
 
     result = fix_annot_tagged(pdf, opts)
+
+    tree = pdf.Root[Name("/StructTreeRoot")][Name("/ParentTree")]
+    assert Name("/Kids") in tree
+    assert Name("/Nums") not in tree
+    assert "branching number tree" in result.description
+
+
+# ---------------------------------------------------------------------------
+# fix_link_annotations — the third caller of the same machinery
+# ---------------------------------------------------------------------------
+
+def test_a_stray_link_gains_a_link_element(opts: FixOptions) -> None:
+    pdf = _base()
+    link = _annot(pdf, "Link")
+    pdf.pages[0].obj[Name("/Annots")] = Array([link])
+    _document(pdf, _elem(pdf, "Document"), parent_tree=None)
+
+    result = fix_link_annotations(pdf, opts)
+
+    assert result.success
+    assert "Link" in _tags(pdf)
+
+
+def test_a_misparented_link_is_wrapped_in_place(opts: FixOptions) -> None:
+    """A link must stay where the sentence put it.
+
+    Moving it to the end of its parent would announce the link after the
+    text that introduces it, which is the problem the fix exists to solve.
+    """
+    pdf = _base()
+    link = _annot(pdf, "Link")
+    pdf.pages[0].obj[Name("/Annots")] = Array([link])
+    document = _elem(pdf, "Document", [
+        _elem(pdf, "P"),
+        _elem(pdf, "Span", [_objr(pdf, link)]),
+        _elem(pdf, "P"),
+    ])
+    _document(pdf, document, parent_tree=None)
+
+    fix_link_annotations(pdf, opts)
+
+    tags = _tags(pdf)
+    assert tags.index("Link") > tags.index("Span")
+    assert tags.count("P") == 2
+
+
+def test_a_link_already_inside_a_link_element_is_left_alone(
+    opts: FixOptions,
+) -> None:
+    pdf = _base()
+    link = _annot(pdf, "Link")
+    pdf.pages[0].obj[Name("/Annots")] = Array([link])
+    wrapper = _elem(pdf, "Link", [_objr(pdf, link)])
+    _document(pdf, _elem(pdf, "Document", [wrapper]), parent_tree=None)
+    before = _tags(pdf)
+
+    result = fix_link_annotations(pdf, opts)
+
+    assert result.success
+    assert _tags(pdf) == before
+
+
+def test_link_fix_also_refuses_to_flatten_a_branching_parent_tree(
+    opts: FixOptions,
+) -> None:
+    """The same guard, reached through the third caller.
+
+    The original carried this bug in all three copies of the algorithm.
+    """
+    pdf = _base()
+    pdf.pages[0].obj[Name("/Annots")] = Array([_annot(pdf, "Link")])
+    leaf = pdf.make_indirect(
+        Dictionary(Nums=Array([0, pdf.make_indirect(Dictionary())]))
+    )
+    branching = pdf.make_indirect(Dictionary(Kids=Array([leaf])))
+    _document(pdf, _elem(pdf, "Document"), parent_tree=branching)
+
+    result = fix_link_annotations(pdf, opts)
 
     tree = pdf.Root[Name("/StructTreeRoot")][Name("/ParentTree")]
     assert Name("/Kids") in tree

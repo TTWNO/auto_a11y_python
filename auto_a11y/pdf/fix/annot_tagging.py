@@ -325,3 +325,21 @@ def fix_annot_tagged(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
         wrapper_tag="Annot",
         noun="non-link/widget annotation(s)",
     )
+
+
+def fix_link_annotations(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Put every link annotation inside a ``<Link>`` structure element.
+
+    A ``<Link>`` element is what ties a link's clickable region to the
+    text that describes it. Reached through one, a screen reader
+    announces the link where it appears in the sentence, with the wording
+    the author gave it; reached any other way, the user gets a bare
+    destination detached from whatever explained where it goes.
+    """
+    return _tag_annotations(
+        pdf,
+        fix_id="fix_link_annotations",
+        wanted=lambda subtype: subtype == "/Link",
+        wrapper_tag="Link",
+        noun="link annotation(s)",
+    )

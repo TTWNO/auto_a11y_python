@@ -53,6 +53,7 @@ FIX_REGISTRY: dict[str, FixFn] = {
     # Annotations
     "fix_widget_form_tags": annot_tagging.fix_widget_form_tags,
     "fix_annot_tagged": annot_tagging.fix_annot_tagged,
+    "fix_link_annotations": annot_tagging.fix_link_annotations,
     "fix_trapnet": annotation_fixes.fix_trapnet,
     "fix_ref_xobjects": annotation_fixes.fix_ref_xobjects,
     "fix_annot_descriptions": annotation_fixes.fix_annot_descriptions,

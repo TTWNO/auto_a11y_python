@@ -11,9 +11,10 @@ fixes apply a person's decision rather than inferring one.
 from __future__ import annotations
 
 import pikepdf
-from pikepdf import Name
+from pikepdf import Dictionary, Name
 
-from auto_a11y.pdf.audit.structure import walk_structure_tree
+from auto_a11y.pdf.audit.structure import StructElement, walk_structure_tree
+from auto_a11y.pdf.fix._pdf_objects import is_content_ref, kids, write_kids
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
 
 _HEADING_TAGS = frozenset({"H1", "H2", "H3", "H4", "H5", "H6"})
@@ -132,4 +133,140 @@ def fix_heading_levels(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
     return FixResult(
         "fix_heading_levels", False,
         "Changed no heading levels — " + "; ".join(problems),
+    )
+
+
+# Elements that divide a document into sections. Heading depth is counted
+# against these.
+#
+# <Div> is deliberately absent, though the original counted it. The
+# specification calls Div "a generic block-level element or group of
+# elements" — it carries no sectioning meaning, so treating it as a level
+# invents hierarchy from layout. It also interacts badly with
+# fix_heading_containers, which wraps headings in Div: running that first
+# would demote every heading it touched.
+_SECTIONING_TAGS = frozenset({"Document", "Part", "Sect", "Art"})
+
+_GENERIC_HEADING = "H"
+
+# Both heading conventions, for fixes that care that something *is* a
+# heading rather than what level it claims.
+_ANY_HEADING_TAG = _HEADING_TAGS | {_GENERIC_HEADING}
+
+
+def fix_heading_containers(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Give each heading under a shared parent its own container.
+
+    A node holding several headings side by side describes a structure
+    with no content between them — the headings are siblings rather than
+    each introducing something. Wrapping all but the first in a ``<Div>``
+    separates them, so each heading owns a region of the document.
+
+    The first heading keeps its place, so nothing moves in reading order.
+    """
+    elements, _role_map = walk_structure_tree(pdf)
+    if not elements:
+        return FixResult("fix_heading_containers", False, "No structure tree found")
+
+    by_objgen = {
+        e.obj.objgen: e for e in elements if e.obj.is_indirect
+    }
+    wrapped = 0
+
+    for element in elements:
+        # Rebuilt from the node's real /K, not from its child elements:
+        # /K also carries marked-content ids and object references, and
+        # writing back only the elements would delete the node's text.
+        children = kids(element.obj) or []
+        headings = [
+            child for child in children
+            if isinstance(child, pikepdf.Dictionary)
+            and not is_content_ref(child)
+            and child.is_indirect
+            and (found := by_objgen.get(child.objgen)) is not None
+            and found.resolved_tag in _ANY_HEADING_TAG
+        ]
+        if len(headings) < 2:
+            continue
+
+        extra = {h.objgen for h in headings[1:]}
+        rebuilt: list[pikepdf.Object] = []
+        for child in children:
+            if not (
+                isinstance(child, pikepdf.Dictionary)
+                and child.is_indirect
+                and child.objgen in extra
+            ):
+                rebuilt.append(child)
+                continue
+            container = pdf.make_indirect(
+                Dictionary(
+                    Type=Name.StructElem, S=Name("/Div"), P=element.obj,
+                )
+            )
+            write_kids(container, [child])
+            child[Name("/P")] = container
+            rebuilt.append(container)
+            wrapped += 1
+        write_kids(element.obj, rebuilt)
+
+    if wrapped:
+        return FixResult(
+            "fix_heading_containers", True,
+            f"Gave {wrapped} heading(s) their own container",
+        )
+    return FixResult(
+        "fix_heading_containers", True,
+        "No node holds more than one heading",
+    )
+
+
+def fix_generic_headings(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Give generic ``<H>`` tags a level, where the document mixes both styles.
+
+    PDF allows two heading conventions: numbered ``<H1>``–``<H6>``, or
+    plain ``<H>`` whose level comes from how deeply it is nested. Either
+    is valid on its own. A document using both is readable under neither,
+    because a reader cannot tell whether an ``<H>`` beside an ``<H2>``
+    outranks it.
+
+    Only acts when both appear, and derives each level from the number of
+    enclosing sectioning elements. Where a document uses ``<H>``
+    throughout, it is left alone — that is the PDF 2.0 convention, not a
+    fault.
+    """
+    elements, _role_map = walk_structure_tree(pdf)
+    if not elements:
+        return FixResult("fix_generic_headings", False, "No structure tree found")
+
+    tags = {e.resolved_tag for e in elements}
+    if _GENERIC_HEADING not in tags or not (tags & _HEADING_TAGS):
+        return FixResult(
+            "fix_generic_headings", True,
+            "The document does not mix generic and numbered headings",
+        )
+
+    by_index = {e.index: e for e in elements}
+
+    def sectioning_depth(element: StructElement) -> int:
+        """How many sectioning elements enclose this one."""
+        depth = 0
+        parent = by_index.get(element.parent_index)
+        while parent is not None:
+            if parent.resolved_tag in _SECTIONING_TAGS:
+                depth += 1
+            parent = by_index.get(parent.parent_index)
+        return depth
+
+    converted = 0
+    for element in elements:
+        if element.resolved_tag != _GENERIC_HEADING:
+            continue
+        level = min(max(sectioning_depth(element), 1), _MAX_LEVEL)
+        element.obj[Name("/S")] = Name(f"/H{level}")
+        converted += 1
+
+    return FixResult(
+        "fix_generic_headings", True,
+        f"Gave {converted} generic <H> tag(s) a numbered level",
     )

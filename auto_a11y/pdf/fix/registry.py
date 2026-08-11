@@ -73,6 +73,8 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_bookmarks": bookmarks.fix_bookmarks,
     # Headings
     "fix_heading_levels": headings.fix_heading_levels,
+    "fix_heading_containers": headings.fix_heading_containers,
+    "fix_generic_headings": headings.fix_generic_headings,
     # Language tagging
     "fix_lang_bcp47": language.fix_lang_bcp47,
     "fix_outline_lang": language.fix_outline_lang,

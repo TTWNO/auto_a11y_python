@@ -15,7 +15,11 @@ import pytest
 from pikepdf import Array, Dictionary, Name
 
 from auto_a11y.pdf.audit.structure import walk_structure_tree
-from auto_a11y.pdf.fix.headings import fix_heading_levels
+from auto_a11y.pdf.fix.headings import (
+    fix_generic_headings,
+    fix_heading_containers,
+    fix_heading_levels,
+)
 from auto_a11y.pdf.fix.models import FixOptions
 
 
@@ -180,3 +184,144 @@ def test_declines_without_a_structure_tree(opts: FixOptions) -> None:
 
     assert not result.success
     assert "No structure tree" in result.description
+
+
+# ---------------------------------------------------------------------------
+# fix_heading_containers
+# ---------------------------------------------------------------------------
+
+def _nested(pdf: pikepdf.Pdf, tag: str, kids: list[pikepdf.Object]
+            ) -> pikepdf.Object:
+    obj = pdf.make_indirect(
+        Dictionary(Type=Name("/StructElem"), S=Name(f"/{tag}"))
+    )
+    obj[Name("/K")] = Array(kids)
+    for kid in kids:
+        if isinstance(kid, pikepdf.Dictionary):
+            kid[Name("/P")] = obj
+    return obj
+
+
+def _leaf(pdf: pikepdf.Pdf, tag: str) -> pikepdf.Object:
+    return pdf.make_indirect(
+        Dictionary(Type=Name("/StructElem"), S=Name(f"/{tag}"))
+    )
+
+
+def _rooted(pdf: pikepdf.Pdf, root: pikepdf.Object) -> pikepdf.Pdf:
+    struct_root = pdf.make_indirect(Dictionary(Type=Name("/StructTreeRoot")))
+    struct_root[Name("/K")] = Array([root])
+    pdf.Root[Name("/StructTreeRoot")] = struct_root
+    return pdf
+
+
+def _blank() -> pikepdf.Pdf:
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(200, 200))
+    return pdf
+
+
+def test_sibling_headings_are_separated(opts: FixOptions) -> None:
+    pdf = _blank()
+    _rooted(pdf, _nested(pdf, "Sect", [
+        _leaf(pdf, "H1"), _leaf(pdf, "H2"), _leaf(pdf, "P"),
+    ]))
+
+    result = fix_heading_containers(pdf, opts)
+
+    assert result.success
+    assert _tags(pdf).count("Div") == 1, "all but the first are wrapped"
+
+
+def test_marked_content_survives_the_rewrite(opts: FixOptions) -> None:
+    """The node's /K carries its text as well as its child elements.
+
+    Rebuilding /K from the elements alone would delete the content.
+    """
+    pdf = _blank()
+    section = _nested(pdf, "Sect", [_leaf(pdf, "H1"), _leaf(pdf, "H2")])
+    # An MCID sits alongside the elements, as in any real tagged document.
+    section[Name("/K")] = Array([*_kids_of(section), 7])
+    _rooted(pdf, section)
+
+    fix_heading_containers(pdf, opts)
+
+    remaining = _kids_of(pdf.Root[Name("/StructTreeRoot")][Name("/K")][0])
+    assert any(
+        not isinstance(k, pikepdf.Dictionary) and int(k) == 7
+        for k in remaining
+    ), "the marked-content id must survive"
+
+
+def _kids_of(node: pikepdf.Object) -> list[pikepdf.Object]:
+    value = node.get(Name("/K"))
+    if value is None:
+        return []
+    if isinstance(value, Array):
+        return [value[i] for i in range(len(value))]
+    return [value]
+
+
+def test_a_single_heading_is_left_alone(opts: FixOptions) -> None:
+    pdf = _blank()
+    _rooted(pdf, _nested(pdf, "Sect", [_leaf(pdf, "H1"), _leaf(pdf, "P")]))
+
+    result = fix_heading_containers(pdf, opts)
+
+    assert result.success
+    assert "Div" not in _tags(pdf)
+
+
+# ---------------------------------------------------------------------------
+# fix_generic_headings
+# ---------------------------------------------------------------------------
+
+def test_generic_headings_are_left_alone_when_used_throughout(
+    opts: FixOptions,
+) -> None:
+    """<H> with nesting depth is the PDF 2.0 convention, not a fault."""
+    pdf = _blank()
+    _rooted(pdf, _nested(pdf, "Document", [
+        _leaf(pdf, "H"), _nested(pdf, "Sect", [_leaf(pdf, "H")]),
+    ]))
+
+    result = fix_generic_headings(pdf, opts)
+
+    assert result.success
+    assert _tags(pdf).count("H") == 2
+    assert "does not mix" in result.description
+
+
+def test_mixed_conventions_give_generic_headings_a_level(
+    opts: FixOptions,
+) -> None:
+    pdf = _blank()
+    _rooted(pdf, _nested(pdf, "Document", [
+        _leaf(pdf, "H1"),
+        _nested(pdf, "Sect", [_leaf(pdf, "H")]),
+    ]))
+
+    result = fix_generic_headings(pdf, opts)
+
+    assert result.success
+    assert "H" not in _tags(pdf), "the generic tag is replaced"
+    # Document + Sect enclose it, so level 2.
+    assert _tags(pdf).count("H2") == 1
+
+
+def test_a_div_does_not_count_as_a_section_level(opts: FixOptions) -> None:
+    """The divergence from pdfMax, which counted Div as a level.
+
+    Div is a generic block grouping with no sectioning meaning, and
+    fix_heading_containers creates Div wrappers — so counting it would
+    demote every heading that fix had touched.
+    """
+    pdf = _blank()
+    _rooted(pdf, _nested(pdf, "Document", [
+        _leaf(pdf, "H1"),
+        _nested(pdf, "Div", [_leaf(pdf, "H")]),
+    ]))
+
+    fix_generic_headings(pdf, opts)
+
+    assert _tags(pdf).count("H1") == 2, "the Div adds no depth"

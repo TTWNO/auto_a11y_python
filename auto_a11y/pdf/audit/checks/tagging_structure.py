@@ -1558,6 +1558,135 @@ def check_correct_nesting(ctx: AuditContext) -> list[CheckResult]:
     ]
 
 
+# ---------------------------------------------------------------------------
+# Content classification (Matterhorn 01-003, 01-004, 01-005)
+# ---------------------------------------------------------------------------
+
+
+def _pages_with(
+    ctx: AuditContext, attribute: str
+) -> list[int]:
+    """Page numbers where ``attribute`` is non-zero, in order."""
+    if ctx.content_classification is None:
+        return []
+    return [
+        page.page_number
+        for page in ctx.content_classification
+        if getattr(page, attribute)
+    ]
+
+
+def _page_list(pages: list[int]) -> str:
+    shown = ", ".join(str(p) for p in pages[:_EXAMPLE_LIMIT])
+    if len(pages) > _EXAMPLE_LIMIT:
+        shown += f" and {len(pages) - _EXAMPLE_LIMIT} more"
+    return shown
+
+
+def check_artifact_not_inside_tagged(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 01-003: an artifact is not nested inside tagged content.
+
+    An artifact declared inside real content tells a reader to skip
+    something that sits in the middle of what they are reading, which
+    either loses text or interrupts it depending on how the reader
+    resolves the contradiction.
+    """
+    name = "Artifact not inside tagged content"
+    standard = "Matterhorn 01-003"
+    if ctx.content_classification is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Page content was not classified",
+        )]
+
+    pages = _pages_with(ctx, "artifact_inside_tagged")
+    if not pages:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details="No artifact is nested inside tagged content",
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="FAIL",
+        details=(
+            f"Artifacts nested inside tagged content on page(s)"
+            f" {_page_list(pages)}"
+        ),
+    )]
+
+
+def check_tagged_not_inside_artifact(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 01-004: tagged content is not nested inside an artifact.
+
+    This is the more damaging direction. Content marked as an artifact is
+    content a reader is told to ignore, so real text inside one is simply
+    never announced — it is on the page and unreachable.
+    """
+    name = "Tagged content not inside artifact"
+    standard = "Matterhorn 01-004"
+    if ctx.content_classification is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Page content was not classified",
+        )]
+
+    pages = _pages_with(ctx, "tagged_inside_artifact")
+    if not pages:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details="No tagged content is nested inside an artifact",
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="FAIL",
+        details=(
+            f"Tagged content nested inside an artifact on page(s)"
+            f" {_page_list(pages)} — that content is never announced"
+        ),
+    )]
+
+
+def check_all_content_tagged_or_artifact(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 01-005: every mark is either tagged content or an artifact.
+
+    Content belonging to neither is visible on the page and invisible to
+    assistive technology, with nothing to indicate the omission.
+
+    Counts untagged images as well as untagged text, which is what makes
+    this check catch a scanned document: every page of one is a single
+    untagged image and no text at all, so a text-only count reports it
+    clean.
+    """
+    name = "All content is tagged or artifact"
+    standard = "Matterhorn 01-005"
+    if ctx.content_classification is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Page content was not classified",
+        )]
+
+    text = sum(p.untagged_text_operators for p in ctx.content_classification)
+    images = sum(p.untagged_image_operators for p in ctx.content_classification)
+    if not text and not images:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details="All page content is inside a tagged or artifact section",
+        )]
+
+    pages = _pages_with(ctx, "untagged_operators")
+    parts: list[str] = []
+    if text:
+        parts.append(f"{text} text operator(s)")
+    if images:
+        parts.append(f"{images} image(s)")
+    return [CheckResult(
+        name=name, standard=standard, result="FAIL",
+        details=(
+            " and ".join(parts)
+            + " outside any tagged or artifact section, on page(s) "
+            + _page_list(pages)
+        ),
+    )]
+
+
 TAGGING_STRUCTURE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_structure_tree_exists,
     check_role_mapping_valid,
@@ -1570,6 +1699,9 @@ TAGGING_STRUCTURE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_note_tags_have_unique_ids,
     check_no_empty_tags,
     check_correct_nesting,
+    check_artifact_not_inside_tagged,
+    check_tagged_not_inside_artifact,
+    check_all_content_tagged_or_artifact,
     check_formula_alt_text,
     check_mathml_associated_with_formula,
     check_associated_files_on_embedded_content,
@@ -1591,7 +1723,10 @@ __all__ = [
     "check_form_xobjects_with_mcids_not_reused",
     "check_formula_alt_text",
     "check_mathml_associated_with_formula",
+    "check_all_content_tagged_or_artifact",
+    "check_artifact_not_inside_tagged",
     "check_correct_nesting",
+    "check_tagged_not_inside_artifact",
     "check_no_circular_role_mappings",
     "check_no_empty_tags",
     "check_no_reference_xobjects",

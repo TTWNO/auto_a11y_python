@@ -38,6 +38,7 @@ import pikepdf
 logger = logging.getLogger(__name__)
 
 from auto_a11y.pdf.audit import (
+    content_classification,
     colors,
     content_streams,
     font_metadata as font_metadata_collector,
@@ -158,6 +159,10 @@ def _run_audit_with_pdf(
     # ---- Step 3: back-fill element text ---------------------------------
     structure.populate_element_text(elements, mcid_text_map)
 
+    # ---- Step 3b: content classification --------------------------------
+    _emit(progress, "Classifying page content", 0.25)
+    content_class = content_classification.classify_content(pdf)
+
     # ---- Step 4: font analysis ------------------------------------------
     _emit(progress, "Analyzing fonts", 0.30)
     font_analysis = fonts.extract_font_analysis(pdf_path)
@@ -246,6 +251,7 @@ def _run_audit_with_pdf(
         color_pairs=color_pairs,
         fg_only_colors=fg_only,
         form_color_pairs=form_pairs,
+        content_classification=content_class,
         images=images_list,
         visual_blocks=visual_blocks,
         page_dimensions=page_dims,

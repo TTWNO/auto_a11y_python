@@ -5318,3 +5318,42 @@ pdf-remediation-PdfErrIncorrectNesting =
     How to fix in Adobe Acrobat Pro
     
     Open the Tags panel and use the report's element references to find each violation. For an element nested in its own kind, delete the inner tag and let its children move up. For a misplaced cell or row, drag it into the correct parent rather than retagging it — retagging changes what the element is, while the problem is where it sits.
+
+pdf-remediation-PdfErrArtifactInsideTagged =
+    Why it matters
+    
+    An artifact declares something a reader can skip. Declaring one inside real content either drops text or interrupts it.
+    
+    Principle
+    
+    Artifact sections and tagged content sections must not overlap. An artifact belongs between tagged sections, not inside one.
+    
+    How to fix in Adobe Acrobat Pro
+    
+    Use the Content panel to find the artifact on the page named in this report, and move it out of the tagged container it sits inside. If the marked content genuinely is decoration, the surrounding container was tagged too widely.
+
+pdf-remediation-PdfErrTaggedInsideArtifact =
+    Why it matters
+    
+    Content inside an artifact is never announced. The text is on the page and unreachable, and nothing tells the reader it was skipped.
+    
+    Principle
+    
+    Anything a reader needs must sit in tagged content, not inside a section declared as an artifact.
+    
+    How to fix in Adobe Acrobat Pro
+    
+    In the Content panel, find the artifact on the page named in this report and remove the artifact marking from the real content inside it, or move that content out. Check what the artifact was meant to cover — usually a header or rule was marked too widely and swallowed the text beside it.
+
+pdf-remediation-PdfErrUntaggedContent =
+    Why it matters
+    
+    Content that is neither tagged nor declared an artifact is visible on the page and invisible to assistive technology, with nothing to indicate the omission.
+    
+    Principle
+    
+    Every mark on a page must be one of two things: tagged content reached through the structure tree, or an artifact explicitly declared as skippable.
+    
+    How to fix in Adobe Acrobat Pro
+    
+    Run Autotag, then review the result — autotagging classifies content but does not judge it. Where the report names images rather than text, check whether each one carries meaning: a meaningful image needs a Figure tag with alternative text, and a decorative one needs marking as an artifact. If every page reports a single untagged image, the document is a scan and needs optical character recognition before any of this applies.

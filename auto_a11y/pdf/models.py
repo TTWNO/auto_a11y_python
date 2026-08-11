@@ -45,6 +45,9 @@ from auto_a11y.pdf.audit.colors import (
     FormColorPairInfo,
     RgbColor,
 )
+from auto_a11y.pdf.audit.content_classification import (
+    PageContentClassification,
+)
 from auto_a11y.pdf.audit.font_metadata import FontMetadata
 from auto_a11y.pdf.audit.fonts import FontAnalysis
 from auto_a11y.pdf.audit.images import ExtractedImage
@@ -209,6 +212,12 @@ class AuditContext:
     :func:`auto_a11y.pdf.audit.colors.extract_form_field_colors`.
 
     Form-widget ``(foreground, background)`` pairs from /DA, /MK, /AP."""
+
+    content_classification: list[PageContentClassification] | None = None
+    """Output of :func:`auto_a11y.pdf.audit.content_classification.classify_content`.
+
+    One entry per page, recording how much of the page's content is
+    tagged, declared as an artifact, or neither."""
 
     images: list[ExtractedImage] | None = None
     """Output of :func:`auto_a11y.pdf.audit.images.extract_images`.

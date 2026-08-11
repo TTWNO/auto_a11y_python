@@ -1922,3 +1922,48 @@ pdf-check-PdfErrIncorrectNesting-why =
 
 pdf-check-PdfErrIncorrectNesting-who =
     Screen reader users, and anyone navigating tables or lists by structure.
+
+pdf-check-PdfErrArtifactInsideTagged-name =
+    Artifact not inside tagged content
+
+pdf-check-PdfErrArtifactInsideTagged-short-title =
+    Artifact inside tagged content
+
+pdf-check-PdfErrArtifactInsideTagged-what =
+    A section marked as an artifact is nested inside real tagged content.
+
+pdf-check-PdfErrArtifactInsideTagged-why =
+    An artifact declares something a reader can skip. Declaring one in the middle of what someone is reading either drops text or interrupts it, depending on how their software resolves the contradiction.
+
+pdf-check-PdfErrArtifactInsideTagged-who =
+    Screen reader users.
+
+pdf-check-PdfErrTaggedInsideArtifact-name =
+    Tagged content not inside artifact
+
+pdf-check-PdfErrTaggedInsideArtifact-short-title =
+    Tagged content inside an artifact
+
+pdf-check-PdfErrTaggedInsideArtifact-what =
+    Real tagged content is nested inside a section marked as an artifact.
+
+pdf-check-PdfErrTaggedInsideArtifact-why =
+    Content inside an artifact is content the reader is told to ignore, so it is never announced. The text is on the page and unreachable, and nothing indicates it was skipped.
+
+pdf-check-PdfErrTaggedInsideArtifact-who =
+    Screen reader users.
+
+pdf-check-PdfErrUntaggedContent-name =
+    All content is tagged or artifact
+
+pdf-check-PdfErrUntaggedContent-short-title =
+    Untagged content
+
+pdf-check-PdfErrUntaggedContent-what =
+    Text or images sit outside any tagged or artifact section, so they belong to neither category.
+
+pdf-check-PdfErrUntaggedContent-why =
+    Content that is neither tagged nor declared an artifact is visible on the page and invisible to assistive technology, with nothing to indicate the omission. A scanned document is the extreme case: every page is one untagged image and no text at all.
+
+pdf-check-PdfErrUntaggedContent-who =
+    Screen reader users, and anyone relying on text extraction, search or reflow.

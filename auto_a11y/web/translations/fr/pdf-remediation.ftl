@@ -5322,3 +5322,42 @@ pdf-remediation-PdfErrIncorrectNesting =
     Comment corriger dans Adobe Acrobat Pro
     
     Ouvrir le panneau Balises et utiliser les références d'éléments du rapport pour repérer chaque violation. Pour un élément imbriqué dans un élément de même type, supprimer la balise interne et laisser ses enfants remonter. Pour une cellule ou une ligne mal placée, la déplacer vers le parent correct plutôt que de la rebaliser : rebaliser change ce qu'est l'élément, alors que le problème est l'endroit où il se trouve.
+
+pdf-remediation-PdfErrArtifactInsideTagged =
+    Pourquoi c'est important
+    
+    Un artéfact désigne un élément que le lecteur peut ignorer. En déclarer un dans du contenu réel supprime du texte ou l'interrompt.
+    
+    Principe
+    
+    Les sections d'artéfact et les sections de contenu balisé ne doivent pas se chevaucher. Un artéfact se place entre des sections balisées, pas à l'intérieur de l'une d'elles.
+    
+    Comment corriger dans Adobe Acrobat Pro
+    
+    Utiliser le panneau Contenu pour repérer l'artéfact sur la page indiquée dans ce rapport et le sortir du conteneur balisé dans lequel il se trouve. Si le contenu marqué est bien décoratif, c'est le conteneur environnant qui a été balisé trop largement.
+
+pdf-remediation-PdfErrTaggedInsideArtifact =
+    Pourquoi c'est important
+    
+    Le contenu situé dans un artéfact n'est jamais annoncé. Le texte est sur la page et inaccessible, sans que rien n'indique au lecteur qu'il a été ignoré.
+    
+    Principe
+    
+    Tout ce dont un lecteur a besoin doit se trouver dans du contenu balisé, et non dans une section déclarée comme artéfact.
+    
+    Comment corriger dans Adobe Acrobat Pro
+    
+    Dans le panneau Contenu, repérer l'artéfact sur la page indiquée dans ce rapport et retirer le marquage d'artéfact du contenu réel qu'il contient, ou déplacer ce contenu à l'extérieur. Vérifier ce que l'artéfact devait couvrir : le plus souvent, un en-tête ou un filet a été marqué trop largement et a englobé le texte voisin.
+
+pdf-remediation-PdfErrUntaggedContent =
+    Pourquoi c'est important
+    
+    Un contenu qui n'est ni balisé ni déclaré comme artéfact est visible sur la page et invisible pour les technologies d'assistance, sans aucune indication de l'omission.
+    
+    Principe
+    
+    Chaque marque sur une page doit être l'une de deux choses : du contenu balisé accessible par l'arbre de structure, ou un artéfact explicitement déclaré comme ignorable.
+    
+    Comment corriger dans Adobe Acrobat Pro
+    
+    Lancer le balisage automatique, puis en examiner le résultat : le balisage automatique classe le contenu mais ne le juge pas. Lorsque le rapport signale des images plutôt que du texte, vérifier si chacune porte du sens : une image significative a besoin d'une balise Figure avec un texte de remplacement, une image décorative doit être marquée comme artéfact. Si chaque page signale une seule image non balisée, le document est une numérisation et nécessite une reconnaissance optique de caractères avant toute autre correction.

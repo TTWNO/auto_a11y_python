@@ -18,3 +18,4 @@ pdf-progress-stage-building-report-sections = Building report sections
 pdf-progress-stage-done = Done
 pdf-progress-stage-reading-order-detecting-columns = Reading order: detecting columns
 pdf-progress-stage-reading-order-matching-elements = Reading order: matching elements
+pdf-progress-stage-classifying-page-content = Classifying page content

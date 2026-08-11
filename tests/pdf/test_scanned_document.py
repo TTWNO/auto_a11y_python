@@ -141,3 +141,32 @@ def test_criteria_with_only_inapplicable_checks_are_not_claimed_as_pass(
         assert any(outcome != "NA" for outcome in outcomes), (
             f"criterion {row.get('criterion')} claimed PASS on N/A checks only"
         )
+
+
+def test_a_scanned_page_is_reported_as_untagged_content(
+    scanned_audit: AuditResult,
+) -> None:
+    """The check that finally names what is wrong with a scan.
+
+    Every other failure on this document describes a missing declaration
+    — no title, no language, no structure tree. This one describes the
+    content itself: there is an image on the page that belongs to neither
+    category, and no text anywhere.
+
+    pdfMax's equivalent counts only text operators, so a page with one
+    untagged image and no text satisfies it. That is every page of every
+    scanned document, which is the class of file this check exists for.
+    """
+    assert _verdict(scanned_audit, "All content is tagged or artifact") == "FAIL"
+
+
+def test_the_scan_reports_an_image_rather_than_text(
+    scanned_audit: AuditResult,
+) -> None:
+    detail = next(
+        c.details for c in scanned_audit.check_results
+        if c.name == "All content is tagged or artifact"
+    )
+
+    assert "image" in detail
+    assert "page(s) 1" in detail

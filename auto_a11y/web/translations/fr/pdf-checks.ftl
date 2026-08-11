@@ -1926,3 +1926,48 @@ pdf-check-PdfErrIncorrectNesting-why =
 
 pdf-check-PdfErrIncorrectNesting-who =
     Les personnes utilisant un lecteur d'écran, et toute personne naviguant dans les tableaux ou les listes par la structure.
+
+pdf-check-PdfErrArtifactInsideTagged-name =
+    Aucun artéfact dans du contenu balisé
+
+pdf-check-PdfErrArtifactInsideTagged-short-title =
+    Artéfact dans du contenu balisé
+
+pdf-check-PdfErrArtifactInsideTagged-what =
+    Une section marquée comme artéfact est imbriquée dans du contenu balisé réel.
+
+pdf-check-PdfErrArtifactInsideTagged-why =
+    Un artéfact désigne un élément que le lecteur peut ignorer. En déclarer un au milieu de ce qu'une personne est en train de lire supprime du texte ou l'interrompt, selon la façon dont son logiciel résout la contradiction.
+
+pdf-check-PdfErrArtifactInsideTagged-who =
+    Les personnes utilisant un lecteur d'écran.
+
+pdf-check-PdfErrTaggedInsideArtifact-name =
+    Aucun contenu balisé dans un artéfact
+
+pdf-check-PdfErrTaggedInsideArtifact-short-title =
+    Contenu balisé dans un artéfact
+
+pdf-check-PdfErrTaggedInsideArtifact-what =
+    Du contenu balisé réel est imbriqué dans une section marquée comme artéfact.
+
+pdf-check-PdfErrTaggedInsideArtifact-why =
+    Le contenu situé dans un artéfact est du contenu que le lecteur est invité à ignorer : il n'est donc jamais annoncé. Le texte est sur la page et inaccessible, sans aucune indication qu'il a été omis.
+
+pdf-check-PdfErrTaggedInsideArtifact-who =
+    Les personnes utilisant un lecteur d'écran.
+
+pdf-check-PdfErrUntaggedContent-name =
+    Tout le contenu est balisé ou artéfact
+
+pdf-check-PdfErrUntaggedContent-short-title =
+    Contenu non balisé
+
+pdf-check-PdfErrUntaggedContent-what =
+    Du texte ou des images se trouvent en dehors de toute section balisée ou d'artéfact : ils n'appartiennent donc à aucune des deux catégories.
+
+pdf-check-PdfErrUntaggedContent-why =
+    Un contenu qui n'est ni balisé ni déclaré comme artéfact est visible sur la page et invisible pour les technologies d'assistance, sans aucune indication de l'omission. Un document numérisé en est le cas extrême : chaque page est une seule image non balisée, sans aucun texte.
+
+pdf-check-PdfErrUntaggedContent-who =
+    Les personnes utilisant un lecteur d'écran, et toute personne dépendant de l'extraction de texte, de la recherche ou du redimensionnement.

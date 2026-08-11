@@ -391,6 +391,21 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         touchpoint=_TAG, standard="Matterhorn 09-008",
     ),
     _row(
+        name="Artifact not inside tagged content", result="FAIL",
+        stable_id="PdfErrArtifactInsideTagged",
+        touchpoint=_TAG, standard="Matterhorn 01-003",
+    ),
+    _row(
+        name="Tagged content not inside artifact", result="FAIL",
+        stable_id="PdfErrTaggedInsideArtifact",
+        touchpoint=_TAG, standard="Matterhorn 01-004",
+    ),
+    _row(
+        name="All content is tagged or artifact", result="FAIL",
+        stable_id="PdfErrUntaggedContent",
+        touchpoint=_TAG, standard="Matterhorn 01-005",
+    ),
+    _row(
         name="No empty tags", result="WARN",
         stable_id="PdfWarnEmptyTags",
         touchpoint=_TAG, standard="Matterhorn 09-006",

@@ -16,7 +16,10 @@ from typing import Protocol
 import pikepdf
 
 from auto_a11y.pdf.audit.checks.tagging_structure import (
+    check_all_content_tagged_or_artifact,
+    check_artifact_not_inside_tagged,
     check_correct_nesting,
+    check_tagged_not_inside_artifact,
     check_no_empty_tags,
     TAGGING_STRUCTURE_CHECKS,
     check_associated_files_on_embedded_content,
@@ -141,6 +144,9 @@ def test_tagging_structure_checks_registry_lists_every_check() -> None:
         check_note_tags_have_unique_ids,
         check_no_empty_tags,
         check_correct_nesting,
+        check_artifact_not_inside_tagged,
+        check_tagged_not_inside_artifact,
+        check_all_content_tagged_or_artifact,
         check_formula_alt_text,
         check_mathml_associated_with_formula,
         check_associated_files_on_embedded_content,

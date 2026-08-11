@@ -95,7 +95,7 @@ _ABBREV_MAX_LEN: int = 6
 _ABBREV_UPPER_FRACTION: float = 0.6
 
 
-def _validate_bcp47(lang_str: str) -> bool:
+def validate_bcp47(lang_str: str) -> bool:
     """Return ``True`` if ``lang_str`` parses as a valid BCP 47 tag.
 
     Whitespace is stripped; empty strings are invalid. Lowercased
@@ -197,7 +197,7 @@ def check_lang_values_valid_bcp47(ctx: AuditContext) -> list[CheckResult]:
 
     invalid_langs = [
         (source, val) for source, val in all_lang_values
-        if not _validate_bcp47(val)
+        if not validate_bcp47(val)
     ]
     if not invalid_langs:
         return [

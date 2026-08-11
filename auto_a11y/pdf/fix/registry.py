@@ -21,6 +21,7 @@ from auto_a11y.pdf.fix import (
     empty_structure,
     forms,
     headings,
+    language,
     lists,
     metadata,
     role_mapping,
@@ -69,6 +70,9 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_bookmarks": bookmarks.fix_bookmarks,
     # Headings
     "fix_heading_levels": headings.fix_heading_levels,
+    # Language tagging
+    "fix_lang_bcp47": language.fix_lang_bcp47,
+    "fix_outline_lang": language.fix_outline_lang,
     # Lists
     "fix_list_structure": lists.fix_list_structure,
     "fix_list_nesting": lists.fix_list_nesting,

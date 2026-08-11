@@ -25,6 +25,7 @@ from auto_a11y.pdf.fix import (
     links,
     lists,
     metadata,
+    nesting,
     notes,
     role_mapping,
     tables,
@@ -80,6 +81,9 @@ FIX_REGISTRY: dict[str, FixFn] = {
     # Language tagging
     "fix_lang_bcp47": language.fix_lang_bcp47,
     "fix_outline_lang": language.fix_outline_lang,
+    # Nesting
+    "fix_correct_nesting": nesting.fix_correct_nesting,
+    "fix_toc_structure": nesting.fix_toc_structure,
     # Notes
     "fix_note_ids": notes.fix_note_ids,
     # Link descriptions

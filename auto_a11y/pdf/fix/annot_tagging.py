@@ -14,6 +14,7 @@ second is the one that is easy to damage — see
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import pikepdf
@@ -37,14 +38,16 @@ class _Annotation:
     obj: pikepdf.Object
 
 
-def _annotations_of_subtype(
-    pdf: pikepdf.Pdf, subtype: str
+def _select_annotations(
+    pdf: pikepdf.Pdf, wanted: Callable[[str], bool]
 ) -> dict[tuple[int, int], _Annotation]:
-    """Every annotation of ``subtype``, keyed by object id.
+    """Every annotation whose subtype ``wanted`` accepts, keyed by object id.
 
     Keyed on ``objgen`` rather than ``id()``: pikepdf hands out fresh
     Python wrappers for the same PDF object, so identity comparison finds
-    the same annotation unequal to itself depending on how it was reached.
+    the same annotation unequal to itself depending on how it was reached
+    — which would let one annotation count as both linked and unlinked,
+    and gain a duplicate structure element.
     """
     found: dict[tuple[int, int], _Annotation] = {}
     for page in pdf.pages:
@@ -53,9 +56,8 @@ def _annotations_of_subtype(
             continue
         for index in range(len(annots)):
             annot = annots[index]
-            if str(annot.get(Name("/Subtype")) or "") != subtype:
-                continue
-            if annot.is_indirect:
+            subtype = str(annot.get(Name("/Subtype")) or "")
+            if subtype and wanted(subtype) and annot.is_indirect:
                 found[annot.objgen] = _Annotation(page=page.obj, obj=annot)
     return found
 
@@ -167,43 +169,44 @@ def _wrap_misparented(
     return wrapped
 
 
-def fix_widget_form_tags(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
-    """Put every form widget inside a ``<Form>`` structure element.
+def _tag_annotations(
+    pdf: pikepdf.Pdf,
+    *,
+    fix_id: str,
+    wanted: Callable[[str], bool],
+    wrapper_tag: str,
+    noun: str,
+) -> FixResult:
+    """Put every selected annotation inside a ``wrapper_tag`` element.
 
-    A widget annotation is the on-page part of a form field. Reached
-    through a ``<Form>`` element it is announced in reading order with its
-    label; reached any other way it arrives detached from the text that
-    explains it.
+    Shared by the two annotation-tagging fixes, which differ only in
+    which subtypes they claim and what they wrap them in.
 
-    Two repairs. A widget already referenced from the tree but sitting
-    under some other parent gets a ``<Form>`` wrapper around its
-    ``/OBJR``, in place, so reading order does not move. A widget absent
-    from the tree entirely gets a new ``<Form>`` with an ``/OBJR``,
-    appended to the document element, and a ``/StructParent`` key
-    registered in ``/ParentTree``.
+    Two repairs. An annotation already referenced from the tree but
+    sitting under some other parent gets a wrapper around its ``/OBJR``,
+    in place, so reading order does not move. One absent from the tree
+    entirely gets a new element with an ``/OBJR``, appended to the
+    document element, and a ``/StructParent`` key registered in
+    ``/ParentTree``.
 
     The second repair is skipped — with the reason reported — when the
-    document's ``/ParentTree`` is a branching number tree, because
-    appending to one safely needs number-tree surgery this does not do.
-    The alternative, which the original took, flattens the tree and
-    discards every existing mapping in the document.
+    document's ``/ParentTree`` is a branching number tree; see
+    :func:`_append_parent_tree_entries`.
     """
     struct_root = pdf.Root.get(Name("/StructTreeRoot"))
     if struct_root is None:
-        return FixResult("fix_widget_form_tags", False, "No structure tree found")
+        return FixResult(fix_id, False, "No structure tree found")
 
-    widgets = _annotations_of_subtype(pdf, "/Widget")
-    if not widgets:
-        return FixResult(
-            "fix_widget_form_tags", True, "No widget annotations in document",
-        )
+    annotations = _select_annotations(pdf, wanted)
+    if not annotations:
+        return FixResult(fix_id, True, f"No {noun} in document")
 
     roots = [
         root for root in (kids(struct_root) or [])
         if isinstance(root, pikepdf.Dictionary)
     ]
     if not roots:
-        return FixResult("fix_widget_form_tags", False, "Empty structure tree")
+        return FixResult(fix_id, False, "Empty structure tree")
 
     role_map = read_role_map(struct_root)
     linked: set[tuple[int, int]] = set()
@@ -211,10 +214,10 @@ def fix_widget_form_tags(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
     for root in roots:
         wrapped += _wrap_misparented(
             pdf, root, role_map,
-            targets=set(widgets), wrapper_tag="Form", linked=linked,
+            targets=set(annotations), wrapper_tag=wrapper_tag, linked=linked,
         )
 
-    unlinked = sorted(set(widgets) - linked)
+    unlinked = sorted(set(annotations) - linked)
     created = 0
     skipped_reason = ""
 
@@ -225,11 +228,11 @@ def fix_widget_form_tags(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
         entries: list[tuple[int, pikepdf.Object]] = []
 
         for objgen in unlinked:
-            annotation = widgets[objgen]
+            annotation = annotations[objgen]
             element = pdf.make_indirect(
                 Dictionary(
                     Type=Name.StructElem,
-                    S=Name("/Form"),
+                    S=Name(f"/{wrapper_tag}"),
                     P=document,
                     Pg=annotation.page,
                 )
@@ -246,25 +249,25 @@ def fix_widget_form_tags(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
 
         if _append_parent_tree_entries(pdf, struct_root, entries):
             for offset, objgen in enumerate(unlinked):
-                widgets[objgen].obj[Name("/StructParent")] = next_key + offset
+                annotations[objgen].obj[Name("/StructParent")] = next_key + offset
             write_kids(document, [*(kids(document) or []), *new_elements])
             struct_root[Name("/ParentTreeNextKey")] = next_key + created
         else:
             created = 0
             skipped_reason = (
-                f"; {len(unlinked)} widget(s) are absent from the structure"
-                + " tree and were left alone, because this document's"
-                + " /ParentTree is a branching number tree and appending to"
-                + " it safely is not something this fix does"
+                f"; {len(unlinked)} {noun} are absent from the structure tree"
+                + " and were left alone, because this document's /ParentTree"
+                + " is a branching number tree and appending to it safely is"
+                + " not something this fix does"
             )
 
     if not wrapped and not created:
         return FixResult(
-            "fix_widget_form_tags", bool(not skipped_reason),
+            fix_id, not skipped_reason,
             (
-                "All widget annotations are already inside Form elements"
+                f"All {noun} are already inside <{wrapper_tag}> elements"
                 if not skipped_reason
-                else "No widgets were re-tagged" + skipped_reason
+                else f"No {noun} were re-tagged" + skipped_reason
             ),
         )
 
@@ -272,9 +275,53 @@ def fix_widget_form_tags(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
     if wrapped:
         parts.append(f"wrapped {wrapped} misparented")
     if created:
-        parts.append(f"created {created} new Form tag(s)")
+        parts.append(f"created {created} new <{wrapper_tag}> tag(s)")
     return FixResult(
-        "fix_widget_form_tags", True,
-        f"Fixed {wrapped + created} widget annotation(s): "
-        + ", ".join(parts) + skipped_reason,
+        fix_id, True,
+        f"Fixed {wrapped + created} {noun}: " + ", ".join(parts) + skipped_reason,
+    )
+
+
+def fix_widget_form_tags(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Put every form widget inside a ``<Form>`` structure element.
+
+    A widget annotation is the on-page part of a form field. Reached
+    through a ``<Form>`` element it is announced in reading order with the
+    text that labels it; reached any other way it arrives detached from
+    whatever explains what it is for.
+    """
+    return _tag_annotations(
+        pdf,
+        fix_id="fix_widget_form_tags",
+        wanted=lambda subtype: subtype == "/Widget",
+        wrapper_tag="Form",
+        noun="widget annotation(s)",
+    )
+
+
+# Annotations that belong under some other tag, or none. Links have their
+# own <Link> element and their own fix; widgets belong in <Form>; a Popup
+# is the floating note attached to another annotation rather than content
+# in its own right; a PrinterMark is a press artefact and is required to
+# stay out of the structure tree entirely.
+_NOT_PLAIN_ANNOTATIONS = frozenset({
+    "/Link", "/Widget", "/Popup", "/PrinterMark",
+})
+
+
+def fix_annot_tagged(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Put remaining visible annotations inside an ``<Annot>`` element.
+
+    Covers the annotations with no more specific home: notes, stamps,
+    highlights, file attachments. Without a place in the structure tree
+    they are announced out of sequence with the text they were attached
+    to, which for a comment on a specific paragraph loses the point of
+    the comment.
+    """
+    return _tag_annotations(
+        pdf,
+        fix_id="fix_annot_tagged",
+        wanted=lambda subtype: subtype not in _NOT_PLAIN_ANNOTATIONS,
+        wrapper_tag="Annot",
+        noun="non-link/widget annotation(s)",
     )

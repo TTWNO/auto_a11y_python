@@ -14,7 +14,10 @@ import pikepdf
 import pytest
 from pikepdf import Array, Dictionary, Name
 
-from auto_a11y.pdf.fix.annot_tagging import fix_widget_form_tags
+from auto_a11y.pdf.fix.annot_tagging import (
+    fix_annot_tagged,
+    fix_widget_form_tags,
+)
 from auto_a11y.pdf.fix.models import FixOptions
 
 
@@ -164,7 +167,7 @@ def test_a_widget_already_inside_a_form_is_left_alone(
     result = fix_widget_form_tags(pdf, opts)
 
     assert result.success
-    assert "already inside Form" in result.description
+    assert "already inside <Form>" in result.description
     assert _tags(pdf) == before
 
 
@@ -204,7 +207,7 @@ def test_a_widget_absent_from_the_tree_gains_a_form_element(
     result = fix_widget_form_tags(pdf, opts)
 
     assert result.success
-    assert "created 1 new Form tag" in result.description
+    assert "created 1 new <Form> tag" in result.description
     assert "Form" in _tags(pdf)
 
 
@@ -219,7 +222,7 @@ def test_non_widget_annotations_are_ignored(opts: FixOptions) -> None:
     result = fix_widget_form_tags(pdf, opts)
 
     assert result.success
-    assert "No widget annotations" in result.description
+    assert "No widget annotation(s) in document" in result.description
 
 
 def test_declines_without_a_structure_tree(opts: FixOptions) -> None:
@@ -229,3 +232,81 @@ def test_declines_without_a_structure_tree(opts: FixOptions) -> None:
     result = fix_widget_form_tags(pdf, opts)
 
     assert not result.success
+
+
+# ---------------------------------------------------------------------------
+# fix_annot_tagged — the same machinery, a different selection
+# ---------------------------------------------------------------------------
+
+def _annot(pdf: pikepdf.Pdf, subtype: str) -> pikepdf.Object:
+    return pdf.make_indirect(
+        Dictionary(Type=Name("/Annot"), Subtype=Name(f"/{subtype}"))
+    )
+
+
+def test_a_stray_note_gains_an_annot_element(opts: FixOptions) -> None:
+    pdf = _base()
+    note = _annot(pdf, "Text")
+    pdf.pages[0].obj[Name("/Annots")] = Array([note])
+    _document(pdf, _elem(pdf, "Document"), parent_tree=None)
+
+    result = fix_annot_tagged(pdf, opts)
+
+    assert result.success
+    assert "Annot" in _tags(pdf)
+
+
+def test_a_misparented_note_is_wrapped_in_place(opts: FixOptions) -> None:
+    pdf = _base()
+    note = _annot(pdf, "Stamp")
+    pdf.pages[0].obj[Name("/Annots")] = Array([note])
+    document = _elem(pdf, "Document", [
+        _elem(pdf, "P"),
+        _elem(pdf, "Div", [_objr(pdf, note)]),
+    ])
+    _document(pdf, document, parent_tree=None)
+
+    result = fix_annot_tagged(pdf, opts)
+
+    assert result.success
+    tags = _tags(pdf)
+    assert tags.index("Annot") > tags.index("Div"), "kept its reading position"
+
+
+@pytest.mark.parametrize("subtype", ["Link", "Widget", "Popup", "PrinterMark"])
+def test_annotations_with_their_own_home_are_not_claimed(
+    subtype: str, opts: FixOptions
+) -> None:
+    """Each of these belongs somewhere else, or nowhere.
+
+    Links have <Link> and their own fix, widgets belong in <Form>, a Popup
+    is attached to another annotation rather than being content, and a
+    PrinterMark is a press artefact required to stay out of the tree.
+    """
+    pdf = _base()
+    pdf.pages[0].obj[Name("/Annots")] = Array([_annot(pdf, subtype)])
+    _document(pdf, _elem(pdf, "Document"), parent_tree=None)
+
+    result = fix_annot_tagged(pdf, opts)
+
+    assert result.success
+    assert "Annot" not in _tags(pdf)
+
+
+def test_annot_tagged_also_refuses_to_flatten_a_branching_parent_tree(
+    opts: FixOptions,
+) -> None:
+    pdf = _base()
+    pdf.pages[0].obj[Name("/Annots")] = Array([_annot(pdf, "Text")])
+    leaf = pdf.make_indirect(
+        Dictionary(Nums=Array([0, pdf.make_indirect(Dictionary())]))
+    )
+    branching = pdf.make_indirect(Dictionary(Kids=Array([leaf])))
+    _document(pdf, _elem(pdf, "Document"), parent_tree=branching)
+
+    result = fix_annot_tagged(pdf, opts)
+
+    tree = pdf.Root[Name("/StructTreeRoot")][Name("/ParentTree")]
+    assert Name("/Kids") in tree
+    assert Name("/Nums") not in tree
+    assert "branching number tree" in result.description

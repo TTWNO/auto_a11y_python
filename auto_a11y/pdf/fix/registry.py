@@ -11,6 +11,7 @@ from typing import TypeAlias
 
 import pikepdf
 
+from auto_a11y.pdf.fix import annotations as annotation_fixes
 from auto_a11y.pdf.fix import (
     alt_text,
     document_properties,
@@ -45,6 +46,11 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_empty_tags": empty_structure.fix_empty_tags,
     "fix_empty_tables": empty_structure.fix_empty_tables,
     "fix_empty_lists": empty_structure.fix_empty_lists,
+    # Annotations
+    "fix_trapnet": annotation_fixes.fix_trapnet,
+    "fix_ref_xobjects": annotation_fixes.fix_ref_xobjects,
+    "fix_annot_descriptions": annotation_fixes.fix_annot_descriptions,
+    "fix_annot_contents_lang": annotation_fixes.fix_annot_contents_lang,
     # Lists
     "fix_list_structure": lists.fix_list_structure,
     "fix_list_nesting": lists.fix_list_nesting,

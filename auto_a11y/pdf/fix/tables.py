@@ -14,9 +14,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 import pikepdf
-from pikepdf import Name
+from pikepdf import Dictionary, Name
 
 from auto_a11y.pdf.audit.structure import StructElement, walk_structure_tree
+from auto_a11y.pdf.fix._pdf_objects import write_kids
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
 
 # Structure tags that group rows inside a table.
@@ -182,4 +183,78 @@ def fix_table_scope(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
     return FixResult(
         "fix_table_scope", True,
         "All TH cells already have a valid /Scope",
+    )
+
+
+def fix_table_sections(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Group a table's rows into ``<THead>`` and ``<TBody>``.
+
+    Sections tell a reader which rows are headers, so assistive
+    technology can repeat them when the table breaks across pages and can
+    distinguish "the header row" from "the first row of data".
+
+    Only tables whose rows sit directly under ``<Table>`` are touched, and
+    only when there are at least two rows — a single-row table has nothing
+    to separate. A header section is created only when the first row is
+    made of ``<TH>`` cells; where it is not, every row goes into the body
+    rather than promoting the first row on the assumption it must be a
+    header.
+
+    Tables that already declare any section are left entirely alone: a
+    partial grouping was someone's decision about a structure this cannot
+    see.
+    """
+    elements, _role_map = walk_structure_tree(pdf)
+    if not elements:
+        return FixResult("fix_table_sections", False, "No structure tree found")
+
+    by_index = {e.index: e for e in elements}
+    tables = [e for e in elements if e.resolved_tag == "Table"]
+    if not tables:
+        return FixResult("fix_table_sections", True, "No tables in document")
+
+    grouped = 0
+    for table in tables:
+        children = _children(by_index, table)
+        if any(child.resolved_tag in _ROW_GROUPS for child in children):
+            continue
+
+        rows = [child for child in children if child.resolved_tag == "TR"]
+        if len(rows) < 2:
+            continue
+
+        first_row_cells = _children(by_index, rows[0])
+        has_header_row = any(cell.resolved_tag == "TH" for cell in first_row_cells)
+        header_rows = rows[:1] if has_header_row else []
+        body_rows = rows[1:] if has_header_row else rows
+
+        # Anything that is not a row — a <Caption>, typically — keeps its
+        # place ahead of the sections.
+        others = [
+            child.obj for child in children if child.resolved_tag != "TR"
+        ]
+
+        rebuilt: list[pikepdf.Object] = list(others)
+        for tag, group in (("THead", header_rows), ("TBody", body_rows)):
+            if not group:
+                continue
+            section = pdf.make_indirect(
+                Dictionary(Type=Name.StructElem, S=Name(f"/{tag}"), P=table.obj)
+            )
+            write_kids(section, [row.obj for row in group])
+            for row in group:
+                row.obj[Name("/P")] = section
+            rebuilt.append(section)
+
+        write_kids(table.obj, rebuilt)
+        grouped += 1
+
+    if grouped:
+        return FixResult(
+            "fix_table_sections", True,
+            f"Grouped rows into sections in {grouped} table(s)",
+        )
+    return FixResult(
+        "fix_table_sections", True,
+        "No tables needed row sections added",
     )

@@ -16,7 +16,11 @@ from pikepdf import Array, Dictionary, Name
 
 from auto_a11y.pdf.audit.structure import walk_structure_tree
 from auto_a11y.pdf.fix.models import FixOptions
-from auto_a11y.pdf.fix.tables import fix_table_headers, fix_table_scope
+from auto_a11y.pdf.fix.tables import (
+    fix_table_headers,
+    fix_table_scope,
+    fix_table_sections,
+)
 
 
 @pytest.fixture
@@ -26,10 +30,18 @@ def opts(tmp_path: Path) -> FixOptions:
 
 def _elem(pdf: pikepdf.Pdf, tag: str, kids: list[pikepdf.Object] | None = None
           ) -> pikepdf.Object:
+    """A structure element whose children point back at it.
+
+    A real tagged PDF carries /P throughout; without it a check of
+    pointer consistency would fail on nodes the fix never touched.
+    """
     node = Dictionary(Type=Name("/StructElem"), S=Name(f"/{tag}"))
     obj = pdf.make_indirect(node)
     if kids:
         obj[Name("/K")] = Array(kids)
+        for kid in kids:
+            if isinstance(kid, pikepdf.Dictionary):
+                kid[Name("/P")] = obj
     return obj
 
 
@@ -239,3 +251,109 @@ def test_scope_reports_a_document_with_no_tables(opts: FixOptions) -> None:
 
     assert result.success
     assert "No tables" in result.description
+
+
+# ---------------------------------------------------------------------------
+# fix_table_sections
+# ---------------------------------------------------------------------------
+
+def _depth_shape(pdf: pikepdf.Pdf) -> list[tuple[int, str]]:
+    elements, _ = walk_structure_tree(pdf)
+    by_index = {e.index: e for e in elements}
+    depths: dict[int, int] = {}
+    for element in elements:
+        parent = by_index.get(element.parent_index)
+        depths[element.index] = 0 if parent is None else depths[parent.index] + 1
+    return [(depths[e.index], e.resolved_tag) for e in elements]
+
+
+def test_sections_split_a_header_row_from_the_body(opts: FixOptions) -> None:
+    pdf = _table_pdf([["TH", "TH"], ["TD", "TD"], ["TD", "TD"]])
+
+    result = fix_table_sections(pdf, opts)
+
+    assert result.success
+    shape = _depth_shape(pdf)
+    assert (1, "THead") in shape
+    assert (1, "TBody") in shape
+    # Rows moved under the sections rather than staying on the table.
+    assert all(depth != 1 for depth, tag in shape if tag == "TR")
+
+
+def test_sections_put_every_row_in_the_body_without_a_header_row(
+    opts: FixOptions,
+) -> None:
+    """No TH in the first row means no evidence of a header.
+
+    Promoting the first row anyway would assert a header that the table
+    does not have, and screen readers would then announce its values as
+    the headers for every column.
+    """
+    pdf = _table_pdf([["TD", "TD"], ["TD", "TD"]])
+
+    result = fix_table_sections(pdf, opts)
+
+    assert result.success
+    shape = _depth_shape(pdf)
+    assert (1, "THead") not in shape
+    assert (1, "TBody") in shape
+
+
+def test_sections_leave_a_table_that_already_has_them(
+    opts: FixOptions,
+) -> None:
+    pdf = _table_pdf([["TH", "TH"], ["TD", "TD"]], group="TBody")
+    before = _depth_shape(pdf)
+
+    result = fix_table_sections(pdf, opts)
+
+    assert result.success
+    assert _depth_shape(pdf) == before
+
+
+def test_sections_skip_a_single_row_table(opts: FixOptions) -> None:
+    # Nothing to separate; wrapping one row adds a level for no gain.
+    pdf = _table_pdf([["TH", "TH"]])
+    before = _depth_shape(pdf)
+
+    result = fix_table_sections(pdf, opts)
+
+    assert result.success
+    assert _depth_shape(pdf) == before
+
+
+def test_sections_keep_parent_pointers_consistent(opts: FixOptions) -> None:
+    pdf = _table_pdf([["TH", "TH"], ["TD", "TD"]])
+
+    fix_table_sections(pdf, opts)
+
+    elements, _ = walk_structure_tree(pdf)
+    by_index = {e.index: e for e in elements}
+    for element in elements:
+        parent = by_index.get(element.parent_index)
+        if parent is None:
+            continue
+        declared = element.obj.get(Name("/P"))
+        assert declared is not None
+        assert declared.objgen == parent.obj.objgen
+
+
+def test_sections_preserve_a_caption_ahead_of_the_rows(
+    opts: FixOptions,
+) -> None:
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(200, 200))
+    rows = [
+        _elem(pdf, "TR", [_elem(pdf, "TH"), _elem(pdf, "TH")]),
+        _elem(pdf, "TR", [_elem(pdf, "TD"), _elem(pdf, "TD")]),
+    ]
+    table = _elem(pdf, "Table", [_elem(pdf, "Caption"), *rows])
+    struct_root = pdf.make_indirect(Dictionary(Type=Name("/StructTreeRoot")))
+    struct_root[Name("/K")] = Array([table])
+    pdf.Root[Name("/StructTreeRoot")] = struct_root
+
+    result = fix_table_sections(pdf, opts)
+
+    assert result.success
+    tags = [tag for _, tag in _depth_shape(pdf)]
+    assert tags.index("Caption") < tags.index("THead")

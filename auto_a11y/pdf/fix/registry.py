@@ -69,6 +69,7 @@ FIX_REGISTRY: dict[str, FixFn] = {
     # Tables
     "fix_table_headers": tables.fix_table_headers,
     "fix_table_scope": tables.fix_table_scope,
+    "fix_table_sections": tables.fix_table_sections,
     # Forms and tab order
     "fix_form_labels": forms.fix_form_labels,
     "fix_form_tab_order": forms.fix_form_tab_order,

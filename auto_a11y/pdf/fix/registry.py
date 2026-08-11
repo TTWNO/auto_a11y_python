@@ -11,7 +11,7 @@ from typing import TypeAlias
 
 import pikepdf
 
-from auto_a11y.pdf.fix import document_properties, forms
+from auto_a11y.pdf.fix import document_properties, forms, metadata
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
 
 FixFn: TypeAlias = Callable[[pikepdf.Pdf, FixOptions], FixResult]
@@ -23,6 +23,13 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_language": document_properties.fix_language,
     "fix_mark_info": document_properties.fix_mark_info,
     "fix_metadata": document_properties.fix_metadata,
+    # XMP metadata, viewer preferences and conformance claims
+    "fix_display_doc_title": metadata.fix_display_doc_title,
+    "fix_pdfua_identifier": metadata.fix_pdfua_identifier,
+    "fix_suspects": metadata.fix_suspects,
+    "fix_xmp_title": metadata.fix_xmp_title,
+    "fix_metadata_lang": metadata.fix_metadata_lang,
+    "fix_accessibility_permission": metadata.fix_accessibility_permission,
     # Forms and tab order
     "fix_form_labels": forms.fix_form_labels,
     "fix_form_tab_order": forms.fix_form_tab_order,

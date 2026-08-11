@@ -16,6 +16,7 @@ from auto_a11y.pdf.fix import (
     alt_text,
     annot_tagging,
     bookmarks,
+    document_features,
     document_properties,
     empty_structure,
     forms,
@@ -50,6 +51,12 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_empty_tags": empty_structure.fix_empty_tags,
     "fix_empty_tables": empty_structure.fix_empty_tables,
     "fix_empty_lists": empty_structure.fix_empty_lists,
+    # Document-level features
+    "fix_ocg_names": document_features.fix_ocg_names,
+    "fix_ocg_as": document_features.fix_ocg_as,
+    "fix_page_labels": document_features.fix_page_labels,
+    "fix_embedded_files": document_features.fix_embedded_files,
+    "fix_remove_xfa": document_features.fix_remove_xfa,
     # Annotations
     "fix_widget_form_tags": annot_tagging.fix_widget_form_tags,
     "fix_annot_tagged": annot_tagging.fix_annot_tagged,

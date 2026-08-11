@@ -14,6 +14,7 @@ import pikepdf
 from auto_a11y.pdf.fix import annotations as annotation_fixes
 from auto_a11y.pdf.fix import (
     alt_text,
+    bookmarks,
     document_properties,
     empty_structure,
     forms,
@@ -53,6 +54,8 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_ref_xobjects": annotation_fixes.fix_ref_xobjects,
     "fix_annot_descriptions": annotation_fixes.fix_annot_descriptions,
     "fix_annot_contents_lang": annotation_fixes.fix_annot_contents_lang,
+    # Navigation
+    "fix_bookmarks": bookmarks.fix_bookmarks,
     # Headings
     "fix_heading_levels": headings.fix_heading_levels,
     # Lists

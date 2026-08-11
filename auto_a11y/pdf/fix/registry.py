@@ -48,6 +48,9 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_xmp_title": metadata.fix_xmp_title,
     "fix_metadata_lang": metadata.fix_metadata_lang,
     "fix_accessibility_permission": metadata.fix_accessibility_permission,
+    "fix_pdf_version_20": metadata.fix_pdf_version_20,
+    "fix_pdf20_namespace": metadata.fix_pdf20_namespace,
+    "fix_pdfua2_xmp": metadata.fix_pdfua2_xmp,
     # Pruning meaningless structure
     "fix_empty_tags": empty_structure.fix_empty_tags,
     "fix_empty_tables": empty_structure.fix_empty_tables,

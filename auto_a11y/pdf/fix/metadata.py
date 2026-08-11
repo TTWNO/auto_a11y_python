@@ -10,7 +10,7 @@ one who sees no claim simply knows nothing.
 from __future__ import annotations
 
 import pikepdf
-from pikepdf import Name, String
+from pikepdf import Array, Dictionary, Name, String
 
 from auto_a11y.pdf.fix._pdf_objects import ensure_dict, entry_text
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
@@ -194,4 +194,118 @@ def fix_accessibility_permission(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResul
         "fix_accessibility_permission", True,
         "The source was encrypted; the saved copy is not, so its"
         + " accessibility restrictions are gone",
+    )
+
+
+# PDF/UA-2 is defined against PDF 2.0; the revision year is part of the
+# identification the specification requires.
+_PDFUA2_PART = "2"
+_PDFUA2_REVISION = "2024"
+
+
+def _pdf_version(pdf: pikepdf.Pdf) -> str:
+    """The document's effective version: catalog /Version wins over the header."""
+    catalog = pdf.Root.get(Name("/Version"))
+    if catalog is not None:
+        return str(catalog).lstrip("/")
+    return str(pdf.pdf_version)
+
+
+def fix_pdf_version_20(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Declare PDF 2.0 in the catalog.
+
+    The catalog ``/Version`` overrides the header, so this raises the
+    document's effective version without rewriting the file. It is a
+    prerequisite for PDF/UA-2 identification, which is otherwise a claim
+    against a specification the document does not admit to following.
+    """
+    current = _pdf_version(pdf)
+    if current.startswith("2."):
+        return FixResult(
+            "fix_pdf_version_20", True, f"PDF version is already {current}",
+        )
+
+    pdf.Root[Name("/Version")] = Name("/2.0")
+    return FixResult(
+        "fix_pdf_version_20", True,
+        f"Raised the declared PDF version from {current} to 2.0",
+    )
+
+
+def fix_pdf20_namespace(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Declare the PDF 2.0 structure namespace on the structure tree root.
+
+    PDF 2.0 introduced namespaced structure elements, and a document
+    using them has to say which namespace its tags belong to. Without the
+    declaration a conforming reader cannot resolve them.
+    """
+    struct_root = pdf.Root.get(Name("/StructTreeRoot"))
+    if struct_root is None:
+        return FixResult("fix_pdf20_namespace", False, "No structure tree found")
+
+    if struct_root.get(Name("/Namespaces")) is not None:
+        return FixResult(
+            "fix_pdf20_namespace", True,
+            "The structure tree already declares its namespaces",
+        )
+
+    namespace = pdf.make_indirect(
+        Dictionary(Type=Name("/Namespace"), NS=String("http://iso.org/pdf2/ssn"))
+    )
+    struct_root[Name("/Namespaces")] = pdf.make_indirect(Array([namespace]))
+    return FixResult(
+        "fix_pdf20_namespace", True,
+        "Declared the PDF 2.0 structure namespace",
+    )
+
+
+def fix_pdfua2_xmp(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Declare PDF/UA-2 conformance in XMP — when the document could conform.
+
+    Same reasoning as :func:`fix_pdfua_identifier`, with a second
+    prerequisite. PDF/UA-2 is defined against PDF 2.0, so a PDF 1.7 file
+    claiming it is asserting conformance to a specification it does not
+    even declare itself as following. Both prerequisites are checkable,
+    so both are checked: the document must be tagged, and must declare
+    version 2.0.
+
+    Divergence from pdfMax, which writes the claim unconditionally and by
+    splicing raw XML into the packet.
+    """
+    missing: list[str] = []
+    if not _is_tagged(pdf):
+        missing.append(
+            "it has no structure tree, or is not marked as tagged"
+        )
+    version = _pdf_version(pdf)
+    if not version.startswith("2."):
+        missing.append(
+            f"it declares PDF {version}, and PDF/UA-2 is defined against"
+            + " PDF 2.0 (apply fix_pdf_version_20 first)"
+        )
+    if missing:
+        return FixResult(
+            "fix_pdfua2_xmp", False,
+            "Not declaring PDF/UA-2 conformance, because the claim would be"
+            + " false: " + "; ".join(missing) + ".",
+        )
+
+    with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
+        already = (
+            "pdfuaid:part" in meta
+            and str(meta["pdfuaid:part"]) == _PDFUA2_PART
+            and "pdfuaid:rev" in meta
+        )
+        if already:
+            return FixResult(
+                "fix_pdfua2_xmp", True,
+                "PDF/UA-2 identification is already present",
+            )
+        meta["pdfuaid:part"] = _PDFUA2_PART
+        meta["pdfuaid:rev"] = _PDFUA2_REVISION
+
+    return FixResult(
+        "fix_pdfua2_xmp", True,
+        f"Declared PDF/UA-2 conformance (part {_PDFUA2_PART},"
+        + f" revision {_PDFUA2_REVISION})",
     )

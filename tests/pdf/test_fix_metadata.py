@@ -17,6 +17,9 @@ from auto_a11y.pdf.fix.metadata import (
     fix_accessibility_permission,
     fix_display_doc_title,
     fix_metadata_lang,
+    fix_pdf20_namespace,
+    fix_pdf_version_20,
+    fix_pdfua2_xmp,
     fix_pdfua_identifier,
     fix_suspects,
     fix_xmp_title,
@@ -265,3 +268,109 @@ def test_accessibility_permission_reports_an_unencrypted_document(
 
     assert result.success
     assert "already unrestricted" in result.description
+
+
+# ---------------------------------------------------------------------------
+# PDF 2.0 and PDF/UA-2
+# ---------------------------------------------------------------------------
+
+def test_the_catalog_version_is_raised(opts: FixOptions) -> None:
+    pdf = _pdf()
+
+    result = fix_pdf_version_20(pdf, opts)
+
+    assert result.success
+    assert str(pdf.Root[Name("/Version")]) == "/2.0"
+
+
+def test_a_document_already_at_2_is_left_alone(opts: FixOptions) -> None:
+    pdf = _pdf()
+    pdf.Root[Name("/Version")] = Name("/2.0")
+
+    result = fix_pdf_version_20(pdf, opts)
+
+    assert result.success
+    assert "already 2.0" in result.description
+
+
+def test_the_pdf20_namespace_is_declared(opts: FixOptions) -> None:
+    pdf = _pdf(tagged=True)
+
+    result = fix_pdf20_namespace(pdf, opts)
+
+    assert result.success
+    namespaces = pdf.Root[Name("/StructTreeRoot")][Name("/Namespaces")]
+    assert str(namespaces[0][Name("/NS")]) == "http://iso.org/pdf2/ssn"
+
+
+def test_existing_namespaces_are_left_alone(opts: FixOptions) -> None:
+    pdf = _pdf(tagged=True)
+    fix_pdf20_namespace(pdf, opts)
+
+    result = fix_pdf20_namespace(pdf, opts)
+
+    assert result.success
+    assert "already declare" in result.description
+
+
+def test_pdfua2_refuses_on_an_untagged_document(opts: FixOptions) -> None:
+    pdf = _pdf(tagged=False)
+    pdf.Root[Name("/Version")] = Name("/2.0")
+
+    result = fix_pdfua2_xmp(pdf, opts)
+
+    assert not result.success
+    assert "pdfuaid" not in _xmp(pdf)
+    assert "not marked as tagged" in result.description
+
+
+def test_pdfua2_refuses_below_pdf_2_0(opts: FixOptions) -> None:
+    """PDF/UA-2 is defined against PDF 2.0.
+
+    A 1.7 file claiming it asserts conformance to a specification it does
+    not even declare itself as following.
+    """
+    pdf = _pdf(tagged=True)
+
+    result = fix_pdfua2_xmp(pdf, opts)
+
+    assert not result.success
+    assert "pdfuaid" not in _xmp(pdf)
+    assert "fix_pdf_version_20" in result.description
+
+
+def test_pdfua2_reports_both_missing_prerequisites(opts: FixOptions) -> None:
+    pdf = _pdf(tagged=False)
+
+    result = fix_pdfua2_xmp(pdf, opts)
+
+    assert not result.success
+    assert "not marked as tagged" in result.description
+    assert "PDF 2.0" in result.description
+
+
+def test_pdfua2_is_declared_once_both_prerequisites_hold(
+    opts: FixOptions,
+) -> None:
+    pdf = _pdf(tagged=True)
+    fix_pdf_version_20(pdf, opts)
+
+    result = fix_pdfua2_xmp(pdf, opts)
+
+    assert result.success
+    xmp = _xmp(pdf)
+    assert "pdfuaid" in xmp
+    assert ">2<" in xmp.replace(" ", "")
+
+
+def test_pdfua2_preserves_existing_metadata(opts: FixOptions) -> None:
+    pdf = _pdf(tagged=True)
+    fix_pdf_version_20(pdf, opts)
+    with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
+        meta["dc:creator"] = ["CNIB"]
+
+    fix_pdfua2_xmp(pdf, opts)
+
+    xmp = _xmp(pdf)
+    assert "pdfuaid" in xmp
+    assert "CNIB" in xmp

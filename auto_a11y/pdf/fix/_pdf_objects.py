@@ -10,7 +10,7 @@ would bury the logic.
 from __future__ import annotations
 
 import pikepdf
-from pikepdf import Dictionary, Name
+from pikepdf import Array, Dictionary, Name
 
 
 def items(array: pikepdf.Object | None) -> list[pikepdf.Object]:
@@ -82,3 +82,60 @@ def flatten_form_fields(pdf: pikepdf.Pdf) -> list[pikepdf.Object]:
         else:
             terminal.append(field)
     return terminal
+
+
+# Structure-tree node types that reference content rather than being
+# elements in their own right.
+_CONTENT_REFS = ("/MCR", "/OBJR")
+
+
+def read_role_map(struct_root: pikepdf.Object) -> dict[str, str]:
+    """Custom tag → standard tag, both without leading slashes."""
+    raw = struct_root.get(Name("/RoleMap"))
+    if raw is None:
+        return {}
+    return {
+        str(key).lstrip("/"): str(raw[key]).lstrip("/")
+        for key in raw.keys()
+    }
+
+
+def resolved_tag(node: pikepdf.Object, role_map: dict[str, str]) -> str:
+    """The node's structure tag after role-map resolution, no slash."""
+    tag = node.get(Name("/S"))
+    if tag is None:
+        return ""
+    bare = str(tag).lstrip("/")
+    return role_map.get(bare, bare)
+
+
+def kids(node: pikepdf.Object) -> list[pikepdf.Object] | None:
+    """``/K`` as a list, or ``None`` when the key is absent.
+
+    ``/K`` may hold a single object rather than an array; both shapes are
+    normalised here so callers do not each have to.
+    """
+    kids = node.get(Name("/K"))
+    if kids is None:
+        return None
+    if isinstance(kids, Array):
+        return [kids[i] for i in range(len(kids))]
+    return [kids]
+
+
+def write_kids(node: pikepdf.Object, kids: list[pikepdf.Object]) -> None:
+    """Store ``kids`` back onto ``/K``, dropping the key when empty."""
+    if not kids:
+        if Name("/K") in node:
+            del node[Name("/K")]
+    elif len(kids) == 1:
+        node[Name("/K")] = kids[0]
+    else:
+        node[Name("/K")] = Array(kids)
+
+
+def is_content_ref(node: pikepdf.Object) -> bool:
+    node_type = node.get(Name("/Type"))
+    return node_type is not None and str(node_type) in _CONTENT_REFS
+
+

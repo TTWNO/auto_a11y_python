@@ -16,6 +16,7 @@ from auto_a11y.pdf.fix import (
     document_properties,
     empty_structure,
     forms,
+    lists,
     metadata,
     tables,
 )
@@ -44,6 +45,9 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_empty_tags": empty_structure.fix_empty_tags,
     "fix_empty_tables": empty_structure.fix_empty_tables,
     "fix_empty_lists": empty_structure.fix_empty_lists,
+    # Lists
+    "fix_list_structure": lists.fix_list_structure,
+    "fix_list_nesting": lists.fix_list_nesting,
     # Tables
     "fix_table_headers": tables.fix_table_headers,
     "fix_table_scope": tables.fix_table_scope,

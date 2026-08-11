@@ -15,8 +15,15 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pikepdf
-from pikepdf import Array, Name
+from pikepdf import Name
 
+from auto_a11y.pdf.fix._pdf_objects import (
+    is_content_ref,
+    kids as _kids,
+    read_role_map as _read_role_map,
+    resolved_tag as _resolved_tag,
+    write_kids as _write_kids,
+)
 from auto_a11y.pdf.fix.models import FixOptions, FixResult
 
 # Containers whose job is to group rather than to carry content. An empty
@@ -38,61 +45,6 @@ _POSITIONAL = frozenset({"TD", "TH"})
 
 _PROTECTED = _CONTAINERS | _POSITIONAL
 
-# Structure-tree node types that reference content rather than being
-# elements in their own right.
-_CONTENT_REFS = ("/MCR", "/OBJR")
-
-
-def _read_role_map(struct_root: pikepdf.Object) -> dict[str, str]:
-    """Custom tag → standard tag, both without leading slashes."""
-    raw = struct_root.get(Name("/RoleMap"))
-    if raw is None:
-        return {}
-    return {
-        str(key).lstrip("/"): str(raw[key]).lstrip("/")
-        for key in raw.keys()
-    }
-
-
-def _resolved_tag(node: pikepdf.Object, role_map: dict[str, str]) -> str:
-    """The node's structure tag after role-map resolution, no slash."""
-    tag = node.get(Name("/S"))
-    if tag is None:
-        return ""
-    bare = str(tag).lstrip("/")
-    return role_map.get(bare, bare)
-
-
-def _kids(node: pikepdf.Object) -> list[pikepdf.Object] | None:
-    """``/K`` as a list, or ``None`` when the key is absent.
-
-    ``/K`` may hold a single object rather than an array; both shapes are
-    normalised here so callers do not each have to.
-    """
-    kids = node.get(Name("/K"))
-    if kids is None:
-        return None
-    if isinstance(kids, Array):
-        return [kids[i] for i in range(len(kids))]
-    return [kids]
-
-
-def _write_kids(node: pikepdf.Object, kids: list[pikepdf.Object]) -> None:
-    """Store ``kids`` back onto ``/K``, dropping the key when empty."""
-    if not kids:
-        if Name("/K") in node:
-            del node[Name("/K")]
-    elif len(kids) == 1:
-        node[Name("/K")] = kids[0]
-    else:
-        node[Name("/K")] = Array(kids)
-
-
-def _is_content_ref(node: pikepdf.Object) -> bool:
-    node_type = node.get(Name("/Type"))
-    return node_type is not None and str(node_type) in _CONTENT_REFS
-
-
 def _prune(
     node: pikepdf.Object,
     should_remove: Callable[[pikepdf.Object], bool],
@@ -110,14 +62,14 @@ def _prune(
 
     removed = 0
     for child in kids:
-        if isinstance(child, pikepdf.Dictionary) and not _is_content_ref(child):
+        if isinstance(child, pikepdf.Dictionary) and not is_content_ref(child):
             removed += _prune(child, should_remove)
 
     kept: list[pikepdf.Object] = []
     for child in _kids(node) or []:
         if (
             isinstance(child, pikepdf.Dictionary)
-            and not _is_content_ref(child)
+            and not is_content_ref(child)
             and should_remove(child)
         ):
             removed += 1
@@ -208,7 +160,7 @@ def fix_empty_tables(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
             child = stack.pop()
             if not isinstance(child, pikepdf.Dictionary):
                 continue
-            if _is_content_ref(child):
+            if is_content_ref(child):
                 continue
             if _resolved_tag(child, role_map) in _POSITIONAL:
                 return True

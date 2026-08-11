@@ -144,7 +144,7 @@ def check_text_contrast_aa(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name=name,
                 standard=standard,
-                result="PASS",
+                result="NA",
                 details="No text colors detected — nothing to check.",
             )
         ]
@@ -204,7 +204,7 @@ def check_text_contrast_aaa(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name=name,
                 standard=standard,
-                result="PASS",
+                result="NA",
                 details="No text colors detected — nothing to check.",
             )
         ]

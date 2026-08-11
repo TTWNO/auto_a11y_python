@@ -31,8 +31,11 @@
         </h4>
         <p>
             {% if es.get('verdict') == 'PASS' %}
+                {# Counts the checks that actually examined something.
+                   Claiming conformance across the full total would credit
+                   the document for checks that had nothing to look at. #}
                 {{ ftl('pdf-inventory-exec-summary-verdict-pass',
-                       total=es.get('total_checks', 0)) }}
+                       examined=es.get('total_checks', 0) - es.get('na_count', 0)) }}
             {% elif es.get('verdict') == 'WARN' %}
                 {{ ftl('pdf-inventory-exec-summary-verdict-warn',
                        fail=es.get('fail_count', 0),
@@ -45,6 +48,16 @@
                 {{ ftl('pdf-inventory-exec-summary-verdict-not-tested') }}
             {% endif %}
         </p>
+        {# Stated whatever the verdict. A document with little structure
+           leaves most checks with nothing to examine, and saying so is
+           what stops a short list of passes reading as a clean bill of
+           health. #}
+        {% if es.get('na_count', 0) %}
+        <p class="text-muted">
+            {{ ftl('pdf-inventory-exec-summary-not-applicable',
+                   count=es.get('na_count', 0)) }}
+        </p>
+        {% endif %}
         {% if es.get('top_issues') %}
         <h5 class="h6">{{ ftl('pdf-inventory-exec-summary-top-issues') }}</h5>
         <ol class="pdf-inventory-exec-summary-issues">

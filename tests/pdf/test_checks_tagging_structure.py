@@ -395,12 +395,12 @@ def test_warichu_structure_fail_when_missing_wp() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_note_tags_pass_when_no_notes() -> None:
+def test_note_tags_is_not_applicable_when_no_notes() -> None:
     elems = [_struct_elem(0, "Document")]
     res = _only(check_note_tags_have_unique_ids(_ctx(elements=elems)))
     assert res.name == "Note tags have unique IDs"
     assert res.standard == "Matterhorn 19-003"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_note_tags_pass_when_unique_ids() -> None:
@@ -434,12 +434,12 @@ def test_note_tags_fail_when_duplicate_id() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_formula_alt_text_pass_when_no_formulas() -> None:
+def test_formula_alt_text_is_not_applicable_when_no_formulas() -> None:
     elems = [_struct_elem(0, "P")]
     res = _only(check_formula_alt_text(_ctx(elements=elems)))
     assert res.name == "Formula elements have alt text or ActualText"
     assert res.standard == "Matterhorn 17-002"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_formula_alt_text_pass_when_alt_set() -> None:
@@ -466,10 +466,10 @@ def test_formula_alt_text_fail_when_missing_both() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_mathml_pass_when_no_formulas() -> None:
+def test_mathml_is_not_applicable_when_no_formulas() -> None:
     res = _only(check_mathml_associated_with_formula(_ctx(elements=[_struct_elem(0, "P")])))
     assert res.standard == "PDF/UA-2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_mathml_pass_when_af_present() -> None:
@@ -496,12 +496,12 @@ def test_mathml_warn_when_neither_af_nor_mathml() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_af_embedded_pass_when_no_target_tags() -> None:
+def test_af_embedded_is_not_applicable_when_no_target_tags() -> None:
     elems = [_struct_elem(0, "P")]
     res = _only(check_associated_files_on_embedded_content(_ctx(elements=elems)))
     assert res.name == "Associated Files property on embedded content"
     assert res.standard == "PDF/UA-2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_af_embedded_pass_when_af_present_on_all() -> None:
@@ -527,19 +527,19 @@ def test_af_embedded_warn_when_some_missing() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ocg_name_pass_when_no_ocproperties() -> None:
+def test_ocg_name_is_not_applicable_when_no_ocproperties() -> None:
     pdf = pikepdf.Pdf.new()
     res = _only(check_optional_content_groups_have_name(_ctx(pdf)))
     assert res.name == "Optional content groups have Name"
     assert res.standard == "Matterhorn 20-001"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
-def test_ocg_name_pass_when_no_ocgs() -> None:
+def test_ocg_name_is_not_applicable_when_no_ocgs() -> None:
     pdf = pikepdf.Pdf.new()
     pdf.Root["/OCProperties"] = pikepdf.Dictionary({"/OCGs": pikepdf.Array([])})
     res = _only(check_optional_content_groups_have_name(_ctx(pdf)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_ocg_name_pass_when_all_named() -> None:
@@ -565,12 +565,12 @@ def test_ocg_name_fail_when_unnamed() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ocg_no_as_pass_when_no_ocproperties() -> None:
+def test_ocg_no_as_is_not_applicable_when_no_ocproperties() -> None:
     pdf = pikepdf.Pdf.new()
     res = _only(check_optional_content_no_as_entry(_ctx(pdf)))
     assert res.name == "Optional content has no AS entry"
     assert res.standard == "Matterhorn 20-002"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_ocg_no_as_pass_when_no_d_dict() -> None:
@@ -597,12 +597,12 @@ def test_ocg_no_as_fail_when_as_present() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_embedded_files_pass_when_no_embedded_files() -> None:
+def test_embedded_files_is_not_applicable_when_no_embedded_files() -> None:
     pdf = pikepdf.Pdf.new()
     res = _only(check_embedded_files_have_f_and_uf(_ctx(pdf)))
     assert res.name == "Embedded files have F and UF keys"
     assert res.standard == "Matterhorn 21-001"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_embedded_files_pass_when_all_keys_set() -> None:
@@ -721,13 +721,13 @@ def test_form_xobjects_mcids_pass_when_form_xobject_used_once() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_intra_links_pass_when_no_links() -> None:
+def test_intra_links_is_not_applicable_when_no_links() -> None:
     pdf = pikepdf.Pdf.new()
     _add_blank_page(pdf)
     res = _only(check_structure_destinations_for_intra_links(_ctx(pdf)))
     assert res.name == "Structure destinations for intra-document links"
     assert res.standard == "PDF/UA-2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_intra_links_pass_when_all_have_sd() -> None:

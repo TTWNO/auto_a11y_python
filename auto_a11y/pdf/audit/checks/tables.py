@@ -142,7 +142,7 @@ def check_table_headers_defined(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Table headers defined",
                 standard="PDF/UA, WCAG 1.3.1",
-                result="PASS",
+                result="NA",
                 details="No tables found in document",
             )
         ]
@@ -206,7 +206,7 @@ def check_table_header_scope_defined(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Table header scope defined",
                 standard="PDF/UA, WCAG 1.3.1",
-                result="PASS",
+                result="NA",
                 details="No tables found in document",
             )
         ]
@@ -263,7 +263,7 @@ def check_table_header_scope_defined(ctx: AuditContext) -> list[CheckResult]:
         CheckResult(
             name="Table header scope defined",
             standard="PDF/UA, WCAG 1.3.1",
-            result="PASS",
+            result="NA",
             details="No TH cells found (see 'Table headers defined' check)",
         )
     ]
@@ -287,7 +287,7 @@ def check_table_structure_sections(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Table structure sections",
                 standard="PDF/UA, WCAG 1.3.1",
-                result="PASS",
+                result="NA",
                 details="No tables found in document",
             )
         ]
@@ -389,7 +389,7 @@ def check_table_regularity(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Table regularity",
                 standard="PDF/UA, WCAG 1.3.1",
-                result="PASS",
+                result="NA",
                 details="No tables found in document",
             )
         ]
@@ -445,7 +445,7 @@ def check_no_empty_tables(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="No empty tables",
                 standard="Matterhorn 09-006",
-                result="PASS",
+                result="NA",
                 details="No tables found in document",
             )
         ]
@@ -500,7 +500,7 @@ def check_table_captions(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Table captions",
                 standard="WCAG 1.3.1",
-                result="PASS",
+                result="NA",
                 details="No tables found in document",
             )
         ]

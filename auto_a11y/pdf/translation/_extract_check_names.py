@@ -215,13 +215,15 @@ def collect_pairs(
     """Like :func:`collect_triples`, but drop the ``standard`` column.
 
     Returns ``(name, result)`` pairs; only those with ``result`` in
-    ``{"FAIL", "WARN", "INFO"}`` are returned (PASS entries don't make
-    it to :data:`CHECK_CATALOGUE`).
+    ``{"FAIL", "WARN", "INFO"}`` are returned. ``PASS`` and ``NA``
+    entries don't make it to :data:`CHECK_CATALOGUE` — neither is
+    something to show the user as a fault. They differ from each other
+    (see :data:`~auto_a11y.pdf.models.CheckOutcome`) but not here.
     """
     out: list[tuple[str, str]] = []
     seen: set[tuple[str, str]] = set()
     for name, _standard, result in collect_triples(funcs):
-        if result == "PASS":
+        if result in ("PASS", "NA"):
             continue
         key = (name, result)
         if key in seen:

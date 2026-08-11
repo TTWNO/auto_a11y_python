@@ -157,12 +157,12 @@ def test_forms_checks_registry_lists_all_nine_functions() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_widgets_in_form_tags_passes_when_no_widgets() -> None:
+def test_widgets_in_form_tags_is_not_applicable_when_no_widgets() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_widget_annotations_inside_form_tags(_ctx(pdf)))
     assert res.name == "Widget annotations inside Form tags"
     assert res.standard == "Matterhorn 28-012"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No widget" in res.details
 
 
@@ -180,7 +180,7 @@ def test_widgets_in_form_tags_ignores_non_widget_annots() -> None:
     pdf = _new_pdf_with_page()
     _add_annot(pdf, fields={"/Subtype": pikepdf.Name("/Link")})
     res = _only(check_widget_annotations_inside_form_tags(_ctx(pdf)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No widget" in res.details
 
 
@@ -222,12 +222,12 @@ def test_no_xfa_fails_when_xfa_present() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_form_labeled_passes_when_no_fields() -> None:
+def test_form_labeled_is_not_applicable_when_no_fields() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_form_fields_labeled(_ctx(pdf)))
     assert res.name == "Form fields labeled"
     assert res.standard == "PDF/UA, WCAG 1.3.1, 4.1.2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No interactive" in res.details
 
 
@@ -467,12 +467,12 @@ def test_field_names_unique_warns_on_duplicates() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_redundant_entry_passes_when_no_fields() -> None:
+def test_redundant_entry_is_not_applicable_when_no_fields() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_redundant_entry_in_forms(_ctx(pdf)))
     assert res.name == "Redundant entry in forms"
     assert res.standard == "WCAG 3.3.7"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No interactive" in res.details
 
 
@@ -517,12 +517,12 @@ def test_redundant_entry_warns_when_label_repeats() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_accessible_auth_passes_when_no_fields() -> None:
+def test_accessible_auth_is_not_applicable_when_no_fields() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_accessible_authentication(_ctx(pdf)))
     assert res.name == "Accessible authentication"
     assert res.standard == "WCAG 3.3.8"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No interactive" in res.details
 
 

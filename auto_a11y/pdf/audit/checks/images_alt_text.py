@@ -368,7 +368,7 @@ def check_figure_elements_have_bbox(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Figure elements have BBox attribute",
                 standard="PDF/UA (PAC 2024)",
-                result="PASS",
+                result="NA",
                 details="No Figure elements in document",
             )
         ]

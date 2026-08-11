@@ -190,7 +190,7 @@ def check_lang_values_valid_bcp47(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Lang values are valid BCP 47",
                 standard="Matterhorn 11-003",
-                result="PASS",
+                result="NA",
                 details="No /Lang values found in document",
             )
         ]
@@ -285,7 +285,7 @@ def check_annotation_language_determinable(
             CheckResult(
                 name="Annotation contents language determinable",
                 standard="Matterhorn 11-004",
-                result="PASS",
+                result="NA",
                 details="No annotations with /Contents text found",
             )
         ]
@@ -367,7 +367,7 @@ def check_form_field_tooltip_language_determinable(
             CheckResult(
                 name="Form field tooltip language determinable",
                 standard="Matterhorn 11-005",
-                result="PASS",
+                result="NA",
                 details="No form fields with /TU tooltip found",
             )
         ]
@@ -377,7 +377,7 @@ def check_form_field_tooltip_language_determinable(
             CheckResult(
                 name="Form field tooltip language determinable",
                 standard="Matterhorn 11-005",
-                result="PASS",
+                result="NA",
                 details="No form fields with /TU tooltip found",
             )
         ]
@@ -401,7 +401,7 @@ def check_form_field_tooltip_language_determinable(
             CheckResult(
                 name="Form field tooltip language determinable",
                 standard="Matterhorn 11-005",
-                result="PASS",
+                result="NA",
                 details="No form fields with /TU tooltip found",
             )
         ]

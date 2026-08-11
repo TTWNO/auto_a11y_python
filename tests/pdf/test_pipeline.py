@@ -102,6 +102,7 @@ def test_run_audit_on_minimal_pdf_returns_audit_result(tmp_path: Path) -> None:
         + result.warn_count
         + result.pass_count
         + result.info_count
+        + result.na_count
     ) == len(result.check_results)
     # No check crashed during the minimal-PDF audit.
     crashes = [

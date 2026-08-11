@@ -63,7 +63,17 @@ from auto_a11y.pdf.audit.structure import StructElement
 # ---------------------------------------------------------------------------
 
 
-CheckOutcome: TypeAlias = Literal["PASS", "FAIL", "WARN", "INFO"]
+CheckOutcome: TypeAlias = Literal["PASS", "FAIL", "WARN", "INFO", "NA"]
+"""One check's verdict.
+
+``NA`` means the check had nothing to examine — no tables in the
+document, so nothing to say about table headers. It is deliberately not
+``PASS``: a purely scanned PDF, which a screen reader can read nothing
+from, satisfies almost every structural check vacuously and used to
+report 88 passes out of 105. Every one of those verdicts was defensible
+and the total was a lie. Separating "nothing to check" from "checked and
+correct" is what keeps the headline count meaningful.
+"""
 
 
 @dataclass(frozen=True)
@@ -74,7 +84,8 @@ class CheckResult:
         name: human-readable check name (e.g. ``"Document title set"``).
         standard: WCAG / PDF/UA / Matterhorn reference
             (e.g. ``"WCAG 2.4.2, PDF/UA"``).
-        result: ``"PASS" | "FAIL" | "WARN" | "INFO"``.
+        result: ``"PASS" | "FAIL" | "WARN" | "INFO" | "NA"``. See
+            :data:`CheckOutcome` for why ``NA`` is distinct from ``PASS``.
         details: human-readable explanation of *why* this verdict was
             reached. Surfaced verbatim in reports.
         extras: optional structured side-data the report renderer can
@@ -305,10 +316,15 @@ class AuditResult:
     """The final audit output from :func:`run_audit`.
 
     Combines the deterministic check results with the optional AI
-    section. The four count fields are derived from
+    section. The five count fields are derived from
     :attr:`check_results` by :meth:`from_checks` — callers should always
     use that constructor rather than building the dataclass directly,
     so the counts can never drift out of sync with the underlying list.
+
+    ``pass_count`` counts only checks that examined something and found
+    it correct; checks with nothing to examine land in ``na_count``. A
+    report that conflates the two flatters exactly the documents that
+    deserve it least — see :data:`CheckOutcome`.
     """
 
     pdf_path: Path
@@ -322,6 +338,7 @@ class AuditResult:
     warn_count: int
     pass_count: int
     info_count: int
+    na_count: int = 0
     report_sections: dict[str, object] = field(default_factory=lambda: {})
     """Document-wide inventory data populated by Phase A of the
     pdfMax-report port (Sections 2–13 of pdfMax's
@@ -355,6 +372,7 @@ class AuditResult:
         warn = sum(1 for c in check_results if c.result == "WARN")
         passed = sum(1 for c in check_results if c.result == "PASS")
         info = sum(1 for c in check_results if c.result == "INFO")
+        not_applicable = sum(1 for c in check_results if c.result == "NA")
         return cls(
             pdf_path=pdf_path,
             pdf_version=pdf_version,
@@ -367,6 +385,7 @@ class AuditResult:
             warn_count=warn,
             pass_count=passed,
             info_count=info,
+            na_count=not_applicable,
             report_sections=report_sections if report_sections is not None else {},
         )
 

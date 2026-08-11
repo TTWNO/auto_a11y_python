@@ -223,12 +223,12 @@ def test_link_have_content_fails_when_link_has_nothing() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_link_contents_key_passes_when_no_links() -> None:
+def test_link_contents_key_is_not_applicable_when_no_links() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_link_annotations_have_contents_key(_ctx(pdf)))
     assert res.name == "Link annotations have Contents key"
     assert res.standard == "Matterhorn 28-012"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_link_contents_key_passes_when_link_has_contents() -> None:
@@ -262,12 +262,12 @@ def test_link_contents_key_fails_when_missing_contents() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_link_inside_link_tag_passes_when_no_links() -> None:
+def test_link_inside_link_tag_is_not_applicable_when_no_links() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_link_annotations_inside_link_tags(_ctx(pdf)))
     assert res.name == "Link annotations inside Link tags"
     assert res.standard == "Matterhorn 28-014"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_link_inside_link_tag_fails_when_link_untagged() -> None:
@@ -358,23 +358,23 @@ def test_visible_alt_descriptions_skips_hidden_annotation() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_non_link_widget_tagged_passes_when_none_present() -> None:
+def test_non_link_widget_tagged_is_not_applicable_when_none_present() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_non_link_widget_annotations_tagged(_ctx(pdf)))
     assert res.name == "Non-link/widget annotations tagged"
     assert res.standard == "Matterhorn 28-004"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No non-link/widget" in res.details
 
 
-def test_non_link_widget_tagged_passes_for_excluded_subtypes() -> None:
+def test_non_link_widget_tagged_is_not_applicable_for_excluded_subtypes() -> None:
     """Link/Widget/Popup are excluded; their absence from struct is OK."""
     pdf = _new_pdf_with_page()
     _add_annot(pdf, fields={"/Subtype": pikepdf.Name("/Link")})
     _add_annot(pdf, fields={"/Subtype": pikepdf.Name("/Widget")})
     _add_annot(pdf, fields={"/Subtype": pikepdf.Name("/Popup")})
     res = _only(check_non_link_widget_annotations_tagged(_ctx(pdf)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_non_link_widget_tagged_fails_when_untagged() -> None:
@@ -391,12 +391,12 @@ def test_non_link_widget_tagged_fails_when_untagged() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_multimedia_tagged_passes_when_none_present() -> None:
+def test_multimedia_tagged_is_not_applicable_when_none_present() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_multimedia_annotations_tagged(_ctx(pdf)))
     assert res.name == "Multimedia annotations tagged"
     assert res.standard == "WCAG 1.2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_multimedia_tagged_fails_when_untagged_movie() -> None:
@@ -413,12 +413,12 @@ def test_multimedia_tagged_fails_when_untagged_movie() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_media_clip_alt_text_passes_when_none() -> None:
+def test_media_clip_alt_text_is_not_applicable_when_none() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_media_clip_annotations_have_alt_text(_ctx(pdf)))
     assert res.name == "Media clip annotations have alt text"
     assert res.standard == "Matterhorn 28-016"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_media_clip_alt_text_passes_when_contents_set() -> None:
@@ -440,12 +440,12 @@ def test_media_clip_alt_text_fails_when_no_contents() -> None:
     assert "Movie" in res.details
 
 
-def test_media_clip_alt_text_skips_3d_annotations() -> None:
+def test_media_clip_alt_text_is_not_applicable_for_3d_annotations() -> None:
     """``/3D`` is in MULTIMEDIA but not in MEDIA_SUBTYPES."""
     pdf = _new_pdf_with_page()
     _add_annot(pdf, fields={"/Subtype": pikepdf.Name("/3D")})
     res = _only(check_media_clip_annotations_have_alt_text(_ctx(pdf)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No media clip" in res.details
 
 
@@ -454,12 +454,12 @@ def test_media_clip_alt_text_skips_3d_annotations() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_media_clip_alt_present_passes_when_none() -> None:
+def test_media_clip_alt_present_is_not_applicable_when_none() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_media_clip_alt_text_present(_ctx(pdf)))
     assert res.name == "Media clip alt text present"
     assert res.standard == "Matterhorn 28-015"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_media_clip_alt_present_passes_with_direct_alt() -> None:
@@ -502,12 +502,12 @@ def test_media_clip_alt_present_fails_when_missing() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_media_clip_ct_passes_when_none() -> None:
+def test_media_clip_ct_is_not_applicable_when_none() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_media_clip_content_type_present(_ctx(pdf)))
     assert res.name == "Media clip content type present"
     assert res.standard == "Matterhorn 28-014"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_media_clip_ct_passes_with_direct_ct() -> None:
@@ -680,12 +680,12 @@ def test_printermark_fails_when_objr_id_matches_in_struct() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_file_attachment_passes_when_none() -> None:
+def test_file_attachment_is_not_applicable_when_none() -> None:
     pdf = _new_pdf_with_page()
     res = _only(check_file_attachment_annotations_valid(_ctx(pdf)))
     assert res.name == "File attachment annotations valid"
     assert res.standard == "Matterhorn 28-016"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_file_attachment_passes_with_complete_fs() -> None:

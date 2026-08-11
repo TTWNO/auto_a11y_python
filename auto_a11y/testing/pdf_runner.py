@@ -401,6 +401,7 @@ class PdfRunner:
             'warn_count': audit_result.warn_count,
             'info_count': audit_result.info_count,
             'pass_count': audit_result.pass_count,
+            'na_count': audit_result.na_count,
             'wcag_level': wcag_level,
             'locale': locale,
             # pdfMax §2-13 inventory data, JSON-friendly. Read back by

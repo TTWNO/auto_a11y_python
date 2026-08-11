@@ -612,7 +612,7 @@ def check_italic_text_usage(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Italic text usage",
                 standard="WCAG 1.4 (best practice)",
-                result="PASS",
+                result="NA",
                 details="No italic text detected",
             )
         ]
@@ -919,7 +919,7 @@ def check_cid_font_gid_mapping(ctx: AuditContext) -> list[CheckResult]:
     if type2_count == 0:
         return [
             CheckResult(
-                name=name, standard=standard, result="PASS",
+                name=name, standard=standard, result="NA",
                 details="No Type 2 CIDFonts found — check not applicable",
             )
         ]
@@ -977,7 +977,7 @@ def check_cmap_resources_valid(ctx: AuditContext) -> list[CheckResult]:
     if type0_count == 0:
         return [
             CheckResult(
-                name=name, standard=standard, result="PASS",
+                name=name, standard=standard, result="NA",
                 details="No Type0 (composite) fonts found — check not applicable",
             )
         ]
@@ -1029,7 +1029,7 @@ def check_valid_unicode_values(ctx: AuditContext) -> list[CheckResult]:
     if fonts_with_tounicode == 0:
         return [
             CheckResult(
-                name=name, standard=standard, result="PASS",
+                name=name, standard=standard, result="NA",
                 details="No ToUnicode CMaps to check",
             )
         ]
@@ -1249,7 +1249,7 @@ def check_identity_cmap_has_tounicode(ctx: AuditContext) -> list[CheckResult]:
     if identity_total == 0:
         return [
             CheckResult(
-                name=name, standard=standard, result="PASS",
+                name=name, standard=standard, result="NA",
                 details="No fonts use Identity-H/V CMap",
             )
         ]
@@ -1376,7 +1376,7 @@ def check_nonsymbolic_truetype_latin_mapping(
     if nonsym_total == 0:
         return [
             CheckResult(
-                name=name, standard=standard, result="PASS",
+                name=name, standard=standard, result="NA",
                 details="No non-symbolic TrueType fonts found",
             )
         ]

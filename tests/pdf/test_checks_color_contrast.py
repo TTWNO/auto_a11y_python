@@ -85,9 +85,9 @@ def test_aa_info_when_color_pairs_unset() -> None:
     assert "not collected" in res.details
 
 
-def test_aa_pass_when_color_pairs_empty() -> None:
+def test_aa_is_not_applicable_when_color_pairs_empty() -> None:
     res = _only(check_text_contrast_aa(_ctx({})))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_aa_pass_when_black_on_white() -> None:

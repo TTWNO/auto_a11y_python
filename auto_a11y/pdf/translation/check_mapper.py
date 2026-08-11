@@ -987,8 +987,10 @@ def to_violation(
     regression test guarantees the catalogue covers every literal pair
     the audit engine emits.
 
-    Returns ``None`` for ``PASS`` results (those aren't violations to
-    display).
+    Returns ``None`` for ``PASS`` and ``NA`` results — neither is a
+    fault to display. ``NA`` means the check had nothing of its kind to
+    examine (no tables, so nothing to say about table headers); see
+    :data:`~auto_a11y.pdf.models.CheckOutcome`.
 
     The text fields on the returned :class:`Violation` —
     ``description``, ``short_title``, ``what``, ``why``, ``who``,
@@ -1004,7 +1006,7 @@ def to_violation(
             Stored under ``metadata['pdf_doc_id']`` so consumers can
             link back to the source document without re-querying.
     """
-    if cr.result == "PASS":
+    if cr.result in ("PASS", "NA"):
         return None
     row = _lookup_row(cr.name, cr.result)
     if row is None:

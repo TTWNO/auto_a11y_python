@@ -221,12 +221,12 @@ def test_pdf_is_tagged_fail_when_no_markinfo() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_no_suspect_tags_pass_when_no_markinfo() -> None:
+def test_no_suspect_tags_is_not_applicable_when_no_markinfo() -> None:
     pdf = _new_pdf()
     res = _only(check_no_suspect_tags(_ctx(pdf)))
     assert res.name == "No suspect tags"
     assert res.standard == "Matterhorn 09-004"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_no_suspect_tags_pass_when_suspects_false() -> None:
@@ -382,12 +382,12 @@ def test_metadata_completeness_warn_when_no_info() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_page_labels_pass_when_no_pagelabels() -> None:
+def test_page_labels_is_not_applicable_when_no_pagelabels() -> None:
     pdf = _new_pdf()
     res = _only(check_page_labels_consistent(_ctx(pdf)))
     assert res.name == "Page labels consistent"
     assert res.standard == "WCAG (PDF17)"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "optional" in res.details.lower()
 
 
@@ -441,12 +441,12 @@ def test_page_labels_fail_when_starts_at_nonzero() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_header_catalog_version_pass_when_no_catalog_version() -> None:
+def test_header_catalog_version_is_not_applicable_when_no_catalog_version() -> None:
     pdf = _new_pdf()
     res = _only(check_pdf_header_catalog_version_consistent(_ctx(pdf)))
     assert res.name == "PDF header and catalog version consistent"
     assert res.standard == "WCAG 2.2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "header version" in res.details.lower()
 
 
@@ -471,12 +471,12 @@ def test_header_catalog_version_fail_when_mismatch() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_pdf20_structure_elements_pass_when_none_used() -> None:
+def test_pdf20_structure_elements_is_not_applicable_when_none_used() -> None:
     pdf = _new_pdf()
     res = _only(check_pdf20_structure_elements_used_correctly(_ctx(pdf)))
     assert res.name == "New PDF 2.0 structure elements used correctly"
     assert res.standard == "PDF/UA-2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_pdf20_structure_elements_pass_when_used_natively() -> None:
@@ -542,12 +542,12 @@ def test_pdfua2_xmp_warn_when_no_part2() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_pdf20_namespace_pass_when_pdf20_not_used() -> None:
+def test_pdf20_namespace_is_not_applicable_when_pdf20_not_used() -> None:
     pdf = _new_pdf()
     res = _only(check_pdf20_namespace_in_structure_tree(_ctx(pdf)))
     assert res.name == "PDF 2.0 namespace in structure tree"
     assert res.standard == "PDF/UA-2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "not required" in res.details.lower()
 
 
@@ -575,12 +575,12 @@ def test_pdf20_namespace_fail_when_pdf20_used_without_namespaces() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_pdfua2_requires_pdf20_pass_when_no_pdfua2_id() -> None:
+def test_pdfua2_requires_pdf20_is_not_applicable_when_no_pdfua2_id() -> None:
     pdf = _new_pdf()
     res = _only(check_pdfua2_requires_pdf20(_ctx(pdf)))
     assert res.name == "PDF/UA-2 requires PDF 2.0"
     assert res.standard == "PDF/UA-2"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_pdfua2_requires_pdf20_pass_when_pdfua2_and_pdf2() -> None:

@@ -2375,32 +2375,6 @@ components:
         schema before patching.'
       title: GenericSectionPatchIn
       type: object
-    GhostscriptHealthOut:
-      additionalProperties: false
-      description: 'Ghostscript-detection sub-block of :class:`HealthPdfOut`.
-
-
-        Mirrors the dataclass ``GhostscriptHealth`` from
-
-        ``auto_a11y.pdf.health``: ``found`` reports whether the binary
-
-        was detected and ``path`` is the resolved absolute path (or
-
-        ``null`` when not found).'
-      properties:
-        found:
-          title: Found
-          type: boolean
-        path:
-          anyOf:
-          - type: string
-          - type: 'null'
-          default: null
-          title: Path
-      required:
-      - found
-      title: GhostscriptHealthOut
-      type: object
     GroupIn:
       additionalProperties: false
       description: 'POST/PUT body for creating or replacing a permission group.
@@ -2632,9 +2606,7 @@ components:
       description: 'Response body for ``GET /health/pdf``.
 
 
-        Mirrors the legacy ``pdf_health`` projection byte-for-byte:
-
-        nested ``ghostscript`` and ``storage`` sub-blocks. The HTTP
+        Nested ``renderer`` and ``storage`` sub-blocks. The HTTP
 
         status code (200 vs 503) reflects ``PdfHealth.ok`` — the body
 
@@ -2642,12 +2614,12 @@ components:
 
         surfaces actionable diagnostics.'
       properties:
-        ghostscript:
-          $ref: '#/components/schemas/GhostscriptHealthOut'
+        renderer:
+          $ref: '#/components/schemas/RendererHealthOut'
         storage:
           $ref: '#/components/schemas/StorageHealthOut'
       required:
-      - ghostscript
+      - renderer
       - storage
       title: HealthPdfOut
       type: object
@@ -6572,6 +6544,37 @@ components:
       - token_record
       - user
       title: RegisterOut
+      type: object
+    RendererHealthOut:
+      additionalProperties: false
+      description: 'Page-rasterisation sub-block of :class:`HealthPdfOut`.
+
+
+        Mirrors the dataclass ``RendererHealth`` from
+
+        ``auto_a11y.pdf.health``: ``available`` reports whether pages can be
+
+        rasterised for the colour and contrast checks, and ``engine`` names the
+
+        renderer.
+
+
+        Replaced the former ``ghostscript`` block when rasterisation moved from a
+
+        Ghostscript subprocess to in-process PDFium. There is no longer a binary to
+
+        locate, so the block no longer carries a path.'
+      properties:
+        available:
+          title: Available
+          type: boolean
+        engine:
+          title: Engine
+          type: string
+      required:
+      - available
+      - engine
+      title: RendererHealthOut
       type: object
     ReportCreatedOut:
       additionalProperties: false
@@ -11875,7 +11878,7 @@ paths:
   /health/pdf:
     get:
       description: Unauthenticated health probe for the PDF audit subsystem. Returns
-        the Ghostscript detection result (``found``, ``path``) and the storage directory
+        the page-renderer status (``available``, ``engine``) and the storage directory
         writability (``dir``, ``writable``). HTTP status is 200 when both checks pass
         and 503 when either fails — the body shape is the same regardless of status
         so a 503 still surfaces actionable diagnostics.

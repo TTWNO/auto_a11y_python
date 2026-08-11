@@ -545,14 +545,14 @@ def test_text_rotation_warns_on_rotated_text() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_italic_text_passes_when_no_italic() -> None:
+def test_italic_text_is_not_applicable_when_no_italic() -> None:
     fa = FontAnalysis(
         fonts={"Helvetica": _font("Helvetica")},
         rotations=[], italic_runs=[], line_spacings=[], alignments=[],
     )
     res = _only(check_italic_text_usage(_ctx(font_analysis=fa)))
     assert res.name == "Italic text usage"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No italic text" in res.details
 
 
@@ -769,12 +769,12 @@ def test_unicode_mapping_fails_when_no_tounicode() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_cid_gid_passes_when_no_type2_fonts() -> None:
+def test_cid_gid_is_not_applicable_when_no_type2_fonts() -> None:
     fm = FontMetadata(fonts=[
         _detail(base_font="/Helvetica", subtype="/Type1"),
     ])
     res = _only(check_cid_font_gid_mapping(_ctx(font_metadata=fm)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "not applicable" in res.details
 
 
@@ -808,12 +808,12 @@ def test_cid_gid_fails_when_embedded_without_mapping() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_cmap_resources_passes_with_no_type0() -> None:
+def test_cmap_resources_is_not_applicable_with_no_type0() -> None:
     fm = FontMetadata(fonts=[
         _detail(base_font="/Helvetica", subtype="/Type1"),
     ])
     res = _only(check_cmap_resources_valid(_ctx(font_metadata=fm)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_cmap_resources_passes_with_predefined_cmap() -> None:
@@ -844,12 +844,12 @@ def test_cmap_resources_fails_with_unknown_cmap() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_valid_unicode_passes_when_no_tounicode() -> None:
+def test_valid_unicode_is_not_applicable_when_no_tounicode() -> None:
     fm = FontMetadata(fonts=[
         _detail(base_font="/Helvetica", to_unicode=None),
     ])
     res = _only(check_valid_unicode_values(_ctx(font_metadata=fm)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No ToUnicode" in res.details
 
 
@@ -1000,12 +1000,12 @@ def test_differences_notdef_fails_when_present() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_identity_cmap_passes_when_no_identity_fonts() -> None:
+def test_identity_cmap_is_not_applicable_when_no_identity_fonts() -> None:
     fm = FontMetadata(fonts=[
         _detail(base_font="/Helvetica", has_identity_h_or_v=False),
     ])
     res = _only(check_identity_cmap_has_tounicode(_ctx(font_metadata=fm)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_identity_cmap_passes_with_tounicode() -> None:
@@ -1072,14 +1072,14 @@ def test_wmode_fails_on_horizontal_cmap_with_vertical_cidfont() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_nonsymbolic_tt_passes_when_no_such_fonts() -> None:
+def test_nonsymbolic_tt_is_not_applicable_when_no_such_fonts() -> None:
     fm = FontMetadata(fonts=[
         _detail(base_font="/Helvetica", subtype="/Type1"),
     ])
     res = _only(check_nonsymbolic_truetype_latin_mapping(
         _ctx(font_metadata=fm)
     ))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_nonsymbolic_tt_passes_with_winansi() -> None:

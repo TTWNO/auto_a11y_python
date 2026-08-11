@@ -507,7 +507,7 @@ def check_note_tags_have_unique_ids(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Note tags have unique IDs",
                 standard="Matterhorn 19-003",
-                result="PASS",
+                result="NA",
                 details="No Note elements in document",
             )
         ]
@@ -574,7 +574,7 @@ def check_formula_alt_text(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Formula elements have alt text or ActualText",
                 standard="Matterhorn 17-002",
-                result="PASS",
+                result="NA",
                 details="No Formula elements in document",
             )
         ]
@@ -626,7 +626,7 @@ def check_mathml_associated_with_formula(
             CheckResult(
                 name="MathML associated with Formula elements",
                 standard="PDF/UA-2",
-                result="PASS",
+                result="NA",
                 details="No Formula elements in document",
             )
         ]
@@ -703,7 +703,7 @@ def check_associated_files_on_embedded_content(
             CheckResult(
                 name="Associated Files property on embedded content",
                 standard="PDF/UA-2",
-                result="PASS",
+                result="NA",
                 details="No Formula/Figure/multimedia elements requiring /AF",
             )
         ]
@@ -752,7 +752,7 @@ def check_optional_content_groups_have_name(
             CheckResult(
                 name="Optional content groups have Name",
                 standard="Matterhorn 20-001",
-                result="PASS",
+                result="NA",
                 details="No optional content (layers) in document",
             )
         ]
@@ -762,7 +762,7 @@ def check_optional_content_groups_have_name(
             CheckResult(
                 name="Optional content groups have Name",
                 standard="Matterhorn 20-001",
-                result="PASS",
+                result="NA",
                 details="No optional content groups defined",
             )
         ]
@@ -821,7 +821,7 @@ def check_optional_content_no_as_entry(
             CheckResult(
                 name="Optional content has no AS entry",
                 standard="Matterhorn 20-002",
-                result="PASS",
+                result="NA",
                 details="No optional content in document",
             )
         ]
@@ -905,7 +905,7 @@ def check_embedded_files_have_f_and_uf(
             CheckResult(
                 name="Embedded files have F and UF keys",
                 standard="Matterhorn 21-001",
-                result="PASS",
+                result="NA",
                 details="No embedded files in document",
             )
         ]
@@ -1155,7 +1155,7 @@ def check_structure_destinations_for_intra_links(
             CheckResult(
                 name="Structure destinations for intra-document links",
                 standard="PDF/UA-2",
-                result="PASS",
+                result="NA",
                 details="No intra-document links found",
             )
         ]

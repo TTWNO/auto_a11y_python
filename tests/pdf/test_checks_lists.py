@@ -83,9 +83,9 @@ def test_list_checks_registry_lists_all_four() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_list_structure_pass_when_no_lists() -> None:
+def test_list_structure_is_not_applicable_when_no_lists() -> None:
     res = _only(check_list_structure_valid(_ctx([_elem(0, "Document")])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No lists" in res.details
 
 
@@ -135,9 +135,9 @@ def test_list_structure_skips_truly_empty_list() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_no_empty_lists_pass_when_no_lists() -> None:
+def test_no_empty_lists_is_not_applicable_when_no_lists() -> None:
     res = _only(check_no_empty_lists(_ctx([])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No lists" in res.details
 
 
@@ -201,9 +201,9 @@ def test_list_nesting_warn_when_l_is_direct_child_of_li() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_list_item_labels_pass_when_no_lists() -> None:
+def test_list_item_labels_is_not_applicable_when_no_lists() -> None:
     res = _only(check_list_item_labels(_ctx([])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_list_item_labels_pass_when_every_li_has_lbl() -> None:

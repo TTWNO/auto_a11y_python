@@ -377,10 +377,15 @@ pdf-inventory-version-recommendations-sect-suggested = Based on the document's c
 
 # Executive summary (Phase C front matter)
 pdf-inventory-exec-summary-heading = At a glance
-pdf-inventory-exec-summary-verdict-pass = This PDF appears to conform to the audited checks ({ $total } total).
+pdf-inventory-exec-summary-verdict-pass = This PDF conforms on all { $examined } checks that applied to it.
 pdf-inventory-exec-summary-verdict-warn = No errors detected, but { $warn } warning(s) and { $fail } error(s) should be reviewed.
 pdf-inventory-exec-summary-verdict-fail = This PDF does not conform: { $fail } error(s) and { $warn } warning(s) need attention.
 pdf-inventory-exec-summary-verdict-not-tested = No automated checks ran for this audit.
+pdf-inventory-exec-summary-not-applicable =
+    { $count ->
+        [one] { $count } further check did not apply to this document — it had nothing of that kind to examine.
+       *[other] { $count } further checks did not apply to this document — there was nothing of those kinds to examine.
+    }
 pdf-inventory-exec-summary-top-issues = Top issues
 pdf-inventory-exec-summary-fail-count = { $count } fail
 pdf-inventory-exec-summary-warn-count = { $count } warn

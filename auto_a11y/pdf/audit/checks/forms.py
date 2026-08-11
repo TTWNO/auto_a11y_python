@@ -278,7 +278,7 @@ def check_widget_annotations_inside_form_tags(
             CheckResult(
                 name="Widget annotations inside Form tags",
                 standard="Matterhorn 28-012",
-                result="PASS",
+                result="NA",
                 details="No widget annotations in document",
             )
         ]
@@ -376,7 +376,7 @@ def check_form_fields_labeled(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Form fields labeled",
                 standard="PDF/UA, WCAG 1.3.1, 4.1.2",
-                result="PASS",
+                result="NA",
                 details="No interactive form fields found in document",
             )
         ]
@@ -694,7 +694,7 @@ def check_redundant_entry_in_forms(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Redundant entry in forms",
                 standard="WCAG 3.3.7",
-                result="PASS",
+                result="NA",
                 details="No interactive form fields found in document",
             )
         ]
@@ -758,7 +758,7 @@ def check_accessible_authentication(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Accessible authentication",
                 standard="WCAG 3.3.8",
-                result="PASS",
+                result="NA",
                 details="No interactive form fields found in document",
             )
         ]

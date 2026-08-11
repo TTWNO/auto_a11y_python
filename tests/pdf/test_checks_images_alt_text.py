@@ -317,12 +317,12 @@ def test_alt_hides_interactive_form_and_annot_also_count() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_figure_bbox_passes_with_no_figures() -> None:
+def test_figure_bbox_is_not_applicable_with_no_figures() -> None:
     elems = [_struct(0, "P")]
     res = _only(check_figure_elements_have_bbox(_ctx_with_elements(elems)))
     assert res.name == "Figure elements have BBox attribute"
     assert res.standard == "PDF/UA (PAC 2024)"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No Figure elements" in res.details
 
 
@@ -382,5 +382,5 @@ def test_figure_bbox_ignores_non_figure_elements() -> None:
     """Only Figure tags are inspected — Art, P, etc. are ignored."""
     elems = [_struct(0, "Art")]  # no BBox but not a Figure
     res = _only(check_figure_elements_have_bbox(_ctx_with_elements(elems)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No Figure elements" in res.details

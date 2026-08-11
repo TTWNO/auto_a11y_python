@@ -70,7 +70,7 @@ def check_list_structure_valid(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="List structure valid",
                 standard="PDF/UA, WCAG 1.3.1",
-                result="PASS",
+                result="NA",
                 details="No lists found in document",
             )
         ]
@@ -149,7 +149,7 @@ def check_no_empty_lists(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="No empty lists",
                 standard="Matterhorn 09-006",
-                result="PASS",
+                result="NA",
                 details="No lists found in document",
             )
         ]
@@ -202,7 +202,7 @@ def check_list_nesting_valid(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="List nesting valid",
                 standard="PDF/UA, WCAG 1.3.1",
-                result="PASS",
+                result="NA",
                 details="No lists found in document",
             )
         ]
@@ -272,7 +272,7 @@ def check_list_item_labels(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="List item labels",
                 standard="PDF/UA (best practice)",
-                result="PASS",
+                result="NA",
                 details="No lists found in document",
             )
         ]

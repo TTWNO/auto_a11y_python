@@ -312,7 +312,7 @@ def check_no_suspect_tags(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="No suspect tags",
                 standard="Matterhorn 09-004",
-                result="PASS",
+                result="NA",
                 details="No /MarkInfo (checked separately)",
             )
         ]
@@ -514,7 +514,7 @@ def check_page_labels_consistent(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="Page labels consistent",
                 standard="WCAG (PDF17)",
-                result="PASS",
+                result="NA",
                 details="No /PageLabels dictionary — page labels are optional",
             )
         ]
@@ -587,7 +587,7 @@ def check_pdf_header_catalog_version_consistent(
             CheckResult(
                 name="PDF header and catalog version consistent",
                 standard="WCAG 2.2",
-                result="PASS",
+                result="NA",
                 details=(
                     f"No catalog /Version override — header version"
                     f" {header} is authoritative"
@@ -654,7 +654,7 @@ def check_pdf20_structure_elements_used_correctly(
             CheckResult(
                 name="New PDF 2.0 structure elements used correctly",
                 standard="PDF/UA-2",
-                result="PASS",
+                result="NA",
                 details="No PDF 2.0 specific structure elements found",
             )
         ]
@@ -762,7 +762,7 @@ def check_pdf20_namespace_in_structure_tree(
             CheckResult(
                 name="PDF 2.0 namespace in structure tree",
                 standard="PDF/UA-2",
-                result="PASS",
+                result="NA",
                 details=(
                     "No PDF 2.0 specific tags in use — namespace not"
                     " required"
@@ -811,7 +811,7 @@ def check_pdfua2_requires_pdf20(ctx: AuditContext) -> list[CheckResult]:
             CheckResult(
                 name="PDF/UA-2 requires PDF 2.0",
                 standard="PDF/UA-2",
-                result="PASS",
+                result="NA",
                 details=(
                     "No PDF/UA-2 identification — PDF 2.0 version check"
                     " not required"

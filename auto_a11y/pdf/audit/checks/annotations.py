@@ -367,7 +367,7 @@ def check_link_annotations_have_contents_key(
             CheckResult(
                 name="Link annotations have Contents key",
                 standard="Matterhorn 28-012",
-                result="PASS",
+                result="NA",
                 details="No link annotations in document",
             )
         ]
@@ -443,7 +443,7 @@ def check_link_annotations_inside_link_tags(
             CheckResult(
                 name="Link annotations inside Link tags",
                 standard="Matterhorn 28-014",
-                result="PASS",
+                result="NA",
                 details="No link annotations in document",
             )
         ]
@@ -587,7 +587,7 @@ def check_non_link_widget_annotations_tagged(
             CheckResult(
                 name="Non-link/widget annotations tagged",
                 standard="Matterhorn 28-004",
-                result="PASS",
+                result="NA",
                 details="No non-link/widget annotations found",
             )
         ]
@@ -633,7 +633,7 @@ def check_multimedia_annotations_tagged(
             CheckResult(
                 name="Multimedia annotations tagged",
                 standard="WCAG 1.2",
-                result="PASS",
+                result="NA",
                 details="No multimedia annotations in document",
             )
         ]
@@ -704,7 +704,7 @@ def check_media_clip_annotations_have_alt_text(
             CheckResult(
                 name="Media clip annotations have alt text",
                 standard="Matterhorn 28-016",
-                result="PASS",
+                result="NA",
                 details="No media clip annotations found",
             )
         ]
@@ -797,7 +797,7 @@ def check_media_clip_alt_text_present(
             CheckResult(
                 name="Media clip alt text present",
                 standard="Matterhorn 28-015",
-                result="PASS",
+                result="NA",
                 details="No media clip annotations found",
             )
         ]
@@ -887,7 +887,7 @@ def check_media_clip_content_type_present(
             CheckResult(
                 name="Media clip content type present",
                 standard="Matterhorn 28-014",
-                result="PASS",
+                result="NA",
                 details="No media clip annotations found",
             )
         ]
@@ -1151,7 +1151,7 @@ def check_file_attachment_annotations_valid(
             CheckResult(
                 name="File attachment annotations valid",
                 standard="Matterhorn 28-016",
-                result="PASS",
+                result="NA",
                 details="No file attachment annotations found",
             )
         ]

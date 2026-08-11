@@ -180,11 +180,11 @@ def test_document_language_fails_when_lang_blank() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_lang_values_passes_when_no_lang_anywhere() -> None:
+def test_lang_values_is_not_applicable_when_no_lang_anywhere() -> None:
     res = _only(check_lang_values_valid_bcp47(_ctx(_new_pdf_with_lang(None))))
     assert res.name == "Lang values are valid BCP 47"
     assert res.standard == "Matterhorn 11-003"
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No /Lang" in res.details
 
 
@@ -245,22 +245,22 @@ def _add_annot(
         page.obj["/Lang"] = pikepdf.String(page_lang)
 
 
-def test_annotation_language_passes_when_no_annots() -> None:
+def test_annotation_language_is_not_applicable_when_no_annots() -> None:
     pdf = _new_pdf_with_lang(None)
     pdf.add_blank_page(page_size=(612, 792))
     res = _only(check_annotation_language_determinable(_ctx(pdf)))
     assert res.name == "Annotation contents language determinable"
     assert res.standard == "Matterhorn 11-004"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
-def test_annotation_language_passes_when_annot_has_no_contents() -> None:
+def test_annotation_language_is_not_applicable_when_annot_has_no_contents() -> None:
     """Annotations without /Contents are out of scope."""
     pdf = _new_pdf_with_lang(None)
     pdf.add_blank_page(page_size=(612, 792))
     _add_annot(pdf, contents=None)
     res = _only(check_annotation_language_determinable(_ctx(pdf)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_annotation_language_passes_via_doc_lang() -> None:
@@ -327,19 +327,19 @@ def _add_form_field(
     )
 
 
-def test_form_field_tooltip_passes_when_no_acroform() -> None:
+def test_form_field_tooltip_is_not_applicable_when_no_acroform() -> None:
     pdf = _new_pdf_with_lang(None)
     res = _only(check_form_field_tooltip_language_determinable(_ctx(pdf)))
     assert res.name == "Form field tooltip language determinable"
     assert res.standard == "Matterhorn 11-005"
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
-def test_form_field_tooltip_passes_when_field_has_no_tu() -> None:
+def test_form_field_tooltip_is_not_applicable_when_field_has_no_tu() -> None:
     pdf = _new_pdf_with_lang(None)
     _add_form_field(pdf, tu=None)
     res = _only(check_form_field_tooltip_language_determinable(_ctx(pdf)))
-    assert res.result == "PASS"
+    assert res.result == "NA"
     assert "No form fields" in res.details
 
 

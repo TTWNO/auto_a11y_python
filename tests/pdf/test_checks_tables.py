@@ -100,9 +100,9 @@ def test_table_checks_registry_lists_all_six() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_table_headers_pass_when_no_tables() -> None:
+def test_table_headers_is_not_applicable_when_no_tables() -> None:
     res = _only(check_table_headers_defined(_ctx([])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_table_headers_pass_when_table_has_th() -> None:
@@ -189,9 +189,9 @@ def test_table_header_scope_through_thead_wrapper() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_table_structure_sections_pass_when_no_tables() -> None:
+def test_table_structure_sections_is_not_applicable_when_no_tables() -> None:
     res = _only(check_table_structure_sections(_ctx([])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_table_structure_sections_pass_with_thead_tbody() -> None:
@@ -219,9 +219,9 @@ def test_table_structure_sections_warn_when_direct_tr_only() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_table_regularity_pass_when_no_tables() -> None:
+def test_table_regularity_is_not_applicable_when_no_tables() -> None:
     res = _only(check_table_regularity(_ctx([])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_table_regularity_pass_when_rows_consistent() -> None:
@@ -278,9 +278,9 @@ def test_table_regularity_pass_when_colspan_balances_rows() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_no_empty_tables_pass_when_no_tables() -> None:
+def test_no_empty_tables_is_not_applicable_when_no_tables() -> None:
     res = _only(check_no_empty_tables(_ctx([])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_no_empty_tables_pass_when_table_has_cells() -> None:
@@ -305,9 +305,9 @@ def test_no_empty_tables_fail_when_table_has_no_cells() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_table_captions_pass_when_no_tables() -> None:
+def test_table_captions_is_not_applicable_when_no_tables() -> None:
     res = _only(check_table_captions(_ctx([])))
-    assert res.result == "PASS"
+    assert res.result == "NA"
 
 
 def test_table_captions_pass_with_caption() -> None:

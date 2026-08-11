@@ -1114,6 +1114,12 @@ def _build_wcag_mapping(
             verdict = "WARN"
         elif "INFO" in outcomes:
             verdict = "INFO"
+        elif all(o == "NA" for o in outcomes):
+            # Every check under this criterion had nothing to examine —
+            # a document with no tables says nothing about 1.3.1's table
+            # requirements. Reporting that as PASS would claim conformance
+            # the audit never established.
+            verdict = "NOT_TESTED"
         else:
             verdict = "PASS"
         rows.append({
@@ -1232,6 +1238,7 @@ def _build_executive_summary(
     warn = sum(1 for cr in check_results if cr.result == "WARN")
     info = sum(1 for cr in check_results if cr.result == "INFO")
     passed = sum(1 for cr in check_results if cr.result == "PASS")
+    not_applicable = sum(1 for cr in check_results if cr.result == "NA")
 
     issue_counts: dict[str, dict[str, object]] = {}
     for cr in check_results:
@@ -1277,6 +1284,7 @@ def _build_executive_summary(
         "warn_count": warn,
         "info_count": info,
         "pass_count": passed,
+        "na_count": not_applicable,
         "total_checks": len(check_results),
         "top_issues": top_issues,
         "verdict": verdict,

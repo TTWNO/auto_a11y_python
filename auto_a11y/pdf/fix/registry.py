@@ -22,6 +22,7 @@ from auto_a11y.pdf.fix import (
     forms,
     headings,
     language,
+    links,
     lists,
     metadata,
     notes,
@@ -81,6 +82,9 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_outline_lang": language.fix_outline_lang,
     # Notes
     "fix_note_ids": notes.fix_note_ids,
+    # Link descriptions
+    "fix_link_annot_contents": links.fix_link_annot_contents,
+    "fix_link_content": links.fix_link_content,
     # Lists
     "fix_list_structure": lists.fix_list_structure,
     "fix_list_nesting": lists.fix_list_nesting,

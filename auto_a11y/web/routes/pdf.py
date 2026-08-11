@@ -42,6 +42,11 @@ from auto_a11y.pdf.errors import (
     NotAPdf,
     PdfTooLarge,
 )
+from auto_a11y.pdf.models import AuditResult
+from auto_a11y.pdf.report_markdown import (
+    checks_from_metadata,
+    render_audit_markdown,
+)
 from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.routes.auth import get_effective_role, project_role_required
@@ -826,17 +831,16 @@ def issue_map(pdf_document_id: str) -> Response:
 @pdf_bp.route('/pdfs/<pdf_document_id>/pdfmax-report', methods=['GET'])
 @login_required
 def pdfmax_report(pdf_document_id: str) -> Response | str:
-    """Render the cached verbatim pdfMax Markdown audit report.
+    """Render the audit as a Markdown report.
 
-    The pdfMax subprocess is *not* run here. The audit job
-    (:class:`PdfAuditJob`) writes a ``*_accessibility_report.md``
-    file to disk as part of the normal Audit / Re-audit flow; this
-    route is a pure cache lookup against that file.
+    Rendered here rather than cached at audit time, for two reasons. The
+    report comes out in the language the reader is using now, not the one
+    the audit happened to run under; and there is no cache to invalidate
+    when the document is re-audited or its results are cleared.
 
-    If no cached report exists (the PDF has never been audited, or
-    was audited before this feature shipped), the page tells the
-    user to click Re-audit. The route never blocks the request
-    thread on a 10-30s audit.
+    Replaces a subprocess call into an external pdfMax checkout, which
+    was absent from every packaged build — so this page has never worked
+    outside Docker.
     """
     db = get_db()
     pdf = db.get_pdf_document(pdf_document_id)
@@ -851,44 +855,39 @@ def pdfmax_report(pdf_document_id: str) -> Response | str:
     if denied is not None:
         return denied
 
-    storage = _get_storage()
-    pdf_path = storage.local_path(pdf)
-    cache_dir = pdf_path.parent / 'pdfmax-report'
-
-    cached_md: str | None = None
+    report_markdown: str | None = None
     error: str | None = None
-    # PdfDocument.status gates whether cached audit output is "live".
-    # After "Clear Test Results" we flip status to PENDING but the cache
-    # files on disk may outlive the reset; only render them when the
-    # PDF is currently AUDITED.
-    if pdf.status is not PdfDocumentStatus.AUDITED:
-        error = (
-            "No pdfMax report has been generated for this document yet. "
-            "Click 'Re-audit' on the detail page to produce one."
-        )
-    elif cache_dir.is_dir():
-        candidates = sorted(cache_dir.glob('*_accessibility_report.md'))
-        if candidates:
-            try:
-                cached_md = candidates[0].read_text(encoding='utf-8')
-            except OSError as exc:
-                error = f"Failed to read cached pdfMax report: {exc}"
-        else:
-            error = (
-                "No pdfMax report has been generated for this document yet. "
-                "Click 'Re-audit' on the detail page to produce one."
-            )
+
+    if pdf.status is not PdfDocumentStatus.AUDITED or not pdf.last_audit_result_id:
+        error = str(ftl('pdfmax-report-not-audited'))
     else:
-        error = (
-            "No pdfMax report has been generated for this document yet. "
-            "Click 'Re-audit' on the detail page to produce one."
-        )
+        test_result = db.get_test_result(pdf.last_audit_result_id)
+        if test_result is None:
+            error = str(ftl('pdfmax-report-not-audited'))
+        else:
+            checks = checks_from_metadata(
+                test_result.metadata.get('check_results')
+            )
+            if not checks:
+                error = str(ftl('pdfmax-report-no-verdicts'))
+            else:
+                report_markdown = render_audit_markdown(
+                    AuditResult.from_checks(
+                        pdf_path=Path(pdf.original_filename or 'document.pdf'),
+                        pdf_version=pdf.pdf_version,
+                        page_count=pdf.page_count or 0,
+                        declared_lang=pdf.declared_lang,
+                        detected_lang=pdf.detected_lang,
+                        check_results=checks,
+                        ai_analysis=None,
+                    )
+                )
 
     return render_template(
         'pdf/pdfmax_report.html',
         pdf=pdf,
         target=target_view_from_pdf(pdf, breadcrumb=[]),
-        report_markdown=cached_md,
+        report_markdown=report_markdown,
         error=error,
     )
 

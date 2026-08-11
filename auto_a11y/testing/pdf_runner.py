@@ -402,6 +402,18 @@ class PdfRunner:
             'info_count': audit_result.info_count,
             'pass_count': audit_result.pass_count,
             'na_count': audit_result.na_count,
+            # Every verdict, including PASS and NA, which do not become
+            # Violations. The report renderer needs the full set: a
+            # report that lists only faults cannot say what was checked.
+            'check_results': [
+                {
+                    'name': c.name,
+                    'standard': c.standard,
+                    'result': c.result,
+                    'details': c.details,
+                }
+                for c in audit_result.check_results
+            ],
             'wcag_level': wcag_level,
             'locale': locale,
             # pdfMax §2-13 inventory data, JSON-friendly. Read back by

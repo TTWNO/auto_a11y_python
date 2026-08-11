@@ -485,3 +485,27 @@ pdf-fix-field-label-style-help = Only choose a bullet or numbering if that is wh
 pdf-fix-label-style-structural = Structural only (no announced label)
 pdf-fix-label-style-bullet = Bullet (•)
 pdf-fix-label-style-numbered = Numbered (1. 2. 3.)
+
+# Native audit report — see auto_a11y/pdf/report_markdown.py
+pdf-report-title = Accessibility report: { $filename }
+pdf-report-pages = Pages
+pdf-report-version = PDF version
+pdf-report-language = Language
+pdf-report-column-outcome = Outcome
+pdf-report-column-count = Checks
+pdf-report-count-failed = Failed
+pdf-report-count-warnings = Warnings
+pdf-report-count-passed = Passed
+pdf-report-count-not-applicable = Not applicable
+pdf-report-not-applicable-note =
+    { $count ->
+        [one] { $count } check did not apply to this document — it had nothing of that kind to examine, so it is counted separately from the checks that passed.
+       *[other] { $count } checks did not apply to this document — there was nothing of those kinds to examine, so they are counted separately from the checks that passed.
+    }
+pdf-report-section-failures = Failures
+pdf-report-section-warnings = Warnings
+pdf-report-section-info = For information
+pdf-report-section-passed = Passed
+pdf-report-section-not-applicable = Not applicable
+pdfmax-report-not-audited = This PDF has not been audited yet. Run the audit to produce a report.
+pdfmax-report-no-verdicts = This PDF was audited before reports were generated in-app. Re-audit it to produce one.

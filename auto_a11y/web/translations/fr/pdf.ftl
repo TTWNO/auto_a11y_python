@@ -473,3 +473,27 @@ pdf-fix-field-label-style-help = Ne choisir une puce ou une numérotation que si
 pdf-fix-label-style-structural = Structurelle seulement (aucune étiquette annoncée)
 pdf-fix-label-style-bullet = Puce (•)
 pdf-fix-label-style-numbered = Numérotée (1. 2. 3.)
+
+# Rapport d'audit natif — voir auto_a11y/pdf/report_markdown.py
+pdf-report-title = Rapport d'accessibilité : { $filename }
+pdf-report-pages = Pages
+pdf-report-version = Version PDF
+pdf-report-language = Langue
+pdf-report-column-outcome = Résultat
+pdf-report-column-count = Vérifications
+pdf-report-count-failed = En échec
+pdf-report-count-warnings = Avertissements
+pdf-report-count-passed = Réussies
+pdf-report-count-not-applicable = Sans objet
+pdf-report-not-applicable-note =
+    { $count ->
+        [one] { $count } vérification ne s'appliquait pas à ce document — il n'y avait rien de ce type à examiner, elle est donc comptée séparément des vérifications réussies.
+       *[other] { $count } vérifications ne s'appliquaient pas à ce document — il n'y avait rien de ces types à examiner, elles sont donc comptées séparément des vérifications réussies.
+    }
+pdf-report-section-failures = Échecs
+pdf-report-section-warnings = Avertissements
+pdf-report-section-info = Pour information
+pdf-report-section-passed = Réussies
+pdf-report-section-not-applicable = Sans objet
+pdfmax-report-not-audited = Ce PDF n'a pas encore été audité. Lancer l'audit pour produire un rapport.
+pdfmax-report-no-verdicts = Ce PDF a été audité avant que les rapports ne soient générés dans l'application. Le auditer de nouveau pour en produire un.

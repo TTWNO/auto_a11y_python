@@ -455,3 +455,21 @@ pdf-viewer-issue-group-count = {"{COUNT}"} elements
 pdf-viewer-issue-view-in-report = View in report
 pdf-viewer-issue-view-in-report-aria = View "{"{CHECK}"}" in the pdfMax report
 pdfmax-report-jumped-to-check = Showing report section: {"{CHECK}"}
+
+# Étiquettes des champs de correction — voir auto_a11y/pdf/fix/catalogue.py
+pdf-fix-field-title = Titre du document
+pdf-fix-field-title-placeholder = p. ex. Rapport annuel 2025
+pdf-fix-field-title-help = Laisser vide pour déduire un titre à partir du nom de fichier.
+pdf-fix-field-language = Langue
+pdf-fix-field-language-help = La langue dans laquelle le document est rédigé. Laisser vide pour la déduire du texte du document.
+pdf-fix-field-language-custom = Autre code de langue
+pdf-fix-field-language-custom-placeholder = p. ex. pt-BR
+pdf-fix-language-english = Anglais
+pdf-fix-language-french = Français
+pdf-fix-language-spanish = Espagnol
+pdf-fix-language-other = Autre…
+pdf-fix-field-label-style = Style d'étiquette de liste
+pdf-fix-field-label-style-help = Ne choisir une puce ou une numérotation que si c'est bien ce que la page affiche. Une étiquette structurelle ajoute le balisage sans annoncer un symbole que le lecteur ne peut pas voir.
+pdf-fix-label-style-structural = Structurelle seulement (aucune étiquette annoncée)
+pdf-fix-label-style-bullet = Puce (•)
+pdf-fix-label-style-numbered = Numérotée (1. 2. 3.)

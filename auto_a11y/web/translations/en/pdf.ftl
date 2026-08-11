@@ -467,3 +467,21 @@ pdf-viewer-issue-view-in-report-aria = View "{"{CHECK}"}" in the pdfMax report
 # section. Suppressed silently when the matching <details> element
 # isn't found.
 pdfmax-report-jumped-to-check = Showing report section: {"{CHECK}"}
+
+# Fix input labels — see auto_a11y/pdf/fix/catalogue.py
+pdf-fix-field-title = Document title
+pdf-fix-field-title-placeholder = e.g. Annual Report 2025
+pdf-fix-field-title-help = Leave blank to derive a title from the filename.
+pdf-fix-field-language = Language
+pdf-fix-field-language-help = The language the document is written in. Leave unset to derive it from the document's own text.
+pdf-fix-field-language-custom = Other language code
+pdf-fix-field-language-custom-placeholder = e.g. pt-BR
+pdf-fix-language-english = English
+pdf-fix-language-french = French
+pdf-fix-language-spanish = Spanish
+pdf-fix-language-other = Other…
+pdf-fix-field-label-style = List label style
+pdf-fix-field-label-style-help = Only choose a bullet or numbering if that is what the page actually shows. A structural label adds the markup without claiming a symbol the reader cannot see.
+pdf-fix-label-style-structural = Structural only (no announced label)
+pdf-fix-label-style-bullet = Bullet (•)
+pdf-fix-label-style-numbered = Numbered (1. 2. 3.)

@@ -11,6 +11,14 @@ its ``**kwargs`` input convention with the typed :class:`FixOptions`
 record, so that which fixes need which inputs is declared rather than
 discovered at runtime.
 """
+from auto_a11y.pdf.fix.catalogue import (
+    FIXABLE_CHECKS,
+    FixableCheck,
+    FixField,
+    FixFieldOption,
+    InputKind,
+    fix_for_check,
+)
 from auto_a11y.pdf.fix.models import (
     FixOptions,
     FixResult,
@@ -31,16 +39,22 @@ from auto_a11y.pdf.fix.runner import (
 )
 
 __all__ = [
+    "FIXABLE_CHECKS",
     "FIX_REGISTRY",
     "FixFn",
     "FixOptions",
+    "FixField",
+    "FixFieldOption",
     "FixResult",
+    "FixableCheck",
+    "InputKind",
     "FixRun",
     "ListConversionGroup",
     "ProgressCallback",
     "UnknownFixError",
     "apply_fixes",
     "default_output_path",
+    "fix_for_check",
     "get_fix",
     "known_fix_ids",
 ]

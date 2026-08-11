@@ -1892,3 +1892,33 @@ pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-why =
 
 pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-who =
     Users of assistive technology.
+
+pdf-check-PdfWarnEmptyTags-name =
+    No empty tags
+
+pdf-check-PdfWarnEmptyTags-short-title =
+    Empty tags
+
+pdf-check-PdfWarnEmptyTags-what =
+    Some structure elements are leaf tags with no text, no alternative text and no marked content beneath them.
+
+pdf-check-PdfWarnEmptyTags-why =
+    An empty tag announces as nothing while still costing a stop when navigating by element, and a screen-reader user cannot tell an empty paragraph from one whose text failed to reach them.
+
+pdf-check-PdfWarnEmptyTags-who =
+    Screen reader users navigating element by element.
+
+pdf-check-PdfErrIncorrectNesting-name =
+    Correct nesting
+
+pdf-check-PdfErrIncorrectNesting-short-title =
+    Incorrect nesting
+
+pdf-check-PdfErrIncorrectNesting-what =
+    Structure elements sit inside parents the specification does not allow: an element nested in another of its own kind, or a positional element such as a table cell outside the row it belongs to.
+
+pdf-check-PdfErrIncorrectNesting-why =
+    An element inside another of its own kind leaves a reader unable to tell where one block ends and the next begins. A cell outside a row, or a row outside a table, breaks the grid the reader navigates by, so the surrounding content loses the structure that gave it meaning.
+
+pdf-check-PdfErrIncorrectNesting-who =
+    Screen reader users, and anyone navigating tables or lists by structure.

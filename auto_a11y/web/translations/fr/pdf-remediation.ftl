@@ -5296,3 +5296,29 @@ pdf-remediation-PdfInfoFontMetadataMissingEncodingConsistency =
       4. Re-export to PDF.
     
     Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfWarnEmptyTags =
+    Pourquoi c'est important
+    
+    Une balise vide n'annonce rien tout en imposant un arrêt lors de la navigation par élément. Une personne utilisant un lecteur d'écran ne peut pas distinguer un paragraphe vide d'un paragraphe dont le texte ne lui est pas parvenu.
+    
+    Principe
+    
+    Un élément de structure terminal devrait porter du contenu : texte, contenu balisé, texte de remplacement ou texte réel. Les éléments de regroupement font exception, puisque leur rôle est d'en contenir d'autres.
+    
+    Comment corriger dans Adobe Acrobat Pro
+    
+    Ouvrir le panneau Balises, repérer les balises signalées dans ce rapport et supprimer celles qui ne contiennent rien. Attention aux cellules de tableau : une cellule vide est normale dans un tableau de données et doit être conservée, car la supprimer décale toutes les cellules suivantes de la ligne dans la mauvaise colonne.
+
+pdf-remediation-PdfErrIncorrectNesting =
+    Pourquoi c'est important
+    
+    Un élément imbriqué dans un autre de même type empêche de savoir où un bloc se termine et où le suivant commence. Un élément positionnel hors de son parent obligatoire brise la grille ou la liste qui donne son sens au contenu environnant.
+    
+    Principe
+    
+    Un paragraphe ne doit pas contenir de paragraphe et un titre ne doit pas contenir de titre. TD et TH appartiennent à TR ; TR appartient à Table, THead, TBody ou TFoot ; LI appartient à L ; LBody appartient à LI.
+    
+    Comment corriger dans Adobe Acrobat Pro
+    
+    Ouvrir le panneau Balises et utiliser les références d'éléments du rapport pour repérer chaque violation. Pour un élément imbriqué dans un élément de même type, supprimer la balise interne et laisser ses enfants remonter. Pour une cellule ou une ligne mal placée, la déplacer vers le parent correct plutôt que de la rebaliser : rebaliser change ce qu'est l'élément, alors que le problème est l'endroit où il se trouve.

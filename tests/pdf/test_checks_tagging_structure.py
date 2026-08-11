@@ -16,6 +16,8 @@ from typing import Protocol
 import pikepdf
 
 from auto_a11y.pdf.audit.checks.tagging_structure import (
+    check_correct_nesting,
+    check_no_empty_tags,
     TAGGING_STRUCTURE_CHECKS,
     check_associated_files_on_embedded_content,
     check_embedded_files_have_f_and_uf,
@@ -126,7 +128,7 @@ def _only(results: list[CheckResult]) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def test_tagging_structure_checks_registry_lists_all_twenty() -> None:
+def test_tagging_structure_checks_registry_lists_every_check() -> None:
     assert TAGGING_STRUCTURE_CHECKS == [
         check_structure_tree_exists,
         check_role_mapping_valid,
@@ -137,6 +139,8 @@ def test_tagging_structure_checks_registry_lists_all_twenty() -> None:
         check_ruby_structure_valid,
         check_warichu_structure_valid,
         check_note_tags_have_unique_ids,
+        check_no_empty_tags,
+        check_correct_nesting,
         check_formula_alt_text,
         check_mathml_associated_with_formula,
         check_associated_files_on_embedded_content,
@@ -877,3 +881,126 @@ def test_reading_order_warn_in_middle_band() -> None:
     ]
     res = _only(check_reading_order_matches_visual_layout(ctx))
     assert res.result == "WARN"
+
+
+# ---------------------------------------------------------------------------
+# check_no_empty_tags
+# ---------------------------------------------------------------------------
+
+def test_empty_leaf_tags_are_warned_about() -> None:
+    empty = _struct_elem(0, "P")
+    filled = _struct_elem(1, "P")
+    filled.text_content = "real text"
+
+    result = _only(check_no_empty_tags(_ctx(elements=[empty, filled])))
+
+    assert result.result == "WARN"
+    assert "[1] P" in result.details
+
+
+def test_a_grouping_tag_with_no_content_is_not_a_fault() -> None:
+    """An empty Sect groups nothing yet; that is odd, not inaccessible."""
+    result = _only(check_no_empty_tags(_ctx(elements=[_struct_elem(0, "Sect")])))
+
+    assert result.result == "PASS"
+
+
+def test_an_element_described_only_by_alt_text_is_not_empty() -> None:
+    figure = _struct_elem(0, "Figure", alt_text="A chart")
+
+    result = _only(check_no_empty_tags(_ctx(elements=[figure])))
+
+    assert result.result == "PASS"
+
+
+def test_an_element_holding_marked_content_is_not_empty() -> None:
+    span = _struct_elem(0, "Span", mcids=[3])
+
+    result = _only(check_no_empty_tags(_ctx(elements=[span])))
+
+    assert result.result == "PASS"
+
+
+def test_no_structure_makes_empty_tags_not_applicable() -> None:
+    result = _only(check_no_empty_tags(_ctx(elements=[])))
+
+    assert result.result == "NA"
+
+
+# ---------------------------------------------------------------------------
+# check_correct_nesting
+# ---------------------------------------------------------------------------
+
+def test_a_paragraph_inside_a_paragraph_fails() -> None:
+    outer = _struct_elem(0, "P", children_indices=[1])
+    inner = _struct_elem(1, "P", parent_index=0)
+
+    result = _only(check_correct_nesting(_ctx(elements=[outer, inner])))
+
+    assert result.result == "FAIL"
+    assert "P inside P" in result.details
+
+
+def test_a_heading_inside_a_heading_fails() -> None:
+    outer = _struct_elem(0, "H1", children_indices=[1])
+    inner = _struct_elem(1, "H3", parent_index=0)
+
+    result = _only(check_correct_nesting(_ctx(elements=[outer, inner])))
+
+    assert result.result == "FAIL"
+    assert "H3 inside H1" in result.details
+
+
+def test_a_cell_outside_a_row_fails() -> None:
+    """The positional half of the check.
+
+    A cell that is not in a row is not in a column either, so every
+    header association in that table is unreliable.
+    """
+    table = _struct_elem(0, "Table", children_indices=[1])
+    cell = _struct_elem(1, "TD", parent_index=0)
+
+    result = _only(check_correct_nesting(_ctx(elements=[table, cell])))
+
+    assert result.result == "FAIL"
+    assert "TD inside Table" in result.details
+
+
+def test_an_item_outside_a_list_fails() -> None:
+    section = _struct_elem(0, "Sect", children_indices=[1])
+    item = _struct_elem(1, "LI", parent_index=0)
+
+    result = _only(check_correct_nesting(_ctx(elements=[section, item])))
+
+    assert result.result == "FAIL"
+
+
+def test_a_well_formed_table_passes() -> None:
+    table = _struct_elem(0, "Table", children_indices=[1])
+    row = _struct_elem(1, "TR", parent_index=0, children_indices=[2])
+    cell = _struct_elem(2, "TD", parent_index=1)
+
+    result = _only(check_correct_nesting(_ctx(elements=[table, row, cell])))
+
+    assert result.result == "PASS"
+
+
+def test_a_row_inside_a_row_group_passes() -> None:
+    table = _struct_elem(0, "Table", children_indices=[1])
+    body = _struct_elem(1, "TBody", parent_index=0, children_indices=[2])
+    row = _struct_elem(2, "TR", parent_index=1)
+
+    result = _only(check_correct_nesting(_ctx(elements=[table, body, row])))
+
+    assert result.result == "PASS"
+
+
+def test_a_heading_inside_a_paragraph_is_not_a_nesting_violation() -> None:
+    # Unusual, but not a rule this check enforces — only same-kind
+    # nesting and misplaced positional elements are violations.
+    paragraph = _struct_elem(0, "P", children_indices=[1])
+    heading = _struct_elem(1, "H2", parent_index=0)
+
+    result = _only(check_correct_nesting(_ctx(elements=[paragraph, heading])))
+
+    assert result.result == "PASS"

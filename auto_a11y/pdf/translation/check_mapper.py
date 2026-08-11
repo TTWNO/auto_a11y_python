@@ -391,6 +391,16 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         touchpoint=_TAG, standard="Matterhorn 09-008",
     ),
     _row(
+        name="No empty tags", result="WARN",
+        stable_id="PdfWarnEmptyTags",
+        touchpoint=_TAG, standard="Matterhorn 09-006",
+    ),
+    _row(
+        name="Correct nesting", result="FAIL",
+        stable_id="PdfErrIncorrectNesting",
+        touchpoint=_TAG, standard="PDF/UA, WCAG 1.3.1",
+    ),
+    _row(
         name="Note tags have unique IDs", result="FAIL",
         stable_id="PdfErrNoteIdsNotUnique",
         touchpoint=_TAG, standard="Matterhorn 19-003",

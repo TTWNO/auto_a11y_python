@@ -1896,3 +1896,33 @@ pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-why =
 
 pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-who =
     Users of assistive technology.
+
+pdf-check-PdfWarnEmptyTags-name =
+    Aucune balise vide
+
+pdf-check-PdfWarnEmptyTags-short-title =
+    Balises vides
+
+pdf-check-PdfWarnEmptyTags-what =
+    Certains éléments de structure sont des balises terminales sans texte, sans texte de remplacement et sans contenu balisé en dessous.
+
+pdf-check-PdfWarnEmptyTags-why =
+    Une balise vide n'annonce rien tout en imposant un arrêt lors de la navigation par élément, et une personne utilisant un lecteur d'écran ne peut pas distinguer un paragraphe vide d'un paragraphe dont le texte ne lui est pas parvenu.
+
+pdf-check-PdfWarnEmptyTags-who =
+    Les personnes utilisant un lecteur d'écran qui naviguent élément par élément.
+
+pdf-check-PdfErrIncorrectNesting-name =
+    Imbrication correcte
+
+pdf-check-PdfErrIncorrectNesting-short-title =
+    Imbrication incorrecte
+
+pdf-check-PdfErrIncorrectNesting-what =
+    Des éléments de structure se trouvent dans des parents que la spécification n'autorise pas : un élément imbriqué dans un autre de même type, ou un élément positionnel comme une cellule de tableau en dehors de la ligne à laquelle elle appartient.
+
+pdf-check-PdfErrIncorrectNesting-why =
+    Un élément imbriqué dans un autre de même type empêche de savoir où un bloc se termine et où le suivant commence. Une cellule hors d'une ligne, ou une ligne hors d'un tableau, brise la grille sur laquelle repose la navigation, et le contenu environnant perd la structure qui lui donnait son sens.
+
+pdf-check-PdfErrIncorrectNesting-who =
+    Les personnes utilisant un lecteur d'écran, et toute personne naviguant dans les tableaux ou les listes par la structure.

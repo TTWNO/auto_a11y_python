@@ -271,8 +271,6 @@ FIXABLE_CHECKS: dict[str, FixableCheck] = {
 #: yet" from "typo in a check name".
 PENDING_CHECKS: frozenset[str] = frozenset({
     "Accessibility permission not restricted",
-    "Correct nesting",
-    "No empty tags",
     "Untagged lists detected",
 })
 

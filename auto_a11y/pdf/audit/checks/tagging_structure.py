@@ -1398,6 +1398,166 @@ def check_reading_order_matches_visual_layout(
 
 #: Phase 5.3's pipeline iterates this list in order. Phase 6's check
 #: catalogue iterates the same list to enumerate every check name.
+
+
+# ---------------------------------------------------------------------------
+# check_no_empty_tags
+# ---------------------------------------------------------------------------
+
+#: Tags whose job is to group other elements. An empty one is odd but
+#: carries no content of its own, so it is not a fault.
+_GROUPING_TAGS = frozenset({
+    "Document", "Part", "Sect", "Div", "Art", "BlockQuote",
+    "TOC", "TOCI", "Index", "NonStruct",
+    "Table", "TR", "THead", "TBody", "TFoot",
+    "L", "LI",
+    "RB", "RT", "RP", "Warichu", "WP", "WT",
+})
+
+#: Examples listed before the message is truncated.
+_EXAMPLE_LIMIT = 10
+
+
+def check_no_empty_tags(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 09-006: no leaf tag is empty of content.
+
+    An empty leaf announces as nothing while still costing the reader a
+    stop: navigating by element lands on it, reads out silence, and moves
+    on. A screen-reader user cannot tell an empty paragraph from one whose
+    text failed to reach them.
+
+    Reported as a warning rather than a failure. Empty tags are noise
+    rather than lost information — nothing the author wrote is missing —
+    and a document can be entirely usable with a few of them.
+    """
+    empty: list[str] = []
+    for element in ctx.elements:
+        if element.resolved_tag in _GROUPING_TAGS:
+            continue
+        if element.children_indices:
+            continue
+        has_content = bool(
+            (element.text_content or "").strip()
+            or element.alt_text
+            or element.actual_text
+            or element.mcids
+        )
+        if not has_content:
+            empty.append(f"[{element.index + 1}] {element.resolved_tag}")
+
+    if not empty:
+        if not ctx.elements:
+            return [
+                CheckResult(
+                    name="No empty tags",
+                    standard="Matterhorn 09-006",
+                    result="NA",
+                    details="No structure elements in document",
+                )
+            ]
+        return [
+            CheckResult(
+                name="No empty tags",
+                standard="Matterhorn 09-006",
+                result="PASS",
+                details="No empty leaf tags found",
+            )
+        ]
+
+    return [
+        CheckResult(
+            name="No empty tags",
+            standard="Matterhorn 09-006",
+            result="WARN",
+            details=(
+                f"{len(empty)} empty leaf tag(s) with no text, alt text or"
+                f" content: {'; '.join(empty[:_EXAMPLE_LIMIT])}"
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_correct_nesting
+# ---------------------------------------------------------------------------
+
+_HEADING_TAGS = frozenset({"H1", "H2", "H3", "H4", "H5", "H6"})
+
+#: Where each positional tag is required to sit. A cell outside a row, or
+#: a row outside a table, breaks the grid the reader navigates by.
+_REQUIRED_PARENTS: dict[str, frozenset[str]] = {
+    "TD": frozenset({"TR"}),
+    "TH": frozenset({"TR"}),
+    "TR": frozenset({"Table", "THead", "TBody", "TFoot"}),
+    "LI": frozenset({"L"}),
+    "Lbl": frozenset({"LI", "L"}),
+    "LBody": frozenset({"LI"}),
+}
+
+
+def check_correct_nesting(ctx: AuditContext) -> list[CheckResult]:
+    """PDF/UA, WCAG 1.3.1: structure elements sit inside legal parents.
+
+    Two kinds of violation. An element inside another of its own kind — a
+    paragraph in a paragraph, a heading in a heading — leaves a reader
+    unable to tell where one block ends. And a positional element outside
+    its required parent, such as a cell that is not in a row, breaks the
+    grid or list that gives the surrounding content its meaning.
+    """
+    by_index = {e.index: e for e in ctx.elements}
+    violations: list[str] = []
+
+    for element in ctx.elements:
+        parent = by_index.get(element.parent_index)
+        if parent is None:
+            continue
+        child_tag = element.resolved_tag
+        parent_tag = parent.resolved_tag
+        reference = f"[{element.index + 1}]"
+
+        if child_tag == "P" and parent_tag == "P":
+            violations.append(f"{reference} P inside P")
+        elif child_tag in _HEADING_TAGS and parent_tag in _HEADING_TAGS:
+            violations.append(f"{reference} {child_tag} inside {parent_tag}")
+
+        allowed = _REQUIRED_PARENTS.get(child_tag)
+        if allowed is not None and parent_tag not in allowed:
+            violations.append(
+                f"{reference} {child_tag} inside {parent_tag or '?'},"
+                + f" expected {' or '.join(sorted(allowed))}"
+            )
+
+    if not ctx.elements:
+        return [
+            CheckResult(
+                name="Correct nesting",
+                standard="PDF/UA, WCAG 1.3.1",
+                result="NA",
+                details="No structure elements in document",
+            )
+        ]
+    if not violations:
+        return [
+            CheckResult(
+                name="Correct nesting",
+                standard="PDF/UA, WCAG 1.3.1",
+                result="PASS",
+                details="All structure elements sit inside a legal parent",
+            )
+        ]
+    return [
+        CheckResult(
+            name="Correct nesting",
+            standard="PDF/UA, WCAG 1.3.1",
+            result="FAIL",
+            details=(
+                f"{len(violations)} nesting violation(s):"
+                f" {'; '.join(violations[:_EXAMPLE_LIMIT])}"
+            ),
+        )
+    ]
+
+
 TAGGING_STRUCTURE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_structure_tree_exists,
     check_role_mapping_valid,
@@ -1408,6 +1568,8 @@ TAGGING_STRUCTURE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_ruby_structure_valid,
     check_warichu_structure_valid,
     check_note_tags_have_unique_ids,
+    check_no_empty_tags,
+    check_correct_nesting,
     check_formula_alt_text,
     check_mathml_associated_with_formula,
     check_associated_files_on_embedded_content,
@@ -1429,7 +1591,9 @@ __all__ = [
     "check_form_xobjects_with_mcids_not_reused",
     "check_formula_alt_text",
     "check_mathml_associated_with_formula",
+    "check_correct_nesting",
     "check_no_circular_role_mappings",
+    "check_no_empty_tags",
     "check_no_reference_xobjects",
     "check_note_tags_have_unique_ids",
     "check_optional_content_groups_have_name",

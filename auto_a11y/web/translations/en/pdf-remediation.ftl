@@ -5292,3 +5292,29 @@ pdf-remediation-PdfInfoFontMetadataMissingEncodingConsistency =
       4. Re-export to PDF.
     
     Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfWarnEmptyTags =
+    Why it matters
+    
+    An empty tag announces as nothing while still costing a stop when navigating by element. A screen-reader user cannot tell an empty paragraph from one whose text failed to reach them.
+    
+    Principle
+    
+    A leaf structure element should carry content: text, marked content, alternative text or actual text. Grouping elements are exempt, since their job is to contain others.
+    
+    How to fix in Adobe Acrobat Pro
+    
+    Open the Tags panel, find the tags flagged in this report, and delete those that contain nothing. Take care with table cells: an empty cell is normal in a data table and must be kept, because removing it shifts every later cell in that row into the wrong column.
+
+pdf-remediation-PdfErrIncorrectNesting =
+    Why it matters
+    
+    An element inside another of its own kind leaves a reader unable to tell where one block ends and the next begins. A positional element outside its required parent breaks the grid or list that gives the surrounding content its meaning.
+    
+    Principle
+    
+    A paragraph must not contain a paragraph and a heading must not contain a heading. TD and TH belong in TR; TR belongs in Table, THead, TBody or TFoot; LI belongs in L; LBody belongs in LI.
+    
+    How to fix in Adobe Acrobat Pro
+    
+    Open the Tags panel and use the report's element references to find each violation. For an element nested in its own kind, delete the inner tag and let its children move up. For a misplaced cell or row, drag it into the correct parent rather than retagging it — retagging changes what the element is, while the problem is where it sits.

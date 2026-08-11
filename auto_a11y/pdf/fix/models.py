@@ -78,4 +78,10 @@ class FixOptions:
 
     # Paragraph-run → list conversion
     list_conversion_groups: Sequence[ListConversionGroup] = ()
-    list_label_style: str = "bullet"
+
+    # How :func:`~auto_a11y.pdf.fix.lists.fix_list_labels` fills a label:
+    # "none" (structure only), "bullet", or "numbered". Defaults to the
+    # structural form because the fix cannot see the page, and announcing
+    # a bullet on a numbered list — or renumbering one that starts at 5 —
+    # contradicts what the reader is looking at.
+    list_label_style: str = "none"

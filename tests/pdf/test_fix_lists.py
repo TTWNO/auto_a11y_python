@@ -15,7 +15,11 @@ import pytest
 from pikepdf import Array, Dictionary, Name, String
 
 from auto_a11y.pdf.audit.structure import walk_structure_tree
-from auto_a11y.pdf.fix.lists import fix_list_nesting, fix_list_structure
+from auto_a11y.pdf.fix.lists import (
+    fix_list_labels,
+    fix_list_nesting,
+    fix_list_structure,
+)
 from auto_a11y.pdf.fix.models import FixOptions
 
 
@@ -263,3 +267,125 @@ def test_nesting_does_not_rewrite_unrelated_lists(opts: FixOptions) -> None:
 
     assert result.success
     assert _shape(pdf) == before, "a loose paragraph is not a nesting problem"
+
+
+# ---------------------------------------------------------------------------
+# fix_list_labels
+# ---------------------------------------------------------------------------
+
+def _label_texts(pdf: pikepdf.Pdf) -> list[str]:
+    elements, _ = walk_structure_tree(pdf)
+    out: list[str] = []
+    for element in elements:
+        if element.resolved_tag != "Lbl":
+            continue
+        value = element.obj.get(Name("/ActualText"))
+        out.append(str(value) if value is not None else "")
+    return out
+
+
+def _list_of(pdf: pikepdf.Pdf, items: int) -> pikepdf.Pdf:
+    _rooted(pdf, _node(pdf, "L", [
+        _node(pdf, "LI", [_node(pdf, "LBody", [String(f"item {n}")])])
+        for n in range(items)
+    ]))
+    return pdf
+
+
+def test_labels_default_to_structural_not_a_bullet(opts: FixOptions) -> None:
+    """The divergence from pdfMax, whose default is a literal bullet.
+
+    Run unattended over a numbered or lettered list, "bullet" makes a
+    screen reader announce a "•" that is not on the page. The structural
+    default supplies the markup without asserting a glyph.
+    """
+    pdf = _list_of(_blank(), 3)
+
+    result = fix_list_labels(pdf, opts)
+
+    assert result.success
+    assert _label_texts(pdf) == ["", "", ""]
+
+
+def test_labels_can_be_bullets_when_asked(tmp_path: Path) -> None:
+    pdf = _list_of(_blank(), 2)
+
+    result = fix_list_labels(
+        pdf,
+        FixOptions(pdf_path=tmp_path / "l.pdf", list_label_style="bullet"),
+    )
+
+    assert result.success
+    assert _label_texts(pdf) == ["•", "•"]
+
+
+def test_labels_can_be_numbered_when_asked(tmp_path: Path) -> None:
+    pdf = _list_of(_blank(), 3)
+
+    result = fix_list_labels(
+        pdf,
+        FixOptions(pdf_path=tmp_path / "l.pdf", list_label_style="numbered"),
+    )
+
+    assert result.success
+    assert _label_texts(pdf) == ["1.", "2.", "3."]
+
+
+def test_numbering_follows_the_list_not_the_items_fixed(
+    tmp_path: Path,
+) -> None:
+    """An item that already has a label still occupies its position.
+
+    Numbering the fixed subset instead would relabel item 3 as "2.".
+    """
+    pdf = _blank()
+    labelled = _node(pdf, "LI", [
+        _node(pdf, "Lbl"),
+        _node(pdf, "LBody", [String("two")]),
+    ])
+    _rooted(pdf, _node(pdf, "L", [
+        _node(pdf, "LI", [_node(pdf, "LBody", [String("one")])]),
+        labelled,
+        _node(pdf, "LI", [_node(pdf, "LBody", [String("three")])]),
+    ]))
+
+    fix_list_labels(
+        pdf,
+        FixOptions(pdf_path=tmp_path / "l.pdf", list_label_style="numbered"),
+    )
+
+    assert _label_texts(pdf) == ["1.", "", "3."]
+
+
+def test_labels_are_inserted_before_the_body(opts: FixOptions) -> None:
+    pdf = _list_of(_blank(), 1)
+
+    fix_list_labels(pdf, opts)
+
+    assert _shape(pdf) == [
+        (0, "L"), (1, "LI"), (2, "Lbl"), (2, "LBody"),
+    ]
+
+
+def test_labels_skip_items_that_already_have_one(opts: FixOptions) -> None:
+    pdf = _blank()
+    _rooted(pdf, _node(pdf, "L", [
+        _node(pdf, "LI", [_node(pdf, "Lbl"), _node(pdf, "LBody")]),
+    ]))
+
+    result = fix_list_labels(pdf, opts)
+
+    assert result.success
+    assert "already have a label" in result.description
+    assert _tags(pdf).count("Lbl") == 1
+
+
+def test_labels_reject_an_unknown_style(tmp_path: Path) -> None:
+    pdf = _list_of(_blank(), 1)
+
+    result = fix_list_labels(
+        pdf, FixOptions(pdf_path=tmp_path / "l.pdf", list_label_style="roman")
+    )
+
+    assert not result.success
+    assert _tags(pdf).count("Lbl") == 0

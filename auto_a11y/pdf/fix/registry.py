@@ -48,6 +48,7 @@ FIX_REGISTRY: dict[str, FixFn] = {
     # Lists
     "fix_list_structure": lists.fix_list_structure,
     "fix_list_nesting": lists.fix_list_nesting,
+    "fix_list_labels": lists.fix_list_labels,
     # Tables
     "fix_table_headers": tables.fix_table_headers,
     "fix_table_scope": tables.fix_table_scope,

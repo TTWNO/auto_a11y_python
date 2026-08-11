@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import pikepdf
-from pikepdf import Dictionary, Name
+from pikepdf import Dictionary, Name, String
 
 from auto_a11y.pdf.fix._pdf_objects import (
     is_content_ref,
@@ -29,6 +29,13 @@ from auto_a11y.pdf.fix.models import FixOptions, FixResult
 
 # What an <LI> is allowed to contain directly.
 _LIST_ITEM_PARTS = ("Lbl", "LBody")
+
+# Label styles fix_list_labels understands.
+LABEL_STYLE_STRUCTURAL = "none"
+LABEL_STYLE_BULLET = "bullet"
+LABEL_STYLE_NUMBERED = "numbered"
+
+_BULLET = "•"
 
 
 def _new_element(
@@ -258,4 +265,105 @@ def fix_list_nesting(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
         )
     return FixResult(
         "fix_list_nesting", True, "All nested lists are already correct",
+    )
+
+
+def fix_list_labels(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Give list items an ``<Lbl>`` where they have none.
+
+    ``<Lbl>`` marks the item's label — the bullet or number — as distinct
+    from its content, so a screen reader can announce or suppress it
+    rather than reading it as part of the sentence.
+
+    The style decides what the label *says*, and that is where care is
+    needed, because this fix cannot see the page. ``opts.list_label_style``
+    takes:
+
+    * ``"none"`` (the default) — an ``<Lbl>`` with empty text. It supplies
+      the structure and asserts nothing about what is drawn.
+    * ``"bullet"`` — announces "•" for every item.
+    * ``"numbered"`` — announces "1.", "2." … in tree order.
+
+    Divergence from pdfMax, which defaults to ``"bullet"``. Running that
+    unattended over a numbered or lettered list makes a screen reader
+    announce a bullet that is not on the page, and ``"numbered"`` renumbers
+    from 1 regardless of what the list actually shows — so a list lettered
+    (a) (b) (c), or one continuing from 5, is announced with labels that
+    contradict it. Neither error is visible to whoever ran the fix. The
+    structural default adds the markup without inventing a glyph; the
+    other two are worth choosing when someone has looked at the document.
+    """
+    struct_root = pdf.Root.get(Name("/StructTreeRoot"))
+    if struct_root is None:
+        return FixResult("fix_list_labels", False, "No structure tree found")
+
+    style = opts.list_label_style or LABEL_STYLE_STRUCTURAL
+    if style not in (
+        LABEL_STYLE_STRUCTURAL, LABEL_STYLE_BULLET, LABEL_STYLE_NUMBERED,
+    ):
+        return FixResult(
+            "fix_list_labels", False,
+            f'Unknown label style "{style}" — expected none, bullet or numbered',
+        )
+
+    role_map = read_role_map(struct_root)
+    added = 0
+
+    def label_for(position: int) -> str:
+        if style == LABEL_STYLE_NUMBERED:
+            return f"{position}."
+        if style == LABEL_STYLE_BULLET:
+            return _BULLET
+        return ""
+
+    def has_label(item: pikepdf.Object) -> bool:
+        return any(
+            isinstance(child, pikepdf.Dictionary)
+            and not is_content_ref(child)
+            and resolved_tag(child, role_map) == "Lbl"
+            for child in kids(item) or []
+        )
+
+    def label_list(node: pikepdf.Object) -> None:
+        nonlocal added
+        position = 0
+        for child in kids(node) or []:
+            if not isinstance(child, pikepdf.Dictionary) or is_content_ref(child):
+                continue
+            if resolved_tag(child, role_map) != "LI":
+                continue
+            # Counted whether or not it needs a label, so numbering follows
+            # the list as the reader sees it rather than the subset fixed.
+            position += 1
+            if has_label(child):
+                continue
+            label = pdf.make_indirect(
+                Dictionary(
+                    Type=Name.StructElem,
+                    S=Name("/Lbl"),
+                    P=child,
+                    ActualText=String(label_for(position)),
+                )
+            )
+            write_kids(child, [label, *(kids(child) or [])])
+            added += 1
+
+    def walk(node: pikepdf.Object) -> None:
+        if resolved_tag(node, role_map) == "L":
+            label_list(node)
+        for child in kids(node) or []:
+            if isinstance(child, pikepdf.Dictionary) and not is_content_ref(child):
+                walk(child)
+
+    for root in kids(struct_root) or []:
+        if isinstance(root, pikepdf.Dictionary):
+            walk(root)
+
+    if added:
+        return FixResult(
+            "fix_list_labels", True,
+            f"Added {added} <Lbl> element(s), style: {style}",
+        )
+    return FixResult(
+        "fix_list_labels", True, "All list items already have a label",
     )

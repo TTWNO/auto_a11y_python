@@ -65,6 +65,7 @@ STABLE_ID_TO_REMEDIATION_KEY: dict[str, str] = {
     'PdfErrNonSymbolicTrueTypeLatinMapping': 'pdf-remediation-PdfErrNonSymbolicTrueTypeLatinMapping',
     'PdfErrNotdefInDifferences': 'pdf-remediation-PdfErrNotdefInDifferences',
     'PdfErrArtifactInsideTagged': 'pdf-remediation-PdfErrArtifactInsideTagged',
+    'PdfErrNoTextLayer': 'pdf-remediation-PdfErrNoTextLayer',
     'PdfErrIncorrectNesting': 'pdf-remediation-PdfErrIncorrectNesting',
     'PdfErrTaggedInsideArtifact': 'pdf-remediation-PdfErrTaggedInsideArtifact',
     'PdfErrUntaggedContent': 'pdf-remediation-PdfErrUntaggedContent',

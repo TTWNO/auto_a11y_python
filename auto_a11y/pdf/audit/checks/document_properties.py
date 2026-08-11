@@ -851,9 +851,84 @@ def check_pdfua2_requires_pdf20(ctx: AuditContext) -> list[CheckResult]:
 
 #: Phase 5.3's pipeline iterates this list in order. Phase 6's check
 #: catalogue iterates the same list to enumerate every check name.
+
+
+# ---------------------------------------------------------------------------
+# check_document_has_text_layer
+# ---------------------------------------------------------------------------
+
+#: A page carrying at least this many images and no text is a scanned page.
+#: One is enough: a scan is one photograph of a sheet of paper.
+_SCAN_IMAGE_THRESHOLD = 1
+
+
+def check_document_has_text_layer(ctx: AuditContext) -> list[CheckResult]:
+    """WCAG 1.4.5: the document's words exist as text, not only as pictures.
+
+    Neither this engine nor pdfMax previously said this outright, and it
+    is the single most important thing to know about a document that has
+    it wrong. A scan is a photograph of a page: a screen reader finds
+    nothing to read, text cannot be searched, selected, resized or
+    reflowed, and no amount of tagging will change that — the words are
+    not in the file as words.
+
+    Reported when every page carries an image and no page carries any
+    text. Partial coverage is deliberately not flagged here: a report with
+    one scanned appendix is a different problem from a document that is
+    entirely a scan, and the per-page failures already describe it.
+
+    The remedy is optical character recognition, which has to happen
+    before any other fix in this report can apply.
+    """
+    name = "Document has a text layer"
+    standard = "WCAG 1.4.5, PDF/UA"
+
+    if ctx.content_classification is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Page content was not classified",
+        )]
+    pages = ctx.content_classification
+    if not pages:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Document has no pages",
+        )]
+
+    if any(page.text_operators for page in pages):
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details="The document contains real text",
+        )]
+
+    imaged = [
+        page.page_number for page in pages
+        if page.image_operators >= _SCAN_IMAGE_THRESHOLD
+    ]
+    if len(imaged) == len(pages):
+        return [CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"No page contains any text; all {len(pages)} page(s) are"
+                " images. This document is a scan and needs optical"
+                " character recognition before any other fault in this"
+                " report can be corrected."
+            ),
+        )]
+
+    return [CheckResult(
+        name=name, standard=standard, result="FAIL",
+        details=(
+            f"No page contains any text across {len(pages)} page(s), so"
+            " there is nothing for a screen reader to read"
+        ),
+    )]
+
+
 DOCUMENT_PROPERTIES_CHECKS: list[
     Callable[[AuditContext], list[CheckResult]]
 ] = [
+    check_document_has_text_layer,
     check_document_title_set,
     check_pdf_is_tagged,
     check_no_suspect_tags,
@@ -872,6 +947,7 @@ DOCUMENT_PROPERTIES_CHECKS: list[
 
 __all__ = [
     "DOCUMENT_PROPERTIES_CHECKS",
+    "check_document_has_text_layer",
     "check_document_title_set",
     "check_metadata_completeness",
     "check_no_suspect_tags",

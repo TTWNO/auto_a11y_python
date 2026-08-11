@@ -1971,3 +1971,18 @@ pdf-check-PdfErrUntaggedContent-why =
 
 pdf-check-PdfErrUntaggedContent-who =
     Les personnes utilisant un lecteur d'écran, et toute personne dépendant de l'extraction de texte, de la recherche ou du redimensionnement.
+
+pdf-check-PdfErrNoTextLayer-name =
+    Le document comporte une couche de texte
+
+pdf-check-PdfErrNoTextLayer-short-title =
+    Aucune couche de texte
+
+pdf-check-PdfErrNoTextLayer-what =
+    Aucune page de ce document ne contient de texte. Les mots de la page n'existent que sous forme d'images de mots.
+
+pdf-check-PdfErrNoTextLayer-why =
+    Une numérisation est une photographie d'une page. Un lecteur d'écran n'y trouve rien à lire, et le texte ne peut être ni recherché, ni sélectionné, ni agrandi, ni redimensionné. Aucun balisage n'y change quoi que ce soit, car les mots ne sont pas dans le fichier en tant que mots.
+
+pdf-check-PdfErrNoTextLayer-who =
+    Les personnes utilisant un lecteur d'écran, et toute personne ayant besoin de rechercher, copier, agrandir ou redimensionner le texte.

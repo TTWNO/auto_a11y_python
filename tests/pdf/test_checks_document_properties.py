@@ -26,6 +26,7 @@ from typing import Protocol
 import pikepdf
 
 from auto_a11y.pdf.audit.checks.document_properties import (
+    check_document_has_text_layer,
     DOCUMENT_PROPERTIES_CHECKS,
     check_document_title_set,
     check_metadata_completeness,
@@ -118,9 +119,10 @@ def _only(results: list[CheckResult]) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def test_document_properties_checks_registry_lists_all_thirteen() -> None:
+def test_document_properties_checks_registry_lists_every_check() -> None:
     """``DOCUMENT_PROPERTIES_CHECKS`` is the phase-5 entry point."""
     assert DOCUMENT_PROPERTIES_CHECKS == [
+        check_document_has_text_layer,
         check_document_title_set,
         check_pdf_is_tagged,
         check_no_suspect_tags,

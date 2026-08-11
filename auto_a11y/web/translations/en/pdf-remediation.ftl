@@ -5357,3 +5357,16 @@ pdf-remediation-PdfErrUntaggedContent =
     How to fix in Adobe Acrobat Pro
     
     Run Autotag, then review the result — autotagging classifies content but does not judge it. Where the report names images rather than text, check whether each one carries meaning: a meaningful image needs a Figure tag with alternative text, and a decorative one needs marking as an artifact. If every page reports a single untagged image, the document is a scan and needs optical character recognition before any of this applies.
+
+pdf-remediation-PdfErrNoTextLayer =
+    Why it matters
+    
+    A scan is a photograph of a page. A screen reader finds nothing to read, and the text cannot be searched, selected, resized or reflowed. The words are not in the file as words.
+    
+    Principle
+    
+    A document's text must be present as text. Optical character recognition converts the picture of the words into the words themselves.
+    
+    How to fix in Adobe Acrobat Pro
+    
+    Run Scan and OCR, then Recognise Text. Do this before anything else in this report: every other fault listed depends on there being text to tag, and correcting them first means redoing the work. Once the text exists, check the recognition against the page — OCR misreads are silent, and a wrong word is worse than a missing one.

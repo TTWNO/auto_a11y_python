@@ -5361,3 +5361,16 @@ pdf-remediation-PdfErrUntaggedContent =
     Comment corriger dans Adobe Acrobat Pro
     
     Lancer le balisage automatique, puis en examiner le résultat : le balisage automatique classe le contenu mais ne le juge pas. Lorsque le rapport signale des images plutôt que du texte, vérifier si chacune porte du sens : une image significative a besoin d'une balise Figure avec un texte de remplacement, une image décorative doit être marquée comme artéfact. Si chaque page signale une seule image non balisée, le document est une numérisation et nécessite une reconnaissance optique de caractères avant toute autre correction.
+
+pdf-remediation-PdfErrNoTextLayer =
+    Pourquoi c'est important
+    
+    Une numérisation est une photographie d'une page. Un lecteur d'écran n'y trouve rien à lire, et le texte ne peut être ni recherché, ni sélectionné, ni agrandi, ni redimensionné. Les mots ne sont pas dans le fichier en tant que mots.
+    
+    Principe
+    
+    Le texte d'un document doit être présent en tant que texte. La reconnaissance optique de caractères transforme l'image des mots en mots véritables.
+    
+    Comment corriger dans Adobe Acrobat Pro
+    
+    Lancer Numérisation et OCR, puis Reconnaître le texte. Le faire avant tout le reste de ce rapport : toutes les autres anomalies signalées supposent qu'il y ait du texte à baliser, et les corriger d'abord oblige à refaire le travail. Une fois le texte obtenu, vérifier la reconnaissance par rapport à la page : les erreurs d'OCR sont silencieuses, et un mot erroné est pire qu'un mot manquant.

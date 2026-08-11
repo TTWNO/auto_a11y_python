@@ -391,6 +391,11 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         touchpoint=_TAG, standard="Matterhorn 09-008",
     ),
     _row(
+        name="Document has a text layer", result="FAIL",
+        stable_id="PdfErrNoTextLayer",
+        touchpoint=_DOC, standard="WCAG 1.4.5, PDF/UA",
+    ),
+    _row(
         name="Artifact not inside tagged content", result="FAIL",
         stable_id="PdfErrArtifactInsideTagged",
         touchpoint=_TAG, standard="Matterhorn 01-003",

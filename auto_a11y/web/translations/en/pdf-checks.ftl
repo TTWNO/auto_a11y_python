@@ -1967,3 +1967,18 @@ pdf-check-PdfErrUntaggedContent-why =
 
 pdf-check-PdfErrUntaggedContent-who =
     Screen reader users, and anyone relying on text extraction, search or reflow.
+
+pdf-check-PdfErrNoTextLayer-name =
+    Document has a text layer
+
+pdf-check-PdfErrNoTextLayer-short-title =
+    No text layer
+
+pdf-check-PdfErrNoTextLayer-what =
+    No page in this document contains any text. The words on the page exist only as pictures of words.
+
+pdf-check-PdfErrNoTextLayer-why =
+    A scan is a photograph of a page. A screen reader finds nothing to read, and the text cannot be searched, selected, resized or reflowed. No amount of tagging changes this, because the words are not in the file as words.
+
+pdf-check-PdfErrNoTextLayer-who =
+    Screen reader users, and anyone who needs to search, copy, enlarge or reflow the text.

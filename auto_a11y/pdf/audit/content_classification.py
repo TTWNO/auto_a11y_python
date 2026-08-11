@@ -41,6 +41,13 @@ class PageContentClassification:
     tagged_inside_artifact: int
     untagged_text_operators: int
     untagged_image_operators: int
+    text_operators: int = 0
+    """Every text-showing operator on the page, tagged or not.
+
+    Zero here means the page carries no text at all — the signal that
+    separates a scan from a document whose text is merely untagged."""
+    image_operators: int = 0
+    """Every image drawn on the page, tagged or not."""
 
     @property
     def untagged_operators(self) -> int:
@@ -96,7 +103,7 @@ def _classify_page(
         # A stream that will not parse tells us nothing either way; the
         # page is reported as clean rather than as a false violation.
         logger.debug("Page %d content stream did not parse: %s", page_number, exc)
-        return PageContentClassification(page_number, 0, 0, 0, 0)
+        return PageContentClassification(page_number, 0, 0, 0, 0, 0, 0)
 
     images = _image_xobject_names(page)
     stack: list[_Context] = []
@@ -104,11 +111,14 @@ def _classify_page(
     tagged_inside_artifact = 0
     untagged_text = 0
     untagged_images = 0
+    text_operators = 0
+    image_operators = 0
 
     for instruction in instructions:
         if isinstance(instruction, pikepdf.ContentStreamInlineImage):
             # An inline image draws directly, exactly like a Do on an
             # image XObject.
+            image_operators += 1
             if not stack:
                 untagged_images += 1
             continue
@@ -140,14 +150,16 @@ def _classify_page(
                 stack.pop()
 
         elif operator in _TEXT_OPERATORS:
+            text_operators += 1
             if not stack:
                 untagged_text += 1
 
         elif operator == _DRAW_XOBJECT:
-            if stack:
-                continue
             name = str(operands[0]) if operands else ""
-            if name in images:
+            if name not in images:
+                continue
+            image_operators += 1
+            if not stack:
                 untagged_images += 1
 
     return PageContentClassification(
@@ -156,6 +168,8 @@ def _classify_page(
         tagged_inside_artifact=tagged_inside_artifact,
         untagged_text_operators=untagged_text,
         untagged_image_operators=untagged_images,
+        text_operators=text_operators,
+        image_operators=image_operators,
     )
 
 

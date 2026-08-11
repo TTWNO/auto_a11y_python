@@ -170,3 +170,21 @@ def test_the_scan_reports_an_image_rather_than_text(
 
     assert "image" in detail
     assert "page(s) 1" in detail
+
+
+def test_the_scan_is_named_as_a_scan(scanned_audit: AuditResult) -> None:
+    """The finding neither tool made before.
+
+    Every other failure describes something missing from the document.
+    This one says what the document *is* — and that OCR has to happen
+    before any of the others can be corrected, so a reader working the
+    report top to bottom does not tag a picture.
+    """
+    assert _verdict(scanned_audit, "Document has a text layer") == "FAIL"
+
+    detail = next(
+        c.details for c in scanned_audit.check_results
+        if c.name == "Document has a text layer"
+    )
+    assert "scan" in detail
+    assert "optical character recognition" in detail

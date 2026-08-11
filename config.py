@@ -28,17 +28,6 @@ if os.getenv('DESKTOP_MODE', 'False').lower() != 'true':
         directory.mkdir(exist_ok=True, parents=True)
 
 
-def _first_existing_dir(candidates: list[Path]) -> str | None:
-    """Return the first existing directory as a string, else ``None``.
-
-    Used to default ``PDFMAX_CHECKER_DIR`` to a sensible dev location
-    without erroring at import time when none of the candidates
-    exist (e.g. on a deploy host that has only auto_a11y, not pdfMax).
-    """
-    for candidate in candidates:
-        if candidate.is_dir():
-            return str(candidate)
-    return None
 
 
 @dataclass
@@ -176,22 +165,6 @@ class Config:
     PDF_DOWNLOAD_TIMEOUT_SECONDS: int = int(os.getenv('PDF_DOWNLOAD_TIMEOUT_SECONDS', 60))
     PDF_AUDIT_MAX_PARALLEL: int = int(os.getenv('PDF_AUDIT_MAX_PARALLEL', 2))
 
-    # Verbatim pdfMax report viewer (see auto_a11y/pdf/pdfmax_runner.py).
-    # Path to the pdfMax ``python/checker`` directory that ships
-    # ``pdf_accessibility_audit.py`` + ``remediation_guide.py``.
-    # The Docker image bakes the checker at ``/opt/pdfmax/checker``
-    # (Dockerfile + docker-compose.yml additional_contexts); dev
-    # docker-compose.override.yml bind-mounts the sibling checkout
-    # there. The env var still wins for any deployment that puts
-    # the checker somewhere else.
-    PDFMAX_CHECKER_DIR: str | None = (
-        os.getenv('PDFMAX_CHECKER_DIR')
-        or _first_existing_dir([
-            Path('/opt/pdfmax/checker'),
-            BASE_DIR.parent / 'pdfMax' / 'python' / 'checker',
-            Path.home() / 'Documents' / 'cnib' / 'code' / 'pdfMax' / 'python' / 'checker',
-        ])
-    )
 
     # AudioA11y pipeline (see docs/superpowers/plans/2026-05-19-audioa11y-integration.md).
     # AUDIO_STORAGE_DIR mirrors PDF_STORAGE_DIR: relative env values anchor at

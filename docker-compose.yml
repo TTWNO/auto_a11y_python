@@ -3,14 +3,6 @@ services:
     build:
       context: .
       target: prod
-      # pdfMax verbatim audit tool. The Dockerfile's ``COPY
-      # --from=pdfmax_checker`` line pulls files from this named
-      # context. Compose 2.17+ resolves the relative path against
-      # the compose file's directory, so the sibling checkout at
-      # ../pdfMax/python/checker/ works for every dev who clones
-      # the two repos side by side.
-      additional_contexts:
-        pdfmax_checker: ../pdfMax/python/checker
     container_name: auto-a11y-app
     command: python run.py --host 0.0.0.0
     ports:

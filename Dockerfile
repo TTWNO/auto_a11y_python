@@ -42,17 +42,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# pdfMax verbatim audit tool — see auto_a11y/pdf/pdfmax_runner.py.
-# We bake the *checker* directory directly into /opt/pdfmax/checker
-# so the route can shell out to it without any extra wiring.
-#
-# The pdfMax checker lives in a sibling directory at build time
-# (``../pdfMax/python/checker``), wired up via ``additional_contexts``
-# in docker-compose.yml. ``COPY --from=pdfmax_checker`` pulls the
-# files in over the duration of this build stage; nothing else in
-# the image references the build-context name.
-COPY --from=pdfmax_checker / /opt/pdfmax/checker/
-RUN pip install --no-cache-dir -r /opt/pdfmax/checker/requirements.txt
 
 # Install Playwright Chromium browser
 RUN python -m playwright install chromium chromium-headless-shell
@@ -60,9 +49,6 @@ RUN python -m playwright install chromium chromium-headless-shell
 # Create required directories
 RUN mkdir -p data reports screenshots logs temp
 
-# Default the pdfMax checker dir to its in-container location. The
-# config still honours $PDFMAX_CHECKER_DIR if a deployment moves it.
-ENV PDFMAX_CHECKER_DIR=/opt/pdfmax/checker
 
 # --- Dev target: no COPY, relies on bind mount ---
 FROM base AS dev

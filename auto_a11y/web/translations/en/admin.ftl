@@ -166,5 +166,3 @@ admin-settings-pdf-storage-dir-help = Where downloaded PDFs are kept. Relative p
 admin-settings-pdf-max-size-mb = Maximum PDF size (MB)
 admin-settings-pdf-download-timeout-seconds = Download timeout (seconds)
 admin-settings-pdf-audit-max-parallel = Maximum parallel PDF audits
-admin-settings-pdfmax-checker-dir = pdfMax checker directory
-admin-settings-pdfmax-checker-dir-help = Path to the pdfMax python/checker directory shipping pdf_accessibility_audit.py.

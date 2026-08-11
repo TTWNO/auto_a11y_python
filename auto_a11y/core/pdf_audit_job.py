@@ -20,15 +20,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import shutil
 import uuid
-from pathlib import Path
 from typing import Literal
 
 from auto_a11y.core.database import Database
 from auto_a11y.core.job_manager import JobManager, JobStatus, JobType
 from auto_a11y.core.task_runner import task_runner
-from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
+from auto_a11y.models.pdf_document import PdfDocumentStatus
 from auto_a11y.testing.pdf_runner import PdfRunner
 
 logger = logging.getLogger(__name__)
@@ -241,24 +239,6 @@ class PdfAuditJob:
             updated.last_audit_result_id if updated is not None else None
         )
 
-        # Run pdfMax's verbatim audit alongside auto_a11y's own
-        # pipeline. The view-pdfmax-report endpoint is then a pure
-        # cache retrieval — clicking that button must not block the
-        # request thread on a 10-30s audit run. Failures here are
-        # logged but don't fail the surrounding audit job: the
-        # auto_a11y pipeline has already produced a TestResult and
-        # the user will see "no pdfMax report yet" copy on the
-        # viewer page.
-        if updated is not None:
-            self._on_progress("Building pdfMax report", 0.99)
-            try:
-                self._build_pdfmax_report_cache(updated)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning(
-                    "pdfMax report cache build failed for %s: %s",
-                    self._pdf_document_id, exc,
-                )
-
         self._job_manager.update_job_status(
             job_id=self._job_id,
             status=JobStatus.COMPLETED,
@@ -277,56 +257,6 @@ class PdfAuditJob:
             },
         )
 
-    def _build_pdfmax_report_cache(self, doc: PdfDocument) -> None:
-        """Run pdfMax verbatim and stash its Markdown alongside the PDF.
-
-        The audit job is the *only* code path that invokes the
-        pdfMax subprocess. The route handler for ``View pdfMax
-        report`` reads the cached files written here; if no audit has
-        ever run, the user is told to click Audit first.
-
-        Failures don't propagate — see the call site in
-        :meth:`_run_audit_in_thread`.
-        """
-        # Lazy import: keeps the Flask config tree out of this
-        # module's import graph (matches the runner's pattern) and
-        # avoids circular imports during test collection.
-        from config import config as cfg
-        from auto_a11y.pdf.pdfmax_runner import run_pdfmax
-        from auto_a11y.pdf.storage import PdfStorage
-
-        storage = PdfStorage(base_dir=Path(cfg.PDF_STORAGE_DIR))
-        pdf_path = storage.local_path(doc)
-        if not pdf_path.is_file():
-            logger.warning(
-                "Skipping pdfMax cache build: PDF bytes missing at %s",
-                pdf_path,
-            )
-            return
-
-        cache_dir = pdf_path.parent / "pdfmax-report"
-        # Wipe the previous cache so a stale .md / image set never
-        # mixes with this run's output.
-        if cache_dir.is_dir():
-            for child in cache_dir.iterdir():
-                try:
-                    if child.is_file():
-                        child.unlink()
-                    elif child.is_dir():
-                        shutil.rmtree(child, ignore_errors=True)
-                except OSError:
-                    pass
-
-        pdfmax_dir_str = cfg.PDFMAX_CHECKER_DIR
-        pdfmax_dir = Path(pdfmax_dir_str) if pdfmax_dir_str else None
-
-        run_pdfmax(
-            pdf_path=pdf_path,
-            output_dir=cache_dir,
-            wcag_level=self._wcag_level,
-            skip_claude=not self._run_ai,
-            pdfmax_dir=pdfmax_dir,
-        )
 
     def _on_progress(self, stage_name: str, fraction: float) -> None:
         """Bridge :class:`PdfRunner` progress callbacks to :class:`JobManager`.

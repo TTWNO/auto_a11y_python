@@ -48,6 +48,7 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_display_doc_title": metadata.fix_display_doc_title,
     "fix_pdfua_identifier": metadata.fix_pdfua_identifier,
     "fix_suspects": metadata.fix_suspects,
+    "fix_xmp_metadata": metadata.fix_xmp_metadata,
     "fix_xmp_title": metadata.fix_xmp_title,
     "fix_metadata_lang": metadata.fix_metadata_lang,
     "fix_accessibility_permission": metadata.fix_accessibility_permission,
@@ -93,6 +94,7 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_list_structure": lists.fix_list_structure,
     "fix_list_nesting": lists.fix_list_nesting,
     "fix_list_labels": lists.fix_list_labels,
+    "fix_paragraphs_to_list": lists.fix_paragraphs_to_list,
     # Role mapping
     "fix_circular_roles": role_mapping.fix_circular_roles,
     "fix_standard_remap": role_mapping.fix_standard_remap,

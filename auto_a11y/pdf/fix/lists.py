@@ -18,6 +18,7 @@ from collections.abc import Sequence
 import pikepdf
 from pikepdf import Dictionary, Name, String
 
+from auto_a11y.pdf.audit.structure import walk_structure_tree
 from auto_a11y.pdf.fix._pdf_objects import (
     is_content_ref,
     kids,
@@ -366,4 +367,129 @@ def fix_list_labels(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
         )
     return FixResult(
         "fix_list_labels", True, "All list items already have a label",
+    )
+
+
+def fix_paragraphs_to_list(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Turn runs of paragraphs into real lists.
+
+    A list typed as plain paragraphs — each starting with a bullet
+    character or a number the author typed — looks like a list and reads
+    as loose prose. A screen reader announces no item count and offers no
+    way to move between items, and the bullet glyphs are read aloud as
+    punctuation.
+
+    Which runs are lists is a judgement about meaning, so this converts
+    the runs a person selected, in ``opts.list_conversion_groups``.
+
+    Each group must name paragraphs that are **adjacent siblings**. That
+    is not a technical limitation but the safety property of the fix:
+    building one list from paragraphs with other content between them
+    would pull that content's neighbours together and silently reorder
+    the document. Such a group is refused with its reason.
+    """
+    if not opts.list_conversion_groups:
+        return FixResult(
+            "fix_paragraphs_to_list", False, "No list conversions provided",
+        )
+
+    elements, _role_map = walk_structure_tree(pdf)
+    if not elements:
+        return FixResult(
+            "fix_paragraphs_to_list", False, "No structure tree found",
+        )
+    by_index = {e.index: e for e in elements}
+
+    converted = 0
+    problems: list[str] = []
+
+    for number, group in enumerate(opts.list_conversion_groups, start=1):
+        positions: list[int] = []
+        malformed = False
+        for key in group.element_keys:
+            try:
+                position = int(key)
+            except (TypeError, ValueError):
+                malformed = True
+                break
+            if position < 1:
+                malformed = True
+                break
+            positions.append(position - 1)
+        if malformed or len(positions) < 2:
+            problems.append(
+                f"group {number} does not name at least two 1-based elements"
+            )
+            continue
+
+        chosen = [by_index.get(p) for p in positions]
+        if any(element is None for element in chosen):
+            problems.append(f"group {number} names an element that is not there")
+            continue
+        found = [element for element in chosen if element is not None]
+
+        parents = {element.parent_index for element in found}
+        if len(parents) != 1:
+            problems.append(f"group {number} spans more than one parent")
+            continue
+        parent = by_index.get(found[0].parent_index)
+        if parent is None:
+            problems.append(f"group {number} has no parent element")
+            continue
+
+        siblings = kids(parent.obj) or []
+        objgens = {e.obj.objgen for e in found if e.obj.is_indirect}
+        selected_at = [
+            at for at, sibling in enumerate(siblings)
+            if isinstance(sibling, pikepdf.Dictionary)
+            and sibling.is_indirect
+            and sibling.objgen in objgens
+        ]
+        if len(selected_at) != len(found):
+            problems.append(f"group {number} names an element twice")
+            continue
+        if selected_at != list(range(selected_at[0], selected_at[0] + len(selected_at))):
+            problems.append(
+                f"group {number} names paragraphs that are not adjacent;"
+                + " converting them would reorder the document"
+            )
+            continue
+
+        listing = pdf.make_indirect(
+            Dictionary(Type=Name.StructElem, S=Name("/L"), P=parent.obj)
+        )
+        listing[Name("/ListNumbering")] = Name(
+            "/Decimal" if group.ordered else "/Disc"
+        )
+        entries = [
+            _wrap_as_item(pdf, element.obj, parent_list=listing)
+            for element in found
+        ]
+        write_kids(listing, entries)
+
+        rebuilt = [
+            *siblings[: selected_at[0]],
+            listing,
+            *siblings[selected_at[-1] + 1 :],
+        ]
+        write_kids(parent.obj, rebuilt)
+        converted += 1
+
+        # The tree moved under us; later groups must resolve against it.
+        elements, _role_map = walk_structure_tree(pdf)
+        by_index = {e.index: e for e in elements}
+
+    if converted and not problems:
+        return FixResult(
+            "fix_paragraphs_to_list", True,
+            f"Converted {converted} run(s) of paragraphs into lists",
+        )
+    if converted:
+        return FixResult(
+            "fix_paragraphs_to_list", True,
+            f"Converted {converted} run(s) into lists — " + "; ".join(problems),
+        )
+    return FixResult(
+        "fix_paragraphs_to_list", False,
+        "Converted nothing — " + "; ".join(problems),
     )

@@ -309,3 +309,66 @@ def fix_pdfua2_xmp(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
         f"Declared PDF/UA-2 conformance (part {_PDFUA2_PART},"
         + f" revision {_PDFUA2_REVISION})",
     )
+
+
+# Below this many bytes a metadata stream is a stub rather than a packet.
+_MINIMUM_XMP_BYTES = 10
+
+
+def fix_xmp_metadata(pdf: pikepdf.Pdf, opts: FixOptions) -> FixResult:
+    """Create an XMP metadata packet, seeded from the info dictionary.
+
+    XMP is where conforming readers look for a document's title, author
+    and producer; the older info dictionary is not enough on its own for
+    PDF/UA. Where a document has one and not the other, the values it
+    already carries are copied across rather than asked for again.
+
+    Divergence from pdfMax, which builds the packet by formatting the
+    values straight into an XML string. Nothing escapes them, so a
+    document titled ``Smith & Jones <2025>`` produces a packet that is
+    not well-formed XML — and a reader that cannot parse the packet gets
+    no metadata at all, which is worse than the missing packet this fix
+    set out to add. Written through pikepdf's metadata API here, which
+    escapes on the way in.
+    """
+    existing = pdf.Root.get(Name("/Metadata"))
+    if existing is not None:
+        try:
+            if len(bytes(existing.read_bytes())) > _MINIMUM_XMP_BYTES:
+                return FixResult(
+                    "fix_xmp_metadata", True,
+                    "XMP metadata is already present",
+                )
+        except (pikepdf.PdfError, OSError, ValueError):
+            # An unreadable stream is treated as absent and replaced.
+            pass
+
+    info = pdf.trailer.get(Name("/Info"))
+    title = entry_text(info, "/Title") if info is not None else ""
+    author = entry_text(info, "/Author") if info is not None else ""
+    creator = entry_text(info, "/Creator") if info is not None else ""
+
+    with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
+        if title:
+            meta["dc:title"] = title
+        if author:
+            meta["dc:creator"] = [author]
+        if creator:
+            meta["xmp:CreatorTool"] = creator
+
+    copied = [
+        name for name, value in
+        (("title", title), ("author", author), ("creator", creator))
+        if value
+    ]
+    if copied:
+        return FixResult(
+            "fix_xmp_metadata", True,
+            "Created an XMP metadata packet, copying "
+            + ", ".join(copied) + " from the info dictionary",
+        )
+    return FixResult(
+        "fix_xmp_metadata", True,
+        "Created an empty XMP metadata packet — the info dictionary had"
+        + " nothing to copy",
+    )

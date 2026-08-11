@@ -19,8 +19,9 @@ from auto_a11y.pdf.fix.lists import (
     fix_list_labels,
     fix_list_nesting,
     fix_list_structure,
+    fix_paragraphs_to_list,
 )
-from auto_a11y.pdf.fix.models import FixOptions
+from auto_a11y.pdf.fix.models import FixOptions, ListConversionGroup
 
 
 @pytest.fixture
@@ -389,3 +390,154 @@ def test_labels_reject_an_unknown_style(tmp_path: Path) -> None:
 
     assert not result.success
     assert _tags(pdf).count("Lbl") == 0
+
+
+# ---------------------------------------------------------------------------
+# fix_paragraphs_to_list
+# ---------------------------------------------------------------------------
+
+def _positions_of(pdf: pikepdf.Pdf, tag: str) -> list[int]:
+    elements, _ = walk_structure_tree(pdf)
+    return [e.index + 1 for e in elements if e.resolved_tag == tag]
+
+
+def test_a_run_of_paragraphs_becomes_a_list(opts: FixOptions) -> None:
+    pdf = _blank()
+    _rooted(pdf, _node(pdf, "Sect", [
+        _node(pdf, "P", [String("first")]),
+        _node(pdf, "P", [String("second")]),
+    ]))
+    keys = [str(p) for p in _positions_of(pdf, "P")]
+
+    result = fix_paragraphs_to_list(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            list_conversion_groups=[ListConversionGroup(element_keys=keys)],
+        ),
+    )
+
+    assert result.success
+    assert _shape(pdf) == [
+        (0, "Sect"),
+        (1, "L"),
+        (2, "LI"), (3, "LBody"), (4, "P"),
+        (2, "LI"), (3, "LBody"), (4, "P"),
+    ]
+
+
+def test_the_list_keeps_its_place_among_siblings(opts: FixOptions) -> None:
+    pdf = _blank()
+    _rooted(pdf, _node(pdf, "Sect", [
+        _node(pdf, "H1"),
+        _node(pdf, "P", [String("a")]),
+        _node(pdf, "P", [String("b")]),
+        _node(pdf, "Quote"),
+    ]))
+    keys = [str(p) for p in _positions_of(pdf, "P")]
+
+    fix_paragraphs_to_list(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            list_conversion_groups=[ListConversionGroup(element_keys=keys)],
+        ),
+    )
+
+    tags = [tag for _, tag in _shape(pdf)]
+    assert tags.index("H1") < tags.index("L") < tags.index("Quote")
+
+
+def test_non_adjacent_paragraphs_are_refused(opts: FixOptions) -> None:
+    """The safety property of this fix.
+
+    Building one list from paragraphs with other content between them
+    would pull that content's neighbours together and silently reorder
+    the document.
+    """
+    pdf = _blank()
+    _rooted(pdf, _node(pdf, "Sect", [
+        _node(pdf, "P", [String("a")]),
+        _node(pdf, "Quote"),
+        _node(pdf, "P", [String("b")]),
+    ]))
+    keys = [str(p) for p in _positions_of(pdf, "P")]
+    before = _shape(pdf)
+
+    result = fix_paragraphs_to_list(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            list_conversion_groups=[ListConversionGroup(element_keys=keys)],
+        ),
+    )
+
+    assert not result.success
+    assert "not adjacent" in result.description
+    assert _shape(pdf) == before
+
+
+def test_paragraphs_under_different_parents_are_refused(
+    opts: FixOptions,
+) -> None:
+    pdf = _blank()
+    _rooted(pdf, _node(pdf, "Document", [
+        _node(pdf, "Sect", [_node(pdf, "P", [String("a")])]),
+        _node(pdf, "Sect", [_node(pdf, "P", [String("b")])]),
+    ]))
+    keys = [str(p) for p in _positions_of(pdf, "P")]
+
+    result = fix_paragraphs_to_list(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            list_conversion_groups=[ListConversionGroup(element_keys=keys)],
+        ),
+    )
+
+    assert not result.success
+    assert "more than one parent" in result.description
+
+
+def test_an_ordered_group_is_numbered(opts: FixOptions) -> None:
+    pdf = _blank()
+    _rooted(pdf, _node(pdf, "Sect", [
+        _node(pdf, "P", [String("a")]), _node(pdf, "P", [String("b")]),
+    ]))
+    keys = [str(p) for p in _positions_of(pdf, "P")]
+
+    fix_paragraphs_to_list(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            list_conversion_groups=[
+                ListConversionGroup(element_keys=keys, ordered=True)
+            ],
+        ),
+    )
+
+    elements, _ = walk_structure_tree(pdf)
+    listing = next(e for e in elements if e.resolved_tag == "L")
+    assert str(listing.obj[Name("/ListNumbering")]) == "/Decimal"
+
+
+def test_a_group_of_one_is_refused(opts: FixOptions) -> None:
+    # A single paragraph is not a list.
+    pdf = _blank()
+    _rooted(pdf, _node(pdf, "Sect", [_node(pdf, "P", [String("a")])]))
+
+    result = fix_paragraphs_to_list(
+        pdf,
+        FixOptions(
+            pdf_path=opts.pdf_path,
+            list_conversion_groups=[ListConversionGroup(element_keys=["2"])],
+        ),
+    )
+
+    assert not result.success
+
+
+def test_declines_with_nothing_supplied(opts: FixOptions) -> None:
+    result = fix_paragraphs_to_list(_blank(), opts)
+
+    assert not result.success

@@ -17,6 +17,7 @@ from auto_a11y.pdf.fix import (
     document_properties,
     empty_structure,
     forms,
+    headings,
     lists,
     metadata,
     tables,
@@ -51,6 +52,8 @@ FIX_REGISTRY: dict[str, FixFn] = {
     "fix_ref_xobjects": annotation_fixes.fix_ref_xobjects,
     "fix_annot_descriptions": annotation_fixes.fix_annot_descriptions,
     "fix_annot_contents_lang": annotation_fixes.fix_annot_contents_lang,
+    # Headings
+    "fix_heading_levels": headings.fix_heading_levels,
     # Lists
     "fix_list_structure": lists.fix_list_structure,
     "fix_list_nesting": lists.fix_list_nesting,

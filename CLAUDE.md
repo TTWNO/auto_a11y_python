@@ -607,6 +607,63 @@ Test with a real screen reader (VoiceOver, NVDA, or Orca) on the actual change b
 
 The fixture tests in this repo validate that the *testing engine* catches issues correctly. They do not validate that the *UI of this app* is itself accessible. That responsibility lives in the design and review phase of every frontend PR.
 
+## pdfMax Integration (Complete — In-Repo, No External Checkout)
+
+**pdfMax is first-class code inside auto_a11y.** There is no subprocess, no
+separate build, no second Python environment, and no checkout that must exist
+on disk. `PDFMAX_CHECKER_DIR`, `pdfmax_runner.py` and the Dockerfile's
+`COPY --from=pdfmax_checker` were removed once nothing referenced them.
+
+The upstream source lives at `CNIB-AccessLabs/pdfMax` (private). Clone it with
+`gh repo clone CNIB-AccessLabs/pdfMax` when you need to consult the original —
+it is not vendored here, only ported from.
+
+### What is ported
+
+| Piece | Location | State |
+|---|---|---|
+| Checker (125 checks) | `auto_a11y/pdf/audit/checks/` | 114 of 125; 11 outstanding |
+| Fixer (59 fixes) | `auto_a11y/pdf/fix/` | Complete |
+| Remediation guide | `auto_a11y/pdf/translation/remediation_guide.py` + `pdf-remediation.ftl` | Complete, bilingual |
+| Check → fix map | `auto_a11y/pdf/fix/catalogue.py` | Complete, bilingual input labels |
+| Markdown report | `auto_a11y/pdf/report_markdown.py` | Complete, renders on demand in the reader's locale |
+| Viewer (canvas, overlays, connector lines) | `auto_a11y/web/static/js/pdf_viewer_app.js` | Ported; overlays need element geometry (below) |
+
+### Porting conventions (do not break these)
+
+- **Element and page references are 1-based**, matching what the report prints.
+  Three fixes in the original read them 0-based and acted on the neighbouring
+  element. Every reference in this port is 1-based and tested.
+- **`NA` is a distinct verdict** from `PASS` — "nothing of this kind to
+  examine" versus "examined and correct". Conflating them made a scanned PDF
+  report 88 passes out of 105. `NA` never becomes a `Violation`.
+- **A fix that cannot know the answer declines and says why**; it never invents
+  one. It must never block or prompt — fixes run unattended across whole sites.
+  Never write a guessed `/Lang`, a conformance claim on an untagged file, or a
+  bullet label on a numbered list.
+- **Fixes never modify the original.** `apply_fixes` opens read-only and writes
+  a `_fixed.pdf` copy. Output must be reproducible, so no UUIDs.
+- **Reading order is conserved.** Structural fixes wrap in place; nothing moves.
+
+### UI work: transcribe pdfMax, do not redesign
+
+pdfMax's UI has been accessibility-tested. **Port its markup, ARIA, focus
+management, keyboard handling and CSS directly** rather than deriving an
+equivalent. React does not transcribe (auto_a11y has no bundler) — the DOM and
+behaviour do, which is the approach `pdf_viewer_app.js` already took.
+
+Target flow: **PDFs menu → Test a file → `FileSelectScreen` → `ResultsView`
+with Report and Viewer tab panels.**
+
+### Known gap: overlay geometry
+
+`CheckResult.elements` carries the structure elements a verdict is about, and
+`auto_a11y/pdf/audit/issue_map.py` joins those to positions for the viewer.
+But `reading_order.match_elements_to_positions` derives geometry from **visual
+text blocks only**, so a `<Figure>` gets no position and no overlay box. An
+element→rectangle source covering figures, tables and links is the outstanding
+prerequisite for working overlays.
+
 ## Common Gotchas
 
 1. **Port Conflict:** macOS AirPlay Receiver uses 5000 → We use 5001

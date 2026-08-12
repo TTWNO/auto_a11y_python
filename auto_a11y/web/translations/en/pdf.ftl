@@ -570,3 +570,19 @@ pdf-report-ai-severity-low = Advisory
 pdf-report-ai-severity-info = For information
 pdf-report-ai-page = Page { $page }
 pdf-report-ai-element = Element { $index }
+
+# Document metadata — the PDF's own provenance, shown before any verdict.
+pdf-inventory-doc-metadata-heading = Document metadata
+pdf-inventory-doc-author = Author
+pdf-inventory-doc-title = Title
+pdf-inventory-doc-subject = Subject
+pdf-inventory-doc-keywords = Keywords
+pdf-inventory-doc-creator = Creator
+pdf-inventory-doc-producer = Producer
+pdf-inventory-doc-created = Created
+pdf-inventory-doc-modified = Modified
+pdf-inventory-doc-pdf-version = PDF version
+pdf-inventory-doc-language = Document language (/Lang)
+pdf-inventory-doc-elements = Structure elements
+pdf-inventory-doc-pages = Pages
+pdf-inventory-doc-not-set = Not set

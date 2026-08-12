@@ -782,7 +782,9 @@
 
                 {# ----- Document inventory (pdfMax §2-16) ----- #}
                 {% if report_sections %}
+                    {% with image_url_prefix = url_for('pdf.image', pdf_document_id=pdf.id, image_name='') %}
                     {% include 'pdf/_report_sections.html' %}
+                    {% endwith %}
                 {% else %}
                 <section class="pdf-inventory-master mt-4"
                          aria-labelledby="pdf-inventory-stale-heading">

@@ -95,8 +95,12 @@ def build_report_sections(
     WCAG mapping will surface every criterion as "Not tested".
     """
     return {
-        # Front matter — deterministic counterpart to pdfMax's AI exec
-        # summary. Surfaced at the top of the inventory area.
+        # Front matter — pdfMax opens its report with the document's own
+        # provenance before any verdict, so a reader can tell which file
+        # and which producer they are looking at.
+        "document_metadata": _build_document_metadata(ctx),
+        # Deterministic counterpart to pdfMax's AI exec summary.
+        # Surfaced at the top of the inventory area.
         "executive_summary": _build_executive_summary(check_results or []),
         # Phase A
         "tag_tree": _build_tag_tree(ctx.elements),
@@ -1217,6 +1221,71 @@ def _build_version_recommendations(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Document metadata (pdfMax "Document Metadata")
+# ---------------------------------------------------------------------------
+
+
+def _build_document_metadata(ctx: AuditContext) -> dict[str, object]:
+    """The document's own provenance: who made it, with what, and when.
+
+    Every field is optional in a PDF, so each is emitted as ``None`` when
+    absent rather than omitted — the renderer distinguishes "not set" from
+    "not collected", and "no author" is itself worth seeing in an audit.
+    """
+    info = _docinfo(ctx.pdf)
+    return {
+        "author": info.get("/Author"),
+        "creator": info.get("/Creator"),
+        "producer": info.get("/Producer"),
+        "title": info.get("/Title"),
+        "subject": info.get("/Subject"),
+        "keywords": info.get("/Keywords"),
+        "creation_date": info.get("/CreationDate"),
+        "mod_date": info.get("/ModDate"),
+        "pdf_version": ctx.pdf.pdf_version or None,
+        "language": _catalog_lang(ctx.pdf),
+        "structure_elements": len(ctx.elements),
+        "pages": len(ctx.pdf.pages),
+    }
+
+
+def _docinfo(pdf: pikepdf.Pdf) -> dict[str, str]:
+    """The /Info dictionary as plain strings, skipping anything unreadable."""
+    values: dict[str, str] = {}
+    try:
+        info = pdf.trailer.get("/Info")
+    except Exception:  # noqa: BLE001 — a malformed trailer is not fatal
+        return values
+    if info is None:
+        return values
+    for key in (
+        "/Author", "/Creator", "/Producer", "/Title",
+        "/Subject", "/Keywords", "/CreationDate", "/ModDate",
+    ):
+        try:
+            raw = info.get(key)
+        except Exception:  # noqa: BLE001 — one bad entry costs its own row
+            continue
+        if raw is None:
+            continue
+        text = str(raw).strip()
+        if text:
+            values[key] = text
+    return values
+
+
+def _catalog_lang(pdf: pikepdf.Pdf) -> str | None:
+    try:
+        lang = pdf.Root.get("/Lang")
+    except Exception:  # noqa: BLE001
+        return None
+    if lang is None:
+        return None
+    text = str(lang).strip()
+    return text or None
 
 
 # ---------------------------------------------------------------------------

@@ -106,16 +106,54 @@
     </header>
 
     <div class="results-body">
-        {# Section nav for the Report tab. Built by pdf_scan_results.js from
-           the report's own headings once the Markdown has rendered — the
-           headings do not exist server-side. Hidden until it has links, so
-           it never shows as an empty rail. #}
+        {# Section nav for the Report tab.
+           The inventory entries are listed server-side, numbered as pdfMax
+           numbers them, because their anchors are known before render and
+           the numbering is part of how the report reads. The verdict
+           headings (Failures / Warnings / …) come from the client-side
+           Markdown render, so pdf_scan_results.js appends those into the
+           same list once it has parsed them. #}
         <aside class="results-sidebar"
                id="results-sidebar"
-               aria-label="{{ ftl('pdf-scan-sections-aria-label') }}"
-               hidden>
+               aria-label="{{ ftl('pdf-scan-sections-aria-label') }}">
             <h2 class="results-sections-title">{{ ftl('pdf-scan-sections-heading') }}</h2>
             <ul class="results-sections-list" id="results-sections-list"></ul>
+            {% if report_sections %}
+            <ul class="results-sections-list">
+                {% if report_sections.get('document_metadata') %}
+                <li><a class="results-section-link" href="#pdf-inventory-doc-metadata-heading">
+                    {{ ftl('pdf-inventory-doc-metadata-heading') }}</a></li>
+                {% endif %}
+                {% if report_sections.get('executive_summary') %}
+                <li><a class="results-section-link" href="#pdf-inventory-exec-summary-heading">
+                    {{ ftl('pdf-inventory-exec-summary-heading') }}</a></li>
+                {% endif %}
+                {# Numbers follow pdfMax's own section numbering so a reader
+                   moving between the two tools sees the same report. #}
+                {% for number, key, label in [
+                    (2,  'tag_tree',               'pdf-inventory-tag-tree-heading'),
+                    (3,  'reading_order',          'pdf-inventory-reading-order-heading'),
+                    (4,  'image_inventory',        'pdf-inventory-image-inventory-heading'),
+                    (5,  'link_inventory',         'pdf-inventory-link-inventory-heading'),
+                    (6,  'form_inventory',         'pdf-inventory-form-inventory-heading'),
+                    (7,  'heading_map',            'pdf-inventory-heading-map-heading'),
+                    (8,  'full_alt_text',          'pdf-inventory-full-alt-text-heading'),
+                    (9,  'exported_images',        'pdf-inventory-exported-images-heading'),
+                    (10, 'color_contrast',         'pdf-inventory-color-contrast-heading'),
+                    (11, 'language_analysis',      'pdf-inventory-language-analysis-heading'),
+                    (12, 'wcag_mapping',           'pdf-inventory-wcag-mapping-heading'),
+                    (13, 'font_analysis',          'pdf-inventory-font-analysis-heading'),
+                    (14, 'visual_reading_order',   'pdf-inventory-visual-reading-order-heading'),
+                    (15, 'images_of_text',         'pdf-inventory-images-of-text-heading'),
+                    (16, 'version_recommendations','pdf-inventory-version-recommendations-heading'),
+                ] %}
+                {% if report_sections.get(key) %}
+                <li><a class="results-section-link" href="#section-{{ key }}">
+                    {{ number }}. {{ ftl(label) }}</a></li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+            {% endif %}
         </aside>
 
         <div class="results-content">
@@ -126,6 +164,15 @@
                  tabindex="0">
                 {% with image_prefix = url_for('pdf_scan.image', scan_id=scan.scan_id, image_name='') %}
                 {% include 'pdf/_pdfmax_report_body.html' %}
+                {% endwith %}
+
+                {# The document inventories — pdfMax's numbered sections 2-16.
+                   The verdict list above answers "what is wrong"; these
+                   answer "what is in this document", which is what makes a
+                   finding actionable. Same partial the project-scoped detail
+                   page uses, so the two reports cannot drift. #}
+                {% with image_url_prefix = url_for('pdf_scan.image', scan_id=scan.scan_id, image_name='') %}
+                {% include 'pdf/_report_sections.html' %}
                 {% endwith %}
             </div>
 

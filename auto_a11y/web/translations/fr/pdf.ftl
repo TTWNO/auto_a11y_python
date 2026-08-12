@@ -558,3 +558,19 @@ pdf-report-ai-severity-low = Recommandation
 pdf-report-ai-severity-info = Pour information
 pdf-report-ai-page = Page { $page }
 pdf-report-ai-element = Élément { $index }
+
+# Métadonnées du document — la provenance du PDF, avant tout verdict.
+pdf-inventory-doc-metadata-heading = Métadonnées du document
+pdf-inventory-doc-author = Auteur
+pdf-inventory-doc-title = Titre
+pdf-inventory-doc-subject = Sujet
+pdf-inventory-doc-keywords = Mots-clés
+pdf-inventory-doc-creator = Créateur
+pdf-inventory-doc-producer = Producteur
+pdf-inventory-doc-created = Création
+pdf-inventory-doc-modified = Modification
+pdf-inventory-doc-pdf-version = Version du PDF
+pdf-inventory-doc-language = Langue du document (/Lang)
+pdf-inventory-doc-elements = Éléments de structure
+pdf-inventory-doc-pages = Pages
+pdf-inventory-doc-not-set = Non défini

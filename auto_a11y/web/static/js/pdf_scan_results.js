@@ -92,9 +92,10 @@
 
     /* ---- Section sidebar -------------------------------------------
      *
-     * The report is Markdown parsed in the browser, so its headings do
-     * not exist until that render finishes. Watch the content element
-     * and build the list the first time it gains children.
+     * The inventory entries are rendered server-side; these are the
+     * verdict headings from the Markdown report, which is parsed in the
+     * browser and so has no headings until that render finishes. Watch
+     * the content element and prepend them once it gains children.
      */
     var reportContent = document.getElementById('pdfmax-report-content');
     var sidebar = document.getElementById('results-sidebar');
@@ -107,6 +108,9 @@
         var headings = reportContent.querySelectorAll('h2');
         if (headings.length === 0) {
             return false;
+        }
+        if (sectionList.childElementCount > 0) {
+            return true;  /* already built */
         }
 
         for (var i = 0; i < headings.length; i += 1) {
@@ -128,9 +132,32 @@
             sectionList.appendChild(item);
         }
 
-        sidebar.hidden = false;
         return true;
     }
+
+    /* An inventory section is a collapsed <details>; navigating to one has
+     * to open it, or the anchor lands on a closed block and looks broken. */
+    function openTargetDetails(hash) {
+        if (!hash || hash.length < 2) {
+            return;
+        }
+        var target = document.getElementById(hash.slice(1));
+        while (target) {
+            if (target.tagName === 'DETAILS') {
+                target.open = true;
+            }
+            target = target.parentElement;
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        var link = event.target.closest
+            ? event.target.closest('a.results-section-link')
+            : null;
+        if (link) {
+            openTargetDetails(link.getAttribute('href'));
+        }
+    });
 
     function wireSectionJump(heading) {
         return function (event) {

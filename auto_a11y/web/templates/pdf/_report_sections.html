@@ -7,8 +7,11 @@
 # the audit checked.
 #
 # Required context:
-#   report_sections — dict the audit pipeline emitted.
-#   pdf — PdfDocument (used for the image-inventory thumbnail URL).
+#   report_sections  — dict the audit pipeline emitted.
+#   image_url_prefix — URL prefix each extracted image's filename is
+#                      appended to. Each flow streams its images from its
+#                      own route, so the caller supplies the prefix rather
+#                      than this partial knowing about PdfDocument.
 #}
 
 {% if report_sections %}
@@ -20,6 +23,45 @@
     <p class="text-muted small">
         {{ ftl('pdf-inventory-master-intro') }}
     </p>
+
+    {# ----- Document metadata (pdfMax front matter) -----
+       The document's own provenance, before any verdict. Fields absent
+       from the PDF render as "not set" rather than being dropped — a
+       missing author or title is itself an audit finding. #}
+    {% set dm = report_sections.get('document_metadata') %}
+    {% if dm is mapping %}
+    <section class="pdf-inventory-doc-metadata mb-3"
+             aria-labelledby="pdf-inventory-doc-metadata-heading">
+        <h4 id="pdf-inventory-doc-metadata-heading" class="h6">
+            {{ ftl('pdf-inventory-doc-metadata-heading') }}
+        </h4>
+        <dl class="row mb-0 small">
+            {% for key, label in [
+                ('author', 'pdf-inventory-doc-author'),
+                ('title', 'pdf-inventory-doc-title'),
+                ('subject', 'pdf-inventory-doc-subject'),
+                ('keywords', 'pdf-inventory-doc-keywords'),
+                ('creator', 'pdf-inventory-doc-creator'),
+                ('producer', 'pdf-inventory-doc-producer'),
+                ('creation_date', 'pdf-inventory-doc-created'),
+                ('mod_date', 'pdf-inventory-doc-modified'),
+                ('pdf_version', 'pdf-inventory-doc-pdf-version'),
+                ('language', 'pdf-inventory-doc-language'),
+                ('structure_elements', 'pdf-inventory-doc-elements'),
+                ('pages', 'pdf-inventory-doc-pages'),
+            ] %}
+            <dt class="col-sm-4">{{ ftl(label) }}</dt>
+            <dd class="col-sm-8">
+                {% if dm.get(key) is none %}
+                    <span class="text-muted">{{ ftl('pdf-inventory-doc-not-set') }}</span>
+                {% else %}
+                    {{ dm.get(key) }}
+                {% endif %}
+            </dd>
+            {% endfor %}
+        </dl>
+    </section>
+    {% endif %}
 
     {# ----- Executive summary (Phase C front matter) ----- #}
     {% set es = report_sections.get('executive_summary') %}
@@ -88,7 +130,7 @@
     {# ----- §2 Tag Tree ----- #}
     {% set tt = report_sections.get('tag_tree') %}
     {% if tt is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-tag_tree">
         <summary>
             {{ ftl('pdf-inventory-tag-tree-heading') }}
             <span class="badge badge-subtle">
@@ -133,7 +175,7 @@
     {# ----- §3 Reading Order ----- #}
     {% set ro = report_sections.get('reading_order') %}
     {% if ro is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-reading_order">
         <summary>
             {{ ftl('pdf-inventory-reading-order-heading') }}
             <span class="badge badge-subtle">{{ ro.get('items', [])|length }}</span>
@@ -169,7 +211,7 @@
     {% if ii is mapping %}
     {% set figures = ii.get('figures', []) %}
     {% set extracted = ii.get('extracted', []) %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-image_inventory">
         <summary>
             {{ ftl('pdf-inventory-image-inventory-heading') }}
             <span class="badge badge-subtle">{{ figures|length }}</span>
@@ -223,7 +265,7 @@
                 <tr>
                     <th scope="row">{{ ex.get('index') }}</th>
                     <td>
-                        <a href="{{ url_for('pdf.image', pdf_document_id=pdf.id, image_name=ex.get('filename')) }}"
+                        <a href="{{ image_url_prefix }}{{ ex.get('filename') }}"
                            target="_blank"
                            rel="noopener">
                             <code>{{ ex.get('filename') }}</code>
@@ -241,7 +283,7 @@
     {# ----- §7 Heading Map ----- #}
     {% set hm = report_sections.get('heading_map') %}
     {% if hm is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-heading_map">
         <summary>
             {{ ftl('pdf-inventory-heading-map-heading') }}
             <span class="badge badge-subtle">{{ hm.get('headings', [])|length }}</span>
@@ -294,7 +336,7 @@
     {# ----- §8 Full Alt Text ----- #}
     {% set fa = report_sections.get('full_alt_text') %}
     {% if fa is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-full_alt_text">
         <summary>
             {{ ftl('pdf-inventory-full-alt-text-heading') }}
             <span class="badge badge-subtle">{{ fa.get('items', [])|length }}</span>
@@ -334,7 +376,7 @@
     {# ----- §10 Color and Contrast ----- #}
     {% set cc = report_sections.get('color_contrast') %}
     {% if cc is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-color_contrast">
         <summary>
             {{ ftl('pdf-inventory-color-contrast-heading') }}
             <span class="badge badge-subtle">{{ cc.get('rows', [])|length }}</span>
@@ -391,7 +433,7 @@
     {# ----- §11 Language of Parts ----- #}
     {% set la = report_sections.get('language_analysis') %}
     {% if la is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-language_analysis">
         <summary>
             {{ ftl('pdf-inventory-language-analysis-heading') }}
             {% if la.get('declared_lang') %}
@@ -443,7 +485,7 @@
     {% if li is mapping %}
     {% set tagged_links = li.get('tagged_links', []) %}
     {% set annotation_links = li.get('annotation_links', []) %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-link_inventory">
         <summary>
             {{ ftl('pdf-inventory-link-inventory-heading') }}
             <span class="badge badge-subtle">{{ tagged_links|length }}</span>
@@ -512,7 +554,7 @@
     {# ----- §6 Form Field Inventory ----- #}
     {% set form = report_sections.get('form_inventory') %}
     {% if form is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-form_inventory">
         <summary>
             {{ ftl('pdf-inventory-form-inventory-heading') }}
             <span class="badge badge-subtle">{{ form.get('total', 0) }}</span>
@@ -569,7 +611,7 @@
     {# ----- §12 WCAG 2.2 Mapping (full) ----- #}
     {% set wm = report_sections.get('wcag_mapping') %}
     {% if wm is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-wcag_mapping">
         <summary>
             {{ ftl('pdf-inventory-wcag-mapping-heading') }}
             <span class="badge badge-subtle">{{ wm.get('rows', [])|length }}</span>
@@ -625,7 +667,7 @@
     {# ----- §14 Visual Reading Order ----- #}
     {% set vro = report_sections.get('visual_reading_order') %}
     {% if vro is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-visual_reading_order">
         <summary>
             {{ ftl('pdf-inventory-visual-reading-order-heading') }}
             {% if vro.get('total', 0) %}
@@ -675,7 +717,7 @@
     {# ----- §9 Exported Images gallery ----- #}
     {% set ei = report_sections.get('exported_images') %}
     {% if ei is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-exported_images">
         <summary>
             {{ ftl('pdf-inventory-exported-images-heading') }}
             <span class="badge badge-subtle">{{ ei.get('total', 0) }}</span>
@@ -686,7 +728,7 @@
             {% for row in ei.get('rows', []) %}
             <li class="pdf-inventory-exported-image">
                 <figure>
-                    <img src="{{ url_for('pdf.image', pdf_document_id=pdf.id, image_name=row.get('filename')) }}"
+                    <img src="{{ image_url_prefix }}{{ row.get('filename') }}"
                          alt="{{ row.get('alt_text') or '' }}"
                          loading="lazy"
                          width="{{ row.get('width', 0) }}"
@@ -718,7 +760,7 @@
     {# ----- §15 Images of Text (AI placeholder) ----- #}
     {% set iot = report_sections.get('images_of_text') %}
     {% if iot is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-images_of_text">
         <summary>
             {{ ftl('pdf-inventory-images-of-text-heading') }}
             {% if not iot.get('available') %}
@@ -739,7 +781,7 @@
     {# ----- §16 PDF Version & Structure Recommendations ----- #}
     {% set vr = report_sections.get('version_recommendations') %}
     {% if vr is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-version_recommendations">
         <summary>
             {{ ftl('pdf-inventory-version-recommendations-heading') }}
             {% if vr.get('pdf_version') %}
@@ -789,7 +831,7 @@
     {# ----- §13 Font Analysis (full) ----- #}
     {% set fnt = report_sections.get('font_analysis') %}
     {% if fnt is mapping %}
-    <details class="pdf-inventory-section">
+    <details class="pdf-inventory-section" id="section-font_analysis">
         <summary>
             {{ ftl('pdf-inventory-font-analysis-heading') }}
             <span class="badge badge-subtle">{{ fnt.get('inventory', [])|length }}</span>

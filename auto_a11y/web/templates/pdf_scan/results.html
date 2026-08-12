@@ -87,6 +87,7 @@
                   action="{{ url_for('pdf_scan.delete', scan_id=scan.scan_id) }}"
                   class="d-inline"
                   onsubmit="return confirm({{ ftl('pdf-scan-delete-confirm') | tojson }});">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="results-action-btn">
                     {{ ftl('pdf-scan-delete') }}
                 </button>

@@ -36,6 +36,7 @@
               method="POST"
               action="{{ url_for('pdf_scan.scan') }}"
               enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="file-select-dropzone" id="pdf-scan-dropzone">
                 <div class="file-select-dropzone-content">
                     <div class="file-select-icon" aria-hidden="true">

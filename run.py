@@ -22,11 +22,25 @@ from auto_a11y.core.logging_config import setup_logging as configure_logging
 
 
 def init_directories() -> None:
-    """Initialize required directories"""
+    """Initialize required directories.
+
+    In desktop mode every writable path must land under ``USER_DATA_DIR``.
+    ``BASE_DIR`` is the app source *inside the .app bundle*, so anything
+    defaulting there would be written into a signed, possibly read-only
+    bundle: under App Translocation (which macOS applies to a quarantined
+    app) the write fails outright, and where it succeeds it invalidates the
+    code signature and is wiped by the next update.
+    """
     if config.DESKTOP_MODE and config.USER_DATA_DIR:
         user_data = Path(config.USER_DATA_DIR)
         config.SCREENSHOTS_DIR = user_data / 'screenshots'
         config.REPORTS_DIR = user_data / 'reports'
+        # PDF and audio storage default to BASE_DIR/data/* (see config.py).
+        # Both landed after this function was written and were missed;
+        # without these two lines a desktop user's first PDF scan or audio
+        # upload writes into the bundle.
+        config.PDF_STORAGE_DIR = str(user_data / 'pdfs')
+        config.AUDIO_STORAGE_DIR = str(user_data / 'recordings')
         log_dir = user_data / 'logs'
         temp_dir = user_data / 'temp'
     else:
@@ -36,6 +50,8 @@ def init_directories() -> None:
     directories = [
         Path(config.SCREENSHOTS_DIR),
         Path(config.REPORTS_DIR),
+        Path(config.PDF_STORAGE_DIR),
+        Path(config.AUDIO_STORAGE_DIR),
         log_dir,
         temp_dir,
     ]

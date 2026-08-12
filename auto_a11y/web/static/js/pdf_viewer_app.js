@@ -310,7 +310,15 @@
 
         return loadPdfJs().then(function (lib) {
             self.pdfjs = lib;
-            return Promise.all([self._loadDocument(), self._loadIssueMap()]);
+            // The overlays are an enhancement; the document is the point.
+            // Loading them together in a Promise.all meant an issue-map
+            // failure surfaced as "Failed to load the PDF" — the one
+            // message guaranteed to send you looking in the wrong place.
+            return self._loadDocument();
+        }).then(function () {
+            return self._loadIssueMap().catch(function (err) {
+                console.warn("[pdf_viewer_app] issue map unavailable", err);
+            });
         }).then(function () {
             return self.renderPage(1);
         }).then(function () {
@@ -321,9 +329,39 @@
             setTimeout(function () { self._scheduleConnectorRedraw(); }, 250);
         }).catch(function (err) {
             console.error("[pdf_viewer_app] failed to initialise", err);
-            self._setStatus(t("error-load", "Failed to load PDF"));
+            // Name the cause. PDF.js raises typed errors — a password, a
+            // truncated file, an HTTP status — and a bare "failed to load"
+            // throws that away, leaving the user nothing to act on.
+            self._setStatus(
+                t("error-load", "Failed to load the PDF.") + " " + describeError(err)
+            );
         });
     };
+
+    /* A human-readable reason for a PDF.js failure.
+     *
+     * PDF.js reports the useful part in `name` (PasswordException,
+     * InvalidPDFException, MissingPDFException, UnexpectedResponseException)
+     * and often a status on the latter. Surfacing both turns an unactionable
+     * "it failed" into something a user can either fix or report. */
+    function describeError(err) {
+        if (!err) return "";
+        var name = err.name || "";
+        var status = err.status ? " (HTTP " + err.status + ")" : "";
+        if (name === "PasswordException") {
+            return "The PDF is password-protected.";
+        }
+        if (name === "InvalidPDFException") {
+            return "The file is not a readable PDF, or it is damaged.";
+        }
+        if (name === "MissingPDFException") {
+            return "The PDF could not be fetched from the server" + status + ".";
+        }
+        if (name === "UnexpectedResponseException") {
+            return "The server did not return the PDF" + status + ".";
+        }
+        return (name ? name + ": " : "") + (err.message || String(err));
+    }
 
     PdfViewer.prototype._loadDocument = function () {
         var self = this;

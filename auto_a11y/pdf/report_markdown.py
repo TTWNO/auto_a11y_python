@@ -17,7 +17,12 @@ from collections.abc import Iterable
 from functools import lru_cache
 from typing import TYPE_CHECKING, cast
 
-from auto_a11y.pdf.models import AuditResult, CheckOutcome, CheckResult
+from auto_a11y.pdf.models import (
+    AIFinding,
+    AuditResult,
+    CheckOutcome,
+    CheckResult,
+)
 
 if TYPE_CHECKING:
     from markupsafe import Markup
@@ -204,6 +209,8 @@ def render_audit_markdown(result: AuditResult) -> str:
             "",
         ])
 
+    lines.extend(_ai_section(result))
+
     by_verdict: dict[str, list[CheckResult]] = {v: [] for v in _VERDICT_ORDER}
     for check in result.check_results:
         by_verdict.setdefault(check.result, []).append(check)
@@ -212,3 +219,69 @@ def render_audit_markdown(result: AuditResult) -> str:
         lines.extend(_verdict_section(verdict, by_verdict.get(verdict, [])))
 
     return "\n".join(lines).rstrip() + "\n"
+
+
+# Severities the AI pass emits, worst first, so the reader meets the
+# blocking findings before the advisory ones.
+_AI_SEVERITY_ORDER: tuple[str, ...] = ("high", "medium", "low", "info")
+
+
+def _ai_section(result: AuditResult) -> list[str]:
+    """The AI analysis section, or nothing when AI did not run.
+
+    A run that produced no findings still renders — "AI examined this and
+    found nothing" and "AI never ran" are different statements, and a
+    report that omits both looks identical either way.
+    """
+    ai = result.ai_analysis
+    if ai is None:
+        return []
+
+    lines: list[str] = [f"## {_ftl('pdf-report-ai-heading')}", ""]
+
+    # A parenthesised model name is the pipeline's marker for a pass that
+    # could not run — say so rather than implying a clean result.
+    if ai.model.startswith("("):
+        lines.extend([_escape(ai.executive_summary), ""])
+        return lines
+
+    lines.append(str(_ftl("pdf-report-ai-model", model=_escape(ai.model))))
+    lines.append("")
+    if ai.executive_summary:
+        lines.extend([_escape(ai.executive_summary), ""])
+
+    if not ai.findings:
+        lines.extend([str(_ftl("pdf-report-ai-no-findings")), ""])
+        return lines
+
+    by_severity: dict[str, list[AIFinding]] = {}
+    for finding in ai.findings:
+        by_severity.setdefault(finding.severity, []).append(finding)
+
+    for severity in _AI_SEVERITY_ORDER:
+        found = by_severity.get(severity)
+        if not found:
+            continue
+        lines.append(f"### {_ftl(f'pdf-report-ai-severity-{severity}')} ({len(found)})")
+        lines.append("")
+        for finding in found:
+            lines.append(f"#### {_escape(finding.title)}")
+            lines.append("")
+            location = _ai_location(finding)
+            if location:
+                lines.extend([location, ""])
+            if finding.description:
+                lines.extend([_escape(finding.description), ""])
+    return lines
+
+
+def _ai_location(finding: AIFinding) -> str:
+    """A one-line "where" for a finding, or empty if it is document-wide."""
+    parts: list[str] = []
+    if finding.page is not None:
+        parts.append(str(_ftl("pdf-report-ai-page", page=finding.page)))
+    if finding.element_index is not None:
+        parts.append(
+            str(_ftl("pdf-report-ai-element", index=finding.element_index))
+        )
+    return " · ".join(parts)

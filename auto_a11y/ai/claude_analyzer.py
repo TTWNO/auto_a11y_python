@@ -52,7 +52,7 @@ class ClaudeAnalyzer:
         try:
             from config import config as app_config
             if model is None:
-                resolved_model = str(getattr(app_config, 'CLAUDE_MODEL', 'claude-opus-4-8'))
+                resolved_model = str(getattr(app_config, 'CLAUDE_MODEL', 'claude-opus-5'))
             else:
                 resolved_model = model
             max_tokens = int(getattr(app_config, 'CLAUDE_MAX_TOKENS', 16000))
@@ -60,7 +60,7 @@ class ClaudeAnalyzer:
             use_thinking = bool(getattr(app_config, 'CLAUDE_USE_THINKING', True))
             logger.info(f"Using CLAUDE_MODEL from config: {resolved_model}, thinking: {use_thinking}")
         except Exception:
-            resolved_model = model if model is not None else 'claude-opus-4-8'
+            resolved_model = model if model is not None else 'claude-opus-5'
             max_tokens = 16000
             budget_tokens = 10000
             use_thinking = True

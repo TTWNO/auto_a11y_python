@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class ClaudeConfig:
     """Claude AI configuration"""
     api_key: str
-    model: str = "claude-opus-4-8"  # Opus 4.8 with adaptive thinking
+    model: str = "claude-opus-5"  # Opus 5 with adaptive thinking
     max_tokens: int = 16000
     # budget_tokens / temperature are retained for backward compatibility but are no
     # longer sent: Opus 4.7+/4.8 use adaptive thinking and reject both a fixed thinking
@@ -43,7 +43,11 @@ class ClaudeConfig:
 
     # Available models (updated to latest versions)
     MODELS: ClassVar[dict[str, str]] = {
-        'opus-4': 'claude-opus-4-20250514',               # Opus 4 (best, supports extended thinking)
+        'opus-5': 'claude-opus-5',                        # Opus 5 (default; adaptive thinking)
+        'sonnet-5': 'claude-sonnet-5',                    # Sonnet 5
+        'haiku-4.5': 'claude-haiku-4-5',                  # Haiku 4.5 (fastest current)
+        'opus-4.8': 'claude-opus-4-8',                    # Opus 4.8
+        'opus-4': 'claude-opus-4-20250514',               # Opus 4 (deprecated)
         'sonnet-4': 'claude-sonnet-4-20250514',           # Sonnet 4
         'sonnet-4.5': 'claude-sonnet-4-5-20250929',       # Sonnet 4.5
         'sonnet-3.5': 'claude-3-5-sonnet-20241022',       # Sonnet 3.5

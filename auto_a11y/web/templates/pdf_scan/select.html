@@ -4,16 +4,11 @@
   pdfMax's FileSelectScreen, transcribed. Structure, class names, copy and
   the SVG icon come straight from src/components/FileSelectScreen.tsx.
 
-  Two things could not carry across:
-
-  * Electron's native file dialog (window.electronAPI.selectPDFFile) has no
-    equivalent in a browser, so the "Select PDF File" control is a <label>
-    driving a real <input type="file">. Drag-and-drop still works and now
-    feeds the same input, so both routes go through one control.
-  * pdfMax's "Include Claude AI semantic analysis" checkbox is omitted.
-    run_audit's run_ai branch is still a stub that returns a placeholder
-    summary, so the toggle would promise analysis that does not happen.
-    It goes back in with Task 5.1.
+  One thing could not carry across: Electron's native file dialog
+  (window.electronAPI.selectPDFFile) has no equivalent in a browser, so the
+  "Select PDF File" control is a <label> driving a real <input type="file">.
+  Drag-and-drop still works and now feeds the same input, so both routes go
+  through one control.
 #}
 
 {% block title %}{{ ftl('pdf-scan-page-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
@@ -62,6 +57,27 @@
                     </label>
                 </div>
             </div>
+
+            {# pdfMax's "Include Claude AI semantic analysis" toggle. The
+               checkbox sits outside the drop zone so choosing it is a
+               separate decision from choosing the file — the scan starts the
+               moment a file is picked, so the toggle has to be set first. #}
+            <label class="file-select-ai-toggle">
+                <input type="checkbox"
+                       id="pdf-scan-run-ai"
+                       name="run_ai"
+                       value="true"
+                       {% if not ai_available %}disabled{% endif %}
+                       aria-describedby="pdf-scan-ai-help">
+                <span>{{ ftl('pdf-scan-ai-toggle') }}</span>
+            </label>
+            <p id="pdf-scan-ai-help" class="file-select-hint text-center">
+                {% if ai_available %}
+                    {{ ftl('pdf-scan-ai-help') }}
+                {% else %}
+                    {{ ftl('pdf-scan-ai-no-key') }}
+                {% endif %}
+            </p>
 
             <p id="pdf-scan-file-help" class="file-select-hint mt-3 text-center">
                 {{ ftl('pdf-scan-file-help') }}

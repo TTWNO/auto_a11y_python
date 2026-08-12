@@ -142,6 +142,32 @@
     outline-offset: 2px;
 }
 
+/* AI toggle — pdfMax's "Include Claude AI semantic analysis" checkbox. */
+.file-select-ai-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.file-select-ai-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--color-brand);
+}
+
+.file-select-ai-toggle input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+}
+
+.file-select-ai-toggle:has(input:disabled) {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
 .file-select-hint {
     font-size: 0.82rem;
     color: var(--color-text-muted);
@@ -284,6 +310,13 @@
 .results-badge-warn {
     background: var(--color-severity-medium-bg);
     color: var(--color-severity-medium);
+}
+
+/* AI findings — brand-coloured rather than severity-coloured: the count is
+   "how many the AI raised", not a verdict of its own. */
+.results-badge-ai {
+    background: var(--color-brand-subtle);
+    color: var(--color-brand);
 }
 
 .results-badge-count {

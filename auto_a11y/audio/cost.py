@@ -19,10 +19,14 @@ AS_OF: date = date(2026, 5, 19)
 # Model whose rates the constants below capture. Unknown models fall back
 # to these rates (with a logged warning) rather than failing the analysis —
 # cost bookkeeping must NEVER lose a paid result.
-DEFAULT_PRICING_MODEL = "claude-opus-4-8"
+DEFAULT_PRICING_MODEL = "claude-opus-5"
 
 
-# === Anthropic Opus 4.8 (per million tokens) — same rates as Opus 4.7 ===
+# === Anthropic Opus-tier (per million tokens) ===
+# Opus 5 is priced identically to Opus 4.8 and 4.7 ($5 / $25 per MTok),
+# so the constants below carry over unchanged; only the model ID moved.
+# The OPUS_48_ prefix is kept because these names are part of the module's
+# public surface and the rates they hold are still correct.
 OPUS_48_INPUT_USD_PER_M = 5.0
 OPUS_48_OUTPUT_USD_PER_M = 25.0
 OPUS_48_EXTENDED_INPUT_USD_PER_M = 10.0   # 2× above 200K tokens
@@ -79,7 +83,7 @@ def cost_for_anthropic_call(
 ) -> float:
     """Compute USD cost of one Anthropic call.
 
-    Pricing constants are defined for ``claude-opus-4-8`` (see
+    Pricing constants are defined for ``claude-opus-5`` (see
     ``DEFAULT_PRICING_MODEL``). For any other model we fall back to those
     rates and log a warning rather than raising: this function is called
     *after* a paid Claude response, so a hard failure here would discard a

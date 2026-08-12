@@ -1521,7 +1521,7 @@ class HTMLFormatter(BaseFormatter):
                 from auto_a11y.ai.claude_client import ClaudeClient, ClaudeConfig
                 claude_config = ClaudeConfig(
                     api_key=str(claude_api_key),
-                    model=str(self.config.get('CLAUDE_MODEL') or 'claude-opus-4-8'),
+                    model=str(self.config.get('CLAUDE_MODEL') or 'claude-opus-5'),
                 )
                 generator = AIExecutiveSummaryGenerator(ClaudeClient(config=claude_config))
             except Exception as e:

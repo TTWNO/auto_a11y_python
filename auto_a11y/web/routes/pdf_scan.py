@@ -30,8 +30,9 @@ to another user's scan.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, cast
 
 from flask import (
     Blueprint, abort, flash, jsonify, redirect, render_template, request,
@@ -44,7 +45,7 @@ from auto_a11y.pdf.audit.checks import ALL_CHECKS
 from auto_a11y.pdf.audit.pipeline import run_audit
 from auto_a11y.pdf.errors import CorruptPdf, NotAPdf, PdfTooLarge
 from auto_a11y.pdf.fix.registry import FIX_REGISTRY
-from auto_a11y.pdf.models import AuditResult
+from auto_a11y.pdf.models import AIAnalysisResult, AIFinding, AuditResult
 from auto_a11y.pdf.report_markdown import (
     checks_from_metadata,
     render_audit_markdown,
@@ -101,7 +102,19 @@ def select_file() -> str:
         recent_scans=_get_store().list_for_user(_current_user_id(), limit=10),
         check_count=len(ALL_CHECKS),
         fix_count=len(FIX_REGISTRY),
+        ai_available=_claude_api_key() is not None,
     )
+
+
+def _claude_api_key() -> str | None:
+    """The Claude API key, or None if none is configured.
+
+    Checked before the scan runs so the AI toggle can be disabled with an
+    explanation rather than accepting the request and failing mid-audit.
+    """
+    cfg = get_app_config()
+    key = getattr(cfg, 'CLAUDE_API_KEY', '') or os.environ.get('ANTHROPIC_API_KEY', '')
+    return key or None
 
 
 @pdf_scan_bp.route('/pdf-scan', methods=['POST'])
@@ -147,6 +160,12 @@ def scan() -> Response:
     wcag_level: Literal["AA", "AAA"] = (
         "AAA" if request.form.get('wcag_level') == 'AAA' else "AA"
     )
+    # The checkbox only reaches here when ticked; a configured key is still
+    # required, so a stale form against a key-less deployment degrades to a
+    # deterministic scan rather than erroring.
+    api_key = _claude_api_key()
+    run_ai = request.form.get('run_ai') == 'true' and api_key is not None
+
     locale = get_current_locale()
     store = _get_store()
     record = store.create(
@@ -155,13 +174,16 @@ def scan() -> Response:
         original_filename=uploaded.filename or 'document.pdf',
         wcag_level=wcag_level,
         locale=locale,
+        run_ai=run_ai,
     )
 
     try:
         audit = run_audit(
             store.pdf_path(record.owner_user_id, record.scan_id),
             wcag_level=wcag_level,
-            run_ai=False,
+            run_ai=run_ai,
+            ai_api_key=api_key,
+            ai_model=getattr(cfg, 'CLAUDE_MODEL', None) or None,
             locale=locale,
             images_out_dir=store.images_dir(record.owner_user_id, record.scan_id),
         )
@@ -208,7 +230,7 @@ def results(scan_id: str) -> str:
                     declared_lang=record.declared_lang,
                     detected_lang=record.detected_lang,
                     check_results=checks,
-                    ai_analysis=None,
+                    ai_analysis=_ai_from_record(record),
                 )
             )
 
@@ -220,6 +242,59 @@ def results(scan_id: str) -> str:
         report_sections=record.report_sections,
         has_issue_map=record.issue_map is not None,
     )
+
+
+def _ai_from_record(record: ScanRecord) -> AIAnalysisResult | None:
+    """Rebuild the stored AI analysis so the report can render it.
+
+    Returns ``None`` when AI was never requested. When it *was* requested
+    but could not run, the stored ``model`` is a parenthesised marker and
+    the summary carries the reason — both are preserved so the report says
+    "AI did not run" instead of quietly omitting the section.
+    """
+    stored = record.ai_analysis
+    if stored is None:
+        return None
+
+    findings: list[AIFinding] = []
+    raw = stored.get('findings')
+    if isinstance(raw, list):
+        for item in cast("list[object]", raw):
+            if not isinstance(item, dict):
+                continue
+            entry = cast("dict[str, Any]", item)
+            severity = entry.get('severity')
+            findings.append(AIFinding(
+                category=str(entry.get('category') or ''),
+                severity=(
+                    severity if severity in ('high', 'medium', 'low', 'info')
+                    else 'low'
+                ),
+                title=str(entry.get('title') or ''),
+                description=str(entry.get('description') or ''),
+                page=entry.get('page') if isinstance(entry.get('page'), int) else None,
+                element_index=(
+                    entry.get('element_index')
+                    if isinstance(entry.get('element_index'), int) else None
+                ),
+            ))
+
+    overall = stored.get('overall_severity')
+    return AIAnalysisResult(
+        findings=findings,
+        executive_summary=str(stored.get('executive_summary') or ''),
+        overall_severity=(
+            overall if overall in ('high', 'medium', 'low', 'none') else 'none'
+        ),
+        model=str(stored.get('model') or ''),
+        cached_input_tokens=_int_or_zero(stored.get('cached_input_tokens')),
+        uncached_input_tokens=_int_or_zero(stored.get('uncached_input_tokens')),
+        output_tokens=_int_or_zero(stored.get('output_tokens')),
+    )
+
+
+def _int_or_zero(value: object) -> int:
+    return value if isinstance(value, int) else 0
 
 
 @pdf_scan_bp.route('/pdf-scan/<scan_id>/file', methods=['GET'])

@@ -10,15 +10,15 @@ from auto_a11y.audio.cost import (
 )
 
 
-def test_default_pricing_model_is_opus_4_8() -> None:
-    """Opus 4.8 is the first-class priced model (no fallback warning path)."""
-    assert DEFAULT_PRICING_MODEL == "claude-opus-4-8"
+def test_default_pricing_model_is_opus_5() -> None:
+    """Opus 5 is the first-class priced model (no fallback warning path)."""
+    assert DEFAULT_PRICING_MODEL == "claude-opus-5"
     usage = AnthropicUsage(input_tokens=10_000, output_tokens=2_000)
     cost = cost_for_anthropic_call(
-        usage, model="claude-opus-4-8", extended_context=False
+        usage, model="claude-opus-5", extended_context=False
     )
-    # 10000 in @ $5/M = $0.05; 2000 out @ $25/M = $0.05; total $0.10 (same
-    # rates as 4.7).
+    # 10000 in @ $5/M = $0.05; 2000 out @ $25/M = $0.05; total $0.10 — Opus 5
+    # is priced identically to Opus 4.8 and 4.7, so the rates are unchanged.
     assert abs(cost - 0.10) < 1e-9
 
 

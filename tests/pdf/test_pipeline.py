@@ -265,12 +265,17 @@ def test_run_audit_run_ai_false_yields_no_ai_analysis(tmp_path: Path) -> None:
     assert result.ai_analysis is None
 
 
-def test_run_audit_run_ai_true_returns_stub_placeholder(tmp_path: Path) -> None:
-    """Until Task 5.1 lands, ``run_ai=True`` produces an explanatory stub.
+def test_run_audit_run_ai_without_key_reports_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``run_ai=True`` with no key must say so, not return a clean result.
 
-    Documents the current contract so the test breaks loudly when the
-    real implementation arrives — at which point this test gets rewritten.
+    "AI ran and found nothing" and "AI could not run" look identical from a
+    finding count alone, so the model marker carries the difference and the
+    summary carries the reason.
     """
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("CLAUDE_API_KEY", raising=False)
     pdf_path = tmp_path / "minimal.pdf"
     _write_minimal_pdf(pdf_path)
 
@@ -278,9 +283,30 @@ def test_run_audit_run_ai_true_returns_stub_placeholder(tmp_path: Path) -> None:
 
     assert result.ai_analysis is not None
     assert result.ai_analysis.findings == []
-    assert "not yet implemented" in result.ai_analysis.executive_summary
+    assert result.ai_analysis.model == "(unavailable)"
+    assert "API key" in result.ai_analysis.executive_summary
     assert result.ai_analysis.overall_severity == "none"
-    assert result.ai_analysis.model == "(stub)"
+
+
+def test_run_audit_run_ai_failure_does_not_fail_the_audit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A crashing AI pass costs its own section, never the check verdicts."""
+    pdf_path = tmp_path / "minimal.pdf"
+    _write_minimal_pdf(pdf_path)
+
+    def _boom(*args: object, **kwargs: object) -> object:
+        raise RuntimeError("analysis exploded")
+
+    monkeypatch.setattr("auto_a11y.pdf.audit.ai.analyze", _boom)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+
+    result = run_audit(pdf_path, run_ai=True, ai_api_key="test-key-not-real")
+
+    assert result.check_results, "deterministic checks must still be present"
+    assert result.ai_analysis is not None
+    assert result.ai_analysis.model == "(failed)"
+    assert "analysis exploded" in result.ai_analysis.executive_summary
 
 
 # ---------------------------------------------------------------------------

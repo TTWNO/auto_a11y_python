@@ -69,6 +69,7 @@ class ScanRecord:
     error_reason: str | None
     wcag_level: Literal["AA", "AAA"]
     locale: str
+    run_ai: bool
     # The audit payload, keyed as TestResult.metadata keys it. Empty until
     # the audit finishes.
     result: dict[str, Any]
@@ -99,6 +100,28 @@ class ScanRecord:
         if isinstance(value, dict):
             return cast("dict[str, object]", value)
         return {}
+
+    @property
+    def ai_analysis(self) -> dict[str, Any] | None:
+        """The AI pass's own summary block, or ``None`` if AI did not run."""
+        value = self.result.get('ai_analysis')
+        if isinstance(value, dict):
+            return cast("dict[str, Any]", value)
+        return None
+
+    @property
+    def ai_ran(self) -> bool:
+        """Whether AI analysis actually produced a result.
+
+        Distinct from :attr:`run_ai`, which records only that it was asked
+        for — a missing key or a failed call leaves this ``False`` so the
+        UI can say "AI did not run" rather than "AI found nothing".
+        """
+        analysis = self.ai_analysis
+        if analysis is None:
+            return False
+        model = analysis.get('model')
+        return isinstance(model, str) and not model.startswith('(')
 
     @property
     def issue_map(self) -> dict[str, object] | None:
@@ -144,6 +167,7 @@ class ScanStore:
         original_filename: str,
         wcag_level: Literal["AA", "AAA"] = "AA",
         locale: str = "en",
+        run_ai: bool = False,
     ) -> ScanRecord:
         """Write the uploaded bytes and open a manifest in ``auditing``.
 
@@ -167,6 +191,7 @@ class ScanStore:
             error_reason=None,
             wcag_level=wcag_level,
             locale=locale,
+            run_ai=run_ai,
             result={},
         )
         self._write_manifest(record)
@@ -184,6 +209,7 @@ class ScanStore:
             error_reason=None,
             wcag_level=record.wcag_level,
             locale=record.locale,
+            run_ai=record.run_ai,
             result=result_payload(audit),
         )
         self._write_manifest(updated)
@@ -201,6 +227,7 @@ class ScanStore:
             error_reason=reason,
             wcag_level=record.wcag_level,
             locale=record.locale,
+            run_ai=record.run_ai,
             result={},
         )
         self._write_manifest(updated)
@@ -265,6 +292,7 @@ class ScanStore:
             'error_reason': record.error_reason,
             'wcag_level': record.wcag_level,
             'locale': record.locale,
+            'run_ai': record.run_ai,
             'result': record.result,
         }
         _write_atomic(path, json.dumps(payload, default=str).encode('utf-8'))
@@ -277,9 +305,32 @@ def result_payload(audit: AuditResult) -> dict[str, Any]:
     ``TestResult.metadata``, so ``checks_from_metadata`` and the report and
     viewer templates work against a scan without a second code path.
     """
+    ai = audit.ai_analysis
     return {
         'pdf_version': audit.pdf_version,
         'page_count': audit.page_count,
+        # Present only when AI was asked for. `model` is the honest signal:
+        # "(unavailable)" / "(failed)" mean the pass could not run, which is
+        # a different thing from running and finding nothing.
+        'ai_analysis': None if ai is None else {
+            'model': ai.model,
+            'executive_summary': ai.executive_summary,
+            'overall_severity': ai.overall_severity,
+            'cached_input_tokens': ai.cached_input_tokens,
+            'uncached_input_tokens': ai.uncached_input_tokens,
+            'output_tokens': ai.output_tokens,
+            'findings': [
+                {
+                    'category': f.category,
+                    'severity': f.severity,
+                    'title': f.title,
+                    'description': f.description,
+                    'page': f.page,
+                    'element_index': f.element_index,
+                }
+                for f in ai.findings
+            ],
+        },
         'declared_lang': audit.declared_lang,
         'detected_lang': audit.detected_lang,
         'fail_count': audit.fail_count,
@@ -341,6 +392,7 @@ def _record_from_dict(data: dict[str, Any]) -> ScanRecord | None:
         error_reason=error if isinstance(error, str) else None,
         wcag_level="AAA" if data.get('wcag_level') == "AAA" else "AA",
         locale=locale if isinstance(locale, str) else 'en',
+        run_ai=bool(data.get('run_ai')),
         result=cast("dict[str, Any]", result) if isinstance(result, dict) else {},
     )
 

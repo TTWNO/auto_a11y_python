@@ -21,11 +21,15 @@ Resilience model:
   propagates as :class:`~auto_a11y.pdf.errors.CorruptPdf` — that's the
   one input we genuinely cannot work with.
 
-AI analysis hook:
+AI analysis:
 
-* When ``run_ai=True``, the pipeline currently emits a stub
-  :class:`AIAnalysisResult` with an explanatory ``executive_summary``.
-  Task 5.1 (semantic AI) replaces the stub with a real Claude call.
+* When ``run_ai=True``, :mod:`auto_a11y.pdf.audit.ai` runs its six passes
+  after the deterministic checks and the report sections — every prompt is
+  assembled from those inventories, so the AI step cannot run earlier.
+* AI never fails the audit. A missing key, a declined request or a crash
+  yields an :class:`AIAnalysisResult` whose ``model`` says which happened
+  (``(unavailable)`` / ``(failed)``) and whose ``executive_summary`` carries
+  the reason, so "AI found nothing" is never confused with "AI never ran".
 """
 from __future__ import annotations
 
@@ -70,6 +74,7 @@ def run_audit(
     wcag_level: Literal["AA", "AAA"] = "AA",
     run_ai: bool = False,
     ai_api_key: str | None = None,
+    ai_model: str | None = None,
     locale: str = "en",
     images_out_dir: Path | None = None,
     progress: ProgressCallback | None = None,
@@ -91,9 +96,12 @@ def run_audit(
             unused at this layer (the contrast check module reads its own
             threshold); accepted here so the public signature is stable
             once Phase 5.1 wires it through.
-        run_ai: If ``True``, run Claude semantic analysis. Currently
-            stubbed — Task 5.1 wires up the real call.
+        run_ai: If ``True``, run the Claude analysis passes in
+            :mod:`auto_a11y.pdf.audit.ai` after the deterministic checks.
         ai_api_key: Anthropic API key (only used when ``run_ai=True``).
+            Falls back to ``ANTHROPIC_API_KEY`` / ``CLAUDE_API_KEY``.
+        ai_model: Claude model for the AI passes. Defaults to
+            :data:`auto_a11y.pdf.audit.ai.DEFAULT_MODEL`.
         locale: Locale for AI-generated summaries. Currently ``"en"`` or
             ``"fr"``; surfaced on :class:`AuditContext.locale` for any
             check that emits localised messages.
@@ -113,7 +121,6 @@ def run_audit(
         CorruptPdf: if pikepdf cannot open the PDF.
     """
     del wcag_level  # currently advisory; the contrast check has its own threshold.
-    del ai_api_key  # consumed by Task 5.1; ignored by the current stub.
 
     _emit(progress, "Opening PDF", 0.0)
     try:
@@ -122,6 +129,8 @@ def run_audit(
                 pdf=pdf,
                 pdf_path=pdf_path,
                 run_ai=run_ai,
+                ai_api_key=ai_api_key,
+                ai_model=ai_model,
                 locale=locale,
                 images_out_dir=images_out_dir,
                 progress=progress,
@@ -140,6 +149,8 @@ def _run_audit_with_pdf(
     pdf: pikepdf.Pdf,
     pdf_path: Path,
     run_ai: bool,
+    ai_api_key: str | None,
+    ai_model: str | None,
     locale: str,
     images_out_dir: Path | None,
     progress: ProgressCallback | None,
@@ -295,23 +306,6 @@ def _run_audit_with_pdf(
                 )
             )
 
-    # ---- Step 10: optional AI (stubbed pending Task 5.1) ----------------
-    ai_analysis: AIAnalysisResult | None = None
-    if run_ai:
-        _emit(progress, "Running AI analysis", 0.98)
-        # TODO(Task 5.1): replace with real call into
-        # ``auto_a11y.pdf.audit.ai.semantic.analyze``.
-        ai_analysis = AIAnalysisResult(
-            findings=[],
-            executive_summary=(
-                "AI analysis not yet implemented (Task 5.1 pending). "
-                "When the semantic AI module lands, this stub is replaced "
-                "with the real Claude call."
-            ),
-            overall_severity="none",
-            model="(stub)",
-        )
-
     # ---- Step 11: extract metadata for AuditResult ----------------------
     pdf_version: str | None = pdf.pdf_version if pdf.pdf_version else None
     page_count = len(pdf.pages)
@@ -347,6 +341,47 @@ def _run_audit_with_pdf(
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to build the issue map: %s", exc)
+
+    # ---- Step 12: optional AI analysis ---------------------------------
+    # Runs last because every pass reads the inventories built above — the
+    # semantic prompt is assembled from the tag tree, reading order, heading
+    # map, alt text and form inventory, so it cannot run before them.
+    ai_analysis: AIAnalysisResult | None = None
+    if run_ai:
+        _emit(progress, "Running AI analysis", 0.98)
+        from auto_a11y.pdf.audit import ai as ai_module
+        try:
+            ai_analysis, ai_sections = ai_module.analyze(
+                ctx,
+                check_results=check_results,
+                report_sections=report_sections,
+                images_dir=images_out_dir,
+                api_key=ai_api_key,
+                model=ai_model or ai_module.DEFAULT_MODEL,
+            )
+            # AI sections sit alongside the deterministic ones; the
+            # images_of_text key replaces its own "AI required" placeholder.
+            report_sections.update(ai_sections)
+        except ai_module.AIUnavailable as exc:
+            # An explicit opt-in that cannot run is worth saying out loud —
+            # returning a clean audit would imply the AI passes found nothing.
+            logger.warning("AI analysis was requested but could not run: %s", exc)
+            ai_analysis = AIAnalysisResult(
+                findings=[],
+                executive_summary=str(exc),
+                overall_severity="none",
+                model="(unavailable)",
+            )
+        except Exception as exc:  # noqa: BLE001 — AI must not fail the audit
+            logger.exception("AI analysis failed")
+            ai_analysis = AIAnalysisResult(
+                findings=[],
+                executive_summary=(
+                    f"AI analysis did not complete: {type(exc).__name__}: {exc}"
+                ),
+                overall_severity="none",
+                model="(failed)",
+            )
 
     _emit(progress, "Done", 1.0)
     return AuditResult.from_checks(

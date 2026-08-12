@@ -85,7 +85,7 @@ class Analyzer:
         self,
         *,
         client: Any,
-        model: str = "claude-opus-4-8",
+        model: str = "claude-opus-5",
         extended_context: bool = False,
     ) -> None:
         self._client = client

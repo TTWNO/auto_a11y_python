@@ -65,7 +65,7 @@ def test_analyzer_retries_on_malformed_json_then_succeeds() -> None:
     bad = _fake_message('{"recording": "x", "issues": [}')  # complete, invalid
     good = _fake_message(json.dumps({"recording": "x", "issues": []}))
     client = _client_returning_sequence([bad, good])
-    analyzer = Analyzer(client=client, model="claude-opus-4-8")
+    analyzer = Analyzer(client=client, model="claude-opus-5")
     result = analyzer.analyze(
         vtt="W", context="audit", kind="issues", language="en", recording_id="REC-retry"
     )
@@ -77,7 +77,7 @@ def test_analyzer_raises_after_exhausting_parse_retries() -> None:
     """Every attempt malformed → AnalysisError after the retry budget."""
     bad = '{"recording": "x", "issues": [}'
     client = _client_returning_sequence([_fake_message(bad), _fake_message(bad)])
-    analyzer = Analyzer(client=client, model="claude-opus-4-8")
+    analyzer = Analyzer(client=client, model="claude-opus-5")
     with pytest.raises(AnalysisError):
         analyzer.analyze(
             vtt="W", context="audit", kind="issues", language="en", recording_id="REC-bad"
@@ -89,7 +89,7 @@ def test_analyzer_does_not_retry_on_truncation() -> None:
     """Truncation is not retryable — re-rolling would just truncate again."""
     truncated = _fake_message('{"recording": "x"', stop_reason="max_tokens")
     client = _client_returning_sequence([truncated, _fake_message("{}")])
-    analyzer = Analyzer(client=client, model="claude-opus-4-8")
+    analyzer = Analyzer(client=client, model="claude-opus-5")
     with pytest.raises(AnalysisError) as excinfo:
         analyzer.analyze(
             vtt="W", context="audit", kind="issues", language="en", recording_id="REC-trunc"
@@ -167,7 +167,7 @@ def test_analyzer_requests_the_full_128k_output_budget() -> None:
         _fake_message(json.dumps({"recording": "x", "issues": []}))
     )
     analyzer = Analyzer(
-        client=client, model="claude-opus-4-8", extended_context=False
+        client=client, model="claude-opus-5", extended_context=False
     )
     analyzer.analyze(
         vtt="W", context="audit", kind="issues", language="en", recording_id="X"
@@ -175,8 +175,8 @@ def test_analyzer_requests_the_full_128k_output_budget() -> None:
     assert client.messages.stream.call_args.kwargs["max_tokens"] == 128000
 
 
-def test_analyzer_defaults_to_opus_4_8() -> None:
-    """A default-constructed Analyzer targets claude-opus-4-8."""
+def test_analyzer_defaults_to_opus_5() -> None:
+    """A default-constructed Analyzer targets claude-opus-5."""
     client = _client_returning(
         _fake_message(json.dumps({"recording": "x", "issues": []}))
     )
@@ -184,7 +184,7 @@ def test_analyzer_defaults_to_opus_4_8() -> None:
     analyzer.analyze(
         vtt="W", context="audit", kind="issues", language="en", recording_id="X"
     )
-    assert client.messages.stream.call_args.kwargs["model"] == "claude-opus-4-8"
+    assert client.messages.stream.call_args.kwargs["model"] == "claude-opus-5"
 
 
 def test_analyzer_raises_clear_error_when_output_truncated() -> None:

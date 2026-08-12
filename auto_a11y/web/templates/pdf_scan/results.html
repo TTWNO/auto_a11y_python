@@ -54,6 +54,16 @@
                 <span class="results-badge-count">{{ scan.count('warn_count') }}</span>
                 <span class="results-badge-label">{{ ftl('pdf-scan-badge-warn') }}</span>
             </div>
+            {# Only shown when AI actually produced a result — scan.ai_ran is
+               false for a requested-but-failed pass, whose reason the report
+               section carries instead. #}
+            {% if scan.ai_ran %}
+            <div class="results-badge results-badge-ai">
+                <span class="results-badge-icon" aria-hidden="true">&#x2726;</span>
+                <span class="results-badge-count">{{ scan.ai_analysis.findings | length }}</span>
+                <span class="results-badge-label">{{ ftl('pdf-scan-ai-badge') }}</span>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 

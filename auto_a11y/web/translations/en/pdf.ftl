@@ -553,3 +553,20 @@ pdf-scan-viewer-unavailable = The viewer is available once the scan has complete
 pdf-scan-error-no-file = Choose a PDF file to scan.
 pdf-scan-error-corrupt = This file could not be opened as a PDF. It may be corrupt or encrypted.
 pdf-scan-error-failed = The scan did not finish. The file may be malformed.
+
+# AI analysis — the "Include Claude AI analysis" toggle and the report
+# section it produces. See auto_a11y/pdf/audit/ai/.
+pdf-scan-ai-toggle = Include Claude AI analysis
+pdf-scan-ai-help = Adds semantic review, alt-text scoring, images-of-text detection and use-of-colour analysis. Uses the Claude API, so it costs money per scan and takes longer.
+pdf-scan-ai-no-key = AI analysis is unavailable because no Claude API key is configured.
+pdf-scan-ai-badge = AI
+
+pdf-report-ai-heading = AI analysis
+pdf-report-ai-model = Analysed by { $model }.
+pdf-report-ai-no-findings = The AI analysis found no additional issues.
+pdf-report-ai-severity-high = Critical
+pdf-report-ai-severity-medium = Important
+pdf-report-ai-severity-low = Advisory
+pdf-report-ai-severity-info = For information
+pdf-report-ai-page = Page { $page }
+pdf-report-ai-element = Element { $index }

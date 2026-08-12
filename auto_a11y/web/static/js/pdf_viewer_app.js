@@ -40,10 +40,23 @@
 
     function loadPdfJs() {
         if (pdfjsLibPromise) return pdfjsLibPromise;
-        pdfjsLibPromise = import("/static/vendor/pdfjs/pdf.min.mjs").then(function (mod) {
-            mod.GlobalWorkerOptions.workerSrc = "/static/vendor/pdfjs/pdf.worker.min.mjs";
-            return mod;
-        });
+        // The polyfill must be installed before PDF.js evaluates: it calls
+        // Uint8Array#toHex / #toBase64 and Uint8Array.fromBase64, which only
+        // exist from Chrome 140 / Safari 18.4. Older engines — including the
+        // Chromium in the bundled desktop app — otherwise fail every document
+        // load with "toHex is not a function".
+        pdfjsLibPromise = import("/static/vendor/pdfjs/uint8array-polyfill.mjs")
+            .then(function () {
+                return import("/static/vendor/pdfjs/pdf.min.mjs");
+            })
+            .then(function (mod) {
+                // The worker has its own global scope, so it loads through a
+                // wrapper that applies the same polyfill before the worker
+                // body runs. toHex() is called worker-side.
+                mod.GlobalWorkerOptions.workerSrc =
+                    "/static/vendor/pdfjs/pdf.worker.polyfilled.mjs";
+                return mod;
+            });
         return pdfjsLibPromise;
     }
 

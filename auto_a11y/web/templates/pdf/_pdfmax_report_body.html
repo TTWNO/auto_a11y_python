@@ -1,0 +1,218 @@
+{#
+  pdfMax's CheckerReport tab, transcribed: the audit Markdown is embedded
+  as a JS string literal and parsed client-side with marked + DOMPurify
+  under the *same* sanitiser config as CheckerReport.tsx, so the rendered
+  DOM matches pdfMax's.
+
+  Parameters:
+    report_markdown  the rendered Markdown, or None when `error` is set
+    error            a message to show instead of the report, or None
+    image_prefix     URL prefix the relative <img src> values in the
+                     Markdown are rewritten onto (each flow streams its
+                     extracted images from its own route)
+#}
+    {% if error %}
+    <div class="alert alert-high" role="alert">
+        <strong>{{ ftl('pdfmax-report-error-heading') }}</strong>
+        <pre class="pdfmax-report-error">{{ error }}</pre>
+    </div>
+    {% else %}
+    {# Embed the markdown as a JSON-encoded string literal in an
+       executable <script> block. Jinja's ``|tojson`` filter turns
+       the string into a valid JS literal *and* escapes ``</`` to
+       ``<\/``, which:
+
+       * Defeats the HTML5 raw-text rule that prevents browsers from
+         decoding ``&lt;`` inside a ``<script>`` body. (An earlier
+         version of this template embedded the markdown inside a
+         ``<script type="text/markdown">``; Jinja auto-escaped every
+         ``<`` to ``&lt;``, the browser kept those as literal
+         characters per spec, marked.parse rendered the entire
+         report as plaintext.)
+       * Makes ``</script>`` injection from a malicious PDF safe —
+         the closing slash is escaped before it reaches the parser.
+
+       ``window.PDFMAX_REPORT_MARKDOWN`` is read once and discarded;
+       the value never round-trips back through the DOM. #}
+    <script>
+        window.PDFMAX_REPORT_MARKDOWN = {{ report_markdown | tojson }};
+    </script>
+    <script>
+        window.pdfMaxReportI18n = {
+            "jumped-to-check": {{ ftl('pdfmax-report-jumped-to-check') | tojson }}
+        };
+    </script>
+
+    <div id="pdfmax-report-loading" class="pdfmax-report-loading" role="status" aria-live="polite">
+        {{ ftl('pdfmax-report-loading') }}
+    </div>
+
+    <div id="pdfmax-report-content"
+         class="pdfmax-report-content"
+         data-pdfmax-image-prefix="{{ image_prefix }}"
+         hidden></div>
+
+    {# Vendored locally — see auto_a11y/web/static/vendor/. CDN
+       loads were blocked by the deployment's CSP / network. Versions
+       pinned:
+         marked 15.0.12 — last UMD release; matches the HTML
+           pass-through behaviour pdfMax 17.x relies on. v12 was the
+           initial pin and rejected pdfMax's <details> blocks (the
+           tags rendered as literal text in the browser).
+         DOMPurify 3.1.6 — same as pdfMax CheckerReport.tsx. #}
+    {# Query-string cache buster — bump these literals when the
+       vendored bytes change. Without it, browsers + reverse proxies
+       happily serve the previously-cached marked.min.js, which was
+       v12 in an earlier commit and rendered <details> blocks as
+       literal text. #}
+    <script src="{{ url_for('static', filename='vendor/marked.min.js') }}?v=15.0.12"></script>
+    <script src="{{ url_for('static', filename='vendor/purify.min.js') }}?v=3.1.6"></script>
+    <script>
+        (function () {
+            'use strict';
+            var loading = document.getElementById('pdfmax-report-loading');
+            var target = document.getElementById('pdfmax-report-content');
+            if (target === null) { return; }
+            // Picked up from the inline <script> Jinja emits above.
+            var rawMarkdown = (typeof window.PDFMAX_REPORT_MARKDOWN === 'string')
+                ? window.PDFMAX_REPORT_MARKDOWN
+                : '';
+
+            function render() {
+                if (typeof window.marked === 'undefined'
+                    || typeof window.DOMPurify === 'undefined') {
+                    if (loading !== null) {
+                        loading.textContent =
+                            'Failed to load Markdown renderer. ' +
+                            'The vendored marked.min.js or ' +
+                            'purify.min.js did not load — check the ' +
+                            'browser network tab for a 404 against ' +
+                            '/static/vendor/.';
+                    }
+                    return;
+                }
+                // Console-log the loaded versions so we can detect
+                // a stale-cache problem at a glance from DevTools.
+                try {
+                    var v = (window.marked && window.marked.version)
+                        || (window.marked && window.marked.defaults && window.marked.defaults.version)
+                        || 'unknown';
+                    var pv = (window.DOMPurify && window.DOMPurify.version)
+                        || 'unknown';
+                    console.log(
+                        '[pdfmax-report] marked=' + v +
+                        ', DOMPurify=' + pv,
+                    );
+                } catch (e) { /* noop */ }
+                // Match CheckerReport.tsx exactly:
+                //   const html = DOMPurify.sanitize(marked(markdown), {
+                //     ADD_TAGS: ['details', 'summary'],
+                //     ADD_ATTR: ['open', 'data-check-name', 'data-check-result'],
+                //   });
+                var rawHtml = window.marked.parse(rawMarkdown);
+                var clean = window.DOMPurify.sanitize(rawHtml, {
+                    ADD_TAGS: ['details', 'summary'],
+                    ADD_ATTR: ['open', 'data-check-name', 'data-check-result']
+                });
+                target.innerHTML = clean;
+
+                // Rewrite <img src="image_3.png"> (relative path
+                // emitted by pdfMax) to point at our streaming route
+                // so the image resolves under our origin without a
+                // separate static mount.
+                var prefix = target.getAttribute('data-pdfmax-image-prefix') || '';
+                var imgs = target.querySelectorAll('img');
+                for (var i = 0; i < imgs.length; i += 1) {
+                    var raw = imgs[i].getAttribute('src') || '';
+                    if (raw === '') { continue; }
+                    if (raw.indexOf('://') !== -1
+                        || raw.indexOf('/') === 0
+                        || raw.indexOf('data:') === 0) {
+                        continue;
+                    }
+                    imgs[i].setAttribute('src', prefix + encodeURIComponent(raw));
+                }
+
+                if (loading !== null) {
+                    loading.hidden = true;
+                }
+                target.hidden = false;
+
+                // pdfmax-report-hash-handler — when the page is loaded
+                // with #check=<urlencoded>, scroll to the matching
+                // <details data-check-name="..."> emitted by pdfMax's
+                // markdown. Opens the <details>, focuses the <summary>,
+                // and announces via the existing [role="status"]
+                // live region (the loading element, repurposed once
+                // it's hidden).
+                applyCheckHash();
+            }
+
+            // applyCheckHash and announceJump are siblings of render,
+            // declared at IIFE scope so render() can call them via
+            // function-declaration hoisting. Do NOT nest them inside
+            // render — the existing if (document.readyState ...)
+            // block at the bottom of the IIFE only registers `render`,
+            // and these helpers must be reachable from there.
+            function applyCheckHash() {
+                var hash = (window.location.hash || "").replace(/^#/, "");
+                if (!hash) return;
+                var pairs = hash.split("&");
+                var checkName = null;
+                for (var i = 0; i < pairs.length; i++) {
+                    var eq = pairs[i].indexOf("=");
+                    if (eq === -1) continue;
+                    var key = pairs[i].slice(0, eq);
+                    if (key !== "check") continue;
+                    try {
+                        checkName = decodeURIComponent(pairs[i].slice(eq + 1));
+                    } catch (e) {
+                        return;
+                    }
+                    break;
+                }
+                if (!checkName) return;
+                // CSS-attribute selector tolerates spaces and most
+                // punctuation; we still wrap the value in CSS.escape
+                // when available to be safe against quote chars.
+                var literal = (typeof window.CSS !== "undefined" && typeof window.CSS.escape === "function")
+                    ? window.CSS.escape(checkName)
+                    : checkName.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                var match = target.querySelector('[data-check-name="' + literal + '"]');
+                if (match === null) return;
+                if (match.tagName === "DETAILS") {
+                    match.open = true;
+                }
+                try {
+                    match.scrollIntoView({ behavior: "smooth", block: "start" });
+                } catch (err) {
+                    match.scrollIntoView();
+                }
+                var summary = match.querySelector("summary");
+                if (summary && typeof summary.focus === "function") {
+                    summary.focus();
+                }
+                announceJump(checkName);
+            }
+
+            function announceJump(checkName) {
+                if (loading === null) return;
+                // Reuse the existing role="status" / aria-live="polite"
+                // element so SR users hear the jump. Template injects
+                // the message with a {CHECK} placeholder.
+                var msgTemplate =
+                    (window.pdfMaxReportI18n && window.pdfMaxReportI18n["jumped-to-check"])
+                        ? window.pdfMaxReportI18n["jumped-to-check"]
+                        : "Showing report section: {CHECK}";
+                loading.hidden = false;
+                loading.textContent = msgTemplate.replace("{CHECK}", checkName);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', render);
+            } else {
+                render();
+            }
+        })();
+    </script>
+    {% endif %}

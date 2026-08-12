@@ -1,0 +1,46 @@
+/*
+ * pdfMax CheckerReport styling.
+ *
+ * Mirrors the rules CheckerReport.css applies inside the Electron app,
+ * minus the ones that depend on that window's CSS variables.
+ *
+ * Lifted out of an inline <style> in pdf/pdfmax_report.html, which
+ * declared it inside `{% block extra_head %}` — a block base.html does
+ * not define, so Jinja dropped it and the report has been rendering
+ * unstyled. Both the project-scoped report page and the standalone
+ * scan's Report tab now link this file.
+ */
+.pdfmax-report-shell {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 1rem;
+    line-height: 1.6;
+}
+.pdfmax-report-content h1 { font-size: 1.4rem; margin: 1rem 0 0.6rem; }
+.pdfmax-report-content h2 { font-size: 1.15rem; margin: 1.25rem 0 0.6rem; color: var(--color-link); }
+.pdfmax-report-content h3 { font-size: 1.02rem; margin: 0.9rem 0 0.5rem; }
+.pdfmax-report-content table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.9rem; }
+.pdfmax-report-content th, .pdfmax-report-content td { border: 1px solid var(--color-border); padding: 0.25rem 0.5rem; text-align: left; }
+.pdfmax-report-content th { background: var(--color-bg-subtle); font-weight: 600; }
+.pdfmax-report-content pre { background: var(--color-bg-subtle); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); overflow-x: auto; font-size: 0.78rem; }
+.pdfmax-report-content details { border: 1px solid var(--color-border); border-radius: var(--border-radius); margin: 0.4rem 0; background: var(--color-bg-elevated); }
+.pdfmax-report-content details[open] { padding-bottom: 0.5rem; }
+.pdfmax-report-content summary { padding: 0.5rem 0.75rem; cursor: pointer; background: var(--color-bg-subtle); border-radius: var(--border-radius); font-size: 0.85rem; }
+.pdfmax-report-content details > *:not(summary) { padding: 0 0.75rem; }
+.pdfmax-report-content img { max-width: 100%; height: auto; border: 1px solid var(--color-border); border-radius: 0.25rem; margin: 0.5rem 0; }
+.pdfmax-report-content hr { border: none; height: 4px; background: var(--color-border); margin: 1.5rem 0; border-radius: 2px; }
+.pdfmax-report-content code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.85em; }
+.pdfmax-report-loading {
+    padding: 2rem;
+    text-align: center;
+    color: var(--color-text-muted);
+}
+.pdfmax-report-error {
+    padding: 1rem;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    white-space: pre-wrap;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+}

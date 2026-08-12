@@ -1,0 +1,524 @@
+/* ============================================
+   STANDALONE PDF SCAN
+
+   Transcribed from pdfMax's FileSelectScreen.css, AuditingScreen.css,
+   CheckerProgress.css and ResultsView.css. Layout, spacing, sizing,
+   border radii and the responsive / high-contrast / reduced-motion
+   behaviour are carried across as-written.
+
+   The one substitution: pdfMax hardcodes its palette (amber #d97706,
+   grey #4b5563, and a parallel .dark-mode block for each). auto_a11y
+   forbids hardcoded colours — every colour resolves through
+   public/css/tokens.css, which is also what makes the theme toggle and
+   the AA contrast guarantees work. So pdfMax's accent becomes
+   --color-brand, its greys become --color-text / --color-text-muted /
+   --color-border, and its duplicated dark-mode blocks collapse into the
+   tokens, which already carry light, dark and forced-colours values.
+   ============================================ */
+
+/* ============================================
+   FILE SELECT SCREEN
+   ============================================ */
+.file-select-screen {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-select-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: auto 0;
+    padding: 24px 24px 40px;
+    gap: 24px;
+}
+
+.file-select-header {
+    text-align: center;
+}
+
+.file-select-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: var(--color-text-heading);
+}
+
+.file-select-subtitle {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* Drop zone */
+.file-select-dropzone {
+    width: 100%;
+    max-width: 480px;
+    border: 2px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 48px 32px;
+    transition: border-color 0.2s, background 0.2s;
+    background: transparent;
+}
+
+.file-select-dropzone:hover {
+    border-color: var(--color-brand);
+    background: var(--color-brand-subtle);
+}
+
+.file-select-dropzone.drag-over {
+    border-color: var(--color-brand);
+    background: var(--color-brand-subtle);
+    border-style: solid;
+}
+
+.file-select-dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-select-icon {
+    color: var(--color-text-muted);
+}
+
+.file-select-dropzone:hover .file-select-icon,
+.file-select-dropzone.drag-over .file-select-icon {
+    color: var(--color-brand);
+}
+
+.file-select-drop-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.file-select-drop-or {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* The file input stays in the accessibility tree and stays focusable —
+   `display: none` would remove it from both, and the visible control is
+   its <label>. Clipping is the standard visually-hidden recipe. */
+.file-select-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.file-select-btn {
+    display: inline-block;
+    padding: 10px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    background: var(--color-button-primary-bg);
+    color: var(--color-button-primary-text);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.file-select-btn:hover {
+    background: var(--color-button-primary-hover);
+}
+
+/* The visible button is a <label>, so the focus ring has to follow the
+   input's focus rather than the label's own. */
+.file-select-input:focus-visible + .file-select-btn,
+.file-select-btn:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+.file-select-hint {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.file-select-filename {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    margin: 0;
+    max-width: 480px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================
+   AUDITING SCREEN — shown while the scan runs
+   ============================================ */
+.auditing-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px 24px;
+    gap: 16px;
+}
+
+.auditing-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin: 0;
+}
+
+.auditing-filename {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    max-width: 500px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.auditing-center .checker-progress {
+    max-width: 500px;
+    width: 100%;
+}
+
+/* ============================================
+   CHECKER PROGRESS
+   ============================================ */
+.checker-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px 16px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.checker-progress-bar {
+    height: 8px;
+    background: var(--color-progress-track);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Indeterminate: the audit runs inline in the POST, so there is no
+   percentage to report. An honest sweep beats a fake number. */
+.checker-progress-fill {
+    height: 100%;
+    width: 40%;
+    background: var(--color-brand);
+    border-radius: 4px;
+    animation: checker-progress-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes checker-progress-sweep {
+    0% { margin-inline-start: -40%; }
+    100% { margin-inline-start: 100%; }
+}
+
+.checker-progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+}
+
+.checker-progress-step {
+    flex: 1;
+}
+
+/* ============================================
+   RESULTS VIEW — top tabs + optional sidebar
+   ============================================ */
+.results-view {
+    display: flex;
+    flex-direction: column;
+}
+
+.results-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-subtle);
+}
+
+/* Summary badges */
+.results-summary {
+    display: flex;
+    gap: 6px;
+}
+
+.results-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.results-badge-pass {
+    background: var(--color-severity-pass-bg);
+    color: var(--color-severity-pass);
+}
+
+.results-badge-fail {
+    background: var(--color-severity-high-bg);
+    color: var(--color-severity-high);
+}
+
+.results-badge-warn {
+    background: var(--color-severity-medium-bg);
+    color: var(--color-severity-medium);
+}
+
+.results-badge-count {
+    font-weight: 700;
+}
+
+.results-badge-icon {
+    font-size: 0.72rem;
+    line-height: 1;
+}
+
+.results-badge-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Tab buttons */
+.results-tabs {
+    display: flex;
+    gap: 0;
+}
+
+.results-tab-btn {
+    padding: 6px 16px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    font-family: inherit;
+    background: transparent;
+    color: var(--color-text-muted);
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.results-tab-btn:hover {
+    color: var(--color-text);
+}
+
+.results-tab-btn[aria-selected="true"] {
+    color: var(--color-brand);
+    border-bottom-color: var(--color-brand);
+    font-weight: 600;
+}
+
+.results-tab-btn:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: -1px;
+}
+
+/* Header action buttons */
+.results-header-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.results-action-btn {
+    padding: 5px 12px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-family: inherit;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.results-new-audit-btn {
+    color: var(--color-brand);
+    border-color: var(--color-brand);
+}
+
+.results-action-btn:hover {
+    background: var(--color-bg-subtle);
+}
+
+.results-action-btn:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 1px;
+}
+
+/* ============================================
+   BODY (sidebar + content)
+   ============================================ */
+.results-body {
+    display: flex;
+}
+
+.results-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    padding: 12px;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-bg-subtle);
+}
+
+.results-sections-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    margin: 0 0 6px;
+}
+
+.results-sections-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.results-section-link {
+    display: block;
+    padding: 3px 8px;
+    font-size: 0.78rem;
+    color: var(--color-link);
+    text-decoration: none;
+    border-radius: 3px;
+    line-height: 1.4;
+    transition: background 0.15s;
+}
+
+.results-section-link:hover {
+    background: var(--color-bg-subtle);
+    color: var(--color-link-hover);
+    text-decoration: underline;
+}
+
+.results-section-link:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: -1px;
+}
+
+/* ============================================
+   MAIN CONTENT AREA
+   ============================================ */
+.results-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.results-panel {
+    flex-direction: column;
+    padding: 16px;
+}
+
+.results-panel[hidden] {
+    display: none;
+}
+
+/* ============================================
+   HIGH CONTRAST MODE
+   ============================================ */
+@media (prefers-contrast: high) {
+    .results-header {
+        border-bottom-width: 2px;
+    }
+
+    .results-badge {
+        border: 2px solid currentColor;
+    }
+
+    .results-tab-btn {
+        font-weight: 600;
+    }
+
+    .results-tab-btn[aria-selected="true"] {
+        border-bottom-width: 3px;
+    }
+
+    .results-sidebar {
+        border-right-width: 2px;
+    }
+
+    .results-section-link {
+        text-decoration: underline;
+    }
+
+    .results-action-btn {
+        border-width: 2px;
+        font-weight: 600;
+    }
+
+    .file-select-dropzone {
+        border-width: 3px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .results-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 6px 12px;
+    }
+
+    .results-body {
+        flex-direction: column;
+    }
+
+    .results-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        padding: 8px;
+    }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    .results-tab-btn,
+    .results-action-btn,
+    .results-section-link,
+    .file-select-dropzone,
+    .file-select-btn {
+        transition: none;
+    }
+
+    .checker-progress-fill {
+        animation: none;
+        width: 100%;
+    }
+}

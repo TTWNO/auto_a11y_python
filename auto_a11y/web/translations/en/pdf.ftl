@@ -509,3 +509,47 @@ pdf-report-section-passed = Passed
 pdf-report-section-not-applicable = Not applicable
 pdfmax-report-not-audited = This PDF has not been audited yet. Run the audit to produce a report.
 pdfmax-report-no-verdicts = This PDF was audited before reports were generated in-app. Re-audit it to produce one.
+
+# ---------------------------------------------------------------------
+# Standalone PDF scan — pdfMax's own flow (PDFs → Scan a PDF file).
+# Not project-scoped: these strings belong to a one-off scan that has no
+# website, project or PdfDocument behind it.
+# ---------------------------------------------------------------------
+
+# Menu + file-select screen
+pdf-scan-menu-item = Scan a PDF file
+pdf-scan-page-title = Scan a PDF file
+pdf-scan-title = PDF Accessibility Checker
+pdf-scan-subtitle = { $checks } automated checks • { $fixes } auto-fixes • PDF/UA • WCAG 2.2
+pdf-scan-drop-text = Drop PDF file here
+pdf-scan-drop-or = or
+pdf-scan-select-btn = Select PDF File
+pdf-scan-submit-btn = Scan this PDF
+pdf-scan-file-help = The file is checked against every automated rule and is not added to any project.
+pdf-scan-recent-heading = Recent scans
+
+# Auditing state
+pdf-scan-auditing-title = Analyzing PDF…
+pdf-scan-auditing-step = Running accessibility checks
+
+# Results view
+pdf-scan-results-page-title = Scan results
+pdf-scan-summary-aria-label = Scan summary
+pdf-scan-badge-pass = Pass
+pdf-scan-badge-fail = Fail
+pdf-scan-badge-warn = Warn
+pdf-scan-tablist-aria-label = Results view
+pdf-scan-tab-report = Report
+pdf-scan-tab-viewer = Viewer
+pdf-scan-sections-aria-label = Report sections
+pdf-scan-sections-heading = Sections
+pdf-scan-new-scan = Scan another PDF
+pdf-scan-delete = Delete
+pdf-scan-delete-confirm = Delete this scan and its stored file? This cannot be undone.
+pdf-scan-deleted = Scan deleted.
+pdf-scan-viewer-unavailable = The viewer is available once the scan has completed successfully.
+
+# Errors
+pdf-scan-error-no-file = Choose a PDF file to scan.
+pdf-scan-error-corrupt = This file could not be opened as a PDF. It may be corrupt or encrypted.
+pdf-scan-error-failed = The scan did not finish. The file may be malformed.

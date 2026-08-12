@@ -628,6 +628,7 @@ it is not vendored here, only ported from.
 | Check → fix map | `auto_a11y/pdf/fix/catalogue.py` | Complete, bilingual input labels |
 | Markdown report | `auto_a11y/pdf/report_markdown.py` | Complete, renders on demand in the reader's locale |
 | Viewer (canvas, overlays, connector lines) | `auto_a11y/web/static/js/pdf_viewer_app.js` | Ported; overlays need element geometry (below) |
+| `FileSelectScreen` + `ResultsView` | `auto_a11y/web/templates/pdf_scan/` | Ported — see [Standalone scan](#standalone-scan-pdf-scan--pdfmaxs-own-flow) |
 
 ### Porting conventions (do not break these)
 
@@ -652,8 +653,66 @@ management, keyboard handling and CSS directly** rather than deriving an
 equivalent. React does not transcribe (auto_a11y has no bundler) — the DOM and
 behaviour do, which is the approach `pdf_viewer_app.js` already took.
 
-Target flow: **PDFs menu → Test a file → `FileSelectScreen` → `ResultsView`
-with Report and Viewer tab panels.**
+The one licensed deviation is colour. pdfMax hardcodes its palette (amber
+`#d97706`, a parallel `.dark-mode` block per rule); this repo's colour system
+is mandatory, and it is what makes the theme toggle and the AA contrast
+guarantees work. Map pdfMax's accent to `--color-brand` and its greys to
+`--color-text` / `--color-text-muted` / `--color-border`, and let the tokens
+carry light, dark and forced-colours. Everything else — layout, spacing,
+sizing, radii, the responsive and reduced-motion rules — transcribes as
+written.
+
+### Standalone scan (`/pdf-scan`) — pdfMax's own flow
+
+**PDFs menu → Scan a PDF file → `FileSelectScreen` → `ResultsView` with Report
+and Viewer tab panels.** This is pdfMax's workflow carried across whole, and it
+is deliberately *not* project-scoped.
+
+A scan shares the **engine** with the project-scoped routes — the same
+`run_audit`, the same 114 checks, the same 59 fixes — and nothing above it. It
+is not a `PdfDocument`: no website, no project, no `TestResult`, no row in any
+collection. It lives on disk in `auto_a11y/pdf/scan_store.py` under
+`<PDF_STORAGE_DIR>/_scans/<owner_user_id>/<scan_id>/`. That is the whole point
+— scanning a file can never move a project's numbers, because no project query
+can reach a scan.
+
+| Piece | Location |
+|---|---|
+| Store (manifest + bytes + images) | `auto_a11y/pdf/scan_store.py` |
+| Routes | `auto_a11y/web/routes/pdf_scan.py` |
+| File-select + results templates | `auto_a11y/web/templates/pdf_scan/` |
+| CSS / JS | `static/css/pdf_scan.css`, `static/js/pdf_scan_select.js`, `pdf_scan_results.js` |
+
+Conventions to keep:
+
+- **Authorise by lookup, not by comparison.** `ScanStore.get` takes
+  `(owner_user_id, scan_id)`, so another user's scan is indistinguishable from
+  one that does not exist. Scan ids are validated against `[0-9a-f]{32}`
+  *before* becoming a path.
+- **The stored result uses `TestResult.metadata`'s key names**
+  (`check_results`, `report_sections`, `page_count`, …) so `checks_from_metadata`
+  and the report and viewer templates work against a scan with no second code
+  path.
+- **Shared partials, not copies.** `pdf/_viewer_stage.html` and
+  `pdf/_pdfmax_report_body.html` are included by both the project-scoped detail
+  / report pages and the standalone results page. Do not fork them.
+- The PDFs nav item sits **outside** base.html's `user_has_projects` gate — a
+  scan has no project, so that is the wrong question to ask before showing it.
+
+Known gaps in this flow, in priority order:
+
+1. **The audit runs inline in the POST.** The user waits on the request behind
+   pdfMax's `AuditingScreen` markup with an indeterminate progress bar. Wiring
+   it to the real progress stream (as `PdfAuditJob` does for the project path)
+   is the next step; the screen is already there to receive it.
+2. **No AI toggle.** pdfMax's "Include Claude AI semantic analysis" checkbox is
+   omitted because `run_audit(run_ai=True)` is still the Task 5.1 stub that
+   returns a placeholder summary. Put the checkbox back when the real call lands.
+3. **No result filter bar.** pdfMax filters on the
+   `<details data-check-result="...">` blocks its ReportTab renders; our ported
+   Markdown does not emit those attributes. The same gap makes the report
+   body's `#check=` deep-link handler inert. Emitting the attributes from
+   `report_markdown.py` fixes both at once.
 
 ### Known gap: overlay geometry
 

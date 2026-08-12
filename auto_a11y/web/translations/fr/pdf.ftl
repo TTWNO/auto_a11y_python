@@ -497,3 +497,47 @@ pdf-report-section-passed = Réussies
 pdf-report-section-not-applicable = Sans objet
 pdfmax-report-not-audited = Ce PDF n'a pas encore été audité. Lancer l'audit pour produire un rapport.
 pdfmax-report-no-verdicts = Ce PDF a été audité avant que les rapports ne soient générés dans l'application. Le auditer de nouveau pour en produire un.
+
+# ---------------------------------------------------------------------
+# Analyse PDF autonome — le flux propre à pdfMax (PDF → Analyser un
+# fichier PDF). Hors projet : ces chaînes concernent une analyse
+# ponctuelle, sans site Web, sans projet et sans PdfDocument.
+# ---------------------------------------------------------------------
+
+# Menu + écran de sélection de fichier
+pdf-scan-menu-item = Analyser un fichier PDF
+pdf-scan-page-title = Analyser un fichier PDF
+pdf-scan-title = Vérificateur d'accessibilité PDF
+pdf-scan-subtitle = { $checks } vérifications automatisées • { $fixes } correctifs automatiques • PDF/UA • WCAG 2.2
+pdf-scan-drop-text = Déposez le fichier PDF ici
+pdf-scan-drop-or = ou
+pdf-scan-select-btn = Sélectionner un fichier PDF
+pdf-scan-submit-btn = Analyser ce PDF
+pdf-scan-file-help = Le fichier est soumis à toutes les règles automatisées et n'est ajouté à aucun projet.
+pdf-scan-recent-heading = Analyses récentes
+
+# État d'analyse
+pdf-scan-auditing-title = Analyse du PDF en cours…
+pdf-scan-auditing-step = Exécution des vérifications d'accessibilité
+
+# Vue des résultats
+pdf-scan-results-page-title = Résultats de l'analyse
+pdf-scan-summary-aria-label = Sommaire de l'analyse
+pdf-scan-badge-pass = Réussite
+pdf-scan-badge-fail = Échec
+pdf-scan-badge-warn = Avertissement
+pdf-scan-tablist-aria-label = Affichage des résultats
+pdf-scan-tab-report = Rapport
+pdf-scan-tab-viewer = Visionneuse
+pdf-scan-sections-aria-label = Sections du rapport
+pdf-scan-sections-heading = Sections
+pdf-scan-new-scan = Analyser un autre PDF
+pdf-scan-delete = Supprimer
+pdf-scan-delete-confirm = Supprimer cette analyse et le fichier stocké ? Cette action est irréversible.
+pdf-scan-deleted = Analyse supprimée.
+pdf-scan-viewer-unavailable = La visionneuse est accessible une fois l'analyse terminée avec succès.
+
+# Erreurs
+pdf-scan-error-no-file = Choisissez un fichier PDF à analyser.
+pdf-scan-error-corrupt = Ce fichier n'a pas pu être ouvert en tant que PDF. Il est peut-être corrompu ou chiffré.
+pdf-scan-error-failed = L'analyse ne s'est pas terminée. Le fichier est peut-être mal formé.

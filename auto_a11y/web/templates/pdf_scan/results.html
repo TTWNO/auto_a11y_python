@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{#
+  pdfMax's ResultsView, transcribed from src/components/ResultsView.tsx:
+  the summary badges, the Report | Viewer tablist, the header actions and
+  the section sidebar, with the same class names and the same WAI-ARIA
+  Tabs semantics (roving tabindex, arrow/Home/End activation — see
+  static/js/pdf_scan_results.js).
+
+  Sits below auto_a11y's own header and main menu, per the agreed flow:
+  PDFs → Scan a PDF file → this page.
+
+  Two of pdfMax's header controls are deliberately absent:
+
+  * The Re-check button. pdfMax re-runs the checker over a file it still
+    holds a path to; here a re-check is the same work as a new scan, and
+    "Scan another PDF" already says that.
+  * The global Fail / Warn / Pass filter bar. pdfMax filters the check
+    list its ReportTab renders from the Markdown's
+    `<details data-check-result="...">` blocks. Our port's Markdown does
+    not emit those attributes yet, so a filter bar here would have nothing
+    to act on. (The same gap makes the report body's `#check=` deep-link
+    handler inert — worth closing in the same pass.)
+#}
+
+{% block title %}{{ scan.original_filename }} - {{ ftl('pdf-scan-results-page-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pdf_scan.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pdfmax_report.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="results-view">
+    <header class="results-header">
+        <h1 class="h5 mb-0 text-truncate" title="{{ scan.original_filename }}">
+            {{ scan.original_filename }}
+        </h1>
+
+        {% if scan.status == 'audited' %}
+        <div class="results-summary" role="group" aria-label="{{ ftl('pdf-scan-summary-aria-label') }}">
+            <div class="results-badge results-badge-pass">
+                <span class="results-badge-icon" aria-hidden="true">&#x2713;</span>
+                <span class="results-badge-count">{{ scan.count('pass_count') }}</span>
+                <span class="results-badge-label">{{ ftl('pdf-scan-badge-pass') }}</span>
+            </div>
+            <div class="results-badge results-badge-fail">
+                <span class="results-badge-icon" aria-hidden="true">&#x2717;</span>
+                <span class="results-badge-count">{{ scan.count('fail_count') }}</span>
+                <span class="results-badge-label">{{ ftl('pdf-scan-badge-fail') }}</span>
+            </div>
+            <div class="results-badge results-badge-warn">
+                <span class="results-badge-icon" aria-hidden="true">&#x26A0;</span>
+                <span class="results-badge-count">{{ scan.count('warn_count') }}</span>
+                <span class="results-badge-label">{{ ftl('pdf-scan-badge-warn') }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="results-tabs" role="tablist" aria-label="{{ ftl('pdf-scan-tablist-aria-label') }}">
+            <button type="button"
+                    class="results-tab-btn"
+                    role="tab"
+                    id="tab-report"
+                    aria-selected="true"
+                    aria-controls="panel-report"
+                    tabindex="0">
+                {{ ftl('pdf-scan-tab-report') }}
+            </button>
+            <button type="button"
+                    class="results-tab-btn"
+                    role="tab"
+                    id="tab-viewer"
+                    aria-selected="false"
+                    aria-controls="panel-viewer"
+                    tabindex="-1">
+                {{ ftl('pdf-scan-tab-viewer') }}
+            </button>
+        </div>
+
+        <div class="results-header-actions">
+            <a class="results-action-btn results-new-audit-btn"
+               href="{{ url_for('pdf_scan.select_file') }}">
+                {{ ftl('pdf-scan-new-scan') }}
+            </a>
+            <form method="POST"
+                  action="{{ url_for('pdf_scan.delete', scan_id=scan.scan_id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm({{ ftl('pdf-scan-delete-confirm') | tojson }});">
+                <button type="submit" class="results-action-btn">
+                    {{ ftl('pdf-scan-delete') }}
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <div class="results-body">
+        {# Section nav for the Report tab. Built by pdf_scan_results.js from
+           the report's own headings once the Markdown has rendered — the
+           headings do not exist server-side. Hidden until it has links, so
+           it never shows as an empty rail. #}
+        <aside class="results-sidebar"
+               id="results-sidebar"
+               aria-label="{{ ftl('pdf-scan-sections-aria-label') }}"
+               hidden>
+            <h2 class="results-sections-title">{{ ftl('pdf-scan-sections-heading') }}</h2>
+            <ul class="results-sections-list" id="results-sections-list"></ul>
+        </aside>
+
+        <div class="results-content">
+            <div id="panel-report"
+                 role="tabpanel"
+                 aria-labelledby="tab-report"
+                 class="results-panel"
+                 tabindex="0">
+                {% with image_prefix = url_for('pdf_scan.image', scan_id=scan.scan_id, image_name='') %}
+                {% include 'pdf/_pdfmax_report_body.html' %}
+                {% endwith %}
+            </div>
+
+            <div id="panel-viewer"
+                 role="tabpanel"
+                 aria-labelledby="tab-viewer"
+                 class="results-panel"
+                 tabindex="0"
+                 hidden>
+                {% if scan.status == 'audited' %}
+                {# Same host contract as the project-scoped detail page:
+                   pdf_viewer_app.js reads the URLs off this element and
+                   finds every layer beneath it. Only the URLs differ. #}
+                <div class="pdf-viewer-host"
+                     data-pdf-viewer-host
+                     data-pdf-url="{{ url_for('pdf_scan.file', scan_id=scan.scan_id) }}"
+                     data-issue-map-url="{{ url_for('pdf_scan.issue_map', scan_id=scan.scan_id) }}"
+                     {% if scan.declared_lang or scan.detected_lang %}
+                     data-document-lang="{{ scan.declared_lang or scan.detected_lang }}"
+                     {% endif %}>
+                    {# Connector lines span the stage and the issue list, so
+                       the SVG sits above both and outside the flex row. #}
+                    <svg class="pdf-viewer-connector-layer"
+                         data-pdf-viewer-connector-layer
+                         aria-hidden="true"
+                         focusable="false"></svg>
+
+                    <div class="row g-3">
+                        <section class="col-12 col-lg-7"
+                                 aria-labelledby="pdf-scan-viewer-heading">
+                            <h2 id="pdf-scan-viewer-heading" class="visually-hidden">
+                                {{ ftl('pdf-detail-iframe-title') }}
+                            </h2>
+                            {% include 'pdf/_viewer_stage.html' %}
+                        </section>
+
+                        <section class="col-12 col-lg-5 pdf-report-pane"
+                                 aria-labelledby="pdf-scan-viewer-issues-heading">
+                            <h2 id="pdf-scan-viewer-issues-heading" class="h6 mb-2">
+                                {{ ftl('pdf-viewer-issues-heading') }}
+                            </h2>
+                            <ol class="pdf-viewer-issue-list list-unstyled mb-0"
+                                data-pdf-viewer-issue-list
+                                aria-labelledby="pdf-scan-viewer-issues-heading"></ol>
+                            <p class="pdf-viewer-issue-list-empty text-muted small mb-0"
+                               data-pdf-viewer-issue-list-empty
+                               hidden>
+                                {{ ftl('pdf-viewer-issue-list-empty') }}
+                            </p>
+                        </section>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-medium" role="alert">
+                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    {{ ftl('pdf-scan-viewer-unavailable') }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // pdf_viewer_app.js is plain JS with no Jinja, so its strings arrive
+    // through this object — same contract as the detail page.
+    window.pdfViewerI18n = {
+        "loading": {{ ftl('pdf-viewer-loading') | tojson }},
+        "error-load": {{ ftl('pdf-viewer-error-load') | tojson }},
+        "issue-result-fail": {{ ftl('pdf-violation-result-fail') | tojson }},
+        "issue-result-warn": {{ ftl('pdf-violation-result-warn') | tojson }},
+        "overlay-cluster-aria": {{ ftl('pdf-viewer-overlay-cluster-aria-template') | tojson }},
+        "semantic-layer-aria": {{ ftl('pdf-viewer-semantic-layer-aria-template') | tojson }},
+        "issue-element": {{ ftl('pdf-viewer-issue-element') | tojson }},
+        "issue-document-level": {{ ftl('pdf-viewer-issue-document-level') | tojson }},
+        "issue-group-count": {{ ftl('pdf-viewer-issue-group-count') | tojson }},
+        "issue-view-in-report": {{ ftl('pdf-viewer-issue-view-in-report') | tojson }},
+        "issue-view-in-report-aria": {{ ftl('pdf-viewer-issue-view-in-report-aria') | tojson }},
+        "jumped-to-check": {{ ftl('pdfmax-report-jumped-to-check') | tojson }}
+    };
+</script>
+<script src="{{ url_for('static', filename='js/pdf_viewer_app.js') }}" type="module" defer></script>
+<script src="{{ url_for('static', filename='js/pdf_scan_results.js') }}" defer></script>
+{% endblock %}

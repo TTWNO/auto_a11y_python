@@ -90,6 +90,26 @@
                         </a>
                     </li>
                     {% endif %}
+                    {# PDFs — standalone PDF scanning (pdfMax's own flow). One
+                       item today; a menu because more of pdfMax's entry points
+                       land here as they are ported.
+
+                       Outside the projects gate above on purpose: a scan has no
+                       website, no project and no PdfDocument behind it, so
+                       "does this user have projects?" is the wrong question to
+                       ask before showing it. Any signed-in user can scan. #}
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <button type="button" class="nav-link dropdown-toggle" id="pdfsDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
+                            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> {{ ftl('common-pdfs') }}
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="pdfsDropdown" role="menu">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('pdf_scan.select_file') }}" {% if request.endpoint and request.endpoint.startswith('pdf_scan.') %}aria-current="page"{% endif %}>
+                                <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('pdf-scan-menu-item') }}
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     <!-- Theme Toggle -->

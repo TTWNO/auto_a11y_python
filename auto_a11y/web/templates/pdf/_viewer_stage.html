@@ -1,0 +1,111 @@
+{#
+  pdfMax ViewerTab, transcribed: the page-nav / zoom toolbar and the
+  render stage (canvas, text layer, overlay SVG, semantic layer).
+
+  Pure markup — every hook is a static data-pdf-viewer-* attribute read
+  by pdf_viewer_app.js, so the partial takes no parameters. Both the
+  project-scoped detail page and the standalone scan results include it,
+  which is what keeps one viewer rather than two that drift.
+
+  The caller owns the .pdf-viewer-host wrapper (it carries the
+  data-pdf-url / data-issue-map-url for that flow) and the connector-line
+  SVG, because the host has to span both the stage and the issue list for
+  connector lines to reach across.
+#}
+            {# Toolbar — page nav + zoom. Other ViewerTab tools (search,
+               TTS, annotations, thumbnails, layers, reading guide,
+               focus mode) are intentionally out-of-scope for this
+               first integration step. #}
+            <div class="pdf-viewer-toolbar"
+                 role="toolbar"
+                 aria-label="{{ ftl('pdf-viewer-toolbar-aria-label') }}">
+                <div class="pdf-viewer-toolbar-group">
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-prev
+                            aria-label="{{ ftl('pdf-viewer-prev-page') }}"
+                            title="{{ ftl('pdf-viewer-prev-page') }}">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <label for="pdf-viewer-page-input" class="visually-hidden">
+                        {{ ftl('pdf-viewer-page-input-label') }}
+                    </label>
+                    <input id="pdf-viewer-page-input"
+                           class="pdf-viewer-page-input form-control form-control-sm"
+                           type="number"
+                           min="1"
+                           value="1"
+                           data-pdf-viewer-page-input
+                           inputmode="numeric"
+                           autocomplete="off">
+                    <span class="pdf-viewer-page-total"
+                          aria-live="polite">
+                        / <span data-pdf-viewer-page-total>—</span>
+                    </span>
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-next
+                            aria-label="{{ ftl('pdf-viewer-next-page') }}"
+                            title="{{ ftl('pdf-viewer-next-page') }}">
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="pdf-viewer-toolbar-group">
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-zoom-out
+                            aria-label="{{ ftl('pdf-viewer-zoom-out') }}"
+                            title="{{ ftl('pdf-viewer-zoom-out') }}">
+                        <i class="bi bi-zoom-out" aria-hidden="true"></i>
+                    </button>
+                    <span class="pdf-viewer-zoom-label"
+                          data-pdf-viewer-zoom-label
+                          aria-live="polite">150%</span>
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-zoom-in
+                            aria-label="{{ ftl('pdf-viewer-zoom-in') }}"
+                            title="{{ ftl('pdf-viewer-zoom-in') }}">
+                        <i class="bi bi-zoom-in" aria-hidden="true"></i>
+                    </button>
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-zoom-reset
+                            aria-label="{{ ftl('pdf-viewer-zoom-reset') }}"
+                            title="{{ ftl('pdf-viewer-zoom-reset') }}">
+                        <i class="bi bi-aspect-ratio" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <span class="pdf-viewer-status"
+                      data-pdf-viewer-status
+                      role="status"
+                      aria-live="polite"></span>
+            </div>
+
+            {# The stage holds (in z-order, bottom→top):
+               canvas → text layer → overlay SVG → semantic layer.
+               The semantic layer is a transparent HTML overlay positioned
+               directly over the canvas — same approach as pdfMax's
+               <SemanticLayer> — so screen readers and caret-browsing users
+               navigate proper headings/paragraphs/lists in reading order
+               while sighted users see the canvas underneath. #}
+            <div class="pdf-viewer-stage-wrap mb-3">
+                <div class="pdf-viewer-stage" data-pdf-viewer-stage>
+                    {# Canvas defaults to 300x150 in HTML5 if width/height
+                       aren't set. Pin to 1x1 here so the stage doesn't
+                       briefly flash a 300x150 box before PDF.js renders. #}
+                    <canvas class="pdf-viewer-canvas"
+                            data-pdf-viewer-canvas
+                            width="1" height="1"
+                            aria-hidden="true"></canvas>
+                    <div class="pdf-viewer-text-layer"
+                         data-pdf-viewer-text-layer
+                         aria-hidden="true"></div>
+                    <svg class="pdf-viewer-overlay-layer"
+                         data-pdf-viewer-overlay-layer
+                         aria-label="{{ ftl('pdf-viewer-overlay-layer-aria-label') }}">
+                    </svg>
+                    <div class="pdf-viewer-semantic-layer"
+                         data-pdf-viewer-semantic-layer></div>
+                </div>
+            </div>

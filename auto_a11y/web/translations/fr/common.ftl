@@ -455,6 +455,7 @@ common-page-queued-for-testing = Page mise en file d'attente pour les tests
 common-page-states = États de page
 common-page-url = pages
 common-pages = Pages
+common-pdfs = PDF
 common-pages-2 = pages
 common-pages-tested = pages testées
 common-pages-tested-2 = Pages testées

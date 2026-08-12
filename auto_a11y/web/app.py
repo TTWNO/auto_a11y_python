@@ -44,6 +44,7 @@ from auto_a11y.web.routes import (
     members_bp,
     desktop_bp,
     pdf_bp,
+    pdf_scan_bp,
     admin_settings_bp,
 )
 from auto_a11y.web.routes.demo import demo_bp
@@ -411,6 +412,9 @@ def create_app(config: Any) -> Flask:
     # PDF routes already include /projects/, /websites/, and /pdfs/
     # prefixes in their rules — register at the root.
     app.register_blueprint(pdf_bp, url_prefix='')
+    # Standalone PDF scanning — pdfMax's own flow. Shares the audit engine
+    # with pdf_bp and nothing else: no project, no website, no PdfDocument.
+    app.register_blueprint(pdf_scan_bp, url_prefix='')
 
     from auto_a11y.web.routes.groups import groups_bp
     app.register_blueprint(groups_bp, url_prefix='/groups')

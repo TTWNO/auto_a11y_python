@@ -455,6 +455,7 @@ common-page-queued-for-testing = Page queued for testing
 common-page-states = Page states
 common-page-url = Page URL
 common-pages = Pages
+common-pdfs = PDFs
 common-pages-2 = pages
 common-pages-tested = pages tested
 common-pages-tested-2 = Pages Tested

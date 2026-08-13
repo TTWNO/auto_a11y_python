@@ -855,3 +855,16 @@ pdf-scan-cancelling = Cancelling…
 pdf-scan-error-cancelled = The scan was cancelled before it finished.
 pdf-scan-uploading-title = Uploading…
 pdf-scan-uploading-step = Sending the file. The scan starts as soon as it arrives.
+
+# --- report: per-check badges ---
+pdf-report-badge-fail = Fail
+pdf-report-badge-warn = Warn
+pdf-report-badge-info = Info
+pdf-report-badge-pass = Pass
+pdf-report-badge-na = N/A
+
+# --- results: filter bar ---
+pdf-scan-filter-legend = Filter checks by result
+pdf-scan-filter-applied = %s checks shown
+pdf-scan-filter-removed = %s checks hidden
+pdf-scan-filter-none = No checks shown — every result is filtered out

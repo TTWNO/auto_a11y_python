@@ -43,6 +43,16 @@ def _ftl(message_id: str, **kwargs: object) -> str | Markup:
 #: needs a look, what was verified, what did not apply.
 _VERDICT_ORDER = ("FAIL", "WARN", "INFO", "PASS", "NA")
 
+#: The short word on each check's badge. Separate from the section
+#: heading, which is a plural ("Failures") rather than a label ("Fail").
+_VERDICT_BADGE = {
+    "FAIL": "pdf-report-badge-fail",
+    "WARN": "pdf-report-badge-warn",
+    "INFO": "pdf-report-badge-info",
+    "PASS": "pdf-report-badge-pass",
+    "NA": "pdf-report-badge-na",
+}
+
 _VERDICT_HEADING = {
     "FAIL": "pdf-report-section-failures",
     "WARN": "pdf-report-section-warnings",
@@ -116,21 +126,60 @@ def _summary_table(result: AuditResult) -> list[str]:
     return lines
 
 
+def _attr(value: str) -> str:
+    """Escape a string for use inside a double-quoted HTML attribute.
+
+    Check names and verdicts are ours, not the document's, but they land
+    in raw HTML inside a Markdown document — so they are escaped at the
+    boundary rather than trusted because of where they came from.
+    """
+    return (
+        value.replace("&", "&amp;")
+        .replace('"', "&quot;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
 def _verdict_section(
     verdict: str, checks: Iterable[CheckResult]
 ) -> list[str]:
+    """One verdict's checks, each as a collapsible block.
+
+    Each check is a ``<details>`` carrying ``data-check-name`` and
+    ``data-check-result``, transcribed from pdfMax's ``_render_check_item``
+    (line ~11968). Those two attributes are what the report's filter bar
+    hides and shows, and what the ``#check=`` deep link resolves against
+    — the markup is the interface, so it is emitted here rather than
+    reconstructed in the browser.
+
+    ``data-check-name`` is the engine's own English name, never the
+    translated title: it is an identifier shared with the issue map and
+    the viewer, and it cannot change with the reader's language.
+    """
     listed = list(checks)
     if not listed:
         return []
 
     lines = [f"## {_ftl(_VERDICT_HEADING[verdict])} ({len(listed)})", ""]
     for check in listed:
-        lines.append(f"### {_escape(_check_title(check))}")
-        lines.append("")
+        lines.append(
+            f'<details data-check-name="{_attr(check.name)}"'
+            + f' data-check-result="{_attr(check.result)}">'
+        )
+        badge = _attr(str(_ftl(_VERDICT_BADGE[check.result])))
+        summary = (
+            f'<summary><span class="check-badge check-badge-'
+            f'{check.result.lower()}">{badge}</span> '
+            f'<strong>{_attr(_check_title(check))}</strong>'
+        )
         if check.standard:
-            lines.append(f"*{_escape(check.standard)}*")
-            lines.append("")
+            summary += f' &mdash; <small>{_attr(check.standard)}</small>'
+        lines.append(summary + "</summary>")
+        lines.append("")
         lines.append(_escape(check.details))
+        lines.append("")
+        lines.append("</details>")
         lines.append("")
     return lines
 

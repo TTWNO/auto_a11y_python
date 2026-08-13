@@ -843,3 +843,16 @@ pdf-scan-cancelling = Annulation en cours…
 pdf-scan-error-cancelled = L'analyse a été annulée avant la fin.
 pdf-scan-uploading-title = Téléversement en cours…
 pdf-scan-uploading-step = Envoi du fichier. L'analyse démarre dès son arrivée.
+
+# --- report: per-check badges ---
+pdf-report-badge-fail = Échec
+pdf-report-badge-warn = Avertissement
+pdf-report-badge-info = Information
+pdf-report-badge-pass = Réussite
+pdf-report-badge-na = S. O.
+
+# --- results: filter bar ---
+pdf-scan-filter-legend = Filtrer les vérifications par résultat
+pdf-scan-filter-applied = Vérifications « %s » affichées
+pdf-scan-filter-removed = Vérifications « %s » masquées
+pdf-scan-filter-none = Aucune vérification affichée — tous les résultats sont filtrés

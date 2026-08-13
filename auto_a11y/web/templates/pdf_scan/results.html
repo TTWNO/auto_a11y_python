@@ -105,6 +105,43 @@
         </div>
     </header>
 
+    {# pdfMax's result filter bar (ResultsView.tsx line ~186). Toggle
+       buttons rather than checkboxes, matching the original, each
+       carrying aria-pressed so its state is announced when it changes.
+
+       Two departures. pdfMax offers Fail / Warn / Pass; this report also
+       has Info and Not applicable verdicts, and N/A is often the largest
+       group — a filter that cannot hide it is not much of a filter. And
+       everything starts shown: pdfMax defaults to hiding passes, which
+       means a reader's first sight of the report is missing most of it
+       with nothing saying so. #}
+    {% if not error %}
+    <fieldset class="results-filter-bar"
+              id="pdf-scan-filter-bar"
+              data-filter-applied="{{ ftl('pdf-scan-filter-applied') }}"
+              data-filter-removed="{{ ftl('pdf-scan-filter-removed') }}"
+              data-filter-none="{{ ftl('pdf-scan-filter-none') }}">
+        <legend class="visually-hidden">{{ ftl('pdf-scan-filter-legend') }}</legend>
+        {% for verdict, label_id, count in [
+            ('FAIL', 'pdf-report-badge-fail', scan.count('fail_count')),
+            ('WARN', 'pdf-report-badge-warn', scan.count('warn_count')),
+            ('INFO', 'pdf-report-badge-info', scan.count('info_count')),
+            ('PASS', 'pdf-report-badge-pass', scan.count('pass_count')),
+            ('NA',   'pdf-report-badge-na',   scan.count('na_count')),
+        ] %}
+        {% if count %}
+        <button type="button"
+                class="checker-filter-btn checker-filter-{{ verdict | lower }} active"
+                data-result-filter="{{ verdict }}"
+                data-filter-label="{{ ftl(label_id) }}"
+                aria-pressed="true">
+            {{ ftl(label_id) }} ({{ count }})
+        </button>
+        {% endif %}
+        {% endfor %}
+    </fieldset>
+    {% endif %}
+
     <div class="results-body">
         {# Section nav for the Report tab.
            The inventory entries are listed server-side, numbered as pdfMax

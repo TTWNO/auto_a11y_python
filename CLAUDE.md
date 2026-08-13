@@ -720,13 +720,20 @@ extraction ran to 0.65 while the image step that follows announced 0.60, and
 report sections announced 0.99 before the AI passes at 0.98. A bar that jumps
 backwards reads as a fault in the thing being measured.
 
-Known gaps in this flow, in priority order:
+`report_markdown.py` renders each check as a `<details>` carrying
+`data-check-name` and `data-check-result`. Those two attributes are the
+interface between the report and the JavaScript that drives it: the filter bar
+hides whole verdicts by toggling `.checker-detail-hidden` on them, and the
+viewer's `#check=` deep link resolves against `data-check-name`. **The name
+attribute is the engine's English `CheckResult.name`, never the translated
+title** — it is shared with the issue map, so a French render must still emit
+the same identifier. `tests/pdf/test_report_filter.py` pins that on a real
+audit.
 
-1. **No result filter bar.** pdfMax filters on the
-   `<details data-check-result="...">` blocks its ReportTab renders; our ported
-   Markdown does not emit those attributes. The same gap makes the report
-   body's `#check=` deep-link handler inert. Emitting the attributes from
-   `report_markdown.py` fixes both at once.
+The filter offers all five verdicts (pdfMax has three) because this report also
+emits INFO and NA, and NA is frequently the largest group. Everything starts
+shown; pdfMax defaults to hiding passes, which means a reader's first sight of
+the report is missing most of it with nothing saying so.
 
 ### Element references drive the viewer
 

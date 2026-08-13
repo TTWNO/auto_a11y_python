@@ -176,4 +176,115 @@
         });
         observer.observe(reportContent, { childList: true });
     }
+
+    /* ------------------------------------------------------------------
+     * Result filter — pdfMax's applyResultFilter (CheckerReport.tsx ~50)
+     * ------------------------------------------------------------------
+     * Hides check blocks whose verdict is switched off, then hides the
+     * headings left with nothing under them. Without that second pass a
+     * filtered report is a list of headings above empty space, which
+     * reads as a rendering fault.
+     */
+    var filterBar = document.getElementById('pdf-scan-filter-bar');
+
+    function activeFilters() {
+        var active = {};
+        var buttons = filterBar.querySelectorAll('[data-result-filter]');
+        for (var i = 0; i < buttons.length; i += 1) {
+            if (buttons[i].getAttribute('aria-pressed') === 'true') {
+                active[buttons[i].getAttribute('data-result-filter')] = true;
+            }
+        }
+        return active;
+    }
+
+    /* A heading is empty when every sibling up to the next heading of the
+     * same or higher rank is hidden. Walking siblings rather than nesting
+     * because the Markdown render produces a flat document. */
+    function hideEmptyHeadings(selector, stopTags) {
+        var headings = reportContent.querySelectorAll(selector);
+        for (var i = 0; i < headings.length; i += 1) {
+            var heading = headings[i];
+            var sibling = heading.nextElementSibling;
+            var hasVisible = false;
+            while (sibling && stopTags.indexOf(sibling.tagName) === -1) {
+                if (sibling.tagName !== 'HR'
+                    && !sibling.classList.contains('checker-detail-hidden')) {
+                    hasVisible = true;
+                    break;
+                }
+                sibling = sibling.nextElementSibling;
+            }
+            heading.classList.toggle('checker-detail-hidden', !hasVisible);
+        }
+    }
+
+    function applyFilter() {
+        if (!filterBar || !reportContent) {
+            return 0;
+        }
+        var active = activeFilters();
+        var blocks = reportContent.querySelectorAll('details[data-check-result]');
+        var shown = 0;
+        for (var i = 0; i < blocks.length; i += 1) {
+            var verdict = blocks[i].getAttribute('data-check-result');
+            var visible = active[verdict] === true;
+            blocks[i].classList.toggle('checker-detail-hidden', !visible);
+            if (visible) {
+                shown += 1;
+            }
+        }
+        /* h3 first, then h2: an h2 is only empty once the h3s beneath it
+         * have been judged. */
+        hideEmptyHeadings('h3', ['H2', 'H3']);
+        hideEmptyHeadings('h2', ['H2']);
+        return shown;
+    }
+
+    /* The sidebar lists the report's own headings; one that now points at
+     * a hidden section is a link to nowhere. */
+    function syncSectionLinks() {
+        var links = document.querySelectorAll('#results-sections-list a');
+        for (var i = 0; i < links.length; i += 1) {
+            var id = (links[i].getAttribute('href') || '').slice(1);
+            var heading = id ? document.getElementById(id) : null;
+            var hidden = !!heading
+                && heading.classList.contains('checker-detail-hidden');
+            links[i].parentElement.hidden = hidden;
+        }
+    }
+
+    function announce(message) {
+        var region = document.getElementById('notification-live-region');
+        if (region) {
+            region.textContent = message;
+        }
+    }
+
+    if (filterBar && reportContent) {
+        filterBar.addEventListener('click', function (event) {
+            var button = event.target.closest
+                ? event.target.closest('[data-result-filter]')
+                : null;
+            if (!button) {
+                return;
+            }
+            var wasOn = button.getAttribute('aria-pressed') === 'true';
+            button.setAttribute('aria-pressed', wasOn ? 'false' : 'true');
+            button.classList.toggle('active', !wasOn);
+
+            var shown = applyFilter();
+            syncSectionLinks();
+
+            var label = button.getAttribute('data-filter-label') || '';
+            var template = wasOn
+                ? filterBar.getAttribute('data-filter-removed')
+                : filterBar.getAttribute('data-filter-applied');
+            var message = (template || '').replace('%s', label);
+            if (shown === 0) {
+                message = filterBar.getAttribute('data-filter-none') || message;
+            }
+            announce(message);
+        });
+    }
 }());

@@ -682,3 +682,104 @@
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
 }
+
+/* ============================================
+   RESULT FILTER BAR
+   Transcribed from pdfMax's ResultsView.tsx filter bar and
+   CheckerReport.css. Toggle buttons, not checkboxes — matching the
+   original, with aria-pressed carrying the state.
+   ============================================ */
+.results-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    align-items: center;
+    margin: 0;
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.checker-filter-btn {
+    padding: 4px 12px;
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    font-weight: 600;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+/* An unpressed filter is not merely a lighter colour: it also loses the
+   solid fill, so the state survives greyscale, a forced-colours theme
+   and a reader who cannot tell the two colours apart (SC 1.4.1). */
+.checker-filter-btn[aria-pressed="true"] {
+    background: var(--color-bg-subtle);
+    color: var(--color-text);
+    border-color: var(--color-text-muted);
+}
+
+.checker-filter-btn[aria-pressed="true"]::before {
+    content: "✓\00a0";
+}
+
+.checker-filter-btn:hover {
+    border-color: var(--color-text);
+}
+
+.checker-filter-btn:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+/* Hidden by the filter. `display: none` rather than visibility so the
+   blocks leave the accessibility tree and the tab order too — a filtered
+   check should be gone, not merely invisible. */
+.checker-detail-hidden {
+    display: none;
+}
+
+/* Per-check badge inside each <details> summary. */
+.check-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+/* The subtle backgrounds with their matching foregrounds — the token
+   pairs the design system already guarantees AA against each other, in
+   both themes. */
+.check-badge-fail {
+    background: var(--color-severity-high-bg);
+    color: var(--color-severity-high);
+}
+
+.check-badge-warn {
+    background: var(--color-severity-medium-bg);
+    color: var(--color-severity-medium);
+}
+
+.check-badge-info {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.check-badge-pass {
+    background: var(--color-severity-pass-bg);
+    color: var(--color-severity-pass);
+}
+
+.check-badge-na {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 62rem) {
+    .results-filter-bar {
+        padding: var(--space-sm);
+    }
+}

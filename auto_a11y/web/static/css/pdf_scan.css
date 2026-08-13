@@ -19,18 +19,47 @@
 /* ============================================
    FILE SELECT SCREEN
    ============================================ */
+/* Type sizes come from tokens.css rather than pdfMax's own scale. Its
+   values (1.8rem / 0.9rem / 0.85rem / 0.82rem) are close to auto_a11y's
+   but not on it, and two of them fall under the 0.875rem floor the
+   repo's CSS linter enforces — small enough to be a problem for the
+   readers this product exists for. */
 .file-select-screen {
     display: flex;
     flex-direction: column;
+}
+
+/* The chooser and the history sit side by side, the chooser taking the
+   room it needs and the history a fixed measure beside it. */
+.file-select-layout {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--space-xl);
+    padding: var(--space-lg) var(--space-lg) var(--space-2xl);
 }
 
 .file-select-center {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: auto 0;
-    padding: 24px 24px 40px;
-    gap: 24px;
+    gap: var(--space-lg);
+    flex: 1 1 auto;
+    /* Bounded so the centred column stays a readable measure on a wide
+       display instead of stretching the hint text across the viewport —
+       which is what pushed the drop zone off-centre. */
+    max-width: 40rem;
+}
+
+/* The form is the drop zone's container, so it has to do the centring:
+   as a plain block, a 480px drop zone inside a form as wide as its
+   widest hint paragraph sits hard against the left edge. */
+.file-select-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%;
 }
 
 .file-select-header {
@@ -38,14 +67,14 @@
 }
 
 .file-select-title {
-    font-size: 1.8rem;
+    font-size: var(--font-size-2xl);
     font-weight: 700;
-    margin: 0 0 8px;
+    margin: 0 0 var(--space-sm);
     color: var(--color-text-heading);
 }
 
 .file-select-subtitle {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     margin: 0;
 }
@@ -89,14 +118,14 @@
 }
 
 .file-select-drop-text {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     font-weight: 500;
     color: var(--color-text);
     margin: 0;
 }
 
 .file-select-drop-or {
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     margin: 0;
 }
@@ -119,7 +148,7 @@
 .file-select-btn {
     display: inline-block;
     padding: 10px 28px;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     font-weight: 600;
     font-family: inherit;
     background: var(--color-button-primary-bg);
@@ -147,7 +176,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.9rem;
+    font-size: var(--font-size-base);
     color: var(--color-text);
     cursor: pointer;
 }
@@ -169,13 +198,14 @@
 }
 
 .file-select-hint {
-    font-size: 0.82rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     margin: 0;
+    max-width: 34rem;
 }
 
 .file-select-filename {
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text);
     margin: 0;
     max-width: 480px;
@@ -198,14 +228,14 @@
 }
 
 .auditing-title {
-    font-size: 1.4rem;
+    font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--color-text-heading);
     margin: 0;
 }
 
 .auditing-filename {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     margin: 0;
     max-width: 500px;
@@ -256,7 +286,7 @@
 .checker-progress-info {
     display: flex;
     justify-content: space-between;
-    font-size: 0.82rem;
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
 }
 
@@ -293,7 +323,7 @@
     gap: 4px;
     padding: 3px 8px;
     border-radius: 10px;
-    font-size: 0.78rem;
+    font-size: var(--font-size-sm);
     font-weight: 600;
 }
 
@@ -324,12 +354,12 @@
 }
 
 .results-badge-icon {
-    font-size: 0.72rem;
+    font-size: var(--font-size-sm);
     line-height: 1;
 }
 
 .results-badge-label {
-    font-size: 0.68rem;
+    font-size: var(--font-size-sm);
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -342,7 +372,7 @@
 
 .results-tab-btn {
     padding: 6px 16px;
-    font-size: 0.88rem;
+    font-size: var(--font-size-sm);
     font-weight: 500;
     font-family: inherit;
     background: transparent;
@@ -377,7 +407,7 @@
 
 .results-action-btn {
     padding: 5px 12px;
-    font-size: 0.82rem;
+    font-size: var(--font-size-sm);
     font-weight: 500;
     font-family: inherit;
     border-radius: 4px;
@@ -422,7 +452,7 @@
 }
 
 .results-sections-title {
-    font-size: 0.7rem;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -442,7 +472,7 @@
 .results-section-link {
     display: block;
     padding: 3px 8px;
-    font-size: 0.78rem;
+    font-size: var(--font-size-sm);
     color: var(--color-link);
     text-decoration: none;
     border-radius: 3px;
@@ -538,6 +568,21 @@
     }
 }
 
+/* The two columns become one when there is no room for both — which is a
+   narrow window, and equally a normal window at 200-400% zoom, since
+   both reduce the CSS viewport the same way (SC 1.4.10). */
+@media (max-width: 62rem) {
+    .file-select-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .file-select-history {
+        width: 100%;
+        max-width: 40rem;
+    }
+}
+
 /* ============================================
    REDUCED MOTION
    ============================================ */
@@ -554,4 +599,56 @@
         animation: none;
         width: 100%;
     }
+}
+
+/* ============================================
+   FILE SELECT — SCAN HISTORY ASIDE
+   ============================================ */
+.file-select-history {
+    flex: 0 0 auto;
+    width: 20rem;
+    max-width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg-elevated);
+}
+
+.file-select-history-heading {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-sm);
+}
+
+.file-select-history-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Name and date stack. Flushing the date to the far edge of the column
+   opens a gap that grows with the column width, and at high
+   magnification pairing a name with its date means tracking across it. */
+.file-select-history-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.file-select-history-item:last-child {
+    border-bottom: none;
+}
+
+.file-select-history-link {
+    font-size: var(--font-size-sm);
+    /* Long generated filenames wrap rather than overflow the aside. */
+    overflow-wrap: anywhere;
+}
+
+.file-select-history-time {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
 }

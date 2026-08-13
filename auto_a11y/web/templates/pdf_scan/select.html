@@ -19,113 +19,130 @@
 
 {% block content %}
 <div class="container-fluid file-select-screen">
-    <div class="file-select-center">
-        <div class="file-select-header">
-            <h1 class="file-select-title">{{ ftl('pdf-scan-title') }}</h1>
-            <p class="file-select-subtitle">
-                {{ ftl('pdf-scan-subtitle', checks=check_count, fixes=fix_count) }}
-            </p>
-        </div>
+    {# Two columns: the chooser, and the scan history beside it. The
+       history is an <aside> because it is related material rather than
+       part of the task — a reader who came here to scan a file should
+       meet the drop zone, not a list of old scans. It reflows below the
+       chooser on a narrow viewport and at high magnification. #}
+    <div class="file-select-layout">
+        <div class="file-select-center">
+            <div class="file-select-header">
+                <h1 class="file-select-title">{{ ftl('pdf-scan-title') }}</h1>
+                <p class="file-select-subtitle">
+                    {{ ftl('pdf-scan-subtitle', checks=check_count, fixes=fix_count) }}
+                </p>
+            </div>
 
-        <form id="pdf-scan-form"
-              method="POST"
-              action="{{ url_for('pdf_scan.scan') }}"
-              enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="file-select-dropzone" id="pdf-scan-dropzone">
-                <div class="file-select-dropzone-content">
-                    <div class="file-select-icon" aria-hidden="true">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="12" y1="18" x2="12" y2="12" />
-                            <line x1="9" y1="15" x2="15" y2="15" />
-                        </svg>
+            <form id="pdf-scan-form"
+                  class="file-select-form"
+                  method="POST"
+                  action="{{ url_for('pdf_scan.scan') }}"
+                  enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="file-select-dropzone" id="pdf-scan-dropzone">
+                    <div class="file-select-dropzone-content">
+                        <div class="file-select-icon" aria-hidden="true">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="12" y1="18" x2="12" y2="12" />
+                                <line x1="9" y1="15" x2="15" y2="15" />
+                            </svg>
+                        </div>
+                        <p class="file-select-drop-text">{{ ftl('pdf-scan-drop-text') }}</p>
+                        <p class="file-select-drop-or">{{ ftl('pdf-scan-drop-or') }}</p>
+
+                        <input type="file"
+                               class="file-select-input"
+                               id="pdf-scan-file"
+                               name="pdf_file"
+                               accept="application/pdf,.pdf"
+                               required
+                               aria-describedby="pdf-scan-file-help">
+                        <label class="file-select-btn" for="pdf-scan-file">
+                            {{ ftl('pdf-scan-select-btn') }}
+                        </label>
                     </div>
-                    <p class="file-select-drop-text">{{ ftl('pdf-scan-drop-text') }}</p>
-                    <p class="file-select-drop-or">{{ ftl('pdf-scan-drop-or') }}</p>
+                </div>
 
-                    <input type="file"
-                           class="file-select-input"
-                           id="pdf-scan-file"
-                           name="pdf_file"
-                           accept="application/pdf,.pdf"
-                           required
-                           aria-describedby="pdf-scan-file-help">
-                    <label class="file-select-btn" for="pdf-scan-file">
-                        {{ ftl('pdf-scan-select-btn') }}
-                    </label>
+                {# pdfMax's "Include Claude AI semantic analysis" toggle. The
+                   checkbox sits outside the drop zone so choosing it is a
+                   separate decision from choosing the file — the scan starts the
+                   moment a file is picked, so the toggle has to be set first. #}
+                <label class="file-select-ai-toggle">
+                    <input type="checkbox"
+                           id="pdf-scan-run-ai"
+                           name="run_ai"
+                           value="true"
+                           {% if not ai_available %}disabled{% endif %}
+                           aria-describedby="pdf-scan-ai-help">
+                    <span>{{ ftl('pdf-scan-ai-toggle') }}</span>
+                </label>
+                <p id="pdf-scan-ai-help" class="file-select-hint">
+                    {% if ai_available %}
+                        {{ ftl('pdf-scan-ai-help') }}
+                    {% else %}
+                        {{ ftl('pdf-scan-ai-no-key') }}
+                    {% endif %}
+                </p>
+
+                <p id="pdf-scan-file-help" class="file-select-hint">
+                    {{ ftl('pdf-scan-file-help') }}
+                </p>
+
+                {# Fallback for a browser with JavaScript disabled: without the
+                   auto-submit below, the user needs a real submit button. #}
+                <noscript>
+                    <div class="text-center mt-3">
+                        <button type="submit" class="btn btn-brand">
+                            {{ ftl('pdf-scan-submit-btn') }}
+                        </button>
+                    </div>
+                </noscript>
+            </form>
+
+            {# Replaces the form once a file is chosen — pdfMax's AuditingScreen.
+               The audit runs inline in the POST, so this is what the user looks
+               at while the request is in flight. #}
+            <div class="auditing-center" id="pdf-scan-auditing" hidden>
+                <h2 class="auditing-title">{{ ftl('pdf-scan-auditing-title') }}</h2>
+                <p class="auditing-filename" id="pdf-scan-auditing-filename"></p>
+                <div class="checker-progress" role="status" aria-live="polite">
+                    <div class="checker-progress-bar">
+                        <div class="checker-progress-fill"></div>
+                    </div>
+                    <div class="checker-progress-info">
+                        <span class="checker-progress-step">{{ ftl('pdf-scan-auditing-step') }}</span>
+                    </div>
                 </div>
             </div>
 
-            {# pdfMax's "Include Claude AI semantic analysis" toggle. The
-               checkbox sits outside the drop zone so choosing it is a
-               separate decision from choosing the file — the scan starts the
-               moment a file is picked, so the toggle has to be set first. #}
-            <label class="file-select-ai-toggle">
-                <input type="checkbox"
-                       id="pdf-scan-run-ai"
-                       name="run_ai"
-                       value="true"
-                       {% if not ai_available %}disabled{% endif %}
-                       aria-describedby="pdf-scan-ai-help">
-                <span>{{ ftl('pdf-scan-ai-toggle') }}</span>
-            </label>
-            <p id="pdf-scan-ai-help" class="file-select-hint text-center">
-                {% if ai_available %}
-                    {{ ftl('pdf-scan-ai-help') }}
-                {% else %}
-                    {{ ftl('pdf-scan-ai-no-key') }}
-                {% endif %}
-            </p>
-
-            <p id="pdf-scan-file-help" class="file-select-hint mt-3 text-center">
-                {{ ftl('pdf-scan-file-help') }}
-            </p>
-
-            {# Fallback for a browser with JavaScript disabled: without the
-               auto-submit below, the user needs a real submit button. #}
-            <noscript>
-                <div class="text-center mt-3">
-                    <button type="submit" class="btn btn-brand">
-                        {{ ftl('pdf-scan-submit-btn') }}
-                    </button>
-                </div>
-            </noscript>
-        </form>
-
-        {# Replaces the form once a file is chosen — pdfMax's AuditingScreen.
-           The audit runs inline in the POST, so this is what the user looks
-           at while the request is in flight. #}
-        <div class="auditing-center" id="pdf-scan-auditing" hidden>
-            <h2 class="auditing-title">{{ ftl('pdf-scan-auditing-title') }}</h2>
-            <p class="auditing-filename" id="pdf-scan-auditing-filename"></p>
-            <div class="checker-progress" role="status" aria-live="polite">
-                <div class="checker-progress-bar">
-                    <div class="checker-progress-fill"></div>
-                </div>
-                <div class="checker-progress-info">
-                    <span class="checker-progress-step">{{ ftl('pdf-scan-auditing-step') }}</span>
-                </div>
-            </div>
         </div>
 
         {% if recent_scans %}
-        <section class="w-100" style="max-width: 480px;" aria-labelledby="pdf-scan-recent-heading">
-            <h2 id="pdf-scan-recent-heading" class="h6">{{ ftl('pdf-scan-recent-heading') }}</h2>
-            <ul class="list-unstyled">
+        {# Name above timestamp rather than pushed to opposite edges. A
+           two-column row with the date flushed right opens a gap that grows
+           with the column, and at 400% magnification the eye has to travel
+           it for every entry to pair a name with its date. #}
+        <aside class="file-select-history" aria-labelledby="pdf-scan-recent-heading">
+            <h2 id="pdf-scan-recent-heading" class="file-select-history-heading">
+                {{ ftl('pdf-scan-recent-heading') }}
+            </h2>
+            <ul class="file-select-history-list">
                 {% for record in recent_scans %}
-                <li class="d-flex align-items-center justify-content-between gap-2 py-1">
-                    <a href="{{ url_for('pdf_scan.results', scan_id=record.scan_id) }}">
+                <li class="file-select-history-item">
+                    <a class="file-select-history-link"
+                       href="{{ url_for('pdf_scan.results', scan_id=record.scan_id) }}">
                         {{ record.original_filename }}
                     </a>
-                    <span class="text-muted small">
+                    <time class="file-select-history-time"
+                          datetime="{{ record.scanned_at.isoformat() }}">
                         {{ record.scanned_at.strftime('%Y-%m-%d %H:%M') }}
-                    </span>
+                    </time>
                 </li>
                 {% endfor %}
             </ul>
-        </section>
+        </aside>
         {% endif %}
     </div>
 </div>

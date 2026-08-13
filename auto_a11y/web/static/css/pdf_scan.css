@@ -783,3 +783,119 @@
         padding: var(--space-sm);
     }
 }
+
+/* ============================================
+   EXECUTIVE SUMMARY CHARTS
+   pdfMax's donut + "issues by area" bars. Its fills are hardcoded hex
+   and its bars are inline styles; these resolve through the severity
+   tokens, so the charts follow the theme and forced-colours mode.
+   ============================================ */
+.pdf-report-front-matter {
+    margin-bottom: var(--space-lg);
+}
+
+.pdf-summary-charts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-xl);
+    margin: var(--space-md) 0;
+}
+
+.pdf-donut-track { stroke: var(--color-bg-subtle); }
+.pdf-donut-pass { stroke: var(--color-severity-pass); }
+.pdf-donut-warn { stroke: var(--color-severity-medium); }
+.pdf-donut-fail { stroke: var(--color-severity-high); }
+
+.pdf-donut-figure {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    fill: var(--color-text-heading);
+}
+
+.pdf-donut-caption {
+    font-size: var(--font-size-sm);
+    fill: var(--color-text-muted);
+}
+
+.pdf-summary-legend {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin: var(--space-sm) 0 0;
+    padding: 0;
+    font-size: var(--font-size-sm);
+}
+
+.pdf-summary-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-inline-end: 4px;
+    vertical-align: baseline;
+}
+
+.pdf-summary-swatch-pass { background: var(--color-severity-pass); }
+.pdf-summary-swatch-warn { background: var(--color-severity-medium); }
+.pdf-summary-swatch-fail { background: var(--color-severity-high); }
+
+.pdf-summary-areas {
+    flex: 1 1 20rem;
+    min-width: 0;
+}
+
+.pdf-summary-areas-heading {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    margin: 0 0 var(--space-sm);
+}
+
+.pdf-summary-bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pdf-summary-bar-row {
+    display: grid;
+    /* The label column is a fixed measure so the bars share a baseline
+       and can be compared; at high magnification it stacks instead. */
+    grid-template-columns: minmax(6rem, 12rem) 1fr auto;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 2px 0;
+    font-size: var(--font-size-sm);
+}
+
+.pdf-summary-bar-label {
+    text-align: end;
+    overflow-wrap: anywhere;
+}
+
+.pdf-summary-bar {
+    display: flex;
+    height: 14px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.pdf-summary-bar-fail { background: var(--color-severity-high); }
+.pdf-summary-bar-warn { background: var(--color-severity-medium); }
+
+.pdf-summary-bar-count {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 48rem) {
+    .pdf-summary-bar-row {
+        grid-template-columns: 1fr auto;
+    }
+
+    .pdf-summary-bar-label {
+        grid-column: 1 / -1;
+        text-align: start;
+    }
+}

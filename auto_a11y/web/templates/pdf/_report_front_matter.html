@@ -1,0 +1,260 @@
+{# The report's front matter: what this document is, and how it did.
+
+   Rendered *before* the verdict list, matching pdfMax — a reader meets
+   the file's own provenance and a one-glance summary before any finding.
+   It used to sit after the inventories, which put the metadata at the
+   very bottom of the page while the sidebar listed it first.
+
+   Required context:
+     report_sections — dict the audit pipeline emitted.
+#}
+
+{% if report_sections %}
+<section class="pdf-report-front-matter"
+         aria-labelledby="pdf-inventory-doc-metadata-heading">
+    {# ----- Document metadata (pdfMax front matter) -----
+       The document's own provenance, before any verdict. Fields absent
+       from the PDF render as "not set" rather than being dropped — a
+       missing author or title is itself an audit finding. #}
+    {% set dm = report_sections.get('document_metadata') %}
+    {% if dm is mapping %}
+    <section class="pdf-inventory-doc-metadata mb-3"
+             aria-labelledby="pdf-inventory-doc-metadata-heading">
+        <h4 id="pdf-inventory-doc-metadata-heading" class="h6">
+            {{ ftl('pdf-inventory-doc-metadata-heading') }}
+        </h4>
+        <dl class="row mb-0 small">
+            {% for key, label in [
+                ('author', 'pdf-inventory-doc-author'),
+                ('title', 'pdf-inventory-doc-title'),
+                ('subject', 'pdf-inventory-doc-subject'),
+                ('keywords', 'pdf-inventory-doc-keywords'),
+                ('creator', 'pdf-inventory-doc-creator'),
+                ('producer', 'pdf-inventory-doc-producer'),
+                ('creation_date', 'pdf-inventory-doc-created'),
+                ('mod_date', 'pdf-inventory-doc-modified'),
+                ('pdf_version', 'pdf-inventory-doc-pdf-version'),
+                ('language', 'pdf-inventory-doc-language'),
+                ('structure_elements', 'pdf-inventory-doc-elements'),
+                ('pages', 'pdf-inventory-doc-pages'),
+            ] %}
+            <dt class="col-sm-4">{{ ftl(label) }}</dt>
+            <dd class="col-sm-8">
+                {% if dm.get(key) is none %}
+                    <span class="text-muted">{{ ftl('pdf-inventory-doc-not-set') }}</span>
+                {% else %}
+                    {{ dm.get(key) }}
+                {% endif %}
+            </dd>
+            {% endfor %}
+        </dl>
+    </section>
+    {% endif %}
+
+    {# ----- Executive summary (Phase C front matter) ----- #}
+    {% set es = report_sections.get('executive_summary') %}
+    {% if es is mapping %}
+    <section class="pdf-inventory-exec-summary mb-3"
+             aria-labelledby="pdf-inventory-exec-summary-heading">
+        <h4 id="pdf-inventory-exec-summary-heading" class="h6">
+            {{ ftl('pdf-inventory-exec-summary-heading') }}
+        </h4>
+        <p>
+            {% if es.get('verdict') == 'PASS' %}
+                {# Counts the checks that actually examined something.
+                   Claiming conformance across the full total would credit
+                   the document for checks that had nothing to look at. #}
+                {{ ftl('pdf-inventory-exec-summary-verdict-pass',
+                       examined=es.get('total_checks', 0) - es.get('na_count', 0)) }}
+            {% elif es.get('verdict') == 'WARN' %}
+                {{ ftl('pdf-inventory-exec-summary-verdict-warn',
+                       fail=es.get('fail_count', 0),
+                       warn=es.get('warn_count', 0)) }}
+            {% elif es.get('verdict') == 'FAIL' %}
+                {{ ftl('pdf-inventory-exec-summary-verdict-fail',
+                       fail=es.get('fail_count', 0),
+                       warn=es.get('warn_count', 0)) }}
+            {% else %}
+                {{ ftl('pdf-inventory-exec-summary-verdict-not-tested') }}
+            {% endif %}
+        </p>
+        {# ----- Charts: the shape of the result at a glance -----
+           pdfMax draws a pass/warn/fail donut and an "issues by area"
+           bar chart (_generate_summary_charts_svg, line ~8920). Both are
+           carried across, with two changes.
+
+           Its colours are hardcoded hex and its bars are inline styles;
+           here the fills come from the severity tokens through CSS
+           classes, so the charts follow the theme and the forced-colours
+           mode like everything else.
+
+           And both are decoration: every number in them is stated in the
+           text above and the table below, so they are aria-hidden rather
+           than described. A chart that repeats what the prose already
+           says should not be read out twice. #}
+        {% set total = es.get('pass_count', 0) + es.get('warn_count', 0)
+                       + es.get('fail_count', 0) %}
+        {% if total %}
+        <div class="pdf-summary-charts">
+            {% set circumference = 351.858 %}{# 2 · π · r, r = 56 #}
+            {% set pass_len = circumference * es.get('pass_count', 0) / total %}
+            {% set warn_len = circumference * es.get('warn_count', 0) / total %}
+            {% set fail_len = circumference * es.get('fail_count', 0) / total %}
+            <div class="pdf-summary-donut">
+                <svg viewBox="0 0 160 160" width="160" height="160"
+                     class="pdf-donut" aria-hidden="true" focusable="false">
+                    <circle class="pdf-donut-track" cx="80" cy="80" r="56"
+                            fill="none" stroke-width="22"></circle>
+                    <circle class="pdf-donut-pass" cx="80" cy="80" r="56"
+                            fill="none" stroke-width="22"
+                            stroke-dasharray="{{ pass_len }} {{ circumference }}"
+                            transform="rotate(-90 80 80)"></circle>
+                    <circle class="pdf-donut-warn" cx="80" cy="80" r="56"
+                            fill="none" stroke-width="22"
+                            stroke-dasharray="{{ warn_len }} {{ circumference }}"
+                            stroke-dashoffset="{{ -pass_len }}"
+                            transform="rotate(-90 80 80)"></circle>
+                    <circle class="pdf-donut-fail" cx="80" cy="80" r="56"
+                            fill="none" stroke-width="22"
+                            stroke-dasharray="{{ fail_len }} {{ circumference }}"
+                            stroke-dashoffset="{{ -(pass_len + warn_len) }}"
+                            transform="rotate(-90 80 80)"></circle>
+                    <text x="80" y="74" text-anchor="middle"
+                          class="pdf-donut-figure">{{
+                              (100 * es.get('pass_count', 0) / total) | round | int
+                          }}%</text>
+                    <text x="80" y="96" text-anchor="middle"
+                          class="pdf-donut-caption">{{ ftl('pdf-report-chart-passed') }}</text>
+                </svg>
+                <ul class="pdf-summary-legend">
+                    {% for key, count in [
+                        ('pass', es.get('pass_count', 0)),
+                        ('warn', es.get('warn_count', 0)),
+                        ('fail', es.get('fail_count', 0)),
+                    ] %}
+                    <li>
+                        <span class="pdf-summary-swatch pdf-summary-swatch-{{ key }}"
+                              aria-hidden="true"></span>
+                        {{ ftl('pdf-report-badge-' ~ key) }}: {{ count }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {% if es.get('areas') %}
+            {% set worst = es.get('areas')[0].get('total', 1) or 1 %}
+            <div class="pdf-summary-areas">
+                <h5 class="pdf-summary-areas-heading">
+                    {{ ftl('pdf-report-chart-areas') }}
+                </h5>
+                <ul class="pdf-summary-bars">
+                    {% for row in es.get('areas') %}
+                    <li class="pdf-summary-bar-row">
+                        <span class="pdf-summary-bar-label">
+                            {{ ftl('pdf-report-area-' ~ row.get('area')) }}
+                        </span>
+                        <span class="pdf-summary-bar" aria-hidden="true">
+                            {% if row.get('fail') %}
+                            <span class="pdf-summary-bar-fail"
+                                  style="width: {{ 100 * row.get('fail') / worst }}%"></span>
+                            {% endif %}
+                            {% if row.get('warn') %}
+                            <span class="pdf-summary-bar-warn"
+                                  style="width: {{ 100 * row.get('warn') / worst }}%"></span>
+                            {% endif %}
+                        </span>
+                        <span class="pdf-summary-bar-count">{{ row.get('total') }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# Stated whatever the verdict. A document with little structure
+           leaves most checks with nothing to examine, and saying so is
+           what stops a short list of passes reading as a clean bill of
+           health. #}
+        {% if es.get('na_count', 0) %}
+        <p class="text-muted">
+            {{ ftl('pdf-inventory-exec-summary-not-applicable',
+                   count=es.get('na_count', 0)) }}
+        </p>
+        {% endif %}
+        {% if es.get('top_issues') %}
+        <h5 class="h6">{{ ftl('pdf-inventory-exec-summary-top-issues') }}</h5>
+        <ol class="pdf-inventory-exec-summary-issues">
+            {% for issue in es.get('top_issues', []) %}
+            <li>
+                <strong>{{ issue.get('name') }}</strong>
+                <small class="text-muted">
+                    {% if issue.get('fail') %}
+                    <span class="badge badge-high">
+                        {{ ftl('pdf-inventory-exec-summary-fail-count',
+                               count=issue.get('fail', 0)) }}
+                    </span>
+                    {% endif %}
+                    {% if issue.get('warn') %}
+                    <span class="badge badge-medium">
+                        {{ ftl('pdf-inventory-exec-summary-warn-count',
+                               count=issue.get('warn', 0)) }}
+                    </span>
+                    {% endif %}
+                </small>
+            </li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ----- AI executive summary -----
+       The deterministic summary above counts verdicts; this one is
+       Claude's plain-language reading of them, and it only exists when
+       AI ran. Both are shown: the counts are checkable, the prose is
+       actionable, and neither substitutes for the other. #}
+    {% set aes = report_sections.get('ai_executive_summary') %}
+    {% if aes is mapping %}
+    <section class="pdf-inventory-ai-summary mb-3"
+             aria-labelledby="pdf-inventory-ai-summary-heading">
+        <h4 id="pdf-inventory-ai-summary-heading" class="h6">
+            {{ ftl('pdf-inventory-ai-summary-heading') }}
+            {% if aes.get('overall_rating') %}
+            <span class="badge badge-subtle">{{ aes.get('overall_rating') }}</span>
+            {% endif %}
+        </h4>
+        {% if aes.get('headline') %}
+        <p><strong>{{ aes.get('headline') }}</strong></p>
+        {% endif %}
+        {% if aes.get('plain_language_summary') %}
+        <p>{{ aes.get('plain_language_summary') }}</p>
+        {% endif %}
+        {% if aes.get('key_strengths') %}
+        <h5 class="h6">{{ ftl('pdf-inventory-ai-summary-strengths') }}</h5>
+        <ul>
+            {% for item in aes.get('key_strengths', []) %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if aes.get('priority_actions') %}
+        <h5 class="h6">{{ ftl('pdf-inventory-ai-summary-actions') }}</h5>
+        <ol>
+            {% for item in aes.get('priority_actions', []) %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+        {% if aes.get('who_is_affected') %}
+        <p><strong>{{ ftl('pdf-inventory-ai-summary-affected') }}</strong>
+            {{ aes.get('who_is_affected') }}</p>
+        {% endif %}
+        {% if aes.get('estimated_effort') %}
+        <p><strong>{{ ftl('pdf-inventory-ai-summary-effort') }}</strong>
+            {{ aes.get('estimated_effort') }}</p>
+        {% endif %}
+    </section>
+    {% endif %}
+</section>
+{% endif %}

@@ -10,17 +10,10 @@
   Sits below auto_a11y's own header and main menu, per the agreed flow:
   PDFs → Scan a PDF file → this page.
 
-  Two of pdfMax's header controls are deliberately absent:
-
-  * The Re-check button. pdfMax re-runs the checker over a file it still
-    holds a path to; here a re-check is the same work as a new scan, and
-    "Scan another PDF" already says that.
-  * The global Fail / Warn / Pass filter bar. pdfMax filters the check
-    list its ReportTab renders from the Markdown's
-    `<details data-check-result="...">` blocks. Our port's Markdown does
-    not emit those attributes yet, so a filter bar here would have nothing
-    to act on. (The same gap makes the report body's `#check=` deep-link
-    handler inert — worth closing in the same pass.)
+  One of pdfMax's header controls is deliberately absent: the Re-check
+  button. pdfMax re-runs the checker over a file it still holds a path
+  to; here a re-check is the same work as a new scan, and "Scan another
+  PDF" already says that.
 #}
 
 {% block title %}{{ scan.original_filename }} - {{ ftl('pdf-scan-results-page-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
@@ -159,7 +152,7 @@
             <ul class="results-sections-list">
                 {% if report_sections.get('document_metadata') %}
                 <li><a class="results-section-link" href="#pdf-inventory-doc-metadata-heading">
-                    {{ ftl('pdf-inventory-doc-metadata-heading') }}</a></li>
+                    {{ ftl('pdf-report-nav-metadata') }}</a></li>
                 {% endif %}
                 {% if report_sections.get('executive_summary') %}
                 <li><a class="results-section-link" href="#pdf-inventory-exec-summary-heading">
@@ -205,6 +198,11 @@
                  aria-labelledby="tab-report"
                  class="results-panel"
                  tabindex="0">
+                {# What the document is, and how it did — before any
+                   finding. The sidebar lists these first; until this
+                   moved, they rendered last. #}
+                {% include 'pdf/_report_front_matter.html' %}
+
                 {% with image_prefix = url_for('pdf_scan.image', scan_id=scan.scan_id, image_name='') %}
                 {% include 'pdf/_pdfmax_report_body.html' %}
                 {% endwith %}

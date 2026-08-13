@@ -37,9 +37,18 @@ def _app() -> Flask:
 
 
 def _render(sections: dict[str, object], locale: str = "en") -> str:
+    """Both partials, in the order every page includes them.
+
+    The front matter — metadata, executive summary, charts — is a
+    separate include so it can lead the report rather than trail the
+    inventories, so a test that renders only the inventories would miss
+    half of what these assertions are about.
+    """
     app = _app()
     with app.test_request_context("/"), force_locale(locale):
         return render_template(
+            "pdf/_report_front_matter.html", report_sections=sections,
+        ) + render_template(
             "pdf/_report_sections.html",
             report_sections=sections,
             image_url_prefix="/images/",
@@ -327,3 +336,111 @@ def test_no_message_id_leaks_into_the_french_render() -> None:
     leaked = re.findall(r"pdf-inventory-[a-z0-9-]+", text)
 
     assert not leaked, f"untranslated message ids rendered: {sorted(set(leaked))}"
+
+
+# ---------------------------------------------------------------------------
+# Front matter: metadata first, and the summary charts
+# ---------------------------------------------------------------------------
+
+
+def _front(sections: dict[str, object], locale: str = "en") -> str:
+    app = _app()
+    with app.test_request_context("/"), force_locale(locale):
+        return render_template(
+            "pdf/_report_front_matter.html", report_sections=sections,
+        )
+
+
+def _summary(**counts: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "fail_count": 13, "warn_count": 10, "info_count": 0,
+        "pass_count": 103, "na_count": 0, "total_checks": 126,
+        "top_issues": [], "verdict": "FAIL",
+        "areas": [
+            {"area": "forms", "fail": 3, "warn": 1, "total": 4},
+            {"area": "structure", "fail": 1, "warn": 1, "total": 2},
+        ],
+    }
+    base.update(counts)
+    return base
+
+
+def test_the_metadata_section_is_in_the_front_matter() -> None:
+    """It leads the report; it used to render below every inventory,
+    while the sidebar listed it first."""
+    html = _front({"document_metadata": {"author": "A", "pages": 3}})
+
+    assert 'id="pdf-inventory-doc-metadata-heading"' in html
+
+
+def test_the_metadata_section_is_not_in_the_inventories() -> None:
+    """Rendered once, at the top — not in both partials."""
+    app = _app()
+    with app.test_request_context("/"), force_locale("en"):
+        inventories = render_template(
+            "pdf/_report_sections.html",
+            report_sections={"document_metadata": {"author": "A"}},
+            image_url_prefix="/i/",
+        )
+
+    assert "pdf-inventory-doc-metadata-heading" not in inventories
+
+
+def test_the_donut_shows_the_pass_percentage() -> None:
+    html = _front({"executive_summary": _summary()})
+
+    assert 'class="pdf-donut"' in html
+    assert ">82%<" in html  # 103 of 126
+
+
+def test_the_donut_segments_are_proportional() -> None:
+    """Each arc's dash length is its share of the circumference."""
+    html = _front({"executive_summary": _summary()})
+
+    dashes = re.findall(r'stroke-dasharray="([0-9.]+) ([0-9.]+)"', html)
+    assert len(dashes) == 3
+    circumference = float(dashes[0][1])
+    lengths = [float(d[0]) for d in dashes]
+    assert abs(sum(lengths) - circumference) < 0.5
+
+
+def test_the_area_chart_lists_the_worst_area_first() -> None:
+    html = _front({"executive_summary": _summary()})
+
+    labels = re.findall(r'pdf-summary-bar-label">\s*([^<]+)', html)
+    assert [label.strip() for label in labels] == ["Forms", "Structure"]
+
+
+def test_the_charts_are_hidden_from_assistive_technology() -> None:
+    """Every number in them is in the prose and the table already.
+
+    A chart that repeats what has just been said is decoration, and
+    reading it out again is noise rather than access.
+    """
+    html = _front({"executive_summary": _summary()})
+
+    donut = html.split('class="pdf-donut"', 1)[1].split("</svg>", 1)[0]
+    assert 'aria-hidden="true"' in donut
+
+
+def test_no_summary_charts_when_nothing_was_checked() -> None:
+    html = _front({"executive_summary": _summary(
+        fail_count=0, warn_count=0, pass_count=0, total_checks=0,
+        verdict="NOT_TESTED", areas=[],
+    )})
+
+    assert "pdf-summary-charts" not in html
+
+
+def test_an_area_with_no_issues_is_not_charted() -> None:
+    """The chart is a list of things to fix; a zero row is noise."""
+    html = _front({"executive_summary": _summary(areas=[])})
+
+    assert "pdf-summary-bars" not in html
+
+
+def test_the_area_labels_are_translated() -> None:
+    html = _front({"executive_summary": _summary()}, locale="fr")
+
+    assert "Formulaires" in html
+    assert "Problèmes par domaine" in html

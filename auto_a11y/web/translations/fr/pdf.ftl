@@ -856,3 +856,21 @@ pdf-scan-filter-legend = Filtrer les vérifications par résultat
 pdf-scan-filter-applied = Vérifications « %s » affichées
 pdf-scan-filter-removed = Vérifications « %s » masquées
 pdf-scan-filter-none = Aucune vérification affichée — tous les résultats sont filtrés
+
+# --- report: summary charts and areas ---
+pdf-report-chart-passed = réussis
+pdf-report-chart-areas = Problèmes par domaine
+pdf-report-area-document-setup = Configuration du document
+pdf-report-area-structure = Structure
+pdf-report-area-headings = Titres
+pdf-report-area-lists = Listes
+pdf-report-area-tables = Tableaux
+pdf-report-area-images = Images et textes de remplacement
+pdf-report-area-links = Liens et navigation
+pdf-report-area-forms = Formulaires
+pdf-report-area-annotations = Annotations
+pdf-report-area-interactive = Éléments interactifs
+pdf-report-area-language = Langue
+pdf-report-area-fonts = Polices et texte
+pdf-report-area-colour = Couleur et contraste
+pdf-report-nav-metadata = Métadonnées

@@ -780,8 +780,14 @@
                     {% endif %}
                 </section>
 
-                {# ----- Document inventory (pdfMax §2-16) ----- #}
+                {# ----- Document inventory (pdfMax §2-16) -----
+                   The front matter — metadata and the executive summary
+                   with its charts — used to live at the top of this
+                   partial, which put it below every inventory. It is a
+                   separate include now so both this page and the
+                   standalone scan can lead with it. #}
                 {% if report_sections %}
+                    {% include 'pdf/_report_front_matter.html' %}
                     {% with image_url_prefix = url_for('pdf.image', pdf_document_id=pdf.id, image_name='') %}
                     {% include 'pdf/_report_sections.html' %}
                     {% endwith %}

@@ -868,3 +868,21 @@ pdf-scan-filter-legend = Filter checks by result
 pdf-scan-filter-applied = %s checks shown
 pdf-scan-filter-removed = %s checks hidden
 pdf-scan-filter-none = No checks shown — every result is filtered out
+
+# --- report: summary charts and areas ---
+pdf-report-chart-passed = passed
+pdf-report-chart-areas = Issues by area
+pdf-report-area-document-setup = Document setup
+pdf-report-area-structure = Structure
+pdf-report-area-headings = Headings
+pdf-report-area-lists = Lists
+pdf-report-area-tables = Tables
+pdf-report-area-images = Images and alt text
+pdf-report-area-links = Links and navigation
+pdf-report-area-forms = Forms
+pdf-report-area-annotations = Annotations
+pdf-report-area-interactive = Interactive elements
+pdf-report-area-language = Language
+pdf-report-area-fonts = Fonts and text
+pdf-report-area-colour = Colour and contrast
+pdf-report-nav-metadata = Metadata

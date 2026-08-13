@@ -1365,8 +1365,51 @@ def build_executive_summary(
         "na_count": not_applicable,
         "total_checks": len(check_results),
         "top_issues": top_issues,
+        "areas": _issues_by_area(check_results),
         "verdict": verdict,
     }
+
+
+def _issues_by_area(check_results: list[CheckResult]) -> list[dict[str, object]]:
+    """Failures and warnings grouped by what part of the document they touch.
+
+    Drives the executive summary's bar chart. "Six problems with your
+    tables" is a task; "six problems" is not.
+
+    Areas with nothing wrong are omitted — the chart is a list of things
+    to fix, and a row reading zero is noise. Sorted worst-first, ties
+    broken by name so the order is stable between runs of the same audit.
+    """
+    from auto_a11y.pdf.audit.check_areas import area_for
+
+    tally: dict[str, dict[str, int]] = {}
+    for check in check_results:
+        if check.result not in ("FAIL", "WARN"):
+            continue
+        area = area_for(check.name)
+        if area is None:
+            continue
+        bucket = tally.setdefault(area, {"fail": 0, "warn": 0})
+        key = "fail" if check.result == "FAIL" else "warn"
+        bucket[key] += 1
+    # Sorted as ints before the values widen to ``object`` in the
+    # payload dict, so the sort key needs no coercion back.
+    ordered = sorted(
+        tally.items(),
+        key=lambda item: (
+            -(item[1]["fail"] + item[1]["warn"]),
+            item[0],
+        ),
+    )
+    return [
+        {
+            "area": area,
+            "fail": counts["fail"],
+            "warn": counts["warn"],
+            "total": counts["fail"] + counts["warn"],
+        }
+        for area, counts in ordered
+    ]
 
 
 # ---------------------------------------------------------------------------

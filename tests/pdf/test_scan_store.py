@@ -176,3 +176,105 @@ def test_result_payload_keeps_every_verdict() -> None:
     assert payload["pass_count"] == 1
     assert payload["fail_count"] == 1
     assert payload["na_count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Progress and cancellation
+# ---------------------------------------------------------------------------
+
+# Both live on disk rather than in memory because the audit runs on a
+# worker thread while the browser polls through whichever request thread
+# it lands on — and a desktop build may serve those from separate
+# processes.
+
+
+def test_progress_is_zero_before_the_audit_ticks(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    """A scan that has not reported yet reads as zero, not as an error."""
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+
+    assert store.get_progress(OWNER, record.scan_id) == (0.0, "")
+
+
+def test_progress_round_trips_through_disk(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+
+    store.set_progress(record, fraction=0.42, step="Extracting colors")
+
+    assert store.get_progress(OWNER, record.scan_id) == (
+        0.42, "Extracting colors",
+    )
+
+
+def test_progress_is_clamped_to_the_bar(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    """A stage that overshoots must not render a bar past its own end."""
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+
+    store.set_progress(record, fraction=1.4, step="over")
+    assert store.get_progress(OWNER, record.scan_id)[0] == 1.0
+
+    store.set_progress(record, fraction=-0.2, step="under")
+    assert store.get_progress(OWNER, record.scan_id)[0] == 0.0
+
+
+def test_a_corrupt_progress_file_reads_as_no_progress(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    """A poll that catches a torn write shows the bar, not a stack trace."""
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+    store.set_progress(record, fraction=0.5, step="half")
+    path = store.base_dir / OWNER / record.scan_id / "progress.json"
+    path.write_text("{not json", encoding="utf-8")
+
+    assert store.get_progress(OWNER, record.scan_id) == (0.0, "")
+
+
+def test_progress_of_another_users_scan_is_not_readable(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+    store.set_progress(record, fraction=0.7, step="secret")
+
+    assert store.get_progress(OTHER, record.scan_id) == (0.0, "")
+
+
+def test_cancel_is_not_requested_by_default(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+
+    assert store.cancel_requested(OWNER, record.scan_id) is False
+
+
+def test_cancel_is_visible_to_the_worker(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    """The audit thread reads this at each progress tick to know to stop."""
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+
+    store.request_cancel(OWNER, record.scan_id)
+
+    assert store.cancel_requested(OWNER, record.scan_id) is True
+
+
+def test_one_users_cancel_does_not_stop_anothers_scan(
+    store: ScanStore, pdf_bytes: bytes
+) -> None:
+    record = store.create(owner_user_id=OWNER, pdf_bytes=pdf_bytes,
+                          original_filename="a.pdf")
+
+    store.request_cancel(OTHER, record.scan_id)
+
+    assert store.cancel_requested(OWNER, record.scan_id) is False

@@ -700,13 +700,29 @@ Conventions to keep:
 - The PDFs nav item sits **outside** base.html's `user_has_projects` gate — a
   scan has no project, so that is the wrong question to ask before showing it.
 
+The audit runs on a worker thread, not in the POST. `POST /pdf-scan` writes
+the bytes, queues the work on `task_runner` and redirects; `GET /pdf-scan/<id>`
+answers with pdfMax's `AuditingScreen` while the scan is running and with the
+report once it is not — one URL either way, so the address the user landed on
+is the address of their report. The screen polls `/pdf-scan/<id>/progress` and
+drives a real `role="progressbar"`; `/pdf-scan/<id>/cancel` sets a marker the
+worker notices at its next tick.
+
+Progress and cancellation live in the scan directory (`progress.json`, a
+`cancelled` marker), not in memory — the audit runs on one thread while the
+browser polls through another, and a desktop build may serve those from
+separate processes. `PdfAuditJob`/`JobManager` are deliberately not reused:
+they are DB-backed and project-scoped, and a scan is neither.
+
+**The progress bands in `pipeline.py` must only ever increase.** Two of them
+did not, and both were invisible until something watched them: colour
+extraction ran to 0.65 while the image step that follows announced 0.60, and
+report sections announced 0.99 before the AI passes at 0.98. A bar that jumps
+backwards reads as a fault in the thing being measured.
+
 Known gaps in this flow, in priority order:
 
-1. **The audit runs inline in the POST.** The user waits on the request behind
-   pdfMax's `AuditingScreen` markup with an indeterminate progress bar. Wiring
-   it to the real progress stream (as `PdfAuditJob` does for the project path)
-   is the next step; the screen is already there to receive it.
-2. **No result filter bar.** pdfMax filters on the
+1. **No result filter bar.** pdfMax filters on the
    `<details data-check-result="...">` blocks its ReportTab renders; our ported
    Markdown does not emit those attributes. The same gap makes the report
    body's `#check=` deep-link handler inert. Emitting the attributes from

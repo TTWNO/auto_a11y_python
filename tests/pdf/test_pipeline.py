@@ -456,3 +456,54 @@ def test_run_audit_declared_lang_round_trips_normal_value(
 
     result = run_audit(pdf_path)
     assert result.declared_lang == "fr-CA"
+
+
+def test_progress_is_monotonic_when_images_are_extracted(
+    tmp_path: Path,
+) -> None:
+    """The path the standalone scan takes, and the one that was broken.
+
+    Colour extraction's sub-band ran to 0.65 while the image step that
+    follows it announced 0.60, so every scan that extracts images — which
+    is every standalone scan — showed the bar jumping backwards. The
+    default path never passed an images directory, so the test above
+    could not see it.
+    """
+    pdf_path = tmp_path / "minimal.pdf"
+    _write_minimal_pdf(pdf_path)
+    events: list[tuple[str, float]] = []
+
+    run_audit(
+        pdf_path,
+        images_out_dir=tmp_path / "images",
+        progress=lambda stage, fraction: events.append((stage, fraction)),
+    )
+
+    fractions = [f for _stage, f in events]
+    assert fractions == sorted(fractions), (
+        "progress went backwards: "
+        + ", ".join(f"{s}={f}" for s, f in events)
+    )
+    assert fractions[-1] == 1.0
+
+
+def test_every_stage_is_announced_before_its_work(tmp_path: Path) -> None:
+    """The step text names what is happening now, not what just finished.
+
+    Someone watching a long audit reads the step to know what it is
+    doing; a label that lags by a stage is worse than none.
+    """
+    pdf_path = tmp_path / "minimal.pdf"
+    _write_minimal_pdf(pdf_path)
+    events: list[tuple[str, float]] = []
+
+    run_audit(
+        pdf_path,
+        images_out_dir=tmp_path / "images",
+        progress=lambda stage, fraction: events.append((stage, fraction)),
+    )
+
+    stages = [s for s, _f in events]
+    assert stages[0] == "Opening PDF"
+    assert stages[-1] == "Done"
+    assert all(stage.strip() for stage in stages), "a blank step tells nobody anything"

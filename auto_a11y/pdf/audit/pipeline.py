@@ -198,10 +198,15 @@ def _run_audit_with_pdf(
     # ---- Step 5: colours (best-effort; needs page rasterisation) --------
     # Colours rasterises every page — easily the long pole
     # on multi-page PDFs. We hand the collector a scaled sub-progress
-    # callback that maps its 0.0-1.0 fraction onto the band 0.45-0.65 of
+    # callback that maps its 0.0-1.0 fraction onto the band 0.45-0.58 of
     # the overall pipeline so the SSE consumer sees per-page ticks.
+    #
+    # Every band below is chosen so the sequence only ever increases. A
+    # bar that jumps backwards reads as a fault in the thing being
+    # measured, and someone watching a five-minute audit has nothing else
+    # to go on.
     _emit(progress, "Extracting colors", 0.45)
-    sub_colors = _scale_progress(progress, 0.45, 0.65)
+    sub_colors = _scale_progress(progress, 0.45, 0.58)
     color_pairs, fg_only = colors.extract_text_colors(
         pdf_path, progress=sub_colors,
     )
@@ -216,7 +221,7 @@ def _run_audit_with_pdf(
     # ---- Step 6: images (only when an output dir is supplied) -----------
     images_list = None
     if images_out_dir is not None:
-        _emit(progress, "Extracting images", 0.60)
+        _emit(progress, "Extracting images", 0.58)
         try:
             images_list = images.extract_images(pdf_path, images_out_dir)
         except (pikepdf.PdfError, OSError, ValueError, TypeError):
@@ -227,7 +232,7 @@ def _run_audit_with_pdf(
     # together while the page images are still warm in the OS cache.
     # Failures are absorbed: a malformed form or an unrenderable page
     # costs these two checks, not the audit.
-    _emit(progress, "Measuring non-text contrast", 0.65)
+    _emit(progress, "Measuring non-text contrast", 0.62)
     try:
         non_text = non_text_contrast.collect_non_text_contrast(
             pdf, pdf_path, elements,
@@ -349,7 +354,7 @@ def _run_audit_with_pdf(
     # Local import — keeps the report_sections module out of the
     # pipeline import graph until an audit actually runs.
     from auto_a11y.pdf.audit.report_sections import build_report_sections
-    _emit(progress, "Building report sections", 0.99)
+    _emit(progress, "Building report sections", 0.97)
     try:
         report_sections = build_report_sections(
             ctx, check_results=check_results,

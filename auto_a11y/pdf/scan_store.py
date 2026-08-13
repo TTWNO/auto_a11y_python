@@ -32,6 +32,7 @@ scan and an audited ``PdfDocument`` through the same accessors.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import shutil
@@ -46,6 +47,8 @@ from auto_a11y.pdf.models import AuditResult
 # A scan id is generated here and then arrives back from the URL. Anchor
 # the pattern so a crafted id can never climb out of the scans directory.
 _SCAN_ID_RE = re.compile(r'\A[0-9a-f]{32}\Z')
+
+logger = logging.getLogger(__name__)
 
 ScanStatus = Literal["auditing", "audited", "audit_failed"]
 
@@ -156,6 +159,84 @@ class ScanStore:
 
     def images_dir(self, owner_user_id: str, scan_id: str) -> Path:
         return self._scan_dir(owner_user_id, scan_id) / "images"
+
+    def _progress_path(self, owner_user_id: str, scan_id: str) -> Path:
+        return self._scan_dir(owner_user_id, scan_id) / "progress.json"
+
+    def _cancel_path(self, owner_user_id: str, scan_id: str) -> Path:
+        return self._scan_dir(owner_user_id, scan_id) / "cancelled"
+
+    # -- progress ------------------------------------------------------
+
+    def set_progress(
+        self, record: ScanRecord, *, fraction: float, step: str
+    ) -> None:
+        """Record how far the audit has got, for the waiting page to read.
+
+        On disk rather than in memory because the audit runs on a worker
+        thread while the browser polls through whichever request thread
+        it lands on — and a desktop build may serve those from separate
+        processes. The scan directory is where everything else about a
+        scan already lives.
+
+        Written atomically: a poll that catches a half-written file would
+        show the user a parse error in place of their progress.
+        """
+        payload = {
+            "fraction": max(0.0, min(1.0, fraction)),
+            "step": step,
+        }
+        _write_atomic(
+            self._progress_path(record.owner_user_id, record.scan_id),
+            json.dumps(payload).encode("utf-8"),
+        )
+
+    def get_progress(
+        self, owner_user_id: str, scan_id: str
+    ) -> tuple[float, str]:
+        """The last recorded ``(fraction, step)``; ``(0.0, "")`` if none.
+
+        A scan that has not ticked yet reads as zero rather than as an
+        error — the audit may simply not have reached its first stage.
+        """
+        try:
+            raw = self._progress_path(owner_user_id, scan_id).read_bytes()
+        except OSError:
+            return (0.0, "")
+        try:
+            data: object = json.loads(raw)
+        except json.JSONDecodeError:
+            return (0.0, "")
+        if not isinstance(data, dict):
+            return (0.0, "")
+        payload = cast("dict[str, Any]", data)
+        fraction = payload.get("fraction")
+        step = payload.get("step")
+        return (
+            float(fraction) if isinstance(fraction, (int, float)) else 0.0,
+            step if isinstance(step, str) else "",
+        )
+
+    # -- cancellation --------------------------------------------------
+
+    def request_cancel(self, owner_user_id: str, scan_id: str) -> None:
+        """Ask a running audit to stop at its next progress tick.
+
+        A marker file rather than a flag in memory, for the same reason
+        progress is on disk. The audit notices at its next stage, so a
+        cancel lands within a stage rather than instantly — the
+        alternative is killing a thread mid-write.
+        """
+        path = self._cancel_path(owner_user_id, scan_id)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"")
+        except OSError:
+            logger.warning("Could not mark scan %s cancelled", scan_id)
+
+    def cancel_requested(self, owner_user_id: str, scan_id: str) -> bool:
+        """Whether :meth:`request_cancel` has been called for this scan."""
+        return self._cancel_path(owner_user_id, scan_id).exists()
 
     # -- lifecycle -----------------------------------------------------
 

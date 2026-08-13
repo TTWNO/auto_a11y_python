@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{#
+  pdfMax's AuditingScreen + CheckerProgress, transcribed. Structure and
+  ARIA come from src/components/AuditingScreen.tsx and
+  CheckerProgress.tsx: a progressbar with aria-valuenow, the current step
+  beside the percentage, and a cancel button.
+
+  Two things differ. pdfMax receives progress over Electron IPC from its
+  Python subprocess; here the audit runs on a worker thread and the page
+  polls `/pdf-scan/<id>/progress`, which reads the same numbers
+  `run_audit` already emits. And the server renders the first frame with
+  whatever progress exists at request time, so the bar is honest before
+  any JavaScript runs — and a reader with JS off still gets a page that
+  refreshes rather than one that never changes.
+#}
+
+{% block title %}{{ ftl('pdf-scan-auditing-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pdf_scan.css') }}">
+{# Without JavaScript the page still has to move, so it reloads itself.
+   The poller removes this as soon as it runs, so the two never both
+   drive the page.
+
+   It rides in `extra_css` because that is the only block base.html opens
+   inside <head>. A block base.html does not define is silently dropped —
+   which is exactly how the pdfMax report page lost its stylesheet once
+   already. #}
+<noscript><meta http-equiv="refresh" content="5" id="pdf-scan-noscript-refresh"></noscript>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid file-select-screen">
+    <div class="auditing-center"
+         id="pdf-scan-auditing"
+         data-progress-url="{{ url_for('pdf_scan.progress', scan_id=scan.scan_id) }}"
+         data-cancel-url="{{ url_for('pdf_scan.cancel', scan_id=scan.scan_id) }}"
+         data-results-url="{{ url_for('pdf_scan.results', scan_id=scan.scan_id) }}"
+         data-csrf-token="{{ csrf_token() }}"
+         data-cancelling-text="{{ ftl('pdf-scan-cancelling') }}">
+        <h1 class="auditing-title">{{ ftl('pdf-scan-auditing-title') }}</h1>
+        <p class="auditing-filename" title="{{ scan.original_filename }}">
+            {{ scan.original_filename }}
+        </p>
+
+        <div class="checker-progress">
+            {# One live region for the whole readout. The bar carries the
+               value for assistive technology; announcing every tick would
+               be a stream of interruptions, so updates are polite and the
+               step text is what changes meaningfully. #}
+            <div class="checker-progress-bar"
+                 id="pdf-scan-progress-bar"
+                 role="progressbar"
+                 aria-valuenow="{{ percent }}"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuetext="{{ ftl('pdf-scan-progress-value', percent=percent) }}"
+                 aria-labelledby="pdf-scan-progress-label"
+                 {# The JS file cannot resolve Fluent ids, so the phrasing
+                    travels as a template with %s where the number goes. #}
+                 data-value-template="{{ ftl('pdf-scan-progress-value', percent='%s') }}">
+                <div class="checker-progress-fill"
+                     id="pdf-scan-progress-fill"
+                     style="width: {{ percent }}%"></div>
+            </div>
+            <div class="checker-progress-info" role="status" aria-live="polite">
+                <span class="checker-progress-step"
+                      id="pdf-scan-progress-step">
+                    {{ step or ftl('pdf-scan-auditing-step') }}
+                </span>
+                <span class="checker-progress-percent"
+                      id="pdf-scan-progress-percent">{{ percent }}%</span>
+            </div>
+            <span id="pdf-scan-progress-label" class="visually-hidden">
+                {{ ftl('pdf-scan-progress-label') }}
+            </span>
+
+            <form method="POST"
+                  action="{{ url_for('pdf_scan.cancel', scan_id=scan.scan_id) }}"
+                  id="pdf-scan-cancel-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="checker-cancel-btn"
+                        id="pdf-scan-cancel-btn">
+                    {{ ftl('pdf-scan-cancel-btn') }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pdf_scan_progress.js') }}" defer></script>
+{% endblock %}

@@ -846,3 +846,12 @@ pdf-inventory-ai-semantic-none =
 
 pdf-inventory-ai-semantic-elements =
     Elements: { $refs }
+
+# --- standalone scan: audit progress ---
+pdf-scan-progress-label = Audit progress
+pdf-scan-progress-value = { $percent }% complete
+pdf-scan-cancel-btn = Cancel
+pdf-scan-cancelling = Cancelling…
+pdf-scan-error-cancelled = The scan was cancelled before it finished.
+pdf-scan-uploading-title = Uploading…
+pdf-scan-uploading-step = Sending the file. The scan starts as soon as it arrives.

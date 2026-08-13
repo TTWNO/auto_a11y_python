@@ -1,3 +1,17 @@
+            {# Replaces the form once a file is chosen. This is the upload,
+               not the audit: the POST writes the bytes and queues the work,
+               then redirects to the auditing screen, which has the real
+               progress bar. No bar here — the only thing that could be
+               measured is bytes sent, and a bar that means something
+               different from the one on the next screen is worse than none. #}
+            <div class="auditing-center" id="pdf-scan-auditing" hidden>
+                <h2 class="auditing-title">{{ ftl('pdf-scan-uploading-title') }}</h2>
+                <p class="auditing-filename" id="pdf-scan-auditing-filename"></p>
+                <p class="file-select-hint" role="status" aria-live="polite">
+                    {{ ftl('pdf-scan-uploading-step') }}
+                </p>
+            </div>
+
 {% extends "base.html" %}
 
 {#
@@ -100,22 +114,6 @@
                     </div>
                 </noscript>
             </form>
-
-            {# Replaces the form once a file is chosen — pdfMax's AuditingScreen.
-               The audit runs inline in the POST, so this is what the user looks
-               at while the request is in flight. #}
-            <div class="auditing-center" id="pdf-scan-auditing" hidden>
-                <h2 class="auditing-title">{{ ftl('pdf-scan-auditing-title') }}</h2>
-                <p class="auditing-filename" id="pdf-scan-auditing-filename"></p>
-                <div class="checker-progress" role="status" aria-live="polite">
-                    <div class="checker-progress-bar">
-                        <div class="checker-progress-fill"></div>
-                    </div>
-                    <div class="checker-progress-info">
-                        <span class="checker-progress-step">{{ ftl('pdf-scan-auditing-step') }}</span>
-                    </div>
-                </div>
-            </div>
 
         </div>
 

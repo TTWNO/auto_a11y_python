@@ -268,19 +268,14 @@
     overflow: hidden;
 }
 
-/* Indeterminate: the audit runs inline in the POST, so there is no
-   percentage to report. An honest sweep beats a fake number. */
+/* Determinate. The width is set inline from the audit's own progress —
+   server-rendered on first paint, then updated by the poller. */
 .checker-progress-fill {
     height: 100%;
-    width: 40%;
+    width: 0;
     background: var(--color-brand);
     border-radius: 4px;
-    animation: checker-progress-sweep 1.4s ease-in-out infinite;
-}
-
-@keyframes checker-progress-sweep {
-    0% { margin-inline-start: -40%; }
-    100% { margin-inline-start: 100%; }
+    transition: width 0.3s ease;
 }
 
 .checker-progress-info {
@@ -292,6 +287,42 @@
 
 .checker-progress-step {
     flex: 1;
+}
+
+/* pdfMax colours the percentage with its amber accent. The brand token
+   is the equivalent here — and unlike the hardcoded amber it carries the
+   AA contrast guarantee in both themes. Tabular figures so the number
+   does not jitter as it counts up. */
+.checker-progress-percent {
+    font-weight: 600;
+    color: var(--color-brand);
+    font-variant-numeric: tabular-nums;
+}
+
+.checker-cancel-btn {
+    align-self: center;
+    padding: 6px 16px;
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.checker-cancel-btn:hover {
+    background: var(--color-bg-subtle);
+}
+
+.checker-cancel-btn:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+.checker-cancel-btn:disabled {
+    cursor: not-allowed;
+    color: var(--color-text-muted);
 }
 
 /* ============================================
@@ -596,8 +627,7 @@
     }
 
     .checker-progress-fill {
-        animation: none;
-        width: 100%;
+        transition: none;
     }
 }
 

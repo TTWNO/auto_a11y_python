@@ -136,20 +136,22 @@
     {% endif %}
 
     <div class="results-body">
-        {# Section nav for the Report tab.
-           The inventory entries are listed server-side, numbered as pdfMax
-           numbers them, because their anchors are known before render and
-           the numbering is part of how the report reads. The verdict
-           headings (Failures / Warnings / …) come from the client-side
-           Markdown render, so pdf_scan_results.js appends those into the
-           same list once it has parsed them. #}
+        {# Section nav for the Report tab. #}
         <aside class="results-sidebar"
                id="results-sidebar"
                aria-label="{{ ftl('pdf-scan-sections-aria-label') }}">
             <h2 class="results-sections-title">{{ ftl('pdf-scan-sections-heading') }}</h2>
-            <ul class="results-sections-list" id="results-sections-list"></ul>
+
+            {# One list, in the same order as the page reads.
+
+               The front matter and the inventories are known here; the
+               verdict headings (Failures, Warnings, …) only exist once
+               the Markdown has been parsed in the browser, so
+               pdf_scan_results.js inserts those ahead of the marker
+               below. Three separate <ul>s would have been simpler and
+               would announce as three separate lists. #}
             {% if report_sections %}
-            <ul class="results-sections-list">
+            <ul class="results-sections-list" id="results-sections-list">
                 {% if report_sections.get('document_metadata') %}
                 <li><a class="results-section-link" href="#pdf-inventory-doc-metadata-heading">
                     {{ ftl('pdf-report-nav-metadata') }}</a></li>
@@ -158,6 +160,10 @@
                 <li><a class="results-section-link" href="#pdf-inventory-exec-summary-heading">
                     {{ ftl('pdf-inventory-exec-summary-heading') }}</a></li>
                 {% endif %}
+
+                {# Where the verdict headings land. #}
+                <li id="results-sections-verdict-marker" hidden></li>
+
                 {# Numbers follow pdfMax's own section numbering so a reader
                    moving between the two tools sees the same report. #}
                 {% for number, key, label in [

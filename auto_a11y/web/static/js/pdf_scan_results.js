@@ -109,9 +109,16 @@
         if (headings.length === 0) {
             return false;
         }
-        if (sectionList.childElementCount > 0) {
+        if (sectionList.getAttribute('data-verdicts-built') === 'true') {
             return true;  /* already built */
         }
+        sectionList.setAttribute('data-verdicts-built', 'true');
+
+        /* The list is one <ul> in page order: front matter, then these
+         * verdict headings, then the numbered inventories. The marker is
+         * where the middle group belongs; without it we still append, so
+         * a template change costs the ordering rather than the links. */
+        var marker = document.getElementById('results-sections-verdict-marker');
 
         for (var i = 0; i < headings.length; i += 1) {
             var heading = headings[i];
@@ -129,7 +136,11 @@
              * section just jumped to. Move focus to the heading. */
             link.addEventListener('click', wireSectionJump(heading));
             item.appendChild(link);
-            sectionList.appendChild(item);
+            if (marker && marker.parentNode === sectionList) {
+                sectionList.insertBefore(item, marker);
+            } else {
+                sectionList.appendChild(item);
+            }
         }
 
         return true;

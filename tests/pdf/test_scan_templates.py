@@ -119,3 +119,46 @@ def test_the_two_columns_reflow_into_one() -> None:
     reflow = css.split("@media (max-width: 62rem) {", 1)[1]
     assert ".file-select-layout" in reflow
     assert "flex-direction: column" in reflow
+
+
+# ---------------------------------------------------------------------------
+# Results sidebar
+# ---------------------------------------------------------------------------
+
+_RESULTS = TEMPLATES / "results.html"
+
+
+def test_the_sidebar_is_a_single_list() -> None:
+    """Splitting it would announce as several unrelated lists."""
+    html = _RESULTS.read_text(encoding="utf-8")
+
+    assert html.count('id="results-sections-list"') == 1
+
+
+def test_the_front_matter_links_come_before_the_verdict_marker() -> None:
+    """The sidebar reads in the same order as the page.
+
+    Metadata and the summary lead the report, so their links lead the
+    list. They used to sit after the verdict headings, which put them
+    mid-list while the sections themselves were at the very top.
+    """
+    html = _RESULTS.read_text(encoding="utf-8")
+    nav = html.split('id="results-sections-list"', 1)[1].split("</ul>", 1)[0]
+
+    metadata = nav.index("pdf-report-nav-metadata")
+    summary = nav.index("pdf-inventory-exec-summary-heading")
+    marker = nav.index("results-sections-verdict-marker")
+    first_inventory = nav.index("pdf-inventory-tag-tree-heading")
+
+    assert metadata < summary < marker < first_inventory
+
+
+def test_the_verdict_headings_are_inserted_at_the_marker() -> None:
+    """Appending would put Failures and Warnings after the inventories."""
+    js = (
+        REPO_ROOT / "auto_a11y" / "web" / "static" / "js"
+        / "pdf_scan_results.js"
+    ).read_text(encoding="utf-8")
+
+    assert "results-sections-verdict-marker" in js
+    assert "insertBefore" in js

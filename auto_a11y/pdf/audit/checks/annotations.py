@@ -356,7 +356,7 @@ def check_link_annotations_have_contents_key(
         elem_idx = mapping[0] if mapping else None
         if elem_idx is None and uri:
             elem_idx = _find_link_element_by_uri(ctx.elements, uri)
-        ref = f"[{elem_idx}] " if elem_idx is not None else ""
+        ref = f"[{elem_idx + 1}] " if elem_idx is not None else ""
         if uri:
             links_missing_contents.append(f"{ref}p.{page_num}: '{uri}'")
         else:
@@ -462,7 +462,7 @@ def check_link_annotations_inside_link_tags(
     pages = sorted({p for p, _, _ in links_not_in_link})
     uri_details: list[str] = []
     for pg, uri, eidx in links_not_in_link[:6]:
-        ref = f"[{eidx}] " if eidx is not None else ""
+        ref = f"[{eidx + 1}] " if eidx is not None else ""
         if uri:
             short_uri = uri[:60] + ("…" if len(uri) > 60 else "")
             uri_details.append(f"{ref}p.{pg}: '{short_uri}'")
@@ -512,7 +512,7 @@ def check_visible_annotations_have_alt_descriptions(
         if contents:
             continue
         mapping = annot_struct_map.get(id(annot))
-        elem_ref = f"[{mapping[0]}]" if mapping else None
+        elem_ref = f"[{mapping[0] + 1}]" if mapping else None
         missing_contents.append(
             (page_num, subtype_str.lstrip("/"), elem_ref)
         )
@@ -694,7 +694,7 @@ def check_media_clip_annotations_have_alt_text(
         if contents:
             continue
         mapping = annot_struct_map.get(id(annot))
-        elem_ref = f"[{mapping[0]}]" if mapping else None
+        elem_ref = f"[{mapping[0] + 1}]" if mapping else None
         media_missing_alt.append(
             (page_num, subtype_str.lstrip("/"), elem_ref)
         )
@@ -787,7 +787,7 @@ def check_media_clip_alt_text_present(
         if _media_clip_has_key(annot, "/Alt"):
             continue
         mapping = annot_struct_map.get(id(annot))
-        ref = f"[{mapping[0]}] " if mapping else ""
+        ref = f"[{mapping[0] + 1}] " if mapping else ""
         media_missing_alt_key.append(
             f"{ref}p.{page_num} {subtype_str.lstrip('/')}"
         )
@@ -877,7 +877,7 @@ def check_media_clip_content_type_present(
         if _media_has_ct(annot):
             continue
         mapping = annot_struct_map.get(id(annot))
-        ref = f"[{mapping[0]}] " if mapping else ""
+        ref = f"[{mapping[0] + 1}] " if mapping else ""
         media_missing_ct.append(
             f"{ref}p.{page_num} {subtype_str.lstrip('/')}"
         )
@@ -985,7 +985,7 @@ def check_no_nonstandard_annotation_subtypes(
         if not subtype_str or subtype_str in _ISO_32000_SUBTYPES:
             continue
         mapping = annot_struct_map.get(id(annot))
-        ref = f"[{mapping[0]}] " if mapping else ""
+        ref = f"[{mapping[0] + 1}] " if mapping else ""
         nonstandard_subtypes.append(
             f"{ref}p.{page_num}: {subtype_str.lstrip('/')}"
         )
@@ -1088,7 +1088,7 @@ def check_printermark_annotations_not_in_structure(
             )
         ]
     details = "; ".join(
-        f"[{eidx}] p.{pg}" for pg, eidx in printermark_in_struct[:6]
+        f"[{eidx + 1}] p.{pg}" for pg, eidx in printermark_in_struct[:6]
     )
     return [
         CheckResult(
@@ -1126,7 +1126,7 @@ def check_file_attachment_annotations_valid(
             continue
         fa_total += 1
         mapping = annot_struct_map.get(id(annot))
-        ref = f"[{mapping[0]}] " if mapping else ""
+        ref = f"[{mapping[0] + 1}] " if mapping else ""
         fs = pikepdf_helpers.get_dict(annot, "/FS")
         if fs is None:
             fa_issues.append(

@@ -1116,7 +1116,7 @@ def test_artifact_subtypes_warns_and_names_the_nearest_element() -> None:
 
     assert res.result == "WARN"
     assert "1 of 2 artifact(s)" in res.details
-    assert "[11] p.1" in res.details
+    assert "[12] p.1" in res.details
 
 
 def test_artifact_subtypes_matches_mcids_within_their_own_page() -> None:
@@ -1129,7 +1129,7 @@ def test_artifact_subtypes_matches_mcids_within_their_own_page() -> None:
     res = _only(check_artifact_classification_subtypes(ctx))
 
     assert res.result == "WARN"
-    assert "[3]" not in res.details
+    assert "[4]" not in res.details
     assert "p.1" in res.details
 
 

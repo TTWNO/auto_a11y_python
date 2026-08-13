@@ -18,7 +18,9 @@ Two more *supersede* a deterministic verdict of the same name, which the
 pipeline resolves by replacement rather than by appending both:
 
 * ``Non-text contrast sufficient`` (WCAG 1.4.11) — from
-  :func:`..forms_visual.analyze_non_text_contrast`
+  :func:`..forms_visual.analyze_non_text_contrast`, under the section key
+  ``non_text_contrast_ai``: the deterministic measurements own
+  ``non_text_contrast``, and the report shows both
 * ``Required fields visually indicated`` (WCAG 3.3.2, 1.3.1) — from
   :func:`..forms_visual.analyze_required_indicators`
 
@@ -51,7 +53,7 @@ def derive_check_results(sections: dict[str, object]) -> list[CheckResult]:
         _color_use_verdict(_section(sections, "color_use")),
     ]
     contrast = _non_text_contrast_verdict(
-        _section(sections, "non_text_contrast")
+        _section(sections, "non_text_contrast_ai")
     )
     if contrast is not None:
         results.append(contrast)

@@ -16,6 +16,7 @@ build ever contained.
 """
 from __future__ import annotations
 
+from auto_a11y.pdf.audit.non_text_contrast import NonTextContrast
 from auto_a11y.pdf.audit.reading_order import ElementPosition, PageDimensions
 
 #: Shape version, carried in the payload the viewer reads.
@@ -30,6 +31,7 @@ def build_issue_map(
     check_results: list[object],
     element_positions: dict[int, ElementPosition] | None,
     page_dimensions: list[PageDimensions] | None = None,
+    non_text_contrast: NonTextContrast | None = None,
 ) -> dict[str, object]:
     """Build the viewer's issue map from check verdicts and element geometry.
 
@@ -38,6 +40,12 @@ def build_issue_map(
     viewer shows them as sidebar cards without an overlay, which is
     honest: the finding is real, we just cannot say where on the page it
     is. Dropping them would hide faults from the sidebar entirely.
+
+    ``non_text_contrast`` is the one source of geometry that does not
+    come through the structure tree. A form field's widget rectangle is
+    stated outright in the PDF, so a field whose border fails 3:1 can be
+    drawn exactly, on the field, without needing the field to be tagged
+    — which the failing ones frequently are not.
     """
     positions = element_positions or {}
     issues: list[dict[str, object]] = []
@@ -67,6 +75,8 @@ def build_issue_map(
                     position,
                 )
             )
+
+    issues.extend(_field_issues(non_text_contrast, len(check_results)))
 
     # Keyed by 1-based page number, each [width, height]. The viewer needs
     # them to map PDF coordinates onto the rendered canvas, which is at a
@@ -116,3 +126,49 @@ def _issue(
             else None
         ),
     }
+
+
+def _field_issues(
+    data: NonTextContrast | None, ordinal_base: int
+) -> list[dict[str, object]]:
+    """Overlays for form fields whose contrast fails, drawn on the field.
+
+    Only the failures. A field that passes, or one exempted because it
+    draws no border of its own, has nothing for the reader to look at.
+    """
+    if data is None or data.fields is None:
+        return []
+
+    entries: list[dict[str, object]] = []
+    for offset, finding in enumerate(data.fields.findings):
+        if finding.exempt_reason is not None:
+            continue
+        border_failed = finding.border_pass is False
+        boundary_failed = (
+            finding.boundary_pass is False and finding.border_pass is not True
+        )
+        if not (border_failed or boundary_failed):
+            continue
+
+        ratio = (
+            finding.border_contrast if border_failed
+            else finding.boundary_contrast
+        )
+        measured = f"{ratio:.2f}:1" if ratio is not None else "unmeasurable"
+        reason = (
+            "border contrast" if border_failed else "no visible boundary"
+        )
+        x0, y0, x1, y1 = finding.rect
+        entries.append({
+            "id": f"issue-{ordinal_base + offset}-field",
+            "check_name": "Non-text contrast sufficient",
+            "check_result": "FAIL",
+            "detail": (
+                f"{finding.field_type} field \u201c{finding.field_name}\u201d:"
+                f" {reason} {measured}, below the 3:1 minimum"
+            ),
+            "element_index": None,
+            "page": finding.page + 1,
+            "bbox": [x0, y0, x1, y1],
+        })
+    return entries

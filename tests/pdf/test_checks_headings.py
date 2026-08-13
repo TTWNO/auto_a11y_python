@@ -166,8 +166,8 @@ def test_heading_hierarchy_fails_on_multiple_h1() -> None:
     res = _only(check_heading_hierarchy(_ctx_with_elements(elems)))
     assert res.result == "FAIL"
     assert "Multiple H1 headings" in res.details
-    # Both H1 indices should be referenced.
-    assert "[0]" in res.details and "[2]" in res.details
+    # Both H1 indices should be referenced, 1-based as the report prints.
+    assert "[1]" in res.details and "[3]" in res.details
 
 
 def test_heading_hierarchy_fails_on_skipped_level() -> None:

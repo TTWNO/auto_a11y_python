@@ -394,7 +394,7 @@ def check_figure_elements_have_bbox(ctx: AuditContext) -> list[CheckResult]:
                 ),
             )
         ]
-    refs = " ".join(f"[{i}]" for i in figures_without_bbox[:5])
+    refs = " ".join(f"[{i + 1}]" for i in figures_without_bbox[:5])
     return [
         CheckResult(
             name="Figure elements have BBox attribute",

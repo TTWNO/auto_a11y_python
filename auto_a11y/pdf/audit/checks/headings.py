@@ -66,7 +66,7 @@ def check_heading_hierarchy(ctx: AuditContext) -> list[CheckResult]:
         first_idx, first_level, first_tag = heading_levels[0]
         if first_level != 1:
             issues.append(
-                f"[{first_idx}] {first_tag}: first heading is"
+                f"[{first_idx + 1}] {first_tag}: first heading is"
                 + f" H{first_level}, should be H1"
             )
 
@@ -74,7 +74,7 @@ def check_heading_hierarchy(ctx: AuditContext) -> list[CheckResult]:
         h1_count = sum(1 for _, lvl, _ in heading_levels if lvl == 1)
         if h1_count > 1:
             h1_indices = [
-                f"[{idx}]" for idx, lvl, _ in heading_levels if lvl == 1
+                f"[{idx + 1}]" for idx, lvl, _ in heading_levels if lvl == 1
             ]
             issues.append(
                 f"Multiple H1 headings ({h1_count}): "
@@ -87,7 +87,7 @@ def check_heading_hierarchy(ctx: AuditContext) -> list[CheckResult]:
         for idx, level, tag in heading_levels:
             if level > prev_level + 1 and prev_level > 0:
                 issues.append(
-                    f"[{idx}] {tag}: H{level} follows H{prev_level}"
+                    f"[{idx + 1}] {tag}: H{level} follows H{prev_level}"
                     + " (skipped level)"
                 )
             prev_level = level
@@ -144,10 +144,10 @@ def check_no_multiple_headings_per_node(ctx: AuditContext) -> list[CheckResult]:
         ]
         if len(heading_children) > 1:
             tags = ", ".join(
-                f"{h.resolved_tag}[{h.index}]" for h in heading_children
+                f"{h.resolved_tag}[{h.index + 1}]" for h in heading_children
             )
             multi_heading_nodes.append(
-                f"[{elem.index}] {elem.resolved_tag} has"
+                f"[{elem.index + 1}] {elem.resolved_tag} has"
                 + f" {len(heading_children)} headings: {tags}"
             )
 
@@ -207,8 +207,8 @@ def check_no_mixed_heading_tag_types(ctx: AuditContext) -> list[CheckResult]:
     numbered_examples = [
         e for e in elements if e.resolved_tag in _NUMBERED_HEADING_TAGS
     ]
-    generic_refs = " ".join(f"[{e.index}]" for e in generic_examples[:3])
-    numbered_refs = " ".join(f"[{e.index}]" for e in numbered_examples[:3])
+    generic_refs = " ".join(f"[{e.index + 1}]" for e in generic_examples[:3])
+    numbered_refs = " ".join(f"[{e.index + 1}]" for e in numbered_examples[:3])
     return [
         CheckResult(
             name="No mixed heading tag types",

@@ -374,7 +374,8 @@ def test_figure_bbox_fail_lists_indices() -> None:
     ]
     res = _only(check_figure_elements_have_bbox(_ctx_with_elements(elems)))
     assert res.result == "FAIL"
-    assert "[1]" in res.details and "[2]" in res.details
+    # Elements 1 and 2 internally; the report prints them 1-based.
+    assert "[2]" in res.details and "[3]" in res.details
     assert "2 of 3" in res.details
 
 

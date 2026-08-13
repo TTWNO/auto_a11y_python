@@ -270,7 +270,7 @@ def check_widget_annotations_inside_form_tags(
             widget_total += 1
             mapping = annot_struct_map.get(id(annot))
             if mapping is None or mapping[1] != "Form":
-                elem_ref = f"[{mapping[0]}]" if mapping else ""
+                elem_ref = f"[{mapping[0] + 1}]" if mapping else ""
                 widgets_not_in_form.append((page_num, elem_ref))
 
     if widget_total == 0:

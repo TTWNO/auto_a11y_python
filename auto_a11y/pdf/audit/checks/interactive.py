@@ -344,7 +344,9 @@ def check_interactive_target_size(ctx: AuditContext) -> list[CheckResult]:
         w = x1 - x0
         h = y1 - y0
         if h < _MIN_TARGET_HEIGHT or w < _MIN_TARGET_HEIGHT:
-            elem_ref = f"[{link.elem_idx}]" if link.elem_idx is not None else ""
+            elem_ref = (
+                f"[{link.elem_idx + 1}]" if link.elem_idx is not None else ""
+            )
             uri_part = link.uri[:40] if link.uri else ""
             small_targets.append(
                 f"{elem_ref} Link '{uri_part}' ({w:.0f}x{h:.0f}pt)"
@@ -397,7 +399,7 @@ def check_focus_indicator_visibility(ctx: AuditContext) -> list[CheckResult]:
         if link.border_width == 0.0:
             suppressed_borders += 1
             if link.elem_idx is not None and len(suppressed_border_refs) < 5:
-                suppressed_border_refs.append(f"[{link.elem_idx}]")
+                suppressed_border_refs.append(f"[{link.elem_idx + 1}]")
 
     if suppressed_borders == total_links and total_links > 0:
         refs_str = (

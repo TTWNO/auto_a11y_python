@@ -339,7 +339,7 @@ def check_toc_structure_valid(ctx: AuditContext) -> list[CheckResult]:
                     child = elements[ci]
                     if child.resolved_tag not in _VALID_TOC_CHILDREN:
                         toc_issues.append(
-                            f"[{elem.index}] TOC has invalid child {child.resolved_tag}[{child.index}]"
+                            f"[{elem.index + 1}] TOC has invalid child {child.resolved_tag}[{child.index + 1}]"
                         )
         elif elem.resolved_tag == "TOCI":
             for ci in elem.children_indices:
@@ -347,7 +347,7 @@ def check_toc_structure_valid(ctx: AuditContext) -> list[CheckResult]:
                     child = elements[ci]
                     if child.resolved_tag not in _VALID_TOCI_CHILDREN:
                         toc_issues.append(
-                            f"[{elem.index}] TOCI has invalid child {child.resolved_tag}[{child.index}]"
+                            f"[{elem.index + 1}] TOCI has invalid child {child.resolved_tag}[{child.index + 1}]"
                         )
 
     if not toc_issues:
@@ -398,12 +398,12 @@ def check_ruby_structure_valid(ctx: AuditContext) -> list[CheckResult]:
             if 0 <= ci < len(elements):
                 child_tags.add(elements[ci].resolved_tag)
         if "RB" not in child_tags:
-            ruby_issues.append(f"[{elem.index}] Ruby missing required RB child")
+            ruby_issues.append(f"[{elem.index + 1}] Ruby missing required RB child")
         if "RT" not in child_tags:
-            ruby_issues.append(f"[{elem.index}] Ruby missing required RT child")
+            ruby_issues.append(f"[{elem.index + 1}] Ruby missing required RT child")
         invalid = child_tags - _VALID_RUBY_CHILDREN
         for inv in invalid:
-            ruby_issues.append(f"[{elem.index}] Ruby has invalid child {inv}")
+            ruby_issues.append(f"[{elem.index + 1}] Ruby has invalid child {inv}")
     if not ruby_issues:
         ruby_count = sum(1 for e in elements if e.resolved_tag == "Ruby")
         details = (
@@ -453,16 +453,16 @@ def check_warichu_structure_valid(ctx: AuditContext) -> list[CheckResult]:
                 child_tags.add(elements[ci].resolved_tag)
         if "WT" not in child_tags:
             warichu_issues.append(
-                f"[{elem.index}] Warichu missing required WT child"
+                f"[{elem.index + 1}] Warichu missing required WT child"
             )
         if "WP" not in child_tags:
             warichu_issues.append(
-                f"[{elem.index}] Warichu missing required WP child"
+                f"[{elem.index + 1}] Warichu missing required WP child"
             )
         invalid = child_tags - _VALID_WARICHU_CHILDREN
         for inv in invalid:
             warichu_issues.append(
-                f"[{elem.index}] Warichu has invalid child {inv}"
+                f"[{elem.index + 1}] Warichu has invalid child {inv}"
             )
     if not warichu_issues:
         warichu_count = sum(1 for e in elements if e.resolved_tag == "Warichu")
@@ -544,10 +544,10 @@ def check_note_tags_have_unique_ids(ctx: AuditContext) -> list[CheckResult]:
         ]
     issues: list[str] = []
     if missing_id:
-        refs = " ".join(f"[{i}]" for i in missing_id[:5])
+        refs = " ".join(f"[{i + 1}]" for i in missing_id[:5])
         issues.append(f"{len(missing_id)} missing /ID: {refs}")
     if duplicate_ids:
-        refs = " ".join(f"[{i}]" for i, _ in duplicate_ids[:5])
+        refs = " ".join(f"[{i + 1}]" for i, _ in duplicate_ids[:5])
         issues.append(f"{len(duplicate_ids)} duplicate /ID: {refs}")
     return [
         CheckResult(
@@ -594,7 +594,7 @@ def check_formula_alt_text(ctx: AuditContext) -> list[CheckResult]:
                 ),
             )
         ]
-    refs = " ".join(f"[{e.index}]" for e in formulas_without_alt[:5])
+    refs = " ".join(f"[{e.index + 1}]" for e in formulas_without_alt[:5])
     return [
         CheckResult(
             name="Formula elements have alt text or ActualText",
@@ -1363,7 +1363,8 @@ def check_reading_order_matches_visual_layout(
     if mismatches:
         ex = mismatches[:3]
         examples = " — e.g. " + ", ".join(
-            f"[{m.struct_first}] before [{m.struct_second}]" for m in ex
+            f"[{m.struct_first + 1}] before [{m.struct_second + 1}]"
+            for m in ex
         )
     if correlation >= _READING_ORDER_WARN_THRESHOLD:
         return [
@@ -1754,7 +1755,7 @@ def check_artifact_classification_subtypes(
             if mark.has_subtype:
                 continue
             element = _element_for_mcid(ctx, page.page_number, mark.nearest_mcid)
-            ref = f"[{element}] " if element is not None else ""
+            ref = f"[{element + 1}] " if element is not None else ""
             unclassified.append(f"{ref}p.{page.page_number}")
 
     if not unclassified:

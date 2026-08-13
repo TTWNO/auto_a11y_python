@@ -64,7 +64,7 @@ def _contrast(severity: str) -> dict[str, object]:
 
 def test_contrast_failures_produce_a_fail() -> None:
     results = _by_name(
-        derive_check_results({"non_text_contrast": _contrast("fail")})
+        derive_check_results({"non_text_contrast_ai": _contrast("fail")})
     )
     verdict = results["Non-text contrast sufficient"]
     assert verdict.result == "FAIL"
@@ -73,7 +73,7 @@ def test_contrast_failures_produce_a_fail() -> None:
 
 def test_contrast_warnings_produce_a_warn() -> None:
     results = _by_name(
-        derive_check_results({"non_text_contrast": _contrast("warning")})
+        derive_check_results({"non_text_contrast_ai": _contrast("warning")})
     )
     assert results["Non-text contrast sufficient"].result == "WARN"
 
@@ -82,7 +82,7 @@ def test_contrast_passes_when_the_model_says_so_and_flags_nothing() -> None:
     payload: dict[str, object] = {
         "findings": [], "overall_assessment": "a", "pass": True,
     }
-    results = _by_name(derive_check_results({"non_text_contrast": payload}))
+    results = _by_name(derive_check_results({"non_text_contrast_ai": payload}))
     assert results["Non-text contrast sufficient"].result == "PASS"
 
 
@@ -90,7 +90,7 @@ def test_contrast_declines_to_supersede_when_the_model_neither_passes_nor_flags(
     payload: dict[str, object] = {
         "findings": [], "overall_assessment": "a", "pass": False,
     }
-    names = {r.name for r in derive_check_results({"non_text_contrast": payload})}
+    names = {r.name for r in derive_check_results({"non_text_contrast_ai": payload})}
     assert "Non-text contrast sufficient" not in names
 
 
@@ -173,7 +173,7 @@ def test_malformed_ai_payloads_do_not_raise() -> None:
         "findings": "not a list", "field_results": 7, "pass": None,
     }
     derive_check_results({
-        "non_text_contrast": payload, "required_indicators": payload,
+        "non_text_contrast_ai": payload, "required_indicators": payload,
     })
 
 

@@ -37,6 +37,8 @@ AI analysis:
 from __future__ import annotations
 
 import logging
+import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Literal
 
@@ -330,6 +332,12 @@ def _run_audit_with_pdf(
                 )
             )
 
+    # ---- Step 10: make every verdict locatable --------------------------
+    check_results = [
+        with_referenced_elements(check, len(elements))
+        for check in check_results
+    ]
+
     # ---- Step 11: extract metadata for AuditResult ----------------------
     pdf_version: str | None = pdf.pdf_version if pdf.pdf_version else None
     page_count = len(pdf.pages)
@@ -362,6 +370,7 @@ def _run_audit_with_pdf(
     try:
         report_sections["issue_map"] = issue_map_builder.build_issue_map(
             list(check_results), element_positions, page_dims,
+            non_text_contrast=non_text,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to build the issue map: %s", exc)
@@ -475,6 +484,44 @@ def _read_catalog_lang(pdf: pikepdf.Pdf) -> str | None:
     if not rendered.strip():
         return None
     return rendered
+
+
+#: Element references as the report prints them: ``[7]``, 1-based.
+_ELEMENT_REF_RE = re.compile(r"\[(\d+)\]")
+
+
+def with_referenced_elements(
+    check: CheckResult, element_count: int
+) -> CheckResult:
+    """Fill in ``elements`` from the references the details already print.
+
+    Almost every check that blames particular elements says so in its
+    details — ``2 table(s) missing THead/TBody: [12] Table; [30] Table``.
+    Until this ran, that text was the only place the information existed:
+    :attr:`CheckResult.elements` stayed empty, so
+    :mod:`auto_a11y.pdf.audit.issue_map` had nothing to locate and the
+    viewer drew no overlays for any of it.
+
+    Parsing the details rather than asking each check to duplicate the
+    list keeps the two in step by construction — the overlay is drawn on
+    exactly the element the report names, and neither can drift from the
+    other. A check that sets ``elements`` explicitly is left alone.
+
+    References are 1-based, matching what the report prints; anything
+    outside the document's element range is dropped rather than clamped,
+    since a number that does not name an element is not a location.
+    """
+    if check.elements:
+        return check
+    seen: dict[int, None] = {}
+    for match in _ELEMENT_REF_RE.finditer(check.details):
+        printed = int(match.group(1))
+        index = printed - 1
+        if 0 <= index < element_count:
+            seen.setdefault(index, None)
+    if not seen:
+        return check
+    return replace(check, elements=tuple(seen))
 
 
 def merge_ai_checks(

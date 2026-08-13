@@ -627,6 +627,7 @@ it is not vendored here, only ported from.
 | Remediation guide | `auto_a11y/pdf/translation/remediation_guide.py` + `pdf-remediation.ftl` | Complete, bilingual |
 | Check → fix map | `auto_a11y/pdf/fix/catalogue.py` | Complete, bilingual input labels |
 | Markdown report | `auto_a11y/pdf/report_markdown.py` | Complete, renders on demand in the reader's locale |
+| AI report sections | `pdf/_report_sections.html` §15b-15f | Complete, bilingual — semantic, alt-text adequacy, images of text, use of colour, non-text contrast, required-field indicators |
 | Viewer (canvas, overlays, connector lines) | `auto_a11y/web/static/js/pdf_viewer_app.js` | Ported; overlays need element geometry (below) |
 | `FileSelectScreen` + `ResultsView` | `auto_a11y/web/templates/pdf_scan/` | Ported — see [Standalone scan](#standalone-scan-pdf-scan--pdfmaxs-own-flow) |
 
@@ -711,14 +712,29 @@ Known gaps in this flow, in priority order:
    body's `#check=` deep-link handler inert. Emitting the attributes from
    `report_markdown.py` fixes both at once.
 
-### Known gap: overlay geometry
+### Element references drive the viewer
 
-`CheckResult.elements` carries the structure elements a verdict is about, and
-`auto_a11y/pdf/audit/issue_map.py` joins those to positions for the viewer.
-But `reading_order.match_elements_to_positions` derives geometry from **visual
-text blocks only**, so a `<Figure>` gets no position and no overlay box. An
-element→rectangle source covering figures, tables and links is the outstanding
-prerequisite for working overlays.
+Every check that blames particular elements prints them in its details —
+`2 table(s) missing THead/TBody: [12] Table; [30] Table`. **Those references
+are 1-based**, and `pipeline.with_referenced_elements` parses them back into
+`CheckResult.elements`, which `issue_map.py` joins to element geometry so the
+viewer can draw an overlay. Print a raw 0-based index and the overlay lands on
+the element *before* the one at fault — confidently wrong, and invisible in the
+report. `tests/pdf/test_element_references.py` pins the convention by checking
+each printed `[N] Tag` against the tag element N actually has.
+
+A check may set `elements` itself; explicit always wins over the parse.
+
+Form fields are the exception that needs no structure tag: a widget's rectangle
+is stated in the PDF, so `issue_map.build_issue_map` draws failing non-text
+contrast findings straight onto the field. That matters because the fields that
+fail are frequently the untagged ones.
+
+Still outstanding: `reading_order.match_elements_to_positions` derives geometry
+from **visual text blocks only**, so a `<Figure>` with no text run gets no
+position and therefore no box. Roughly half the elements in a tagged document
+are positioned today; an element→rectangle source covering figures and images
+is what would close the rest.
 
 ## Common Gotchas
 

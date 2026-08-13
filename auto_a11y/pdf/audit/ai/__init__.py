@@ -214,7 +214,7 @@ def analyze(
             doc_lang=_declared_lang(ctx.pdf),
         )
         if contrast is not None:
-            sections["non_text_contrast"] = contrast
+            sections["non_text_contrast_ai"] = contrast
 
     if ctx.required_fields is not None:
         required = analyze_required_indicators(

@@ -184,7 +184,7 @@ def check_lang_values_valid_bcp47(ctx: AuditContext) -> list[CheckResult]:
     for elem in ctx.elements:
         if elem.lang:
             all_lang_values.append(
-                (f"[{elem.index}] {elem.resolved_tag}", elem.lang)
+                (f"[{elem.index + 1}] {elem.resolved_tag}", elem.lang)
             )
 
     if not all_lang_values:
@@ -570,7 +570,9 @@ def check_abbreviation_expansion(ctx: AuditContext) -> list[CheckResult]:
                 ),
             )
         ]
-    examples = ", ".join(f'[{idx}] "{t}"' for idx, t in abbrev_without_e[:5])
+    examples = ", ".join(
+        f'[{idx + 1}] "{t}"' for idx, t in abbrev_without_e[:5]
+    )
     return [
         CheckResult(
             name="Abbreviations have /E expansion",
@@ -622,9 +624,9 @@ def check_pronunciation_hints(ctx: AuditContext) -> list[CheckResult]:
     examples: list[str] = []
     for index, tag, text in without_hints:
         if text not in seen and len(examples) < 10:
-            examples.append(f'[{index}] {tag} "{text}"')
+            examples.append(f'[{index + 1}] {tag} "{text}"')
             seen.add(text)
-    refs = " ".join(f"[{index}]" for index, _, _ in without_hints[:10])
+    refs = " ".join(f"[{index + 1}]" for index, _, _ in without_hints[:10])
     return [CheckResult(
         name=name, standard=standard, result="WARN",
         details=(
@@ -690,9 +692,11 @@ def evaluate_language_of_parts(
             unmarked.append((elem.index, elem.resolved_tag, detected, preview))
 
     if unmarked:
-        refs = " ".join(f"[{index}]" for index, _, _, _ in unmarked[:10])
+        refs = " ".join(
+            f"[{index + 1}]" for index, _, _, _ in unmarked[:10]
+        )
         examples = "; ".join(
-            f'[{index}] {tag} detected as {lang}: "{preview}"'
+            f'[{index + 1}] {tag} detected as {lang}: "{preview}"'
             for index, tag, lang, preview in unmarked[:5]
         )
         return [CheckResult(

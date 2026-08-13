@@ -219,7 +219,7 @@ def test_lang_values_fails_on_invalid_tag() -> None:
     res = _only(check_lang_values_valid_bcp47(_ctx(pdf, elems)))
     assert res.result == "FAIL"
     assert "Document catalog" in res.details
-    assert "[0] P" in res.details
+    assert "[1] P" in res.details
 
 
 # ---------------------------------------------------------------------------
@@ -554,7 +554,7 @@ def test_pronunciation_hints_warns_on_bare_all_caps() -> None:
     elems = [_text_elem(0, "Span", "CNIB")]
     res = _only(check_pronunciation_hints(_ctx(pdf, elems)))
     assert res.result == "WARN"
-    assert '[0] Span "CNIB"' in res.details
+    assert '[1] Span "CNIB"' in res.details
 
 
 def test_pronunciation_hints_accepts_any_of_the_three_hints() -> None:
@@ -617,7 +617,7 @@ def test_language_of_parts_fails_on_an_unmarked_foreign_passage() -> None:
     elems = [_text_elem(0, "P", _ENGLISH), _text_elem(1, "P", _FRENCH)]
     res = _only(check_language_of_parts(_ctx(pdf, elems)))
     assert res.result == "FAIL"
-    assert "[1]" in res.details
+    assert "[2]" in res.details
     assert "detected as fr" in res.details
 
 

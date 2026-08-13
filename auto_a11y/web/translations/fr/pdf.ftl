@@ -574,3 +574,263 @@ pdf-inventory-doc-language = Langue du document (/Lang)
 pdf-inventory-doc-elements = Éléments de structure
 pdf-inventory-doc-pages = Pages
 pdf-inventory-doc-not-set = Non défini
+
+# --- AI analysis, non-text contrast and required-field sections ---
+
+pdf-inventory-not-measured =
+    Non mesuré
+
+pdf-inventory-page-label =
+    Page { $page }
+
+pdf-inventory-recommendation-label =
+    Recommandation :
+
+pdf-inventory-ai-analysis-heading =
+    Analyse visuelle par IA
+
+pdf-inventory-ai-summary-heading =
+    Résumé de direction par IA
+
+pdf-inventory-ai-summary-strengths =
+    Points forts du document
+
+pdf-inventory-ai-summary-actions =
+    À faire en priorité
+
+pdf-inventory-ai-summary-affected =
+    Personnes touchées :
+
+pdf-inventory-ai-summary-effort =
+    Effort estimé :
+
+pdf-inventory-images-of-text-findings =
+    { $count ->
+        [one] { $count } image de texte
+       *[other] { $count } images de texte
+    }
+
+pdf-inventory-images-of-text-none =
+    Aucune image de texte
+
+pdf-inventory-images-of-text-col-image =
+    Image
+
+pdf-inventory-images-of-text-col-text =
+    Texte trouvé dans l'image
+
+pdf-inventory-images-of-text-col-alt =
+    Repris dans le texte de remplacement
+
+pdf-inventory-images-of-text-in-alt =
+    Dans le texte de remplacement
+
+pdf-inventory-images-of-text-not-in-alt =
+    Absent du texte de remplacement
+
+pdf-inventory-alt-text-adequacy-heading =
+    Pertinence du texte de remplacement
+
+pdf-inventory-alt-text-adequacy-intro =
+    Vérifie si le texte de remplacement de chaque figure décrit réellement l'image, au regard de l'image elle-même et du texte qui l'entoure. Un texte de remplacement présent mais inexact est plus difficile à repérer qu'un texte absent.
+
+pdf-inventory-alt-text-adequacy-inadequate =
+    { $count ->
+        [one] { $count } sur { $total } inadéquat
+       *[other] { $count } sur { $total } inadéquats
+    }
+
+pdf-inventory-alt-text-adequacy-adequate =
+    { $total ->
+        [one] { $total } figure évaluée
+       *[other] { $total } figures évaluées
+    }
+
+pdf-inventory-alt-text-adequacy-col-element =
+    Élément
+
+pdf-inventory-alt-text-adequacy-col-alt =
+    Texte de remplacement
+
+pdf-inventory-alt-text-adequacy-col-verdict =
+    Verdict
+
+pdf-inventory-alt-text-adequacy-col-suggestion =
+    Texte de remplacement suggéré
+
+pdf-inventory-alt-text-adequacy-verdict-adequate =
+    Adéquat
+
+pdf-inventory-alt-text-adequacy-verdict-inadequate =
+    Inadéquat
+
+pdf-inventory-color-use-heading =
+    Usage de la couleur
+
+pdf-inventory-color-use-intro =
+    Endroits où la couleur pourrait être le seul porteur d'une information. Quiconque ne distingue pas ces couleurs — ou lit une impression en noir et blanc — reçoit la mise en page sans l'information.
+
+pdf-inventory-color-use-findings =
+    { $count ->
+        [one] { $count } constat
+       *[other] { $count } constats
+    }
+
+pdf-inventory-color-use-none =
+    Aucun sens porté par la seule couleur
+
+pdf-inventory-non-text-contrast-heading =
+    Contraste des éléments non textuels
+
+pdf-inventory-non-text-contrast-intro =
+    Contraste mesuré pour les parties non textuelles de la page : bordures et fonds des champs de formulaire, filets de tableau, séparateurs et éléments de graphique. Le critère WCAG 1.4.11 exige au moins 3:1 par rapport à ce qui les entoure.
+
+pdf-inventory-non-text-contrast-unavailable =
+    Le contraste des éléments non textuels n'a pas pu être mesuré pour ce document.
+
+pdf-inventory-non-text-contrast-nothing =
+    Ce document ne comporte ni champ de formulaire ni graphique tracé à mesurer.
+
+pdf-inventory-non-text-contrast-fails =
+    { $count ->
+        [one] { $count } sous 3:1
+       *[other] { $count } sous 3:1
+    }
+
+pdf-inventory-non-text-contrast-pass =
+    Tous les éléments mesurés atteignent 3:1
+
+pdf-inventory-non-text-contrast-fields-heading =
+    Champs de formulaire
+
+pdf-inventory-non-text-contrast-graphics-heading =
+    Graphiques tracés
+
+pdf-inventory-non-text-contrast-col-field =
+    Champ
+
+pdf-inventory-non-text-contrast-col-page =
+    Page
+
+pdf-inventory-non-text-contrast-col-border =
+    Couleur de bordure
+
+pdf-inventory-non-text-contrast-col-page-bg =
+    Fond de la page
+
+pdf-inventory-non-text-contrast-col-border-ratio =
+    Contraste de la bordure
+
+pdf-inventory-non-text-contrast-col-boundary-ratio =
+    Contraste du fond
+
+pdf-inventory-non-text-contrast-col-status =
+    État
+
+pdf-inventory-non-text-contrast-col-category =
+    Type
+
+pdf-inventory-non-text-contrast-col-colour =
+    Couleur
+
+pdf-inventory-non-text-contrast-col-ratio =
+    Contraste
+
+pdf-inventory-non-text-contrast-no-border =
+    Aucune bordure tracée
+
+pdf-inventory-non-text-contrast-status-pass =
+    Conforme
+
+pdf-inventory-non-text-contrast-status-exempt =
+    Exempté
+
+pdf-inventory-non-text-contrast-status-border-fail =
+    Bordure trop pâle
+
+pdf-inventory-non-text-contrast-status-boundary-fail =
+    Aucune limite visible
+
+pdf-inventory-non-text-contrast-exempt-readonly =
+    En lecture seule — personne n'a à le repérer pour le remplir
+
+pdf-inventory-non-text-contrast-exempt-no-author-border =
+    Aucune bordure définie par l'auteur — la mise en évidence propre au lecteur s'applique
+
+pdf-inventory-non-text-contrast-category-table-border =
+    Filet de tableau
+
+pdf-inventory-non-text-contrast-category-divider-line =
+    Ligne de séparation
+
+pdf-inventory-non-text-contrast-category-chart-element =
+    Élément de graphique
+
+pdf-inventory-non-text-contrast-category-other-graphic =
+    Autre graphique
+
+pdf-inventory-required-fields-heading =
+    Repères des champs obligatoires
+
+pdf-inventory-required-fields-intro =
+    Champs que le formulaire déclare obligatoires, et ce qui l'indique visiblement. L'indicateur /Ff Required n'est lu que par les technologies d'assistance ; une personne voyante a besoin d'un astérisque, de la mention « obligatoire » ou d'une légende expliquant la convention.
+
+pdf-inventory-required-fields-none =
+    Aucun champ de ce document ne porte l'indicateur /Ff Required.
+
+pdf-inventory-required-fields-total =
+    { $count ->
+        [one] { $count } champ obligatoire
+       *[other] { $count } champs obligatoires
+    }
+
+pdf-inventory-required-fields-missing =
+    { $count ->
+        [one] { $count } non signalé dans les métadonnées
+       *[other] { $count } non signalés dans les métadonnées
+    }
+
+pdf-inventory-required-fields-legend-label =
+    Légende trouvée :
+
+pdf-inventory-required-fields-no-legend =
+    Aucune légende expliquant une convention de champs obligatoires n'a été trouvée dans le texte du document. Sans elle, un astérisque à côté d'un champ reste inexpliqué.
+
+pdf-inventory-required-fields-col-field =
+    Champ
+
+pdf-inventory-required-fields-col-page =
+    Page
+
+pdf-inventory-required-fields-col-tooltip =
+    Infobulle
+
+pdf-inventory-required-fields-col-indicator =
+    Repère dans le nom ou l'infobulle
+
+pdf-inventory-required-fields-indicator-present =
+    Présent
+
+pdf-inventory-required-fields-indicator-absent =
+    Absent des métadonnées
+
+pdf-inventory-required-fields-visual-only-heading =
+    Champs qui paraissent obligatoires sans porter l'indicateur
+
+pdf-inventory-ai-semantic-heading =
+    Analyse sémantique par IA
+
+pdf-inventory-ai-semantic-intro =
+    Balisage manquant plutôt que malformé : un titre composé en gros caractères gras mais balisé comme paragraphe, une suite de puces balisée en paragraphes isolés. Les vérifications structurelles ne peuvent pas les voir, car rien n'y est incorrect en soi.
+
+pdf-inventory-ai-semantic-issues =
+    { $count ->
+        [one] { $count } problème
+       *[other] { $count } problèmes
+    }
+
+pdf-inventory-ai-semantic-none =
+    Aucun problème sémantique trouvé
+
+pdf-inventory-ai-semantic-elements =
+    Éléments : { $refs }

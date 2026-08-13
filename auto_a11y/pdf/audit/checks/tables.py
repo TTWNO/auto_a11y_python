@@ -145,6 +145,7 @@ def check_table_headers_defined(ctx: AuditContext) -> list[CheckResult]:
         ]
 
     tables_missing_th: list[str] = []
+    affected: list[int] = []
     for table_elem in table_elements:
         descendants = _table_descendants(table_elem, elements)
         has_cells = any(d.resolved_tag in _CELL_TAGS for d in descendants)
@@ -160,6 +161,7 @@ def check_table_headers_defined(ctx: AuditContext) -> list[CheckResult]:
                 f"[{table_elem.index + 1}] Table"
                 + f" ({len(descendants)} descendants{preview_part})"
             )
+            affected.append(table_elem.index)
 
     if not tables_missing_th:
         return [
@@ -181,6 +183,7 @@ def check_table_headers_defined(ctx: AuditContext) -> list[CheckResult]:
                 f"{len(tables_missing_th)} table(s) missing TH (header) cells:"
                 f" {'; '.join(tables_missing_th[:5])}"
             ),
+            elements=tuple(affected),
         )
     ]
 
@@ -210,6 +213,7 @@ def check_table_header_scope_defined(ctx: AuditContext) -> list[CheckResult]:
 
     th_no_scope: list[str] = []
     th_invalid_scope: list[str] = []
+    affected: list[int] = []
     for table_elem in table_elements:
         for desc in _table_descendants(table_elem, elements):
             if desc.resolved_tag != "TH":
@@ -225,10 +229,12 @@ def check_table_header_scope_defined(ctx: AuditContext) -> list[CheckResult]:
                     if preview
                     else f"[{desc.index + 1}] TH"
                 )
+                affected.append(desc.index)
             elif scope_val not in _VALID_SCOPES:
                 th_invalid_scope.append(
                     f"[{desc.index + 1}] TH Scope='{scope_val}'"
                 )
+                affected.append(desc.index)
 
     all_issues = th_no_scope + th_invalid_scope
     if all_issues:
@@ -242,6 +248,7 @@ def check_table_header_scope_defined(ctx: AuditContext) -> list[CheckResult]:
                     f" {len(th_invalid_scope)} with invalid scope:"
                     f" {'; '.join(all_issues[:5])}"
                 ),
+                elements=tuple(dict.fromkeys(affected)),
             )
         ]
     th_count = sum(1 for e in elements if e.resolved_tag == "TH")
@@ -290,6 +297,7 @@ def check_table_structure_sections(ctx: AuditContext) -> list[CheckResult]:
         ]
 
     tables_no_sections: list[str] = []
+    affected: list[int] = []
     for table_elem in table_elements:
         direct_children = _children(table_elem, elements)
         has_thead = any(c.resolved_tag == "THead" for c in direct_children)
@@ -310,6 +318,7 @@ def check_table_structure_sections(ctx: AuditContext) -> list[CheckResult]:
             tables_no_sections.append(
                 f"[{table_elem.index + 1}] Table" + preview_part
             )
+            affected.append(table_elem.index)
 
     if not tables_no_sections:
         return [
@@ -332,6 +341,7 @@ def check_table_structure_sections(ctx: AuditContext) -> list[CheckResult]:
                 f"{len(tables_no_sections)} table(s) missing THead/TBody"
                 f" section wrappers: {'; '.join(tables_no_sections[:5])}"
             ),
+            elements=tuple(dict.fromkeys(affected)),
         )
     ]
 
@@ -392,6 +402,7 @@ def check_table_regularity(ctx: AuditContext) -> list[CheckResult]:
         ]
 
     irregular: list[str] = []
+    affected: list[int] = []
     for table_elem in table_elements:
         counts = _row_cell_counts_for_table(table_elem, elements)
         if counts and len(set(counts)) > 1:
@@ -399,6 +410,7 @@ def check_table_regularity(ctx: AuditContext) -> list[CheckResult]:
                 f"[{table_elem.index + 1}] Table:"
                 + f" rows have {min(counts)}-{max(counts)} cells"
             )
+            affected.append(table_elem.index)
 
     if not irregular:
         return [
@@ -421,6 +433,7 @@ def check_table_regularity(ctx: AuditContext) -> list[CheckResult]:
                 f"{len(irregular)} table(s) have inconsistent cell counts"
                 f" across rows: {'; '.join(irregular[:5])}"
             ),
+            elements=tuple(dict.fromkeys(affected)),
         )
     ]
 
@@ -448,12 +461,14 @@ def check_no_empty_tables(ctx: AuditContext) -> list[CheckResult]:
         ]
 
     empty_tables: list[str] = []
+    affected: list[int] = []
     for table_elem in table_elements:
         descendants = _table_descendants(table_elem, elements)
         if not any(d.resolved_tag in _CELL_TAGS for d in descendants):
             empty_tables.append(
                 f"[{table_elem.index + 1}] Table (no TD/TH cells)"
             )
+            affected.append(table_elem.index)
 
     if not empty_tables:
         return [
@@ -475,6 +490,7 @@ def check_no_empty_tables(ctx: AuditContext) -> list[CheckResult]:
                 f"{len(empty_tables)} empty table(s) with no data cells:"
                 f" {'; '.join(empty_tables[:5])}"
             ),
+            elements=tuple(dict.fromkeys(affected)),
         )
     ]
 
@@ -503,6 +519,7 @@ def check_table_captions(ctx: AuditContext) -> list[CheckResult]:
         ]
 
     tables_no_caption: list[str] = []
+    affected: list[int] = []
     for table_elem in table_elements:
         descendants = _table_descendants(table_elem, elements)
         has_cells = any(d.resolved_tag in _CELL_TAGS for d in descendants)
@@ -517,6 +534,7 @@ def check_table_captions(ctx: AuditContext) -> list[CheckResult]:
             tables_no_caption.append(
                 f"[{table_elem.index + 1}] Table" + preview_part
             )
+            affected.append(table_elem.index)
 
     if not tables_no_caption:
         return [
@@ -538,6 +556,7 @@ def check_table_captions(ctx: AuditContext) -> list[CheckResult]:
                 f"{len(tables_no_caption)} table(s) missing Caption element:"
                 f" {'; '.join(tables_no_caption[:5])}"
             ),
+            elements=tuple(dict.fromkeys(affected)),
         )
     ]
 
@@ -608,6 +627,7 @@ def check_complex_table_headers_association(
 
     complex_count = 0
     missing: list[str] = []
+    affected: list[int] = []
     for table in tables:
         rows = _table_rows(table, elements)
         if not rows:
@@ -647,6 +667,7 @@ def check_complex_table_headers_association(
                 + " missing /Headers"
                 + (f" (e.g. {preview})" if preview else "")
             )
+            affected.extend(cell.index for cell in without_headers)
 
     if missing:
         return [CheckResult(
@@ -655,6 +676,7 @@ def check_complex_table_headers_association(
                 f"{len(missing)} complex table(s) have TD cells without"
                 f" /Headers attribute: {'; '.join(missing[:5])}"
             ),
+            elements=tuple(dict.fromkeys(affected)),
         )]
     if complex_count:
         return [CheckResult(

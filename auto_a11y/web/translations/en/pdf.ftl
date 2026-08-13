@@ -586,3 +586,263 @@ pdf-inventory-doc-language = Document language (/Lang)
 pdf-inventory-doc-elements = Structure elements
 pdf-inventory-doc-pages = Pages
 pdf-inventory-doc-not-set = Not set
+
+# --- AI analysis, non-text contrast and required-field sections ---
+
+pdf-inventory-not-measured =
+    Not measured
+
+pdf-inventory-page-label =
+    Page { $page }
+
+pdf-inventory-recommendation-label =
+    Recommendation:
+
+pdf-inventory-ai-analysis-heading =
+    AI visual analysis
+
+pdf-inventory-ai-summary-heading =
+    AI executive summary
+
+pdf-inventory-ai-summary-strengths =
+    What this document does well
+
+pdf-inventory-ai-summary-actions =
+    Do these first
+
+pdf-inventory-ai-summary-affected =
+    Who this affects:
+
+pdf-inventory-ai-summary-effort =
+    Estimated effort:
+
+pdf-inventory-images-of-text-findings =
+    { $count ->
+        [one] { $count } image of text
+       *[other] { $count } images of text
+    }
+
+pdf-inventory-images-of-text-none =
+    No images of text
+
+pdf-inventory-images-of-text-col-image =
+    Image
+
+pdf-inventory-images-of-text-col-text =
+    Text found in the image
+
+pdf-inventory-images-of-text-col-alt =
+    Covered by alt text
+
+pdf-inventory-images-of-text-in-alt =
+    In alt text
+
+pdf-inventory-images-of-text-not-in-alt =
+    Not in alt text
+
+pdf-inventory-alt-text-adequacy-heading =
+    Alt text adequacy
+
+pdf-inventory-alt-text-adequacy-intro =
+    Whether each figure's alt text actually describes the image, judged against the image itself and the text around it. Alt text that exists but is wrong is harder to notice than alt text that is missing.
+
+pdf-inventory-alt-text-adequacy-inadequate =
+    { $count ->
+        [one] { $count } of { $total } inadequate
+       *[other] { $count } of { $total } inadequate
+    }
+
+pdf-inventory-alt-text-adequacy-adequate =
+    { $total ->
+        [one] { $total } figure assessed
+       *[other] { $total } figures assessed
+    }
+
+pdf-inventory-alt-text-adequacy-col-element =
+    Element
+
+pdf-inventory-alt-text-adequacy-col-alt =
+    Alt text
+
+pdf-inventory-alt-text-adequacy-col-verdict =
+    Verdict
+
+pdf-inventory-alt-text-adequacy-col-suggestion =
+    Suggested alt text
+
+pdf-inventory-alt-text-adequacy-verdict-adequate =
+    Adequate
+
+pdf-inventory-alt-text-adequacy-verdict-inadequate =
+    Inadequate
+
+pdf-inventory-color-use-heading =
+    Use of colour
+
+pdf-inventory-color-use-intro =
+    Places where colour may be the only thing carrying a meaning. Anyone who cannot distinguish the colours — or who is reading a monochrome print — gets the layout without the information.
+
+pdf-inventory-color-use-findings =
+    { $count ->
+        [one] { $count } finding
+       *[other] { $count } findings
+    }
+
+pdf-inventory-color-use-none =
+    No colour-only meaning found
+
+pdf-inventory-non-text-contrast-heading =
+    Non-text contrast
+
+pdf-inventory-non-text-contrast-intro =
+    Measured contrast for the parts of the page that are not text: form field borders, field fills, table rules, dividers and chart elements. WCAG 1.4.11 asks for at least 3:1 against whatever sits beside them.
+
+pdf-inventory-non-text-contrast-unavailable =
+    Contrast of non-text elements could not be measured for this document.
+
+pdf-inventory-non-text-contrast-nothing =
+    This document has no form fields and no drawn graphics to measure.
+
+pdf-inventory-non-text-contrast-fails =
+    { $count ->
+        [one] { $count } below 3:1
+       *[other] { $count } below 3:1
+    }
+
+pdf-inventory-non-text-contrast-pass =
+    All measured elements meet 3:1
+
+pdf-inventory-non-text-contrast-fields-heading =
+    Form fields
+
+pdf-inventory-non-text-contrast-graphics-heading =
+    Drawn graphics
+
+pdf-inventory-non-text-contrast-col-field =
+    Field
+
+pdf-inventory-non-text-contrast-col-page =
+    Page
+
+pdf-inventory-non-text-contrast-col-border =
+    Border colour
+
+pdf-inventory-non-text-contrast-col-page-bg =
+    Page background
+
+pdf-inventory-non-text-contrast-col-border-ratio =
+    Border contrast
+
+pdf-inventory-non-text-contrast-col-boundary-ratio =
+    Boundary contrast
+
+pdf-inventory-non-text-contrast-col-status =
+    Status
+
+pdf-inventory-non-text-contrast-col-category =
+    Kind
+
+pdf-inventory-non-text-contrast-col-colour =
+    Colour
+
+pdf-inventory-non-text-contrast-col-ratio =
+    Contrast
+
+pdf-inventory-non-text-contrast-no-border =
+    No border drawn
+
+pdf-inventory-non-text-contrast-status-pass =
+    Passes
+
+pdf-inventory-non-text-contrast-status-exempt =
+    Exempt
+
+pdf-inventory-non-text-contrast-status-border-fail =
+    Border too faint
+
+pdf-inventory-non-text-contrast-status-boundary-fail =
+    No visible boundary
+
+pdf-inventory-non-text-contrast-exempt-readonly =
+    Read-only — nobody has to find it to fill it in
+
+pdf-inventory-non-text-contrast-exempt-no-author-border =
+    No author-drawn border — the reader's own field highlighting applies
+
+pdf-inventory-non-text-contrast-category-table-border =
+    Table border
+
+pdf-inventory-non-text-contrast-category-divider-line =
+    Divider line
+
+pdf-inventory-non-text-contrast-category-chart-element =
+    Chart element
+
+pdf-inventory-non-text-contrast-category-other-graphic =
+    Other graphic
+
+pdf-inventory-required-fields-heading =
+    Required field indicators
+
+pdf-inventory-required-fields-intro =
+    Fields the form marks as required, and whether anything says so visibly. The /Ff Required flag is read only by assistive technology; a sighted user needs an asterisk, the word "required", or a legend explaining the convention.
+
+pdf-inventory-required-fields-none =
+    No field in this document carries the /Ff Required flag.
+
+pdf-inventory-required-fields-total =
+    { $count ->
+        [one] { $count } required field
+       *[other] { $count } required fields
+    }
+
+pdf-inventory-required-fields-missing =
+    { $count ->
+        [one] { $count } unmarked in metadata
+       *[other] { $count } unmarked in metadata
+    }
+
+pdf-inventory-required-fields-legend-label =
+    Legend found:
+
+pdf-inventory-required-fields-no-legend =
+    No legend explaining a required-field convention was found in the document text. Without one, an asterisk beside a field is unexplained.
+
+pdf-inventory-required-fields-col-field =
+    Field
+
+pdf-inventory-required-fields-col-page =
+    Page
+
+pdf-inventory-required-fields-col-tooltip =
+    Tooltip
+
+pdf-inventory-required-fields-col-indicator =
+    Indicator in name or tooltip
+
+pdf-inventory-required-fields-indicator-present =
+    Present
+
+pdf-inventory-required-fields-indicator-absent =
+    Not in metadata
+
+pdf-inventory-required-fields-visual-only-heading =
+    Fields that look required but carry no flag
+
+pdf-inventory-ai-semantic-heading =
+    AI semantic analysis
+
+pdf-inventory-ai-semantic-intro =
+    Markup that is missing rather than malformed — a heading set in large bold text but tagged as a paragraph, a list of bullets tagged as loose paragraphs. Structural checks cannot see these, because nothing about them is wrong on its own terms.
+
+pdf-inventory-ai-semantic-issues =
+    { $count ->
+        [one] { $count } issue
+       *[other] { $count } issues
+    }
+
+pdf-inventory-ai-semantic-none =
+    No semantic issues found
+
+pdf-inventory-ai-semantic-elements =
+    Elements: { $refs }

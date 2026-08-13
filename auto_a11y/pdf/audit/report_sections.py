@@ -55,7 +55,12 @@ if TYPE_CHECKING:
     from auto_a11y.pdf.audit.colors import ColorPairInfo
     from auto_a11y.pdf.audit.fonts import FontAnalysis
     from auto_a11y.pdf.audit.images import ExtractedImage
+    from auto_a11y.pdf.audit.non_text_contrast import (
+        FieldContrastFinding,
+        NonTextContrast,
+    )
     from auto_a11y.pdf.audit.reading_order import ReadingOrderMismatch
+    from auto_a11y.pdf.audit.required_fields import RequiredFields
     from auto_a11y.pdf.audit.structure import StructElement
     from auto_a11y.pdf.models import AuditContext, CheckResult
 
@@ -130,6 +135,10 @@ def build_report_sections(
             ctx.elements, ctx.images or []
         ),
         "images_of_text": _build_images_of_text_placeholder(),
+        "non_text_contrast": _build_non_text_contrast(ctx.non_text_contrast),
+        "required_field_indicators": _build_required_field_indicators(
+            ctx.required_fields
+        ),
     }
 
 
@@ -1456,6 +1465,132 @@ def _build_exported_images(
 # ---------------------------------------------------------------------------
 # §15 Images of Text (Phase 5.1 placeholder)
 # ---------------------------------------------------------------------------
+
+
+def _build_non_text_contrast(
+    data: NonTextContrast | None,
+) -> dict[str, object]:
+    """Measured non-text contrast, per field and per drawn graphic.
+
+    Ported from pdfMax's ``build_non_text_contrast_report`` (line
+    ~10285). Rendered whether or not AI runs: the ratios are measured,
+    and the numbers are the part a remediator acts on. An AI run adds
+    its own findings to the same section rather than replacing these.
+    """
+    if data is None:
+        return {"available": False, "fields": [], "graphics": []}
+
+    fields: list[dict[str, object]] = []
+    if data.fields is not None:
+        for finding in data.fields.findings:
+            fields.append({
+                "field_name": finding.field_name,
+                "field_type": finding.field_type,
+                "page": finding.page + 1,
+                "border_color": (
+                    _rgb_to_hex(finding.border_color)
+                    if finding.border_color is not None else ""
+                ),
+                "border_source": finding.border_source or "",
+                "field_bg_color": _rgb_to_hex(finding.field_bg_color),
+                "page_bg_color": _rgb_to_hex(finding.page_bg_color),
+                "border_contrast": (
+                    round(finding.border_contrast, 2)
+                    if finding.border_contrast is not None else None
+                ),
+                "boundary_contrast": (
+                    round(finding.boundary_contrast, 2)
+                    if finding.boundary_contrast is not None else None
+                ),
+                "border_pass": finding.border_pass,
+                "boundary_pass": finding.boundary_pass,
+                "exempt_reason": finding.exempt_reason or "",
+                "status": _contrast_status(finding),
+            })
+
+    graphics = [
+        {
+            "category": graphic.category,
+            "page": graphic.page,
+            "element_color": _rgb_to_hex(graphic.element_color),
+            "page_bg_color": _rgb_to_hex(graphic.page_bg_color),
+            "color_source": graphic.color_source,
+            "contrast_ratio": graphic.contrast_ratio,
+            "contrast_pass": graphic.contrast_pass,
+            "linewidth": graphic.linewidth,
+            "description": graphic.description,
+        }
+        for graphic in data.graphics.findings
+    ]
+
+    field_summary = data.fields.summary if data.fields is not None else None
+    return {
+        "available": True,
+        "fields": fields,
+        "graphics": graphics,
+        "field_summary": (
+            {
+                "total_fields": field_summary.total_fields,
+                "fields_with_borders": field_summary.fields_with_borders,
+                "border_fails": field_summary.border_fails,
+                "boundary_only_fails": field_summary.boundary_only_fails,
+                "boundary_info": field_summary.boundary_info,
+                "exempt_count": field_summary.exempt_count,
+            }
+            if field_summary is not None else None
+        ),
+        "graphic_summary": {
+            "total_elements": data.graphics.summary.total_elements,
+            "table_borders": data.graphics.summary.table_borders,
+            "divider_lines": data.graphics.summary.divider_lines,
+            "chart_elements": data.graphics.summary.chart_elements,
+            "other_graphics": data.graphics.summary.other_graphics,
+            "total_fails": data.graphics.summary.total_fails,
+        },
+    }
+
+
+def _contrast_status(finding: FieldContrastFinding) -> str:
+    """One word for how a field fared: exempt, fail, or pass."""
+    if finding.exempt_reason:
+        return "exempt"
+    if finding.border_pass is False:
+        return "border_fail"
+    if finding.boundary_pass is False and finding.border_pass is not True:
+        return "boundary_fail"
+    return "pass"
+
+
+def _build_required_field_indicators(
+    data: RequiredFields | None,
+) -> dict[str, object]:
+    """Every field the form marks required, and what says so.
+
+    Ported from pdfMax's required-indicator report block (line ~11420).
+    The metadata column is what a check can see; the legend is what
+    covers the fields the metadata does not mark.
+    """
+    if data is None:
+        return {"available": False, "fields": [], "has_legend": False}
+
+    return {
+        "available": True,
+        "has_legend": data.has_legend,
+        "legend_text": data.legend_text,
+        "fields": [
+            {
+                "name": field.name,
+                "tooltip": field.tooltip,
+                "field_type": field.field_type,
+                "page": field.page + 1,
+                "has_indicator": field.has_indicator_in_metadata,
+                "indicator_detail": field.indicator_detail,
+            }
+            for field in data.fields
+        ],
+        "missing_count": len(data.missing_indicator),
+        "total": len(data.fields),
+    }
 
 
 def _build_images_of_text_placeholder() -> dict[str, object]:

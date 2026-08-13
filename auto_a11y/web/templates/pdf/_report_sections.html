@@ -127,6 +127,54 @@
     </section>
     {% endif %}
 
+    {# ----- AI executive summary -----
+       The deterministic summary above counts verdicts; this one is
+       Claude's plain-language reading of them, and it only exists when
+       AI ran. Both are shown: the counts are checkable, the prose is
+       actionable, and neither substitutes for the other. #}
+    {% set aes = report_sections.get('ai_executive_summary') %}
+    {% if aes is mapping %}
+    <section class="pdf-inventory-ai-summary mb-3"
+             aria-labelledby="pdf-inventory-ai-summary-heading">
+        <h4 id="pdf-inventory-ai-summary-heading" class="h6">
+            {{ ftl('pdf-inventory-ai-summary-heading') }}
+            {% if aes.get('overall_rating') %}
+            <span class="badge badge-subtle">{{ aes.get('overall_rating') }}</span>
+            {% endif %}
+        </h4>
+        {% if aes.get('headline') %}
+        <p><strong>{{ aes.get('headline') }}</strong></p>
+        {% endif %}
+        {% if aes.get('plain_language_summary') %}
+        <p>{{ aes.get('plain_language_summary') }}</p>
+        {% endif %}
+        {% if aes.get('key_strengths') %}
+        <h5 class="h6">{{ ftl('pdf-inventory-ai-summary-strengths') }}</h5>
+        <ul>
+            {% for item in aes.get('key_strengths', []) %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if aes.get('priority_actions') %}
+        <h5 class="h6">{{ ftl('pdf-inventory-ai-summary-actions') }}</h5>
+        <ol>
+            {% for item in aes.get('priority_actions', []) %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+        {% if aes.get('who_is_affected') %}
+        <p><strong>{{ ftl('pdf-inventory-ai-summary-affected') }}</strong>
+            {{ aes.get('who_is_affected') }}</p>
+        {% endif %}
+        {% if aes.get('estimated_effort') %}
+        <p><strong>{{ ftl('pdf-inventory-ai-summary-effort') }}</strong>
+            {{ aes.get('estimated_effort') }}</p>
+        {% endif %}
+    </section>
+    {% endif %}
+
     {# ----- §2 Tag Tree ----- #}
     {% set tt = report_sections.get('tag_tree') %}
     {% if tt is mapping %}
@@ -757,24 +805,484 @@
     </details>
     {% endif %}
 
-    {# ----- §15 Images of Text (AI placeholder) ----- #}
+    {# ----- §15 Images of Text -----
+       Two shapes reach this section. Without AI it is the placeholder
+       (``available: false``); with AI it is the vision pass's own
+       payload, which has no ``available`` key at all and instead
+       carries ``images`` and ``total_findings``. #}
     {% set iot = report_sections.get('images_of_text') %}
     {% if iot is mapping %}
+    {% set iot_ran = iot.get('images') is not none %}
     <details class="pdf-inventory-section" id="section-images_of_text">
         <summary>
             {{ ftl('pdf-inventory-images-of-text-heading') }}
-            {% if not iot.get('available') %}
+            {% if not iot_ran %}
             <span class="badge badge-info">
                 {{ ftl('pdf-inventory-images-of-text-ai-required') }}
+            </span>
+            {% elif iot.get('total_findings', 0) %}
+            <span class="badge badge-medium">
+                {{ ftl('pdf-inventory-images-of-text-findings',
+                       count=iot.get('total_findings', 0)) }}
+            </span>
+            {% else %}
+            <span class="badge badge-pass">
+                {{ ftl('pdf-inventory-images-of-text-none') }}
             </span>
             {% endif %}
         </summary>
         <p class="text-muted small">{{ ftl('pdf-inventory-images-of-text-intro') }}</p>
-        {% if not iot.get('available') %}
+        {% if not iot_ran %}
         <div class="alert alert-info" role="status">
             {{ ftl('pdf-inventory-images-of-text-not-configured') }}
         </div>
+        {% else %}
+        {% if iot.get('images') %}
+        <div class="pdf-report-table-scroll">
+            <table class="pdf-report-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ ftl('pdf-inventory-images-of-text-col-image') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-images-of-text-col-text') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-images-of-text-col-alt') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for img in iot.get('images', []) %}
+                    <tr>
+                        <th scope="row"><code>{{ img.get('filename', '') }}</code></th>
+                        <td>{{ img.get('text', '') }}</td>
+                        <td>
+                            {% if img.get('in_alt_text') %}
+                            <span class="badge badge-pass">
+                                {{ ftl('pdf-inventory-images-of-text-in-alt') }}
+                            </span>
+                            {% else %}
+                            <span class="badge badge-medium">
+                                {{ ftl('pdf-inventory-images-of-text-not-in-alt') }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% endif %}
+        {% for page in iot.get('pages', []) %}
+        <p><strong>{{ ftl('pdf-inventory-page-label', page=page.get('page', 0)) }}</strong>
+            — {{ page.get('finding', '') }}</p>
+        {% endfor %}
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §15b Alt Text Adequacy (AI) ----- #}
+    {% set ata = report_sections.get('alt_text_adequacy') %}
+    {% if ata is mapping %}
+    <details class="pdf-inventory-section" id="section-alt_text_adequacy">
+        <summary>
+            {{ ftl('pdf-inventory-alt-text-adequacy-heading') }}
+            {% if ata.get('inadequate', 0) %}
+            <span class="badge badge-medium">
+                {{ ftl('pdf-inventory-alt-text-adequacy-inadequate',
+                       count=ata.get('inadequate', 0),
+                       total=ata.get('total', 0)) }}
+            </span>
+            {% else %}
+            <span class="badge badge-pass">
+                {{ ftl('pdf-inventory-alt-text-adequacy-adequate',
+                       total=ata.get('total', 0)) }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-alt-text-adequacy-intro') }}</p>
+        {% if ata.get('assessments') %}
+        <div class="pdf-report-table-scroll">
+            <table class="pdf-report-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ ftl('pdf-inventory-alt-text-adequacy-col-element') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-alt-text-adequacy-col-alt') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-alt-text-adequacy-col-verdict') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-alt-text-adequacy-col-suggestion') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in ata.get('assessments', []) %}
+                    <tr>
+                        <th scope="row">[{{ row.get('element_index', '') }}]</th>
+                        <td>{{ row.get('alt_text', '') }}</td>
+                        <td>
+                            {% if row.get('adequate') %}
+                            <span class="badge badge-pass">
+                                {{ ftl('pdf-inventory-alt-text-adequacy-verdict-adequate') }}
+                            </span>
+                            {% else %}
+                            <span class="badge badge-medium">
+                                {{ ftl('pdf-inventory-alt-text-adequacy-verdict-inadequate') }}
+                            </span>
+                            {% endif %}
+                            {% if row.get('reason') %}
+                            <small class="text-muted d-block">{{ row.get('reason') }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.get('suggestion', '') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §15c Use of Colour (AI) ----- #}
+    {% set cu = report_sections.get('color_use') %}
+    {% if cu is mapping %}
+    <details class="pdf-inventory-section" id="section-color_use">
+        <summary>
+            {{ ftl('pdf-inventory-color-use-heading') }}
+            {% if cu.get('findings') %}
+            <span class="badge badge-medium">
+                {{ ftl('pdf-inventory-color-use-findings',
+                       count=cu.get('findings')|length) }}
+            </span>
+            {% else %}
+            <span class="badge badge-pass">
+                {{ ftl('pdf-inventory-color-use-none') }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-color-use-intro') }}</p>
+        {% if cu.get('overall_assessment') %}
+        <p>{{ cu.get('overall_assessment') }}</p>
+        {% endif %}
+        {% for finding in cu.get('findings', []) %}
+        <div class="pdf-ai-finding">
+            <h4>
+                <span class="badge badge-{{ 'high' if finding.get('severity') == 'fail' else 'medium' }}">
+                    {{ finding.get('severity', '') }}
+                </span>
+                {{ finding.get('category', '') }}
+                {% if finding.get('page') %}
+                <small class="text-muted">
+                    {{ ftl('pdf-inventory-page-label', page=finding.get('page')) }}
+                </small>
+                {% endif %}
+            </h4>
+            <p>{{ finding.get('description', '') }}</p>
+            {% if finding.get('what_color_conveys') %}
+            <p><em>{{ finding.get('what_color_conveys') }}</em></p>
+            {% endif %}
+            {% if finding.get('recommendation') %}
+            <p><strong>{{ ftl('pdf-inventory-recommendation-label') }}</strong>
+                {{ finding.get('recommendation') }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </details>
+    {% endif %}
+
+    {# ----- §15d Non-text Contrast ----- #}
+    {% set ntc = report_sections.get('non_text_contrast') %}
+    {% set ntc_ai = report_sections.get('non_text_contrast_ai') %}
+    {% if ntc is mapping %}
+    <details class="pdf-inventory-section" id="section-non_text_contrast">
+        <summary>
+            {{ ftl('pdf-inventory-non-text-contrast-heading') }}
+            {% set gs = ntc.get('graphic_summary') or {} %}
+            {% set fs = ntc.get('field_summary') or {} %}
+            {% set ntc_fails = (fs.get('border_fails', 0)
+                                + fs.get('boundary_only_fails', 0)
+                                + gs.get('total_fails', 0)) %}
+            {% if not ntc.get('available') %}
+            <span class="badge badge-subtle">
+                {{ ftl('pdf-inventory-not-measured') }}
+            </span>
+            {% elif ntc_fails %}
+            <span class="badge badge-high">
+                {{ ftl('pdf-inventory-non-text-contrast-fails', count=ntc_fails) }}
+            </span>
+            {% else %}
+            <span class="badge badge-pass">
+                {{ ftl('pdf-inventory-non-text-contrast-pass') }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-non-text-contrast-intro') }}</p>
+        {% if not ntc.get('available') %}
+        <p class="text-muted">{{ ftl('pdf-inventory-non-text-contrast-unavailable') }}</p>
+        {% elif not ntc.get('fields') and not ntc.get('graphics') %}
+        <p class="text-muted">{{ ftl('pdf-inventory-non-text-contrast-nothing') }}</p>
+        {% endif %}
+
+        {% if ntc.get('fields') %}
+        <h4>{{ ftl('pdf-inventory-non-text-contrast-fields-heading') }}</h4>
+        <div class="pdf-report-table-scroll">
+            <table class="pdf-report-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-field') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-page') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-border') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-page-bg') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-border-ratio') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-boundary-ratio') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-status') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in ntc.get('fields', []) %}
+                    <tr>
+                        <th scope="row">
+                            {{ row.get('field_name', '') }}
+                            <small class="text-muted">({{ row.get('field_type', '') }})</small>
+                        </th>
+                        <td>{{ row.get('page', '') }}</td>
+                        <td>
+                            {% if row.get('border_color') %}
+                            <code>{{ row.get('border_color') }}</code>
+                            <small class="text-muted">{{ row.get('border_source', '') }}</small>
+                            {% else %}
+                            <span class="text-muted">
+                                {{ ftl('pdf-inventory-non-text-contrast-no-border') }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ row.get('page_bg_color', '') }}</code></td>
+                        <td>
+                            {% if row.get('border_contrast') is not none %}
+                            {{ row.get('border_contrast') }}:1
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.get('boundary_contrast') is not none %}
+                            {{ row.get('boundary_contrast') }}:1
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set st = row.get('status', '') %}
+                            <span class="badge badge-{{ {'pass': 'pass', 'exempt': 'subtle',
+                                                         'border_fail': 'high',
+                                                         'boundary_fail': 'high'}.get(st, 'subtle') }}">
+                                {{ ftl('pdf-inventory-non-text-contrast-status-' ~ (st | replace('_', '-'))) }}
+                            </span>
+                            {% if row.get('exempt_reason') %}
+                            <small class="text-muted d-block">
+                                {{ ftl('pdf-inventory-non-text-contrast-exempt-'
+                                       ~ (row.get('exempt_reason') | replace('_', '-'))) }}
+                            </small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if ntc.get('graphics') %}
+        <h4>{{ ftl('pdf-inventory-non-text-contrast-graphics-heading') }}</h4>
+        <div class="pdf-report-table-scroll">
+            <table class="pdf-report-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-category') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-page') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-colour') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-page-bg') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-ratio') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-non-text-contrast-col-status') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in ntc.get('graphics', []) %}
+                    <tr>
+                        <th scope="row">
+                            {{ ftl('pdf-inventory-non-text-contrast-category-'
+                                   ~ (row.get('category', '') | replace('_', '-'))) }}
+                        </th>
+                        <td>{{ row.get('page', '') }}</td>
+                        <td><code>{{ row.get('element_color', '') }}</code></td>
+                        <td><code>{{ row.get('page_bg_color', '') }}</code></td>
+                        <td>{{ row.get('contrast_ratio', '') }}:1</td>
+                        <td>
+                            <span class="badge badge-{{ 'pass' if row.get('contrast_pass') else 'high' }}">
+                                {{ ftl('pdf-inventory-non-text-contrast-status-'
+                                       ~ ('pass' if row.get('contrast_pass') else 'border-fail')) }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if ntc_ai is mapping %}
+        <h4>{{ ftl('pdf-inventory-ai-analysis-heading') }}</h4>
+        {% if ntc_ai.get('overall_assessment') %}
+        <p>{{ ntc_ai.get('overall_assessment') }}</p>
+        {% endif %}
+        {% for finding in ntc_ai.get('findings', []) %}
+        <div class="pdf-ai-finding">
+            <h5>
+                <span class="badge badge-{{ {'fail': 'high', 'warning': 'medium'}.get(finding.get('severity'), 'pass') }}">
+                    {{ finding.get('severity', '') }}
+                </span>
+                {{ finding.get('category', '') | replace('_', ' ') }}
+                <small class="text-muted">
+                    {{ ftl('pdf-inventory-page-label', page=finding.get('page', 0)) }}
+                </small>
+            </h5>
+            <p>{{ finding.get('description', '') }}</p>
+            {% if finding.get('recommendation') %}
+            <p><strong>{{ ftl('pdf-inventory-recommendation-label') }}</strong>
+                {{ finding.get('recommendation') }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §15e Required Field Indicators ----- #}
+    {% set rfi = report_sections.get('required_field_indicators') %}
+    {% set rfi_ai = report_sections.get('required_indicators') %}
+    {% if rfi is mapping %}
+    <details class="pdf-inventory-section" id="section-required_field_indicators">
+        <summary>
+            {{ ftl('pdf-inventory-required-fields-heading') }}
+            <span class="badge badge-subtle">
+                {{ ftl('pdf-inventory-required-fields-total', count=rfi.get('total', 0)) }}
+            </span>
+            {% if rfi.get('missing_count', 0) %}
+            <span class="badge badge-medium">
+                {{ ftl('pdf-inventory-required-fields-missing',
+                       count=rfi.get('missing_count', 0)) }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-required-fields-intro') }}</p>
+        {% if not rfi.get('available') %}
+        <p class="text-muted">{{ ftl('pdf-inventory-required-fields-none') }}</p>
+        {% else %}
+        {% if rfi.get('has_legend') %}
+        <p>
+            <strong>{{ ftl('pdf-inventory-required-fields-legend-label') }}</strong>
+            <q>{{ rfi.get('legend_text', '') }}</q>
+        </p>
+        {% else %}
+        <div class="alert alert-medium" role="status">
+            {{ ftl('pdf-inventory-required-fields-no-legend') }}
+        </div>
+        {% endif %}
+        <div class="pdf-report-table-scroll">
+            <table class="pdf-report-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ ftl('pdf-inventory-required-fields-col-field') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-required-fields-col-page') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-required-fields-col-tooltip') }}</th>
+                        <th scope="col">{{ ftl('pdf-inventory-required-fields-col-indicator') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rfi.get('fields', []) %}
+                    <tr>
+                        <th scope="row">
+                            {{ row.get('name', '') }}
+                            <small class="text-muted">({{ row.get('field_type', '') }})</small>
+                        </th>
+                        <td>{{ row.get('page', '') }}</td>
+                        <td>{{ row.get('tooltip', '') }}</td>
+                        <td>
+                            {% if row.get('has_indicator') %}
+                            <span class="badge badge-pass">
+                                {{ ftl('pdf-inventory-required-fields-indicator-present') }}
+                            </span>
+                            <small class="text-muted d-block">{{ row.get('indicator_detail', '') }}</small>
+                            {% else %}
+                            <span class="badge badge-medium">
+                                {{ ftl('pdf-inventory-required-fields-indicator-absent') }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% endif %}
+
+        {% if rfi_ai is mapping %}
+        <h4>{{ ftl('pdf-inventory-ai-analysis-heading') }}</h4>
+        {% if rfi_ai.get('overall_assessment') %}
+        <p>{{ rfi_ai.get('overall_assessment') }}</p>
+        {% endif %}
+        {% if rfi_ai.get('visual_only_required') %}
+        <p><strong>{{ ftl('pdf-inventory-required-fields-visual-only-heading') }}</strong></p>
+        <ul>
+            {% for item in rfi_ai.get('visual_only_required', []) %}
+            <li>
+                {{ ftl('pdf-inventory-page-label', page=item.get('page', 0)) }}
+                — {{ item.get('description', '') }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §15f AI Semantic Analysis ----- #}
+    {% set sem = report_sections.get('ai_semantic') %}
+    {% if sem is mapping %}
+    <details class="pdf-inventory-section" id="section-ai_semantic">
+        <summary>
+            {{ ftl('pdf-inventory-ai-semantic-heading') }}
+            {% if sem.get('issues') %}
+            <span class="badge badge-medium">
+                {{ ftl('pdf-inventory-ai-semantic-issues',
+                       count=sem.get('issues')|length) }}
+            </span>
+            {% else %}
+            <span class="badge badge-pass">
+                {{ ftl('pdf-inventory-ai-semantic-none') }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-ai-semantic-intro') }}</p>
+        {% if sem.get('overall_assessment') %}
+        <p>{{ sem.get('overall_assessment') }}</p>
+        {% endif %}
+        {% for issue in sem.get('issues', []) %}
+        <div class="pdf-ai-finding">
+            <h4>
+                <span class="badge badge-{{ {'critical': 'high', 'important': 'medium'}.get(issue.get('severity'), 'info') }}">
+                    {{ issue.get('severity', '') }}
+                </span>
+                {{ issue.get('title', '') }}
+            </h4>
+            {% if issue.get('elements') %}
+            <p class="text-muted small">
+                {{ ftl('pdf-inventory-ai-semantic-elements', refs=issue.get('elements')) }}
+            </p>
+            {% endif %}
+            <p>{{ issue.get('problem', '') }}</p>
+            {% if issue.get('impact') %}
+            <p><em>{{ issue.get('impact') }}</em></p>
+            {% endif %}
+            {% if issue.get('recommendation') %}
+            <p><strong>{{ ftl('pdf-inventory-recommendation-label') }}</strong>
+                {{ issue.get('recommendation') }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
     </details>
     {% endif %}
 

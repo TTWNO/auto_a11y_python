@@ -850,35 +850,58 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     margin: 0 0 var(--space-sm);
+    text-align: start;
 }
 
-.pdf-summary-bars {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+/* The chart is a table: the bars are drawn inside the total column, so
+   what a screen reader reads is the data rather than a description of a
+   picture. */
+.pdf-summary-table {
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+    width: 100%;
 }
 
-.pdf-summary-bar-row {
-    display: grid;
-    /* The label column is a fixed measure so the bars share a baseline
-       and can be compared; at high magnification it stacks instead. */
-    grid-template-columns: minmax(6rem, 12rem) 1fr auto;
+.pdf-summary-table th,
+.pdf-summary-table td {
+    padding: 2px var(--space-sm);
+    text-align: start;
+}
+
+.pdf-summary-table thead th {
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.pdf-summary-count {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    /* Per-verdict figures are in the table for a reader who wants them;
+       the bar beside the total is the at-a-glance version. */
+    width: 4ch;
+}
+
+.pdf-summary-total {
+    display: flex;
     align-items: center;
     gap: var(--space-sm);
-    padding: 2px 0;
-    font-size: var(--font-size-sm);
 }
 
 .pdf-summary-bar-label {
-    text-align: end;
+    font-weight: 400;
     overflow-wrap: anywhere;
 }
 
 .pdf-summary-bar {
     display: flex;
+    flex: 1 1 6rem;
     height: 14px;
     border-radius: 3px;
     overflow: hidden;
+    /* Fail and warn sit side by side, and the two are 1.46:1 against
+       each other — the join needs an edge in the page colour or it
+       cannot be seen (SC 1.4.11). */
+    gap: 2px;
 }
 
 .pdf-summary-bar-fail { background: var(--color-severity-high); }
@@ -889,13 +912,18 @@
     font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 48rem) {
-    .pdf-summary-bar-row {
-        grid-template-columns: 1fr auto;
-    }
+/* The arcs meet at colours only 1.03:1 apart. A short arc of the page
+   colour at each boundary gives every segment an edge that is visible
+   against its neighbour, without inventing a colour outside the
+   palette. */
+.pdf-donut-divider {
+    stroke: var(--color-bg);
+}
 
-    .pdf-summary-bar-label {
-        grid-column: 1 / -1;
-        text-align: start;
+@media (max-width: 48rem) {
+    /* The bar loses its column before the numbers do — the figures are
+       the data, the bar is the illustration. */
+    .pdf-summary-bar {
+        display: none;
     }
 }

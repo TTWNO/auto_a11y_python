@@ -80,18 +80,22 @@
         </p>
         {# ----- Charts: the shape of the result at a glance -----
            pdfMax draws a pass/warn/fail donut and an "issues by area"
-           bar chart (_generate_summary_charts_svg, line ~8920). Both are
-           carried across, with two changes.
+           bar chart (_generate_summary_charts_svg, line ~8920).
 
-           Its colours are hardcoded hex and its bars are inline styles;
-           here the fills come from the severity tokens through CSS
-           classes, so the charts follow the theme and the forced-colours
-           mode like everything else.
+           Both carry their own information here rather than being
+           decoration. The donut is a labelled image whose alt text
+           states every figure in it. The area chart is a real table —
+           the bars are drawn inside the cells, so what a screen reader
+           reads is the data itself, not a description of a picture.
+           That breakdown appears nowhere else in the report, so hiding
+           it would remove information rather than avoid repeating it.
 
-           And both are decoration: every number in them is stated in the
-           text above and the table below, so they are aria-hidden rather
-           than described. A chart that repeats what the prose already
-           says should not be read out twice. #}
+           Colour never carries a value on its own: the donut labels each
+           segment with its count, and every bar sits beside its number.
+           The segments are separated by a stroke in the page colour
+           because adjacent severity colours are only 1.03:1 to 1.5:1
+           against *each other* — fine against the page, invisible where
+           two of them meet (SC 1.4.11). #}
         {% set total = es.get('pass_count', 0) + es.get('warn_count', 0)
                        + es.get('fail_count', 0) %}
         {% if total %}
@@ -100,11 +104,20 @@
             {% set pass_len = circumference * es.get('pass_count', 0) / total %}
             {% set warn_len = circumference * es.get('warn_count', 0) / total %}
             {% set fail_len = circumference * es.get('fail_count', 0) / total %}
+            {% set pass_pct = (100 * es.get('pass_count', 0) / total) | round | int %}
             <div class="pdf-summary-donut">
                 <svg viewBox="0 0 160 160" width="160" height="160"
-                     class="pdf-donut" aria-hidden="true" focusable="false">
+                     class="pdf-donut" role="img"
+                     aria-label="{{ ftl('pdf-report-chart-donut-alt',
+                                        percent=pass_pct,
+                                        pass=es.get('pass_count', 0),
+                                        warn=es.get('warn_count', 0),
+                                        fail=es.get('fail_count', 0)) }}">
                     <circle class="pdf-donut-track" cx="80" cy="80" r="56"
                             fill="none" stroke-width="22"></circle>
+                    {# stroke-linecap butt + a page-coloured overlay ring
+                       gives each arc a visible edge against its
+                       neighbour without inventing a colour. #}
                     <circle class="pdf-donut-pass" cx="80" cy="80" r="56"
                             fill="none" stroke-width="22"
                             stroke-dasharray="{{ pass_len }} {{ circumference }}"
@@ -119,22 +132,30 @@
                             stroke-dasharray="{{ fail_len }} {{ circumference }}"
                             stroke-dashoffset="{{ -(pass_len + warn_len) }}"
                             transform="rotate(-90 80 80)"></circle>
+                    {# The separators: short arcs in the page colour at
+                       each boundary. #}
+                    {% for at in [0, pass_len, pass_len + warn_len] %}
+                    <circle class="pdf-donut-divider" cx="80" cy="80" r="56"
+                            fill="none" stroke-width="22"
+                            stroke-dasharray="2 {{ circumference }}"
+                            stroke-dashoffset="{{ -at }}"
+                            transform="rotate(-90 80 80)"></circle>
+                    {% endfor %}
                     <text x="80" y="74" text-anchor="middle"
-                          class="pdf-donut-figure">{{
-                              (100 * es.get('pass_count', 0) / total) | round | int
-                          }}%</text>
+                          class="pdf-donut-figure">{{ pass_pct }}%</text>
                     <text x="80" y="96" text-anchor="middle"
                           class="pdf-donut-caption">{{ ftl('pdf-report-chart-passed') }}</text>
                 </svg>
-                <ul class="pdf-summary-legend">
+                {# The legend repeats what the alt text says, so it is
+                   decoration for anyone reading the image description. #}
+                <ul class="pdf-summary-legend" aria-hidden="true">
                     {% for key, count in [
                         ('pass', es.get('pass_count', 0)),
                         ('warn', es.get('warn_count', 0)),
                         ('fail', es.get('fail_count', 0)),
                     ] %}
                     <li>
-                        <span class="pdf-summary-swatch pdf-summary-swatch-{{ key }}"
-                              aria-hidden="true"></span>
+                        <span class="pdf-summary-swatch pdf-summary-swatch-{{ key }}"></span>
                         {{ ftl('pdf-report-badge-' ~ key) }}: {{ count }}
                     </li>
                     {% endfor %}
@@ -144,29 +165,45 @@
             {% if es.get('areas') %}
             {% set worst = es.get('areas')[0].get('total', 1) or 1 %}
             <div class="pdf-summary-areas">
-                <h5 class="pdf-summary-areas-heading">
-                    {{ ftl('pdf-report-chart-areas') }}
-                </h5>
-                <ul class="pdf-summary-bars">
-                    {% for row in es.get('areas') %}
-                    <li class="pdf-summary-bar-row">
-                        <span class="pdf-summary-bar-label">
-                            {{ ftl('pdf-report-area-' ~ row.get('area')) }}
-                        </span>
-                        <span class="pdf-summary-bar" aria-hidden="true">
-                            {% if row.get('fail') %}
-                            <span class="pdf-summary-bar-fail"
-                                  style="width: {{ 100 * row.get('fail') / worst }}%"></span>
-                            {% endif %}
-                            {% if row.get('warn') %}
-                            <span class="pdf-summary-bar-warn"
-                                  style="width: {{ 100 * row.get('warn') / worst }}%"></span>
-                            {% endif %}
-                        </span>
-                        <span class="pdf-summary-bar-count">{{ row.get('total') }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
+                <table class="pdf-summary-table">
+                    <caption class="pdf-summary-areas-heading">
+                        {{ ftl('pdf-report-chart-areas') }}
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ ftl('pdf-report-chart-col-area') }}</th>
+                            <th scope="col">{{ ftl('pdf-report-badge-fail') }}</th>
+                            <th scope="col">{{ ftl('pdf-report-badge-warn') }}</th>
+                            <th scope="col">{{ ftl('pdf-report-chart-col-total') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in es.get('areas') %}
+                        <tr>
+                            <th scope="row" class="pdf-summary-bar-label">
+                                {{ ftl('pdf-report-area-' ~ row.get('area')) }}
+                            </th>
+                            <td class="pdf-summary-count">{{ row.get('fail') }}</td>
+                            <td class="pdf-summary-count">{{ row.get('warn') }}</td>
+                            <td class="pdf-summary-total">
+                                {# The bar is the same numbers drawn; the
+                                   figure beside it is what is read. #}
+                                <span class="pdf-summary-bar" aria-hidden="true">
+                                    {% if row.get('fail') %}
+                                    <span class="pdf-summary-bar-fail"
+                                          style="width: {{ 100 * row.get('fail') / worst }}%"></span>
+                                    {% endif %}
+                                    {% if row.get('warn') %}
+                                    <span class="pdf-summary-bar-warn"
+                                          style="width: {{ 100 * row.get('warn') / worst }}%"></span>
+                                    {% endif %}
+                                </span>
+                                <span class="pdf-summary-bar-count">{{ row.get('total') }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
             {% endif %}
         </div>

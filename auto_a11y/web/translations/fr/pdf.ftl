@@ -874,3 +874,6 @@ pdf-report-area-language = Langue
 pdf-report-area-fonts = Polices et texte
 pdf-report-area-colour = Couleur et contraste
 pdf-report-nav-metadata = Métadonnées
+pdf-report-chart-donut-alt = { $percent } % des vérifications réussies : { $pass } réussies, { $warn } avertissements, { $fail } échecs.
+pdf-report-chart-col-area = Domaine
+pdf-report-chart-col-total = Total des problèmes

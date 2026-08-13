@@ -394,14 +394,22 @@ def test_the_donut_shows_the_pass_percentage() -> None:
 
 
 def test_the_donut_segments_are_proportional() -> None:
-    """Each arc's dash length is its share of the circumference."""
+    """Each arc's dash length is its share of the circumference.
+
+    Counts only the value arcs — the boundary separators drawn over them
+    also carry a dasharray.
+    """
     html = _front({"executive_summary": _summary()})
 
-    dashes = re.findall(r'stroke-dasharray="([0-9.]+) ([0-9.]+)"', html)
-    assert len(dashes) == 3
-    circumference = float(dashes[0][1])
-    lengths = [float(d[0]) for d in dashes]
-    assert abs(sum(lengths) - circumference) < 0.5
+    arcs = re.findall(
+        r'class="pdf-donut-(?:pass|warn|fail)"[^>]*?'
+        r'stroke-dasharray="([0-9.]+) ([0-9.]+)"',
+        html,
+        re.S,
+    )
+    assert len(arcs) == 3
+    circumference = float(arcs[0][1])
+    assert abs(sum(float(a[0]) for a in arcs) - circumference) < 0.5
 
 
 def test_the_area_chart_lists_the_worst_area_first() -> None:
@@ -411,16 +419,57 @@ def test_the_area_chart_lists_the_worst_area_first() -> None:
     assert [label.strip() for label in labels] == ["Forms", "Structure"]
 
 
-def test_the_charts_are_hidden_from_assistive_technology() -> None:
-    """Every number in them is in the prose and the table already.
+def test_the_donut_states_every_figure_in_its_alt_text() -> None:
+    """It was aria-hidden, on the reasoning that the prose said the same.
 
-    A chart that repeats what has just been said is decoration, and
-    reading it out again is noise rather than access.
+    The prose says the verdict and the counts, so that held for the
+    donut — but hiding a chart is only defensible when nothing is lost,
+    and it is simpler to be right than to be arguably right. A labelled
+    image costs nothing and answers the question outright.
+    """
+    html = _front({"executive_summary": _summary()})
+    donut = html.split('class="pdf-donut"', 1)[1].split("</svg>", 1)[0]
+
+    assert 'role="img"' in donut
+    assert 'aria-hidden' not in donut
+    label = re.search(r'aria-label="([^"]+)"', donut)
+    assert label is not None
+    for figure in ("82", "103", "10", "13"):
+        assert figure in label.group(1), f"{figure} missing from the alt text"
+
+
+def test_the_area_chart_is_a_table_not_a_picture() -> None:
+    """This breakdown appears nowhere else in the report.
+
+    Hiding it, as the first version did, removed information rather than
+    avoiding repetition. Drawing the bars inside a real table means what
+    a screen reader reads is the data itself.
     """
     html = _front({"executive_summary": _summary()})
 
-    donut = html.split('class="pdf-donut"', 1)[1].split("</svg>", 1)[0]
-    assert 'aria-hidden="true"' in donut
+    assert "<table" in html
+    assert "<caption" in html
+    assert 'scope="col"' in html and 'scope="row"' in html
+
+
+def test_each_bar_sits_beside_its_number() -> None:
+    """Length is a second encoding of the figure, never the only one."""
+    html = _front({"executive_summary": _summary()})
+    row = html.split('<tbody>', 1)[1].split('</tr>', 1)[0]
+
+    assert 'aria-hidden="true"' in row, "the drawn bar is decoration"
+    assert ">4<" in row, "the total is present as text"
+
+
+def test_the_segment_boundaries_are_separated() -> None:
+    """Adjacent severity colours are 1.03:1 to 1.5:1 against each other.
+
+    Each is fine against the page, so where two segments meet there is
+    no visible edge at all (SC 1.4.11).
+    """
+    html = _front({"executive_summary": _summary()})
+
+    assert html.count("pdf-donut-divider") >= 3
 
 
 def test_no_summary_charts_when_nothing_was_checked() -> None:

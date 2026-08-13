@@ -15,6 +15,7 @@ import pikepdf
 
 from auto_a11y.pdf.audit.checks.color_contrast import (
     COLOR_CONTRAST_CHECKS,
+    check_non_text_contrast,
     check_text_contrast_aa,
     check_text_contrast_aaa,
 )
@@ -66,10 +67,11 @@ _DARK_GRAY: RgbColor = (0.4, 0.4, 0.4)
 # ---------------------------------------------------------------------------
 
 
-def test_color_contrast_checks_registry_lists_both() -> None:
+def test_color_contrast_checks_registry_lists_every_check() -> None:
     assert COLOR_CONTRAST_CHECKS == [
         check_text_contrast_aa,
         check_text_contrast_aaa,
+        check_non_text_contrast,
     ]
 
 

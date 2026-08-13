@@ -1982,3 +1982,318 @@ pdf-check-PdfErrNoTextLayer-why =
 
 pdf-check-PdfErrNoTextLayer-who =
     Screen reader users, and anyone who needs to search, copy, enlarge or reflow the text.
+
+pdf-check-PdfWarnUntaggedListsDetected-name =
+    Untagged lists detected (warning)
+
+pdf-check-PdfWarnUntaggedListsDetected-short-title =
+    Untagged lists detected
+
+pdf-check-PdfWarnUntaggedListsDetected-what =
+    Consecutive paragraphs begin with bullet, number or letter markers but are tagged as P rather than as a list (L containing LI).
+
+pdf-check-PdfWarnUntaggedListsDetected-why =
+    A screen reader announces a real list with its item count and lets the reader jump between items. The same text as loose paragraphs offers neither, so the reader cannot tell how many items there are or move through them.
+
+pdf-check-PdfWarnUntaggedListsDetected-who =
+    People using screen readers, who lose list navigation and item counts.
+
+pdf-check-PdfWarnHeadingSizeHierarchy-name =
+    Heading size hierarchy (warning)
+
+pdf-check-PdfWarnHeadingSizeHierarchy-short-title =
+    Heading size hierarchy
+
+pdf-check-PdfWarnHeadingSizeHierarchy-what =
+    The visual sizes of the headings do not follow their tag levels — a lower-level heading is set larger than the level above it, two levels are the same size, or one level varies widely.
+
+pdf-check-PdfWarnHeadingSizeHierarchy-why =
+    Sighted readers navigate by visual weight, not by tags. A correct tag tree with no visible size difference gives them no structure to scan, and a reversed size order actively misleads them about which section contains which.
+
+pdf-check-PdfWarnHeadingSizeHierarchy-who =
+    Sighted readers, including people with cognitive disabilities who rely on clear visual structure to scan a document.
+
+pdf-check-PdfInfoHeadingSizeNoFontData-name =
+    Heading size hierarchy (not assessed)
+
+pdf-check-PdfInfoHeadingSizeNoFontData-short-title =
+    Heading sizes not assessed
+
+pdf-check-PdfInfoHeadingSizeNoFontData-what =
+    Font data was not collected for this document, so heading sizes could not be compared against their levels.
+
+pdf-check-PdfInfoHeadingSizeNoFontData-why =
+    The check could not run. This is not a pass: the document has not been shown to have a sound visual heading hierarchy.
+
+pdf-check-PdfInfoHeadingSizeNoFontData-who =
+    Not determined — the check did not run.
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-name =
+    Accessibility permission not restricted (failure)
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-short-title =
+    Accessibility extraction blocked
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-what =
+    The document is encrypted with permissions that forbid extracting its content for accessibility.
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-why =
+    Assistive technology reads a PDF by extracting its text. With that permission withheld, the document is unreadable to a screen reader no matter how well it is tagged.
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-who =
+    People using screen readers, braille displays or text-to-speech, who cannot access the content at all.
+
+pdf-check-PdfErrPageContentUntagged-name =
+    All content tagged (failure)
+
+pdf-check-PdfErrPageContentUntagged-short-title =
+    Page content not tagged
+
+pdf-check-PdfErrPageContentUntagged-what =
+    One or more pages show text but declare no marked-content identifiers at all, so nothing on those pages is reachable from the structure tree.
+
+pdf-check-PdfErrPageContentUntagged-why =
+    A screen reader follows the structure tree. Text with no marked content is not in it, so those pages are read as empty however much they show.
+
+pdf-check-PdfErrPageContentUntagged-who =
+    Screen reader users, and anyone using reflow, read-aloud or text export.
+
+pdf-check-PdfWarnArtifactSubtypeMissing-name =
+    Artifact classification subtypes (warning)
+
+pdf-check-PdfWarnArtifactSubtypeMissing-short-title =
+    Artifacts lack a subtype
+
+pdf-check-PdfWarnArtifactSubtypeMissing-what =
+    Artifacts are marked as artifacts but do not say which kind — /Pagination, /Layout, /Page or /Background.
+
+pdf-check-PdfWarnArtifactSubtypeMissing-why =
+    Readers offer to skip artifacts selectively, for instance running headers but not rules. An unclassified artifact can only be skipped wholesale or not at all.
+
+pdf-check-PdfWarnArtifactSubtypeMissing-who =
+    Screen reader users navigating long documents page by page.
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-name =
+    Formula Unicode mapping valid (warning)
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-short-title =
+    Formula fonts map to private-use characters
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-what =
+    The document contains Formula elements, and at least one font maps glyphs to Unicode Private Use Area code points rather than to real characters.
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-why =
+    A private-use code point has no meaning outside the font that defines it. A screen reader reading one aloud produces nothing, and copied text arrives as replacement characters.
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-who =
+    Screen reader users, and anyone copying mathematical notation out of the document.
+
+pdf-check-PdfWarnPronunciationHintsMissing-name =
+    Pronunciation hints for abbreviations (warning)
+
+pdf-check-PdfWarnPronunciationHintsMissing-short-title =
+    Abbreviations lack pronunciation hints
+
+pdf-check-PdfWarnPronunciationHintsMissing-what =
+    Short all-capital strings appear with no /E expansion, /Phoneme or /PhoneticAlphabet to say how they should be read.
+
+pdf-check-PdfWarnPronunciationHintsMissing-why =
+    Without a hint a reader guesses between spelling an abbreviation out and pronouncing it as a word, and it guesses differently in different places in the same document.
+
+pdf-check-PdfWarnPronunciationHintsMissing-who =
+    Screen reader users, and users of read-aloud and text-to-speech tools.
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-name =
+    Language of parts markup (failure)
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-short-title =
+    Foreign-language passages unmarked
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-what =
+    Passages appear to be in a language other than the document's and carry no /Lang of their own — or the document declares no language at all and none could be inferred from its text.
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-why =
+    A screen reader pronounces every passage with the document's voice unless told otherwise. A French paragraph read with an English voice ranges from comic to unintelligible.
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-who =
+    Screen reader users, particularly in bilingual documents.
+
+pdf-check-PdfWarnComplexTableHeadersMissing-name =
+    Complex table headers association (warning)
+
+pdf-check-PdfWarnComplexTableHeadersMissing-short-title =
+    Complex table cells lack /Headers
+
+pdf-check-PdfWarnComplexTableHeadersMissing-what =
+    A table with headers running both across and down, or with spanning cells, has data cells that do not name their headers through the /Headers attribute.
+
+pdf-check-PdfWarnComplexTableHeadersMissing-why =
+    In a simple grid a reader can work out which header governs a cell from its position. Once headers run both ways or cells span, position no longer answers it, and the cell is announced without the labels that give it meaning.
+
+pdf-check-PdfWarnComplexTableHeadersMissing-who =
+    Screen reader users reading tabular data.
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-name =
+    Required fields visually indicated (failure)
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-short-title =
+    Required fields not visually marked
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-what =
+    Fields the form marks as required with the /Ff Required flag have no visible indicator — no asterisk, no "required" wording, no other visual cue.
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-why =
+    The Required flag is only read by assistive technology. A sighted user filling the form in has no way to know which fields are mandatory until submission fails.
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-who =
+    Sighted users, including users with cognitive disabilities for whom an unexplained submission failure is hardest to recover from.
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-name =
+    Required fields visually indicated (warning)
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-short-title =
+    Required-field indicators need review
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-what =
+    Required fields carry no asterisk or "required" wording in their name or tooltip, so whether a visible indicator exists could not be determined from metadata alone. Or fields appear visually required without carrying the semantic flag.
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-why =
+    An indicator drawn on the page satisfies the requirement and is invisible to a metadata-only check; a visual-only indicator satisfies sighted users and leaves assistive technology uninformed. Either way the two halves need to be checked against each other.
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-who =
+    Sighted users and screen reader users, depending on which half is missing.
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-name =
+    Non-text contrast sufficient (failure)
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-short-title =
+    Non-text contrast below 3:1
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-what =
+    Form field borders, field boundaries or drawn graphics fall below the 3:1 contrast ratio WCAG 1.4.11 requires against the colour beside them.
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-why =
+    A control nobody can see is a control nobody can use. The same applies to a chart bar or a divider that carries meaning: if it cannot be distinguished from its background, the information it carries is lost.
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-who =
+    Users with low vision, and anyone reading in bright light or on a poor display.
+
+pdf-check-PdfWarnNonTextContrastConcern-name =
+    Non-text contrast sufficient (warning)
+
+pdf-check-PdfWarnNonTextContrastConcern-short-title =
+    Non-text contrast concerns
+
+pdf-check-PdfWarnNonTextContrastConcern-what =
+    Measured contrast is at or near the threshold, or the visual analysis flagged elements whose visibility is doubtful without being clearly below 3:1.
+
+pdf-check-PdfWarnNonTextContrastConcern-why =
+    An element only just at the threshold fails as soon as the display, the lighting or the printing changes. The margin is what makes the design robust rather than nominally compliant.
+
+pdf-check-PdfWarnNonTextContrastConcern-who =
+    Users with low vision, and anyone reading in imperfect conditions.
+
+pdf-check-PdfWarnAltTextInadequate-name =
+    Alt text adequacy (warning)
+
+pdf-check-PdfWarnAltTextInadequate-short-title =
+    Alt text inadequate
+
+pdf-check-PdfWarnAltTextInadequate-what =
+    Figures have alt text, but the AI analysis judged it inaccurate, incomplete, or unhelpful in the context it appears in.
+
+pdf-check-PdfWarnAltTextInadequate-why =
+    Alt text that exists but does not describe the image is worse than obviously missing alt text: nothing signals to the reader that they are missing anything.
+
+pdf-check-PdfWarnAltTextInadequate-who =
+    Screen reader users, and anyone reading the document with images disabled.
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-name =
+    Alt text adequacy (not assessed)
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-short-title =
+    Alt text adequacy not assessed
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-what =
+    Whether the alt text is any good was not assessed, because AI analysis did not run for this document.
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-why =
+    Only a reader — human or model — that can see the image can say whether its description is accurate. A structural audit can confirm alt text exists and nothing more.
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-who =
+    Screen reader users, whose experience of the images this audit cannot speak to.
+
+pdf-check-PdfWarnImagesOfTextDetected-name =
+    Images of text have matching alt text (warning)
+
+pdf-check-PdfWarnImagesOfTextDetected-short-title =
+    Images of text detected
+
+pdf-check-PdfWarnImagesOfTextDetected-what =
+    Text was found rendered inside images, and it is not reflected in the alt text of the figures containing it.
+
+pdf-check-PdfWarnImagesOfTextDetected-why =
+    Text baked into an image does not resize, reflow, restyle or respond to a high-contrast theme, and a screen reader cannot read it at all unless the alt text repeats it.
+
+pdf-check-PdfWarnImagesOfTextDetected-who =
+    Screen reader users, users who enlarge text, and users of custom colour themes.
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-name =
+    Images of text have matching alt text (not assessed)
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-short-title =
+    Images of text not assessed
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-what =
+    Whether images contain text was not assessed, because AI analysis did not run for this document.
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-why =
+    Reading text out of an image needs a reader that can see it. Nothing in the document's structure records whether an image contains text.
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-who =
+    Screen reader users and users who enlarge text.
+
+pdf-check-PdfErrColorSoleIndicator-name =
+    Use of color not sole indicator (failure)
+
+pdf-check-PdfErrColorSoleIndicator-short-title =
+    Colour is the sole indicator
+
+pdf-check-PdfErrColorSoleIndicator-what =
+    Information is conveyed by colour alone — a status shown only as red or green, a required field marked only by a coloured border, a chart series distinguished only by hue.
+
+pdf-check-PdfErrColorSoleIndicator-why =
+    Colour is not available to everyone. Readers with colour blindness, users of high-contrast themes, and anyone reading a monochrome print get the layout without the meaning.
+
+pdf-check-PdfErrColorSoleIndicator-who =
+    Users with colour vision deficiencies, users of custom colour themes, and anyone reading a black-and-white copy.
+
+pdf-check-PdfWarnColorPrimaryIndicator-name =
+    Use of color not sole indicator (warning)
+
+pdf-check-PdfWarnColorPrimaryIndicator-short-title =
+    Colour is the primary indicator
+
+pdf-check-PdfWarnColorPrimaryIndicator-what =
+    Colour is the main way some information is conveyed, with a second signal present but weak — a difference in shape or wording that may not be noticed.
+
+pdf-check-PdfWarnColorPrimaryIndicator-why =
+    A secondary signal only helps if a reader can find it. A distinction that technically exists but reads as an accident leaves the reader relying on the colour after all.
+
+pdf-check-PdfWarnColorPrimaryIndicator-who =
+    Users with colour vision deficiencies and users of custom colour themes.
+
+pdf-check-PdfInfoColorUseNotAssessed-name =
+    Use of color not sole indicator (not assessed)
+
+pdf-check-PdfInfoColorUseNotAssessed-short-title =
+    Use of colour not assessed
+
+pdf-check-PdfInfoColorUseNotAssessed-what =
+    Whether colour alone carries meaning was not assessed, because AI analysis did not run for this document.
+
+pdf-check-PdfInfoColorUseNotAssessed-why =
+    Judging this needs a reader that can see the page: the same red text is a failure in one document and decoration in another, and only the context settles it.
+
+pdf-check-PdfInfoColorUseNotAssessed-who =
+    Users with colour vision deficiencies and users of custom colour themes.

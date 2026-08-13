@@ -309,6 +309,11 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         touchpoint=_DOC, standard="Matterhorn 06-001",
     ),
     _row(
+        name="Accessibility permission not restricted", result="FAIL",
+        stable_id="PdfErrAccessibilityPermissionRestricted",
+        touchpoint=_DOC, standard="Matterhorn 26-001",
+    ),
+    _row(
         name="XMP dc:title present", result="FAIL",
         stable_id="PdfErrXmpDcTitleMissing",
         touchpoint=_DOC, standard="Matterhorn 06-003",
@@ -673,6 +678,22 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         stable_id="PdfWarnListItemLabelsInconsistent",
         touchpoint=_TAG, standard="PDF/UA (best practice)",
     ),
+    _row(
+        name="Untagged lists detected", result="WARN",
+        stable_id="PdfWarnUntaggedListsDetected",
+        touchpoint=_TAG, standard="WCAG 1.3.1",
+    ),
+
+    _row(
+        name="Heading size hierarchy", result="WARN",
+        stable_id="PdfWarnHeadingSizeHierarchy",
+        touchpoint=_TAG, standard="WCAG 1.3.1 (best practice)",
+    ),
+    _row(
+        name="Heading size hierarchy", result="INFO",
+        stable_id="PdfInfoHeadingSizeNoFontData",
+        touchpoint=_TAG, standard="WCAG 1.3.1 (best practice)",
+    ),
 
     # ---- tables → PDF_TAGGING ----
     _row(
@@ -977,6 +998,97 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         name="Font encoding consistency", result="INFO",
         stable_id="PdfInfoFontMetadataMissingEncodingConsistency",
         touchpoint=_TAG, standard="Matterhorn 31-002",
+    ),
+
+    # ---- checks completing the pdfMax port ----
+    _row(
+        name="All content tagged", result="FAIL",
+        stable_id="PdfErrPageContentUntagged",
+        touchpoint=_TAG, standard="PDF/UA, WCAG 1.3.1",
+    ),
+    _row(
+        name="Artifact classification subtypes", result="WARN",
+        stable_id="PdfWarnArtifactSubtypeMissing",
+        touchpoint=_TAG, standard="PDF/UA-2",
+    ),
+    _row(
+        name="Formula Unicode mapping valid", result="WARN",
+        stable_id="PdfWarnFormulaUnicodePrivateUse",
+        touchpoint=_TAG, standard="Matterhorn 17-003",
+    ),
+    _row(
+        name="Pronunciation hints for abbreviations", result="WARN",
+        stable_id="PdfWarnPronunciationHintsMissing",
+        touchpoint=_DOC, standard="PDF/UA-2",
+    ),
+    _row(
+        name="Language of parts markup", result="FAIL",
+        stable_id="PdfErrLanguageOfPartsUnmarked",
+        touchpoint=_DOC, standard="WCAG 3.1.2",
+    ),
+    _row(
+        name="Complex table headers association", result="WARN",
+        stable_id="PdfWarnComplexTableHeadersMissing",
+        touchpoint=_TAG, standard="PDF/UA, WCAG 1.3.1",
+    ),
+
+    # ---- checks whose verdict an AI run supersedes ----
+    _row(
+        name="Required fields visually indicated", result="FAIL",
+        stable_id="PdfErrRequiredFieldsNotVisuallyIndicated",
+        touchpoint=_ANN, standard="WCAG 3.3.2, 1.3.1",
+    ),
+    _row(
+        name="Required fields visually indicated", result="WARN",
+        stable_id="PdfWarnRequiredFieldsIndicatorUnverified",
+        touchpoint=_ANN, standard="WCAG 3.3.2, 1.3.1",
+    ),
+    _row(
+        name="Non-text contrast sufficient", result="FAIL",
+        stable_id="PdfErrNonTextContrastBelowMinimum",
+        touchpoint=_TAG, standard="WCAG 1.4.11",
+    ),
+    _row(
+        name="Non-text contrast sufficient", result="WARN",
+        stable_id="PdfWarnNonTextContrastConcern",
+        touchpoint=_TAG, standard="WCAG 1.4.11",
+    ),
+
+    # ---- verdicts only an AI run produces ----
+    _row(
+        name="Alt text adequacy", result="WARN",
+        stable_id="PdfWarnAltTextInadequate",
+        touchpoint=_TAG, standard="WCAG 1.1.1",
+    ),
+    _row(
+        name="Alt text adequacy", result="INFO",
+        stable_id="PdfInfoAltTextAdequacyNotAssessed",
+        touchpoint=_TAG, standard="WCAG 1.1.1",
+    ),
+    _row(
+        name="Images of text have matching alt text", result="WARN",
+        stable_id="PdfWarnImagesOfTextDetected",
+        touchpoint=_TAG, standard="WCAG 1.4.5",
+    ),
+    _row(
+        name="Images of text have matching alt text", result="INFO",
+        stable_id="PdfInfoImagesOfTextNotAssessed",
+        touchpoint=_TAG, standard="WCAG 1.4.5",
+    ),
+    _row(
+        name="Use of color not sole indicator", result="FAIL",
+        stable_id="PdfErrColorSoleIndicator",
+        touchpoint=_TAG, standard="WCAG 1.4.1",
+    ),
+    _row(
+        name="Use of color not sole indicator", result="WARN",
+        stable_id="PdfWarnColorPrimaryIndicator",
+        touchpoint=_TAG, standard="WCAG 1.4.1",
+    ),
+    _row(
+        name="Use of color not sole indicator", result="INFO",
+        stable_id="PdfInfoColorUseNotAssessed",
+        touchpoint=_TAG, standard="WCAG 1.4.1",
     ),
 ]
 

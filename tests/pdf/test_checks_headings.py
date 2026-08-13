@@ -21,6 +21,7 @@ import pikepdf
 from auto_a11y.pdf.audit.checks.headings import (
     HEADING_CHECKS,
     check_heading_hierarchy,
+    check_heading_size_hierarchy,
     check_no_mixed_heading_tag_types,
     check_no_multiple_headings_per_node,
 )
@@ -110,12 +111,13 @@ def _only(results: list[CheckResult]) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def test_heading_checks_registry_lists_all_three_functions() -> None:
+def test_heading_checks_registry_lists_every_check() -> None:
     """``HEADING_CHECKS`` is the phase-5 entry point — must list everything."""
     assert HEADING_CHECKS == [
         check_heading_hierarchy,
         check_no_multiple_headings_per_node,
         check_no_mixed_heading_tag_types,
+        check_heading_size_hierarchy,
     ]
 
 

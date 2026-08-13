@@ -29,6 +29,7 @@ from auto_a11y.pdf.audit.checks.forms import (
     check_no_xfa_forms_present,
     check_redundant_entry_in_forms,
     check_required_fields_flagged,
+    check_required_fields_visually_indicated,
     check_widget_annotations_inside_form_tags,
 )
 from auto_a11y.pdf.audit.structure import StructElement
@@ -137,13 +138,14 @@ def _field(
 # ---------------------------------------------------------------------------
 
 
-def test_forms_checks_registry_lists_all_nine_functions() -> None:
+def test_forms_checks_registry_lists_every_check() -> None:
     """``FORMS_CHECKS`` is the phase-5 entry point."""
     assert FORMS_CHECKS == [
         check_widget_annotations_inside_form_tags,
         check_no_xfa_forms_present,
         check_form_fields_labeled,
         check_required_fields_flagged,
+        check_required_fields_visually_indicated,
         check_form_fields_tagged_in_structure,
         check_form_page_tab_order,
         check_form_field_names_unique,
@@ -348,10 +350,12 @@ def _form_struct_elem(index: int) -> StructElement:
     )
 
 
-def test_fields_tagged_returns_empty_when_no_fields() -> None:
-    """No form fields → no result emitted (matches pdfMax silence)."""
+def test_fields_tagged_is_not_applicable_when_no_fields() -> None:
+    """No form fields → NA, not silence: a missing check reads as unrun."""
     pdf = _new_pdf_with_page()
-    assert check_form_fields_tagged_in_structure(_ctx(pdf)) == []
+    res = _only(check_form_fields_tagged_in_structure(_ctx(pdf)))
+    assert res.result == "NA"
+    assert "No form fields" in res.details
 
 
 def test_fields_tagged_passes_when_enough_form_tags() -> None:
@@ -391,10 +395,12 @@ def test_fields_tagged_fails_when_zero_form_tags() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_tab_order_returns_empty_when_no_widget_pages() -> None:
-    """No Widget annotations → silent."""
+def test_tab_order_is_not_applicable_when_no_widget_pages() -> None:
+    """No Widget annotations → NA rather than silence."""
     pdf = _new_pdf_with_page()
-    assert check_form_page_tab_order(_ctx(pdf)) == []
+    res = _only(check_form_page_tab_order(_ctx(pdf)))
+    assert res.result == "NA"
+    assert "Widget" in res.details
 
 
 def test_tab_order_passes_when_tabs_set_to_S() -> None:
@@ -431,9 +437,11 @@ def test_tab_order_fails_when_tabs_wrong_value() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_field_names_unique_returns_empty_when_no_fields() -> None:
+def test_field_names_unique_is_not_applicable_when_no_fields() -> None:
     pdf = _new_pdf_with_page()
-    assert check_form_field_names_unique(_ctx(pdf)) == []
+    res = _only(check_form_field_names_unique(_ctx(pdf)))
+    assert res.result == "NA"
+    assert "No form fields" in res.details
 
 
 def test_field_names_unique_passes_when_distinct() -> None:

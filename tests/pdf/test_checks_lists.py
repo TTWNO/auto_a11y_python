@@ -16,6 +16,7 @@ from auto_a11y.pdf.audit.checks.lists import (
     check_list_nesting_valid,
     check_list_structure_valid,
     check_no_empty_lists,
+    check_untagged_lists_detected,
 )
 from auto_a11y.pdf.audit.structure import StructElement
 from auto_a11y.pdf.models import AuditContext, CheckResult
@@ -69,12 +70,13 @@ def _only(results: list[CheckResult]) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def test_list_checks_registry_lists_all_four() -> None:
+def test_list_checks_registry_lists_every_check() -> None:
     assert LIST_CHECKS == [
         check_list_structure_valid,
         check_no_empty_lists,
         check_list_nesting_valid,
         check_list_item_labels,
+        check_untagged_lists_detected,
     ]
 
 

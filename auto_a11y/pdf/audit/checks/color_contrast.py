@@ -243,6 +243,101 @@ def check_text_contrast_aaa(ctx: AuditContext) -> list[CheckResult]:
     ]
 
 
+def check_non_text_contrast(ctx: AuditContext) -> list[CheckResult]:
+    """WCAG 1.4.11: form fields and graphics are distinguishable.
+
+    Mirrors pdfMax line ~11200. Two sources feed one verdict:
+    :func:`~auto_a11y.pdf.audit.non_text_contrast.extract_field_contrast`
+    for form fields and
+    :func:`~auto_a11y.pdf.audit.non_text_contrast.extract_graphical_contrast`
+    for drawn graphics, because a form and a chart fail this criterion in
+    the same way — something you have to see is not visible enough to
+    see.
+
+    A field failure counts when its border misses 3:1, or when its fill
+    matches the page *and* no border rescues it. A field with no
+    author-drawn border at all is neither: the collector exempts it, and
+    the count of exemptions is reported rather than hidden.
+
+    When an AI run follows, its visual pass supersedes this verdict —
+    see :func:`auto_a11y.pdf.audit.ai.verdicts.derive_check_results`.
+    """
+    name = "Non-text contrast sufficient"
+    standard = "WCAG 1.4.11"
+    data = ctx.non_text_contrast
+    if data is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Non-text contrast could not be measured",
+        )]
+
+    graphics = data.graphics.summary
+    fields = data.fields.summary if data.fields is not None else None
+
+    if fields is None:
+        if graphics.total_fails:
+            return [CheckResult(
+                name=name, standard=standard, result="FAIL",
+                details=(
+                    f"{graphics.total_fails} graphical element(s) below 3:1"
+                    " contrast"
+                ),
+            )]
+        if graphics.total_elements:
+            return [CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    f"No form fields. {graphics.total_elements} graphical"
+                    " element(s) all meet 3:1 contrast threshold"
+                ),
+            )]
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="No form fields or graphical elements to test",
+        )]
+
+    non_exempt = fields.total_fields - fields.exempt_count
+    failures: list[str] = []
+    if fields.border_fails:
+        failures.append(f"{fields.border_fails} field border(s) below 3:1")
+    if fields.boundary_only_fails:
+        failures.append(
+            f"{fields.boundary_only_fails} field(s) with no visible boundary"
+        )
+    if graphics.total_fails:
+        failures.append(
+            f"{graphics.total_fails} graphical element(s) below 3:1"
+        )
+
+    if failures:
+        return [CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"Non-text contrast issues: {'; '.join(failures)}."
+                " See Non-text Contrast section for details"
+            ),
+        )]
+    if non_exempt == 0 and graphics.total_elements == 0:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details=(
+                f"All {fields.total_fields} field(s) are exempt (read-only or"
+                " no author-drawn border) and no graphical elements were found"
+            ),
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="PASS",
+        details=(
+            f"All {non_exempt} non-exempt field(s) have borders/boundaries"
+            + " meeting 3:1 contrast threshold"
+            + (
+                f"; {graphics.total_elements} graphical element(s) also pass"
+                if graphics.total_elements else ""
+            )
+        ),
+    )]
+
+
 # ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
@@ -253,11 +348,13 @@ def check_text_contrast_aaa(ctx: AuditContext) -> list[CheckResult]:
 COLOR_CONTRAST_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_text_contrast_aa,
     check_text_contrast_aaa,
+    check_non_text_contrast,
 ]
 
 
 __all__ = [
     "COLOR_CONTRAST_CHECKS",
+    "check_non_text_contrast",
     "check_text_contrast_aa",
     "check_text_contrast_aaa",
 ]

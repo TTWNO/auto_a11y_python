@@ -51,6 +51,7 @@ from auto_a11y.pdf.audit.content_classification import (
 from auto_a11y.pdf.audit.font_metadata import FontMetadata
 from auto_a11y.pdf.audit.fonts import FontAnalysis
 from auto_a11y.pdf.audit.images import ExtractedImage
+from auto_a11y.pdf.audit.non_text_contrast import NonTextContrast
 from auto_a11y.pdf.audit.reading_order import (
     Column,
     ElementPosition,
@@ -58,6 +59,7 @@ from auto_a11y.pdf.audit.reading_order import (
     ReadingOrderMismatch,
     VisualBlock,
 )
+from auto_a11y.pdf.audit.required_fields import RequiredFields
 from auto_a11y.pdf.audit.structure import StructElement
 
 
@@ -229,6 +231,21 @@ class AuditContext:
 
     One entry per page, recording how much of the page's content is
     tagged, declared as an artifact, or neither."""
+
+    non_text_contrast: NonTextContrast | None = None
+    """Output of
+    :func:`auto_a11y.pdf.audit.non_text_contrast.collect_non_text_contrast`.
+
+    Form-field border/boundary contrast and drawn-graphic contrast, both
+    against the page behind them (WCAG 1.4.11)."""
+
+    required_fields: RequiredFields | None = None
+    """Output of
+    :func:`auto_a11y.pdf.audit.required_fields.collect_required_fields`.
+
+    ``None`` when the document has no field carrying the ``/Ff``
+    Required flag — a distinct state from "no field lacks an
+    indicator"."""
 
     images: list[ExtractedImage] | None = None
     """Output of :func:`auto_a11y.pdf.audit.images.extract_images`.

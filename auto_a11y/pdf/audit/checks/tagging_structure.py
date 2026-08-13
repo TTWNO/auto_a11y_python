@@ -1,6 +1,6 @@
 """Tagging-structure-related accessibility checks.
 
-Twenty checks ported from pdfMax's
+Twenty-eight checks ported from pdfMax's
 ``python/checker/pdf_accessibility_audit.py`` covering the structure
 tree, RoleMap correctness, named structure containers (TOC, Ruby,
 Warichu), Note/Formula/multimedia element conventions, embedded files,
@@ -23,23 +23,24 @@ Already ported elsewhere (intentionally not re-ported here):
 * ``Figure elements have BBox attribute`` —
   :mod:`auto_a11y.pdf.audit.checks.images_alt_text`.
 
-Deferred from this commit:
+Three checks deferred when this module was first written have since
+landed, each on data that did not exist then:
 
-* ``Artifact classification subtypes`` (PDF/UA-2; pdfMax line ~7505).
-  Requires regex parsing of decoded page content streams to correlate
-  ``/Artifact BMC|BDC`` markers with nearby MCID positions for
-  per-element references. The structural ingredients live in
-  :mod:`auto_a11y.pdf.audit.content_streams`, but pdfMax's algorithm
-  goes one level deeper (raw byte offsets) and warrants its own
-  collector. TODO(phase 4 followup): introduce an artifact-marker
-  collector in Phase 3 and port the check on top of it.
-* ``Formula Unicode mapping valid`` (Matterhorn 17-003; pdfMax line
-  ~7262). Requires per-font ToUnicode-CMap byte data which is *not*
-  exposed by the current :mod:`auto_a11y.pdf.audit.fonts` collector
-  (see that module's ``collect_font_metadata`` deferral note). The
-  same data feeds the eleven Matterhorn 10/31-series checks deferred
-  in :mod:`auto_a11y.pdf.audit.checks.fonts`; a single Phase 4 follow-up
-  that lands the metadata collector will unblock all of them together.
+* :func:`check_artifact_classification_subtypes` (PDF/UA-2; pdfMax line
+  ~7505) needs to name the structure element nearest an unclassified
+  ``/Artifact``, which means knowing how far the marker sits from the
+  nearest ``/MCID``. pdfMax measured that in decoded stream bytes;
+  :class:`~auto_a11y.pdf.audit.content_classification.ArtifactMark`
+  measures it in operator ordinals, which answers the same question
+  without depending on how the stream is encoded.
+* :func:`check_all_content_tagged` (PDF/UA, WCAG 1.3.1; pdfMax line
+  ~11489) needs a per-page count of marked-content sections carrying an
+  ``/MCID``, now recorded as
+  :attr:`~auto_a11y.pdf.audit.content_classification.PageContentClassification.mcid_marks`.
+* :func:`check_formula_unicode_mapping_valid` (Matterhorn 17-003; pdfMax
+  line ~7262) consumes
+  :func:`auto_a11y.pdf.audit.font_metadata.extract_font_metadata`, the
+  collector that also unblocked the Matterhorn 10/31-series font checks.
 """
 from __future__ import annotations
 
@@ -1687,6 +1688,173 @@ def check_all_content_tagged_or_artifact(ctx: AuditContext) -> list[CheckResult]
     )]
 
 
+def check_all_content_tagged(ctx: AuditContext) -> list[CheckResult]:
+    """PDF/UA, WCAG 1.3.1: no page carries text with no marked content.
+
+    Mirrors pdfMax line ~11489, and is deliberately narrower than
+    :func:`check_all_content_tagged_or_artifact`, which counts individual
+    marks. This one asks a page-level question: a page that shows text
+    and declares not one ``/MCID`` has no route from the structure tree
+    to anything on it, however its marks are bracketed.
+    """
+    name = "All content tagged"
+    standard = "PDF/UA, WCAG 1.3.1"
+    if ctx.content_classification is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Page content was not classified",
+        )]
+
+    untagged = [
+        page.page_number
+        for page in ctx.content_classification
+        if page.text_operators and not page.mcid_marks
+    ]
+    if not untagged:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details="All text content is associated with structure tags",
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="FAIL",
+        details=(
+            f"{len(untagged)} page(s) have text content not associated with"
+            f" structure tags: page(s) {_page_list(untagged)}"
+        ),
+    )]
+
+
+def check_artifact_classification_subtypes(
+    ctx: AuditContext,
+) -> list[CheckResult]:
+    """PDF/UA-2: every artifact says which kind of artifact it is.
+
+    Mirrors pdfMax line ~7505. WARN rather than FAIL: an unclassified
+    artifact is still skippable, so what is lost is the reader's ability
+    to skip *selectively*, not access to the content.
+    """
+    name = "Artifact classification subtypes"
+    standard = "PDF/UA-2"
+    if ctx.content_classification is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Page content was not classified",
+        )]
+
+    total = sum(len(page.artifact_marks) for page in ctx.content_classification)
+    if not total:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="No artifact markers found in content streams",
+        )]
+
+    unclassified: list[str] = []
+    for page in ctx.content_classification:
+        for mark in page.artifact_marks:
+            if mark.has_subtype:
+                continue
+            element = _element_for_mcid(ctx, page.page_number, mark.nearest_mcid)
+            ref = f"[{element}] " if element is not None else ""
+            unclassified.append(f"{ref}p.{page.page_number}")
+
+    if not unclassified:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details=f"All {total} artifact(s) have /Subtype classification",
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="WARN",
+        details=(
+            f"{len(unclassified)} of {total} artifact(s) lack /Subtype"
+            + " classification (Pagination/Layout/Page/Background): "
+            + "; ".join(unclassified[:10])
+        ),
+    )]
+
+
+def _element_for_mcid(
+    ctx: AuditContext, page_number: int, mcid: int | None
+) -> int | None:
+    """Index of the structure element owning *mcid* on a page, if any.
+
+    Marked-content ids are only unique within a page, so the page has to
+    take part in the match — a bare ``mcid in elem.mcids`` would name an
+    element from whichever page happened to reuse the number first.
+    ``mcid_page_map`` records page *indices*, hence the offset from the
+    1-based page number the classification carries.
+    """
+    if mcid is None:
+        return None
+    page_index = page_number - 1
+    for elem in ctx.elements:
+        if mcid in elem.mcids and elem.mcid_page_map.get(mcid) == page_index:
+            return elem.index
+    return None
+
+
+def check_formula_unicode_mapping_valid(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 17-003: fonts carrying formula text map to real Unicode.
+
+    Mirrors pdfMax line ~7262. A glyph mapped into the Private Use Area
+    has no meaning outside the font that defines it: a screen reader
+    reading it aloud produces nothing, and copied text arrives as
+    replacement characters. Mathematical notation is where this happens,
+    because the glyphs a formula needs are the ones a font is most likely
+    to invent.
+
+    Document-wide rather than per-formula, matching the original: a
+    ToUnicode CMap belongs to a font, and nothing in it records which of
+    its glyphs a given Formula element used.
+    """
+    name = "Formula Unicode mapping valid"
+    standard = "Matterhorn 17-003"
+    if not any(e.resolved_tag == "Formula" for e in ctx.elements):
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="No Formula elements in document",
+        )]
+    if ctx.font_metadata is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="Font metadata was not collected",
+        )]
+
+    issues: list[str] = []
+    for font in ctx.font_metadata.fonts:
+        if font.to_unicode is None:
+            continue
+        pua = sorted({
+            code
+            for value in font.to_unicode.mapping.values()
+            for code in (ord(ch) for ch in value)
+            if _is_private_use(code)
+        })
+        if pua:
+            sample = ", ".join(f"U+{code:04X}" for code in pua[:3])
+            issues.append(f"{font.base_font}: PUA chars {sample}")
+
+    if not issues:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details="No PUA/unmapped characters detected in font ToUnicode maps",
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="WARN",
+        details=(
+            f"{len(issues)} font(s) map to Private Use Area characters"
+            f" (may affect Formula content): {'; '.join(issues[:3])}"
+        ),
+    )]
+
+
+def _is_private_use(code: int) -> bool:
+    """``True`` for a Unicode Private Use Area code point.
+
+    The BMP area plus planes 15 and 16, which is what pdfMax tested.
+    """
+    return 0xE000 <= code <= 0xF8FF or 0xF0000 <= code <= 0xFFFFD
+
+
 TAGGING_STRUCTURE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_structure_tree_exists,
     check_role_mapping_valid,
@@ -1713,6 +1881,9 @@ TAGGING_STRUCTURE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_structure_destinations_for_intra_links,
     check_pdfua2_heading_hierarchy,
     check_reading_order_matches_visual_layout,
+    check_all_content_tagged,
+    check_artifact_classification_subtypes,
+    check_formula_unicode_mapping_valid,
 ]
 
 
@@ -1722,8 +1893,11 @@ __all__ = [
     "check_embedded_files_have_f_and_uf",
     "check_form_xobjects_with_mcids_not_reused",
     "check_formula_alt_text",
+    "check_formula_unicode_mapping_valid",
     "check_mathml_associated_with_formula",
+    "check_all_content_tagged",
     "check_all_content_tagged_or_artifact",
+    "check_artifact_classification_subtypes",
     "check_artifact_not_inside_tagged",
     "check_correct_nesting",
     "check_tagged_not_inside_artifact",

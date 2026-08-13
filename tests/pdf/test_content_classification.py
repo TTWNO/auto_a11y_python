@@ -143,3 +143,75 @@ def test_an_unparsable_stream_reports_nothing_rather_than_a_violation() -> None:
     (page,) = classify_content(pdf)
 
     assert page.untagged_operators == 0
+
+
+# ---------------------------------------------------------------------------
+# MCID marks and artifact markers
+# ---------------------------------------------------------------------------
+
+
+def test_mcid_marks_counts_marked_content_sections() -> None:
+    """Two tagged sections, two MCID marks — what "All content tagged" reads."""
+    content = (
+        b"/P <</MCID 0>> BDC " + _TEXT + b" EMC "
+        + b"/P <</MCID 1>> BDC " + _TEXT + b" EMC"
+    )
+
+    (page,) = classify_content(_page_with(content))
+
+    assert page.mcid_marks == 2
+
+
+def test_mcid_marks_is_zero_for_a_page_of_untagged_text() -> None:
+    (page,) = classify_content(_page_with(_TEXT))
+
+    assert page.mcid_marks == 0
+    assert page.text_operators == 1
+
+
+def test_a_bdc_without_mcid_is_not_an_mcid_mark() -> None:
+    """A section that carries no /MCID reaches nothing in the structure tree."""
+    content = b"/Span <</Lang (en)>> BDC " + _TEXT + b" EMC"
+
+    (page,) = classify_content(_page_with(content))
+
+    assert page.mcid_marks == 0
+
+
+def test_artifact_without_subtype_is_recorded() -> None:
+    content = b"/Artifact BMC " + _TEXT + b" EMC"
+
+    (page,) = classify_content(_page_with(content))
+
+    assert len(page.artifact_marks) == 1
+    assert page.artifact_marks[0].has_subtype is False
+
+
+def test_artifact_with_subtype_is_recorded_as_classified() -> None:
+    content = b"/Artifact <</Subtype /Pagination>> BDC " + _TEXT + b" EMC"
+
+    (page,) = classify_content(_page_with(content))
+
+    assert len(page.artifact_marks) == 1
+    assert page.artifact_marks[0].has_subtype is True
+
+
+def test_artifact_records_the_nearest_mcid() -> None:
+    """Two MCIDs bracket an artifact; the closer one names it."""
+    content = (
+        b"/P <</MCID 7>> BDC " + _TEXT + b" EMC "
+        + b"/Artifact BMC " + _TEXT + b" EMC "
+        + b"/P <</MCID 9>> BDC " + _TEXT + b" EMC"
+    )
+
+    (page,) = classify_content(_page_with(content))
+
+    assert page.artifact_marks[0].nearest_mcid == 7
+
+
+def test_artifact_has_no_nearest_mcid_on_an_untagged_page() -> None:
+    content = b"/Artifact BMC " + _TEXT + b" EMC"
+
+    (page,) = classify_content(_page_with(content))
+
+    assert page.artifact_marks[0].nearest_mcid is None

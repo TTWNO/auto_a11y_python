@@ -13,6 +13,7 @@ import pikepdf
 
 from auto_a11y.pdf.audit.checks.tables import (
     TABLE_CHECKS,
+    check_complex_table_headers_association,
     check_no_empty_tables,
     check_table_captions,
     check_table_header_scope_defined,
@@ -84,7 +85,7 @@ def _td_with_colspan(
 # ---------------------------------------------------------------------------
 
 
-def test_table_checks_registry_lists_all_six() -> None:
+def test_table_checks_registry_lists_every_check() -> None:
     assert TABLE_CHECKS == [
         check_table_headers_defined,
         check_table_header_scope_defined,
@@ -92,6 +93,7 @@ def test_table_checks_registry_lists_all_six() -> None:
         check_table_regularity,
         check_no_empty_tables,
         check_table_captions,
+        check_complex_table_headers_association,
     ]
 
 
@@ -337,3 +339,111 @@ def test_table_captions_skips_empty_table() -> None:
     res = _only(check_table_captions(_ctx(elems)))
     # Empty tables are flagged by check_no_empty_tables, not by Caption.
     assert res.result == "PASS"
+
+
+# ---------------------------------------------------------------------------
+# check_complex_table_headers_association
+# ---------------------------------------------------------------------------
+
+
+def _cell(
+    index: int, tag: str, *, parent_index: int, headers: bool = False,
+    colspan: int | None = None, rowspan: int | None = None, text: str = "",
+) -> StructElement:
+    obj = pikepdf.Dictionary()
+    if headers:
+        obj["/Headers"] = pikepdf.Array([pikepdf.String("h1")])
+    if colspan is not None:
+        obj["/ColSpan"] = colspan
+    if rowspan is not None:
+        obj["/RowSpan"] = rowspan
+    return _elem(index, tag, parent_index=parent_index, obj=obj, text_content=text)
+
+
+def _cross_headed_table(*, headers_on_data: bool) -> list[StructElement]:
+    """A table with headers down the first column and across the first row."""
+    return [
+        _elem(0, "Table", children_indices=[1, 4]),
+        _elem(1, "TR", parent_index=0, children_indices=[2, 3]),
+        _cell(2, "TH", parent_index=1),
+        _cell(3, "TH", parent_index=1),
+        _elem(4, "TR", parent_index=0, children_indices=[5, 6]),
+        _cell(5, "TH", parent_index=4),
+        _cell(6, "TD", parent_index=4, headers=headers_on_data, text="42"),
+    ]
+
+
+def test_complex_headers_is_not_applicable_without_tables() -> None:
+    res = _only(check_complex_table_headers_association(_ctx([_elem(0, "Document")])))
+    assert res.result == "NA"
+    assert "No tables" in res.details
+
+
+def test_complex_headers_is_not_applicable_for_a_simple_table() -> None:
+    """Column headers alone are a simple table — /Scope is enough."""
+    elems = [
+        _elem(0, "Table", children_indices=[1, 3]),
+        _elem(1, "TR", parent_index=0, children_indices=[2]),
+        _cell(2, "TH", parent_index=1),
+        _elem(3, "TR", parent_index=0, children_indices=[4]),
+        _cell(4, "TD", parent_index=3),
+    ]
+    res = _only(check_complex_table_headers_association(_ctx(elems)))
+    assert res.result == "NA"
+    assert "No complex tables" in res.details
+
+
+def test_complex_headers_warns_when_cross_headed_table_lacks_headers_attr() -> None:
+    elems = _cross_headed_table(headers_on_data=False)
+    res = _only(check_complex_table_headers_association(_ctx(elems)))
+    assert res.result == "WARN"
+    assert "missing /Headers" in res.details
+    assert "[1] Table" in res.details
+
+
+def test_complex_headers_passes_when_cross_headed_cells_name_their_headers() -> None:
+    elems = _cross_headed_table(headers_on_data=True)
+    res = _only(check_complex_table_headers_association(_ctx(elems)))
+    assert res.result == "PASS"
+    assert "1 complex table" in res.details
+
+
+def test_complex_headers_treats_a_spanning_cell_as_complex() -> None:
+    """A span makes a table complex even with headers in one direction only."""
+    elems = [
+        _elem(0, "Table", children_indices=[1, 3]),
+        _elem(1, "TR", parent_index=0, children_indices=[2]),
+        _cell(2, "TH", parent_index=1, colspan=2),
+        _elem(3, "TR", parent_index=0, children_indices=[4]),
+        _cell(4, "TD", parent_index=3),
+    ]
+    res = _only(check_complex_table_headers_association(_ctx(elems)))
+    assert res.result == "WARN"
+
+
+def test_complex_headers_follows_section_wrappers() -> None:
+    """THead/TBody sit between Table and TR and must not hide the rows."""
+    elems = [
+        _elem(0, "Table", children_indices=[1, 4]),
+        _elem(1, "THead", parent_index=0, children_indices=[2]),
+        _elem(2, "TR", parent_index=1, children_indices=[3]),
+        _cell(3, "TH", parent_index=2),
+        _elem(4, "TBody", parent_index=0, children_indices=[5]),
+        _elem(5, "TR", parent_index=4, children_indices=[6, 7]),
+        _cell(6, "TH", parent_index=5),
+        _cell(7, "TD", parent_index=5),
+    ]
+    res = _only(check_complex_table_headers_association(_ctx(elems)))
+    assert res.result == "WARN"
+    assert "1 complex table" in res.details or "missing /Headers" in res.details
+
+
+def test_complex_headers_ignores_a_table_with_no_header_cells() -> None:
+    """A header-less table is check_table_headers_defined's problem."""
+    elems = [
+        _elem(0, "Table", children_indices=[1]),
+        _elem(1, "TR", parent_index=0, children_indices=[2]),
+        _cell(2, "TD", parent_index=1),
+    ]
+    res = _only(check_complex_table_headers_association(_ctx(elems)))
+    assert res.result == "NA"

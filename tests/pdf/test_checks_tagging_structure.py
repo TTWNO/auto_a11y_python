@@ -16,7 +16,9 @@ from typing import Protocol
 import pikepdf
 
 from auto_a11y.pdf.audit.checks.tagging_structure import (
+    check_all_content_tagged,
     check_all_content_tagged_or_artifact,
+    check_artifact_classification_subtypes,
     check_artifact_not_inside_tagged,
     check_correct_nesting,
     check_tagged_not_inside_artifact,
@@ -26,6 +28,7 @@ from auto_a11y.pdf.audit.checks.tagging_structure import (
     check_embedded_files_have_f_and_uf,
     check_form_xobjects_with_mcids_not_reused,
     check_formula_alt_text,
+    check_formula_unicode_mapping_valid,
     check_mathml_associated_with_formula,
     check_no_circular_role_mappings,
     check_no_reference_xobjects,
@@ -42,6 +45,15 @@ from auto_a11y.pdf.audit.checks.tagging_structure import (
     check_tab_order_follows_structure,
     check_toc_structure_valid,
     check_warichu_structure_valid,
+)
+from auto_a11y.pdf.audit.content_classification import (
+    ArtifactMark,
+    PageContentClassification,
+)
+from auto_a11y.pdf.audit.font_metadata import (
+    FontInfoDetail,
+    FontMetadata,
+    FontUnicodeMapping,
 )
 from auto_a11y.pdf.audit.reading_order import (
     ElementPosition,
@@ -158,6 +170,9 @@ def test_tagging_structure_checks_registry_lists_every_check() -> None:
         check_structure_destinations_for_intra_links,
         check_pdfua2_heading_hierarchy,
         check_reading_order_matches_visual_layout,
+        check_all_content_tagged,
+        check_artifact_classification_subtypes,
+        check_formula_unicode_mapping_valid,
     ]
 
 
@@ -1010,3 +1025,190 @@ def test_a_heading_inside_a_paragraph_is_not_a_nesting_violation() -> None:
     result = _only(check_correct_nesting(_ctx(elements=[paragraph, heading])))
 
     assert result.result == "PASS"
+
+
+# ---------------------------------------------------------------------------
+# check_all_content_tagged / check_artifact_classification_subtypes
+# ---------------------------------------------------------------------------
+
+
+def _page_class(
+    page_number: int,
+    *,
+    text_operators: int = 0,
+    mcid_marks: int = 0,
+    artifact_marks: tuple[ArtifactMark, ...] = (),
+) -> PageContentClassification:
+    return PageContentClassification(
+        page_number=page_number,
+        artifact_inside_tagged=0,
+        tagged_inside_artifact=0,
+        untagged_text_operators=0,
+        untagged_image_operators=0,
+        text_operators=text_operators,
+        mcid_marks=mcid_marks,
+        artifact_marks=artifact_marks,
+    )
+
+
+def _classified_ctx(
+    pages: list[PageContentClassification],
+    elements: list[StructElement] | None = None,
+) -> AuditContext:
+    ctx = _ctx(elements=elements)
+    ctx.content_classification = pages
+    return ctx
+
+
+def test_all_content_tagged_is_not_applicable_without_classification() -> None:
+    res = _only(check_all_content_tagged(_ctx()))
+    assert res.result == "NA"
+
+
+def test_all_content_tagged_passes_when_every_texted_page_has_mcids() -> None:
+    pages = [_page_class(1, text_operators=5, mcid_marks=3)]
+    res = _only(check_all_content_tagged(_classified_ctx(pages)))
+    assert res.result == "PASS"
+
+
+def test_all_content_tagged_fails_on_a_page_with_text_and_no_mcids() -> None:
+    pages = [
+        _page_class(1, text_operators=5, mcid_marks=3),
+        _page_class(2, text_operators=4, mcid_marks=0),
+    ]
+    res = _only(check_all_content_tagged(_classified_ctx(pages)))
+    assert res.result == "FAIL"
+    assert "page(s) 2" in res.details
+
+
+def test_all_content_tagged_ignores_a_page_with_no_text() -> None:
+    """An image-only page is check_all_content_tagged_or_artifact's business."""
+    pages = [_page_class(1, text_operators=0, mcid_marks=0)]
+    res = _only(check_all_content_tagged(_classified_ctx(pages)))
+    assert res.result == "PASS"
+
+
+def test_artifact_subtypes_is_not_applicable_without_artifacts() -> None:
+    pages = [_page_class(1, text_operators=2, mcid_marks=1)]
+    res = _only(check_artifact_classification_subtypes(_classified_ctx(pages)))
+    assert res.result == "NA"
+    assert "No artifact markers" in res.details
+
+
+def test_artifact_subtypes_passes_when_every_artifact_is_classified() -> None:
+    marks = (ArtifactMark(has_subtype=True, nearest_mcid=None),)
+    pages = [_page_class(1, artifact_marks=marks)]
+    res = _only(check_artifact_classification_subtypes(_classified_ctx(pages)))
+    assert res.result == "PASS"
+    assert "All 1 artifact(s)" in res.details
+
+
+def test_artifact_subtypes_warns_and_names_the_nearest_element() -> None:
+    marks = (
+        ArtifactMark(has_subtype=False, nearest_mcid=4),
+        ArtifactMark(has_subtype=True, nearest_mcid=4),
+    )
+    element = _struct_elem(11, "P", mcids=[4])
+    element.mcid_page_map = {4: 0}
+    ctx = _classified_ctx([_page_class(1, artifact_marks=marks)], [element])
+
+    res = _only(check_artifact_classification_subtypes(ctx))
+
+    assert res.result == "WARN"
+    assert "1 of 2 artifact(s)" in res.details
+    assert "[11] p.1" in res.details
+
+
+def test_artifact_subtypes_matches_mcids_within_their_own_page() -> None:
+    """MCIDs repeat per page, so a same-numbered element elsewhere must not win."""
+    marks = (ArtifactMark(has_subtype=False, nearest_mcid=1),)
+    other_page = _struct_elem(3, "P", mcids=[1])
+    other_page.mcid_page_map = {1: 5}
+    ctx = _classified_ctx([_page_class(1, artifact_marks=marks)], [other_page])
+
+    res = _only(check_artifact_classification_subtypes(ctx))
+
+    assert res.result == "WARN"
+    assert "[3]" not in res.details
+    assert "p.1" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_formula_unicode_mapping_valid
+# ---------------------------------------------------------------------------
+
+
+def _font_metadata(mapping: dict[int, str]) -> FontMetadata:
+    detail = FontInfoDetail(
+        font_name="/F1",
+        base_font="/ABCDEF+MathFont",
+        subtype="/Type1",
+        is_symbolic=False,
+        has_to_unicode=True,
+        to_unicode=FontUnicodeMapping(
+            mapping=mapping,
+            byte_width=1,
+            raw_bytes=b"",
+            has_invalid_unicode=False,
+            invalid_codepoints=[],
+        ),
+        encoding_differences=None,
+        has_identity_h_or_v=False,
+        cmap_wmode=None,
+        cid_font_wmode=None,
+        glyph_widths_count=None,
+        widths_first_char=None,
+        widths_last_char=None,
+        cidtogidmap=None,
+        has_cid_font_file=False,
+        cmap_name=None,
+        cmap_embedded=False,
+        encoding_kind="name",
+        encoding_name="/WinAnsiEncoding",
+        page=1,
+        is_cid_type2=False,
+        has_font_file=True,
+    )
+    return FontMetadata(fonts=[detail])
+
+
+def _formula_ctx(metadata: FontMetadata | None) -> AuditContext:
+    ctx = _ctx(elements=[_struct_elem(0, "Formula")])
+    ctx.font_metadata = metadata
+    return ctx
+
+
+def test_formula_unicode_is_not_applicable_without_formula_elements() -> None:
+    ctx = _ctx(elements=[_struct_elem(0, "P")])
+    ctx.font_metadata = _font_metadata({1: ""})
+    res = _only(check_formula_unicode_mapping_valid(ctx))
+    assert res.result == "NA"
+    assert "No Formula elements" in res.details
+
+
+def test_formula_unicode_is_not_applicable_without_font_metadata() -> None:
+    res = _only(check_formula_unicode_mapping_valid(_formula_ctx(None)))
+    assert res.result == "NA"
+    assert "Font metadata" in res.details
+
+
+def test_formula_unicode_passes_on_real_code_points() -> None:
+    ctx = _formula_ctx(_font_metadata({1: "∑", 2: "α"}))
+    res = _only(check_formula_unicode_mapping_valid(ctx))
+    assert res.result == "PASS"
+
+
+def test_formula_unicode_warns_on_private_use_code_points() -> None:
+    ctx = _formula_ctx(_font_metadata({1: "", 2: "x"}))
+    res = _only(check_formula_unicode_mapping_valid(ctx))
+    assert res.result == "WARN"
+    assert "U+E001" in res.details
+    assert "/ABCDEF+MathFont" in res.details
+
+
+def test_formula_unicode_warns_on_supplementary_private_use_area() -> None:
+    """Planes 15 and 16 are private-use too, not just the BMP block."""
+    ctx = _formula_ctx(_font_metadata({1: "\U000f0001"}))
+    res = _only(check_formula_unicode_mapping_valid(ctx))
+    assert res.result == "WARN"
+    assert "U+F0001" in res.details

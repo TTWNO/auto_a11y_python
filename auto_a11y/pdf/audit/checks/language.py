@@ -20,6 +20,11 @@ Checks ported from pdfMax's
 * :func:`check_abbreviation_expansion` — heuristically-detected
   abbreviation spans carry an ``/E`` expansion attribute, either
   directly or via an ``/A`` attribute dictionary (WCAG 3.1.4 / PDF8).
+* :func:`check_pronunciation_hints` — short all-caps strings carry
+  ``/E``, ``/Phoneme`` or ``/PhoneticAlphabet`` so a reader pronounces
+  them rather than spelling them out (PDF/UA-2).
+* :func:`check_language_of_parts` — passages written in a language other
+  than the document's carry their own ``/Lang`` (WCAG 3.1.2).
 
 Mirrors the convention established in
 :mod:`auto_a11y.pdf.audit.checks.headings`: each check is a plain
@@ -28,19 +33,15 @@ function ``(ctx) -> list[CheckResult]`` and the module exposes a
 ``standard`` strings match pdfMax verbatim so Phase 6's check catalogue
 can map them.
 
-Deferred from this commit:
-
-* ``Language of parts markup`` (WCAG 3.1.2) — pdfMax inspects each
-  element's text content with a ``detect_language`` helper (and an
-  optional Claude inference fallback) to flag foreign-language passages
-  that lack ``/Lang``. Neither helper is exposed on
-  :class:`AuditContext` yet. TODO(phase 4 followup): add a text
-  language-detection helper to :mod:`auto_a11y.pdf.language` and surface
-  its output on :class:`AuditContext` before porting this check.
-* ``Cross-language link targets identified`` (WCAG 3.1.2 best practice)
-  — same dependency on text-content language inference, plus URL
-  pattern matching for ``/en/``, ``/fr/`` etc. TODO(phase 4 followup):
-  port together with the ``Language of parts markup`` check.
+One divergence worth knowing about. When a document declares no
+``/Lang`` at all, pdfMax asks Claude to infer the document language
+before falling back to word frequency. Checks here run before the AI
+passes do, so :func:`check_language_of_parts` uses the word-frequency
+detector alone; :func:`evaluate_language_of_parts` is factored out so
+:mod:`auto_a11y.pdf.audit.ai` can re-run the same comparison against an
+AI-inferred language and supersede the verdict. On a document that does
+declare ``/Lang`` — which is every document that passes
+:func:`check_document_language` — the two paths are identical.
 """
 from __future__ import annotations
 
@@ -50,6 +51,7 @@ from collections.abc import Callable
 import pikepdf
 
 from auto_a11y.pdf.audit import pikepdf_helpers
+from auto_a11y.pdf.language import detect_language_from_text
 from auto_a11y.pdf.models import AuditContext, CheckResult
 
 
@@ -582,6 +584,170 @@ def check_abbreviation_expansion(ctx: AuditContext) -> list[CheckResult]:
     ]
 
 
+def check_pronunciation_hints(ctx: AuditContext) -> list[CheckResult]:
+    """PDF/UA-2: short all-caps strings carry a pronunciation hint.
+
+    Mirrors pdfMax line ~7603. "CNIB" read letter by letter is one
+    thing; read as a word it is noise. ``/E`` gives the expansion,
+    ``/Phoneme`` and ``/PhoneticAlphabet`` give the sound, and any of the
+    three tells a reader which way to say it.
+
+    Broader than :func:`check_abbreviation_expansion`, which looks only
+    at ``Span`` elements and accepts ``/E`` alone. This one considers any
+    element and any of the three hints, which is why both exist.
+    """
+    name = "Pronunciation hints for abbreviations"
+    standard = "PDF/UA-2"
+    without_hints: list[tuple[int, str, str]] = []
+    for elem in ctx.elements:
+        text = (elem.text_content or "").strip()
+        if not (_ABBREV_MIN_LEN <= len(text) <= _ABBREV_MAX_LEN):
+            continue
+        if not text.isalpha() or not text.isupper():
+            continue
+        if any(
+            elem.obj.get(pikepdf.Name(key)) is not None
+            for key in ("/E", "/Phoneme", "/PhoneticAlphabet")
+        ):
+            continue
+        without_hints.append((elem.index, elem.resolved_tag, text))
+
+    if not without_hints:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details="No abbreviations lacking pronunciation hints found",
+        )]
+
+    seen: set[str] = set()
+    examples: list[str] = []
+    for index, tag, text in without_hints:
+        if text not in seen and len(examples) < 10:
+            examples.append(f'[{index}] {tag} "{text}"')
+            seen.add(text)
+    refs = " ".join(f"[{index}]" for index, _, _ in without_hints[:10])
+    return [CheckResult(
+        name=name, standard=standard, result="WARN",
+        details=(
+            f"{len(without_hints)} abbreviation(s) lack /E, /Phoneme, or"
+            f" /PhoneticAlphabet: {refs}. Examples: {'; '.join(examples)}"
+        ),
+    )]
+
+
+#: Minimum confidence from :func:`detect_language_from_text` before a
+#: passage is called foreign. Mirrors pdfMax's ``confidence >= 0.3``:
+#: below it the sample is short enough that ordinary loanwords decide
+#: the vote.
+_FOREIGN_CONFIDENCE: float = 0.3
+
+#: Shortest text worth classifying at all. pdfMax's ``len(...) < 3``.
+_MIN_CLASSIFIABLE_CHARS: int = 3
+
+
+def evaluate_language_of_parts(
+    ctx: AuditContext, doc_lang: str | None, *, inferred: bool
+) -> list[CheckResult]:
+    """The ``Language of parts markup`` verdict for a given document language.
+
+    Separated from :func:`check_language_of_parts` so the AI stage can
+    re-run it with a language Claude inferred, which is the only thing
+    pdfMax's AI path changes about this check.
+
+    Args:
+        ctx: the audit context; only ``elements`` is read.
+        doc_lang: the two-letter document language, or ``None`` when it
+            could not be determined.
+        inferred: whether *doc_lang* came from the text rather than from
+            the document declaring it. Reported in the details so a
+            reader knows the comparison rests on a guess.
+    """
+    name = "Language of parts markup"
+    standard = "WCAG 3.1.2"
+    note = " (inferred — /Lang not set in PDF)" if inferred else ""
+    if doc_lang is None:
+        return [CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                "Cannot assess — document language not set and could not be"
+                " inferred from content."
+            ),
+        )]
+
+    unmarked: list[tuple[int, str, str, str]] = []
+    for elem in ctx.elements:
+        if elem.lang:
+            continue  # already marked, whatever language it turns out to be
+        text = elem.actual_text or elem.alt_text or elem.text_content
+        if not text or len(text.strip()) < _MIN_CLASSIFIABLE_CHARS:
+            continue
+        detected, confidence = detect_language_from_text(text)
+        if (
+            detected in ("en", "fr")
+            and detected != doc_lang
+            and confidence >= _FOREIGN_CONFIDENCE
+        ):
+            preview = text.strip()[:50].replace("\n", " ")
+            unmarked.append((elem.index, elem.resolved_tag, detected, preview))
+
+    if unmarked:
+        refs = " ".join(f"[{index}]" for index, _, _, _ in unmarked[:10])
+        examples = "; ".join(
+            f'[{index}] {tag} detected as {lang}: "{preview}"'
+            for index, tag, lang, preview in unmarked[:5]
+        )
+        return [CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"Document lang: {doc_lang}{note}; {len(unmarked)} element(s)"
+                " appear to be in a different language but lack /Lang markup:"
+                f" {refs}. Examples: {examples}"
+            ),
+        )]
+
+    marked = sum(1 for e in ctx.elements if e.lang)
+    marked_note = (
+        f"; {marked} elements have element-level /Lang" if marked else ""
+    )
+    return [CheckResult(
+        name=name, standard=standard, result="PASS",
+        details=(
+            f"Document lang: {doc_lang}{note}; no unmarked foreign-language"
+            f" content detected{marked_note}"
+        ),
+    )]
+
+
+def check_language_of_parts(ctx: AuditContext) -> list[CheckResult]:
+    """WCAG 3.1.2: passages in another language declare their own ``/Lang``.
+
+    Mirrors pdfMax line ~4903. A French paragraph inside an English
+    document is read in an English voice unless it says otherwise, which
+    ranges from comic to unintelligible depending on the passage.
+    """
+    doc_lang, inferred = infer_document_language(ctx)
+    return evaluate_language_of_parts(ctx, doc_lang, inferred=inferred)
+
+
+def infer_document_language(ctx: AuditContext) -> tuple[str | None, bool]:
+    """The document's two-letter language and whether it had to be guessed.
+
+    Prefers the catalog ``/Lang``. Falls back to word frequency across
+    all the document's text, and reports ``None`` when even that cannot
+    choose between English and French.
+    """
+    declared = _doc_lang(ctx.pdf)
+    if declared:
+        return declared.strip().lower()[:2], False
+
+    text = " ".join(e.text_content for e in ctx.elements if e.text_content)
+    if not text:
+        return None, False
+    detected, _ = detect_language_from_text(text)
+    if detected in ("en", "fr"):
+        return detected, True
+    return None, False
+
+
 # ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
@@ -596,6 +762,8 @@ LANGUAGE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_form_field_tooltip_language_determinable,
     check_metadata_language_determinable,
     check_abbreviation_expansion,
+    check_pronunciation_hints,
+    check_language_of_parts,
 ]
 
 
@@ -606,5 +774,9 @@ __all__ = [
     "check_document_language",
     "check_form_field_tooltip_language_determinable",
     "check_lang_values_valid_bcp47",
+    "check_language_of_parts",
     "check_metadata_language_determinable",
+    "check_pronunciation_hints",
+    "evaluate_language_of_parts",
+    "infer_document_language",
 ]

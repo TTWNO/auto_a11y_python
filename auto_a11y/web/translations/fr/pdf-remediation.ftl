@@ -5374,3 +5374,66 @@ pdf-remediation-PdfErrNoTextLayer =
     Comment corriger dans Adobe Acrobat Pro
     
     Lancer Numérisation et OCR, puis Reconnaître le texte. Le faire avant tout le reste de ce rapport : toutes les autres anomalies signalées supposent qu'il y ait du texte à baliser, et les corriger d'abord oblige à refaire le travail. Une fois le texte obtenu, vérifier la reconnaissance par rapport à la page : les erreurs d'OCR sont silencieuses, et un mot erroné est pire qu'un mot manquant.
+
+pdf-remediation-PdfWarnUntaggedListsDetected =
+    Rebalisez la suite de paragraphes en liste : encadrez les éléments dans un L, chaque élément dans un LI, puis placez le marqueur dans un Lbl et le texte dans un LBody. Supprimez ensuite les puces ou numéros saisis dans le texte, sinon le marqueur est annoncé deux fois.
+
+pdf-remediation-PdfWarnHeadingSizeHierarchy =
+    Réglez les styles de titre pour que chaque niveau soit visiblement plus petit que celui du dessus, et que tous les titres d'un même niveau aient la même taille. Modifiez la mise en forme, pas les niveaux de balises : c'est la hiérarchie des balises que suivent les technologies d'assistance et elle ne doit pas être altérée pour correspondre à l'apparence.
+
+pdf-remediation-PdfInfoHeadingSizeNoFontData =
+    Aucune action possible. Les données de police n'ont pas pu être recueillies ; relancez l'analyse sur une copie non endommagée ni chiffrée si vous avez besoin de cette vérification.
+
+pdf-remediation-PdfErrAccessibilityPermissionRestricted =
+    Réenregistrez le document en autorisant l'extraction du contenu à des fins d'accessibilité. Dans Acrobat : Propriétés, Sécurité, Permissions — activez « Autoriser l'accès au texte pour les lecteurs d'écran destinés aux malvoyants ». Si le fichier doit rester restreint pour d'autres raisons, cette permission peut être accordée seule.
+
+pdf-remediation-PdfErrPageContentUntagged =
+    Balisez le contenu des pages. Lancez le balisage automatique d'Acrobat sur les pages concernées, puis corrigez le résultat dans le panneau Balises, ou revenez au document source, appliquez de vrais styles et réexportez avec le balisage activé. Les pages qui ne portent que de la décoration doivent être marquées comme artefacts plutôt que laissées sans balise.
+
+pdf-remediation-PdfWarnArtifactSubtypeMissing =
+    Ajoutez un /Subtype au dictionnaire de propriétés de chaque artefact : /Pagination pour les en-têtes, pieds de page et numéros de page, /Layout pour les filets et cadres décoratifs, /Page pour les repères d'impression, /Background pour les filigranes et fonds. La plupart des outils de création le font automatiquement lorsque l'artefact est créé par leur propre fonction d'en-tête ou de pied de page plutôt que dessiné à la main.
+
+pdf-remediation-PdfWarnFormulaUnicodePrivateUse =
+    Réintégrez la police avec une table ToUnicode qui associe chaque glyphe à son véritable point de code Unicode — les opérateurs mathématiques, les lettres grecques et les symboles ensemblistes en possèdent tous un. Lorsqu'un glyphe n'a réellement aucun équivalent Unicode, placez sa lecture sur l'élément Formula au moyen de /ActualText afin que le sens subsiste même si le glyphe disparaît.
+
+pdf-remediation-PdfWarnPronunciationHintsMissing =
+    Ajoutez une expansion /E au Span portant l'abréviation — « INCA » se développe en « Institut national canadien pour les aveugles ». Lorsque la prononciation importe plus que l'expansion, ajoutez /Phoneme accompagné de /PhoneticAlphabet précisant la notation employée. L'usage courant est de définir l'expansion une seule fois, à la première occurrence.
+
+pdf-remediation-PdfErrLanguageOfPartsUnmarked =
+    Définissez /Lang sur l'élément de structure qui encadre chaque passage en langue étrangère, avec une étiquette BCP 47 telle que fr-CA ou en-CA. Si le document ne déclare aucune langue, commencez par définir le /Lang du catalogue : c'est la référence à laquelle chaque passage est comparé, et sans elle aucun passage ne peut être repéré comme exception.
+
+pdf-remediation-PdfWarnComplexTableHeadersMissing =
+    Donnez un /ID à chaque cellule d'en-tête et énumérez les identifiants des en-têtes concernés dans le tableau /Headers de chaque cellule de données. L'éditeur de tableaux d'Acrobat le permet via la boîte de dialogue Propriétés de cellule ; pour les grands tableaux, il est généralement plus rapide de corriger la structure du document source et de le réexporter.
+
+pdf-remediation-PdfErrRequiredFieldsNotVisuallyIndicated =
+    Signalez visiblement chaque champ obligatoire : un astérisque à côté du libellé, ou le mot « obligatoire » dans le libellé lui-même. Si vous utilisez des astérisques, ajoutez une légende en haut du formulaire expliquant leur sens — « Les champs marqués d'un * sont obligatoires ». Conservez également l'indicateur /Ff Required : les deux signaux s'adressent à des publics différents et sont tous deux nécessaires.
+
+pdf-remediation-PdfWarnRequiredFieldsIndicatorUnverified =
+    Examinez le formulaire et vérifiez que chaque champ obligatoire porte un repère visible. Lorsqu'il en manque un, ajoutez un astérisque ou la mention « obligatoire » au libellé. Lorsqu'un champ paraît obligatoire sans porter l'indicateur /Ff Required, définissez-le afin que les technologies d'assistance le signalent aussi. Relancer l'audit avec l'analyse par IA activée répond à cette question à partir de la page rendue plutôt que des métadonnées.
+
+pdf-remediation-PdfErrNonTextContrastBelowMinimum =
+    Assombrissez les bordures des champs jusqu'à atteindre 3:1 par rapport à la page — un gris moyen sur blanc suffit généralement — ou donnez aux champs un fond qui se distingue de la page dans la même proportion. Pour les graphiques et les filets, choisissez des couleurs offrant la même marge de 3:1 par rapport à ce qui se trouve derrière, et ne comptez pas sur un trait très fin pour marquer une limite.
+
+pdf-remediation-PdfWarnNonTextContrastConcern =
+    Passez en revue les éléments signalés et accordez-leur davantage de marge que le minimum : visez nettement au-delà de 3:1 plutôt qu'au seuil. Si le signalement porte sur un élément décoratif dépourvu de sens, aucune modification n'est nécessaire ; confirmez qu'il est bien décoratif au lieu de le supposer.
+
+pdf-remediation-PdfWarnAltTextInadequate =
+    Réécrivez les textes de remplacement signalés pour dire ce que l'image apporte dans son contexte. Décrivez l'information, pas l'illustration : le texte de remplacement d'un graphique doit livrer le constat, non énumérer ses axes. Tenez compte du texte environnant — une image déjà décrite dans le paragraphe voisin n'a besoin que d'une étiquette brève.
+
+pdf-remediation-PdfInfoAltTextAdequacyNotAssessed =
+    Relancez l'audit avec l'analyse par IA activée pour faire évaluer les textes de remplacement au regard des images, ou examinez manuellement les figures à l'aide de l'inventaire complet des textes de remplacement de ce rapport.
+
+pdf-remediation-PdfWarnImagesOfTextDetected =
+    Remplacez les images de texte par du vrai texte chaque fois que l'image n'est pas elle-même l'objet du propos : un titre composé en graphique, la capture d'écran d'un tableau, une citation dans un cadre décoratif. Lorsque l'image doit rester, comme un logo ou un schéma dont la disposition porte du sens, reprenez l'intégralité de son texte dans le texte de remplacement afin que rien ne soit perdu.
+
+pdf-remediation-PdfInfoImagesOfTextNotAssessed =
+    Relancez l'audit avec l'analyse par IA activée pour faire lire les images, ou examinez-les manuellement et vérifiez que le texte qu'elles contiennent figure aussi dans leur texte de remplacement ou dans le texte de la page.
+
+pdf-remediation-PdfErrColorSoleIndicator =
+    Ajoutez un second signal à côté de la couleur : une étiquette textuelle, une icône, un motif ou une forme. Un texte rouge devient un texte rouge accompagné du mot « Erreur » ; une série de graphique colorée reçoit une étiquette directe ou un motif distinct ; une bordure colorée de champ obligatoire gagne un astérisque. Conservez la couleur — elle aide celles et ceux qui la perçoivent — et complétez-la plutôt que de la remplacer.
+
+pdf-remediation-PdfWarnColorPrimaryIndicator =
+    Renforcez le second signal jusqu'à ce qu'il se suffise à lui-même : une étiquette explicite plutôt qu'implicite, une icône nette plutôt que discrète, un motif visible à la taille de lecture. Un test utile consiste à afficher la page en niveaux de gris et à vérifier que la distinction se lit encore.
+
+pdf-remediation-PdfInfoColorUseNotAssessed =
+    Relancez l'audit avec l'analyse par IA activée pour faire examiner les pages, ou passez le document en revue manuellement en niveaux de gris et vérifiez que chaque distinction se lit encore sans la couleur.

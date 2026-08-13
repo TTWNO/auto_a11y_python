@@ -8,7 +8,7 @@ the person who will fix it — the prompt explicitly bans "tagged PDF",
 "structure tree", "PDF/UA" and the rest of the vocabulary that makes a report
 unreadable to the manager or content owner who has to act on it. That
 audience framing is the whole point of the pass; a deterministic counterpart
-already exists in ``report_sections._build_executive_summary`` for audits
+already exists in ``report_sections.build_executive_summary`` for audits
 that run without AI.
 """
 from __future__ import annotations

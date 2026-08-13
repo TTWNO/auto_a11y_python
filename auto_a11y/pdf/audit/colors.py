@@ -697,7 +697,7 @@ def parse_ap_stream_colors(ap_stream: pikepdf.Object) -> list[ApTextColorEntry]:
 # ---------------------------------------------------------------------------
 
 
-def _flatten_form_fields(raw_fields: pikepdf.Array) -> list[pikepdf.Dictionary]:
+def flatten_form_fields(raw_fields: pikepdf.Array) -> list[pikepdf.Dictionary]:
     """Flatten the AcroForm /Fields tree into terminal field dictionaries.
 
     Mirrors pdfMax's flatten loop: a node with /Kids and no /FT is an
@@ -730,7 +730,7 @@ _FT_LABELS: dict[str, str] = {
 }
 
 
-def _field_label(field_dict: pikepdf.Dictionary) -> tuple[str, str]:
+def field_label(field_dict: pikepdf.Dictionary) -> tuple[str, str]:
     """Read ``(field_name, field_type_label)`` for diagnostic display."""
     name = pikepdf_helpers.get_string(field_dict, "/T") or "unnamed"
     ft = pikepdf_helpers.get_name(field_dict, "/FT")
@@ -752,7 +752,7 @@ def _field_da_string(
     return acro_da
 
 
-def _resolve_field_page(
+def resolve_field_page(
     field_dict: pikepdf.Dictionary,
     page_obj_to_num: dict[int, int],
     annot_obj_to_page: dict[int, int],
@@ -775,7 +775,7 @@ def _resolve_field_page(
     return 0
 
 
-def _ap_n_stream(field_dict: pikepdf.Dictionary) -> pikepdf.Object | None:
+def ap_n_stream(field_dict: pikepdf.Dictionary) -> pikepdf.Object | None:
     """Return the /AP /N stream if it's a stream (not a per-state Dictionary).
 
     Form fields can either store a single normal-appearance stream at
@@ -795,7 +795,7 @@ def _ap_n_stream(field_dict: pikepdf.Dictionary) -> pikepdf.Object | None:
     return n
 
 
-def _build_page_lookups(
+def build_page_lookups(
     pdf: pikepdf.Pdf,
 ) -> tuple[dict[int, int], dict[int, int]]:
     """Build ``id(page_obj) → index`` and ``id(annot) → page_index`` maps."""
@@ -859,7 +859,7 @@ def _field_rect(field_dict: pikepdf.Dictionary) -> tuple[float, float, float, fl
     return (x0, y0, x1, y1)
 
 
-def _page_height(pdf: pikepdf.Pdf, page_num: int) -> float | None:
+def page_height_points(pdf: pikepdf.Pdf, page_num: int) -> float | None:
     """Read the page height in PDF points from /MediaBox[3].
 
     Falls through to ``page.mediabox`` (which inherits via the page
@@ -908,18 +908,18 @@ def extract_form_field_colors(
     if raw_fields is None or len(raw_fields) == 0:
         return {}
 
-    form_fields = _flatten_form_fields(raw_fields)
+    form_fields = flatten_form_fields(raw_fields)
     if not form_fields:
         return {}
 
     acro_da = pikepdf_helpers.get_string(acroform, "/DA") or ""
-    page_obj_to_num, annot_obj_to_page = _build_page_lookups(pdf)
+    page_obj_to_num, annot_obj_to_page = build_page_lookups(pdf)
     page_images: dict[int, Image.Image | None] = {}
     form_pairs: dict[tuple[RgbColor, RgbColor], FormColorPairInfo] = {}
 
     try:
         for field_dict in form_fields:
-            field_name, ft_label = _field_label(field_dict)
+            field_name, ft_label = field_label(field_dict)
 
             # --- Foreground entries: /DA + /AP /N (deduped) ----------
             fg_entries: list[tuple[RgbColor, float, str]] = []
@@ -931,7 +931,7 @@ def extract_form_field_colors(
                      f"[Form: {field_name} ({ft_label})]")
                 )
 
-            n_stream = _ap_n_stream(field_dict)
+            n_stream = ap_n_stream(field_dict)
             if n_stream is not None:
                 ap_colors = parse_ap_stream_colors(n_stream)
                 da_fg_q = quantize_rgb(da_fg) if da_fg is not None else None
@@ -958,7 +958,7 @@ def extract_form_field_colors(
                     bg_array = None
                 bg_color = parse_color_array(bg_array)
 
-            page_num = _resolve_field_page(field_dict, page_obj_to_num, annot_obj_to_page)
+            page_num = resolve_field_page(field_dict, page_obj_to_num, annot_obj_to_page)
 
             if bg_color is None:
                 bg_color = _sample_field_background(
@@ -1006,7 +1006,7 @@ def _sample_field_background(
     if img is None:
         return None
 
-    page_height = _page_height(pdf, page_num)
+    page_height = page_height_points(pdf, page_num)
     if page_height is None:
         return None
 

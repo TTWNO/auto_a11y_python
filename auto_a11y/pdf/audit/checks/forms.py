@@ -513,12 +513,21 @@ def check_form_fields_tagged_in_structure(
     some Form tags are present but not enough, FAIL when zero Form
     tags exist alongside fields. Mirrors pdfMax line ~6103 verbatim.
 
-    No fields → no result (mirrors pdfMax: this branch is silent
-    when there are no form fields).
+    A document with no form fields reports ``NA``. pdfMax returns
+    nothing at all here, which leaves the check missing from the report
+    rather than answered — and a reader cannot tell a check that found
+    nothing to examine from one that never ran.
     """
     form_fields = _collect_form_fields(ctx.pdf)
     if not form_fields:
-        return []
+        return [
+            CheckResult(
+                name="Form fields tagged in structure",
+                standard="PDF/UA, WCAG 1.3.1",
+                result="NA",
+                details="No form fields in document",
+            )
+        ]
 
     form_tags_in_tree = sum(
         1 for e in ctx.elements if e.resolved_tag == "Form"
@@ -575,9 +584,9 @@ def check_form_page_tab_order(ctx: AuditContext) -> list[CheckResult]:
     focus order follows the structure tree. Mirrors pdfMax line ~6120
     verbatim.
 
-    No widget pages → no result (mirrors pdfMax: this branch is silent
-    when no page has a Widget; the case is handled separately by
-    :func:`check_form_fields_labeled` and friends).
+    A document with no Widget annotations reports ``NA``, for the same
+    reason :func:`check_form_fields_tagged_in_structure` does: silence
+    is indistinguishable from the check not having run.
     """
     pages_with_fields: set[int] = set()
     for page_idx, page in enumerate(ctx.pdf.pages):
@@ -587,7 +596,14 @@ def check_form_page_tab_order(ctx: AuditContext) -> list[CheckResult]:
                 break
 
     if not pages_with_fields:
-        return []
+        return [
+            CheckResult(
+                name="Form page tab order",
+                standard="PDF/UA, WCAG 2.1.1, 2.4.3",
+                result="NA",
+                details="No pages carry Widget annotations",
+            )
+        ]
 
     tab_issues: list[str] = []
     for pg in sorted(pages_with_fields):
@@ -634,12 +650,19 @@ def check_form_field_names_unique(ctx: AuditContext) -> list[CheckResult]:
     data-entry collisions because a Submit Form action serialises by
     name. Mirrors pdfMax line ~6145 verbatim.
 
-    No fields → no result (mirrors pdfMax: this branch is silent when
-    there are no form fields).
+    A document with no form fields reports ``NA``, for the same reason
+    :func:`check_form_fields_tagged_in_structure` does.
     """
     form_fields = _collect_form_fields(ctx.pdf)
     if not form_fields:
-        return []
+        return [
+            CheckResult(
+                name="Form field names unique",
+                standard="WCAG 4.1.2",
+                result="NA",
+                details="No form fields in document",
+            )
+        ]
 
     field_names: list[str] = []
     for field in form_fields:
@@ -804,11 +827,63 @@ def check_accessible_authentication(ctx: AuditContext) -> list[CheckResult]:
 
 #: Phase 5.3's pipeline iterates this list in order. Phase 6's check
 #: catalogue iterates the same list to enumerate every check name.
+def check_required_fields_visually_indicated(
+    ctx: AuditContext,
+) -> list[CheckResult]:
+    """WCAG 3.3.2, 1.3.1: a required field looks required.
+
+    Mirrors pdfMax line ~11355. :func:`check_required_fields_flagged`
+    asks the other half of the same question — whether a field a form
+    treats as mandatory carries ``/Ff`` so assistive technology knows.
+    This one asks whether anyone looking at the page can tell.
+
+    The deterministic evidence is thin by construction: only the field's
+    own name and tooltip, plus any legend in the document text. An
+    asterisk drawn beside the field as page content satisfies the
+    criterion and is invisible here, so a missing indicator WARNs for
+    manual review rather than failing. An AI run supersedes this verdict
+    with one made from the rendered page.
+    """
+    name = "Required fields visually indicated"
+    standard = "WCAG 3.3.2, 1.3.1"
+    data = ctx.required_fields
+    if data is None:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="No fields carry the /Ff Required flag",
+        )]
+
+    total = len(data.fields)
+    missing = data.missing_indicator
+    if missing:
+        names = ", ".join(f.name or "unnamed" for f in missing[:5])
+        return [CheckResult(
+            name=name, standard=standard, result="WARN",
+            details=(
+                f"{len(missing)} of {total} required field(s) have no '*' or"
+                f" 'required' in their accessible name/tooltip: {names}."
+                " Manual review needed to verify visual indicators exist"
+            ),
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="PASS",
+        details=(
+            f"All {total} required field(s) have '*' or 'required' in their"
+            + " accessible name/tooltip"
+            + (
+                f'. Legend found: "{data.legend_text}"'
+                if data.has_legend else ""
+            )
+        ),
+    )]
+
+
 FORMS_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_widget_annotations_inside_form_tags,
     check_no_xfa_forms_present,
     check_form_fields_labeled,
     check_required_fields_flagged,
+    check_required_fields_visually_indicated,
     check_form_fields_tagged_in_structure,
     check_form_page_tab_order,
     check_form_field_names_unique,
@@ -827,5 +902,6 @@ __all__ = [
     "check_no_xfa_forms_present",
     "check_redundant_entry_in_forms",
     "check_required_fields_flagged",
+    "check_required_fields_visually_indicated",
     "check_widget_annotations_inside_form_tags",
 ]

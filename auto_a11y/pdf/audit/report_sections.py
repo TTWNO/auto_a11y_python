@@ -101,7 +101,7 @@ def build_report_sections(
         "document_metadata": _build_document_metadata(ctx),
         # Deterministic counterpart to pdfMax's AI exec summary.
         # Surfaced at the top of the inventory area.
-        "executive_summary": _build_executive_summary(check_results or []),
+        "executive_summary": build_executive_summary(check_results or []),
         # Phase A
         "tag_tree": _build_tag_tree(ctx.elements),
         "reading_order": _build_reading_order(ctx.elements),
@@ -1293,7 +1293,7 @@ def _catalog_lang(pdf: pikepdf.Pdf) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _build_executive_summary(
+def build_executive_summary(
     check_results: list[CheckResult],
 ) -> dict[str, object]:
     """Top-of-inventory summary: counts + most-frequent failing checks.

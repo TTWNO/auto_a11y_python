@@ -16,6 +16,10 @@ import pikepdf
 from auto_a11y.pdf.audit.checks.language import (
     LANGUAGE_CHECKS,
     check_abbreviation_expansion,
+    check_language_of_parts,
+    evaluate_language_of_parts,
+    infer_document_language,
+    check_pronunciation_hints,
     check_annotation_language_determinable,
     check_document_language,
     check_form_field_tooltip_language_determinable,
@@ -137,7 +141,7 @@ def _only(results: list[CheckResult]) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def test_language_checks_registry_lists_all_six_functions() -> None:
+def test_language_checks_registry_lists_every_check() -> None:
     """``LANGUAGE_CHECKS`` is the phase-5 entry point — must list every check."""
     assert LANGUAGE_CHECKS == [
         check_document_language,
@@ -146,6 +150,8 @@ def test_language_checks_registry_lists_all_six_functions() -> None:
         check_form_field_tooltip_language_determinable,
         check_metadata_language_determinable,
         check_abbreviation_expansion,
+        check_pronunciation_hints,
+        check_language_of_parts,
     ]
 
 
@@ -502,3 +508,163 @@ def test_abbreviation_skips_non_span_tags() -> None:
     p.text_content = "FAQ"
     res = _only(check_abbreviation_expansion(_ctx(pdf, [p])))
     assert res.result == "PASS"
+
+
+# ---------------------------------------------------------------------------
+# check_pronunciation_hints
+# ---------------------------------------------------------------------------
+
+
+def _text_elem(
+    index: int,
+    tag: str,
+    text: str,
+    *,
+    keys: dict[str, str] | None = None,
+    lang: str | None = None,
+    actual_text: str | None = None,
+) -> StructElement:
+    obj = pikepdf.Dictionary()
+    for key, value in (keys or {}).items():
+        obj[key] = pikepdf.String(value)
+    return StructElement(
+        index=index,
+        custom_tag=f"/{tag}",
+        resolved_tag=tag,
+        alt_text=None,
+        actual_text=actual_text,
+        lang=lang,
+        children_indices=[],
+        mcids=[],
+        parent_index=-1,
+        obj=obj,
+        text_content=text,
+    )
+
+
+def test_pronunciation_hints_passes_when_no_abbreviations() -> None:
+    pdf = _new_pdf_with_lang("en")
+    elems = [_text_elem(0, "P", "An ordinary sentence of prose.")]
+    res = _only(check_pronunciation_hints(_ctx(pdf, elems)))
+    assert res.result == "PASS"
+
+
+def test_pronunciation_hints_warns_on_bare_all_caps() -> None:
+    pdf = _new_pdf_with_lang("en")
+    elems = [_text_elem(0, "Span", "CNIB")]
+    res = _only(check_pronunciation_hints(_ctx(pdf, elems)))
+    assert res.result == "WARN"
+    assert '[0] Span "CNIB"' in res.details
+
+
+def test_pronunciation_hints_accepts_any_of_the_three_hints() -> None:
+    pdf = _new_pdf_with_lang("en")
+    for key in ("/E", "/Phoneme", "/PhoneticAlphabet"):
+        elems = [_text_elem(0, "Span", "CNIB", keys={key: "value"})]
+        res = _only(check_pronunciation_hints(_ctx(pdf, elems)))
+        assert res.result == "PASS", key
+
+
+def test_pronunciation_hints_ignores_long_or_mixed_case_text() -> None:
+    pdf = _new_pdf_with_lang("en")
+    elems = [
+        _text_elem(0, "Span", "LONGERWORD"),
+        _text_elem(1, "Span", "Cnib"),
+        _text_elem(2, "Span", "A1B"),
+    ]
+    res = _only(check_pronunciation_hints(_ctx(pdf, elems)))
+    assert res.result == "PASS"
+
+
+def test_pronunciation_hints_lists_each_distinct_abbreviation_once() -> None:
+    pdf = _new_pdf_with_lang("en")
+    elems = [
+        _text_elem(0, "Span", "CNIB"),
+        _text_elem(1, "Span", "CNIB"),
+        _text_elem(2, "Span", "WCAG"),
+    ]
+    res = _only(check_pronunciation_hints(_ctx(pdf, elems)))
+    assert res.result == "WARN"
+    assert "3 abbreviation(s)" in res.details
+    assert res.details.count('"CNIB"') == 1
+
+
+# ---------------------------------------------------------------------------
+# check_language_of_parts
+# ---------------------------------------------------------------------------
+
+
+_ENGLISH = (
+    "The report describes what the committee has done and what it will do "
+    "in the year that follows, and it is written for the members."
+)
+_FRENCH = (
+    "Le rapport décrit ce que le comité a fait et ce qu'il fera dans "
+    "l'année qui suit, et il est écrit pour les membres."
+)
+
+
+def test_language_of_parts_passes_when_every_part_is_the_document_language() -> None:
+    pdf = _new_pdf_with_lang("en-CA")
+    elems = [_text_elem(0, "P", _ENGLISH)]
+    res = _only(check_language_of_parts(_ctx(pdf, elems)))
+    assert res.result == "PASS"
+    assert "Document lang: en" in res.details
+
+
+def test_language_of_parts_fails_on_an_unmarked_foreign_passage() -> None:
+    pdf = _new_pdf_with_lang("en-CA")
+    elems = [_text_elem(0, "P", _ENGLISH), _text_elem(1, "P", _FRENCH)]
+    res = _only(check_language_of_parts(_ctx(pdf, elems)))
+    assert res.result == "FAIL"
+    assert "[1]" in res.details
+    assert "detected as fr" in res.details
+
+
+def test_language_of_parts_accepts_a_foreign_passage_that_declares_lang() -> None:
+    pdf = _new_pdf_with_lang("en-CA")
+    elems = [
+        _text_elem(0, "P", _ENGLISH),
+        _text_elem(1, "P", _FRENCH, lang="fr-CA"),
+    ]
+    res = _only(check_language_of_parts(_ctx(pdf, elems)))
+    assert res.result == "PASS"
+    assert "1 elements have element-level /Lang" in res.details
+
+
+def test_language_of_parts_infers_the_document_language_when_undeclared() -> None:
+    pdf = _new_pdf_with_lang(None)
+    elems = [_text_elem(0, "P", _FRENCH)]
+    res = _only(check_language_of_parts(_ctx(pdf, elems)))
+    assert res.result == "PASS"
+    assert "inferred" in res.details
+
+
+def test_language_of_parts_fails_when_no_language_can_be_determined() -> None:
+    pdf = _new_pdf_with_lang(None)
+    res = _only(check_language_of_parts(_ctx(pdf, [])))
+    assert res.result == "FAIL"
+    assert "Cannot assess" in res.details
+
+
+def test_language_of_parts_prefers_actual_text_over_extracted_text() -> None:
+    """/ActualText is authoritative where present — encoding damage aside."""
+    pdf = _new_pdf_with_lang("en-CA")
+    elems = [_text_elem(0, "P", "garbled", actual_text=_FRENCH)]
+    res = _only(check_language_of_parts(_ctx(pdf, elems)))
+    assert res.result == "FAIL"
+
+
+def test_evaluate_language_of_parts_accepts_an_externally_supplied_language() -> None:
+    """The seam the AI pass uses to re-decide with a language Claude named."""
+    pdf = _new_pdf_with_lang(None)
+    elems = [_text_elem(0, "P", _FRENCH)]
+    res = _only(evaluate_language_of_parts(_ctx(pdf, elems), "en", inferred=True))
+    assert res.result == "FAIL"
+    assert "Document lang: en (inferred" in res.details
+
+
+def test_infer_document_language_reports_a_declared_lang_as_not_inferred() -> None:
+    pdf = _new_pdf_with_lang("FR-ca")
+    lang, inferred = infer_document_language(_ctx(pdf, []))
+    assert (lang, inferred) == ("fr", False)

@@ -1,6 +1,6 @@
 """Table-structure-related accessibility checks.
 
-Six checks ported from pdfMax's
+Seven checks ported from pdfMax's
 ``python/checker/pdf_accessibility_audit.py``:
 
 * :func:`check_table_headers_defined` (PDF/UA, WCAG 1.3.1) — pdfMax
@@ -19,13 +19,10 @@ Six checks ported from pdfMax's
 * :func:`check_table_captions` (WCAG 1.3.1) — pdfMax line ~6470.
   Tables have ``Caption`` direct children.
 
-The "Complex table headers association" check (pdfMax line ~6528) is
-*deferred*: it requires reading ``/Headers``, ``/ColSpan`` and
-``/RowSpan`` off cell dictionaries via pikepdf typed access; the
-narrowing infrastructure exists in :mod:`auto_a11y.pdf.audit.pikepdf_helpers`
-but mapping the complex-table heuristic (column-and-row-headers OR
-merged cells) onto typed elements warrants a small dedicated PR; tracked
-as a follow-up.
+:func:`check_complex_table_headers_association` (pdfMax line ~6528) was
+deferred when this module was written and has since landed; it reads
+``/Headers``, ``/ColSpan`` and ``/RowSpan`` off cell dictionaries
+through :mod:`auto_a11y.pdf.audit.pikepdf_helpers`.
 
 Mirrors the convention established in
 :mod:`auto_a11y.pdf.audit.checks.headings`: each check is a plain
@@ -552,6 +549,126 @@ def check_table_captions(ctx: AuditContext) -> list[CheckResult]:
 
 #: Phase 5.3's pipeline iterates this list in order. Phase 6's check
 #: catalogue iterates the same list to enumerate every check name.
+def _table_rows(
+    table_elem: StructElement, all_elements: list[StructElement]
+) -> list[StructElement]:
+    """The ``TR`` elements of a table, in order, through section wrappers."""
+    rows: list[StructElement] = []
+    visited: set[int] = set()
+    stack: list[int] = list(table_elem.children_indices)
+    while stack:
+        ci = stack.pop(0)
+        if ci in visited or ci < 0 or ci >= len(all_elements):
+            continue
+        visited.add(ci)
+        child = all_elements[ci]
+        if child.resolved_tag == "TR":
+            rows.append(child)
+        elif child.resolved_tag in _SECTION_WRAPPERS:
+            stack.extend(child.children_indices)
+    return rows
+
+
+def _has_span(cell: StructElement) -> bool:
+    """``True`` when a cell declares ``/ColSpan`` or ``/RowSpan`` above 1."""
+    for key in ("/ColSpan", "/RowSpan"):
+        span = pikepdf_helpers.get_int(cell.obj, key)
+        if span is not None and span > 1:
+            return True
+    return False
+
+
+def check_complex_table_headers_association(
+    ctx: AuditContext,
+) -> list[CheckResult]:
+    """PDF/UA, WCAG 1.3.1: complex tables associate cells with headers.
+
+    Mirrors pdfMax line ~6528. ``/Scope`` on a ``TH`` says "this heads
+    its column" — enough for a grid where every cell sits under exactly
+    one header. It stops being enough once a table has headers running
+    both ways, or cells that span, because then which headers govern a
+    given cell is no longer derivable from position. ``/Headers`` on the
+    cell states it outright, and that is what this check asks for.
+
+    A table qualifies as complex when it has both column and row headers
+    or any spanning cell; simple tables are reported as satisfied by
+    ``/Scope`` alone. WARN rather than FAIL, matching pdfMax — the
+    association is inferable often enough that a missing ``/Headers`` is
+    a risk rather than a certainty.
+    """
+    name = "Complex table headers association"
+    standard = "PDF/UA, WCAG 1.3.1"
+    elements = ctx.elements
+    tables = [e for e in elements if e.resolved_tag == "Table"]
+    if not tables:
+        return [CheckResult(
+            name=name, standard=standard, result="NA",
+            details="No tables found in document",
+        )]
+
+    complex_count = 0
+    missing: list[str] = []
+    for table in tables:
+        rows = _table_rows(table, elements)
+        if not rows:
+            continue
+        data_cells: list[StructElement] = []
+        has_header = False
+        has_span = False
+        for row in rows:
+            for cell in _children(row, elements):
+                if cell.resolved_tag == "TH":
+                    has_header = True
+                elif cell.resolved_tag == "TD":
+                    data_cells.append(cell)
+                if cell.resolved_tag in _CELL_TAGS and _has_span(cell):
+                    has_span = True
+        if not has_header or not data_cells:
+            continue
+
+        first_row = _children(rows[0], elements)
+        column_headers = any(c.resolved_tag == "TH" for c in first_row)
+        row_headers = any(
+            (cells := _children(row, elements)) and cells[0].resolved_tag == "TH"
+            for row in rows[1:]
+        )
+        if not ((column_headers and row_headers) or has_span):
+            continue
+
+        complex_count += 1
+        without_headers = [
+            cell for cell in data_cells
+            if cell.obj.get(pikepdf.Name("/Headers")) is None
+        ]
+        if without_headers:
+            preview = (without_headers[0].text_content or "").strip()[:30]
+            missing.append(
+                f"[{table.index + 1}] Table: {len(without_headers)} TD cell(s)"
+                + " missing /Headers"
+                + (f" (e.g. {preview})" if preview else "")
+            )
+
+    if missing:
+        return [CheckResult(
+            name=name, standard=standard, result="WARN",
+            details=(
+                f"{len(missing)} complex table(s) have TD cells without"
+                f" /Headers attribute: {'; '.join(missing[:5])}"
+            ),
+        )]
+    if complex_count:
+        return [CheckResult(
+            name=name, standard=standard, result="PASS",
+            details=(
+                f"All {complex_count} complex table(s) have /Headers on TD cells"
+            ),
+        )]
+    return [CheckResult(
+        name=name, standard=standard, result="NA",
+        details="No complex tables found (simple tables use /Scope)",
+    )]
+
+
 TABLE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_table_headers_defined,
     check_table_header_scope_defined,
@@ -559,11 +676,13 @@ TABLE_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_table_regularity,
     check_no_empty_tables,
     check_table_captions,
+    check_complex_table_headers_association,
 ]
 
 
 __all__ = [
     "TABLE_CHECKS",
+    "check_complex_table_headers_association",
     "check_no_empty_tables",
     "check_table_captions",
     "check_table_header_scope_defined",

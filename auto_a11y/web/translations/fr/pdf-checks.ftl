@@ -1986,3 +1986,318 @@ pdf-check-PdfErrNoTextLayer-why =
 
 pdf-check-PdfErrNoTextLayer-who =
     Les personnes utilisant un lecteur d'écran, et toute personne ayant besoin de rechercher, copier, agrandir ou redimensionner le texte.
+
+pdf-check-PdfWarnUntaggedListsDetected-name =
+    Listes non balisées détectées (avertissement)
+
+pdf-check-PdfWarnUntaggedListsDetected-short-title =
+    Listes non balisées détectées
+
+pdf-check-PdfWarnUntaggedListsDetected-what =
+    Des paragraphes consécutifs commencent par des puces, des chiffres ou des lettres, mais sont balisés P plutôt qu'en liste (L contenant des LI).
+
+pdf-check-PdfWarnUntaggedListsDetected-why =
+    Un lecteur d'écran annonce une véritable liste avec son nombre d'éléments et permet de passer de l'un à l'autre. Le même texte en paragraphes isolés n'offre ni l'un ni l'autre : la personne ignore combien d'éléments existent et ne peut pas les parcourir.
+
+pdf-check-PdfWarnUntaggedListsDetected-who =
+    Les personnes utilisant un lecteur d'écran, qui perdent la navigation par liste et le décompte des éléments.
+
+pdf-check-PdfWarnHeadingSizeHierarchy-name =
+    Hiérarchie visuelle des titres (avertissement)
+
+pdf-check-PdfWarnHeadingSizeHierarchy-short-title =
+    Hiérarchie visuelle des titres
+
+pdf-check-PdfWarnHeadingSizeHierarchy-what =
+    La taille visuelle des titres ne suit pas leur niveau de balisage : un titre de niveau inférieur est plus grand que celui du dessus, deux niveaux ont la même taille, ou un même niveau varie fortement.
+
+pdf-check-PdfWarnHeadingSizeHierarchy-why =
+    Les personnes voyantes se repèrent au poids visuel, pas aux balises. Un arbre de balises correct sans différence de taille visible ne leur offre aucune structure à parcourir, et un ordre de tailles inversé les induit activement en erreur.
+
+pdf-check-PdfWarnHeadingSizeHierarchy-who =
+    Les personnes voyantes, dont celles ayant des troubles cognitifs qui s'appuient sur une structure visuelle claire.
+
+pdf-check-PdfInfoHeadingSizeNoFontData-name =
+    Hiérarchie visuelle des titres (non évaluée)
+
+pdf-check-PdfInfoHeadingSizeNoFontData-short-title =
+    Tailles des titres non évaluées
+
+pdf-check-PdfInfoHeadingSizeNoFontData-what =
+    Les données de police n'ont pas pu être recueillies pour ce document ; les tailles des titres n'ont donc pas pu être comparées à leur niveau.
+
+pdf-check-PdfInfoHeadingSizeNoFontData-why =
+    La vérification n'a pas pu être exécutée. Ce n'est pas une réussite : rien ne démontre que la hiérarchie visuelle des titres est correcte.
+
+pdf-check-PdfInfoHeadingSizeNoFontData-who =
+    Indéterminé — la vérification n'a pas été exécutée.
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-name =
+    Permission d'accessibilité restreinte (échec)
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-short-title =
+    Extraction pour l'accessibilité bloquée
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-what =
+    Le document est chiffré avec des permissions qui interdisent l'extraction de son contenu à des fins d'accessibilité.
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-why =
+    Les technologies d'assistance lisent un PDF en extrayant son texte. Cette permission refusée, le document est illisible pour un lecteur d'écran, quelle que soit la qualité de son balisage.
+
+pdf-check-PdfErrAccessibilityPermissionRestricted-who =
+    Les personnes utilisant un lecteur d'écran, un afficheur braille ou la synthèse vocale, qui n'ont aucun accès au contenu.
+
+pdf-check-PdfErrPageContentUntagged-name =
+    Tout le contenu est balisé (échec)
+
+pdf-check-PdfErrPageContentUntagged-short-title =
+    Contenu de page non balisé
+
+pdf-check-PdfErrPageContentUntagged-what =
+    Une ou plusieurs pages affichent du texte sans déclarer le moindre identifiant de contenu marqué : rien sur ces pages n'est accessible depuis l'arbre de structure.
+
+pdf-check-PdfErrPageContentUntagged-why =
+    Un lecteur d'écran suit l'arbre de structure. Du texte sans contenu marqué n'y figure pas : ces pages sont lues comme vides, quel que soit ce qu'elles affichent.
+
+pdf-check-PdfErrPageContentUntagged-who =
+    Les personnes utilisant un lecteur d'écran, ainsi que celles qui utilisent la redistribution, la lecture à voix haute ou l'export de texte.
+
+pdf-check-PdfWarnArtifactSubtypeMissing-name =
+    Sous-types de classification des artefacts (avertissement)
+
+pdf-check-PdfWarnArtifactSubtypeMissing-short-title =
+    Artefacts sans sous-type
+
+pdf-check-PdfWarnArtifactSubtypeMissing-what =
+    Des artefacts sont marqués comme tels mais n'indiquent pas leur nature — /Pagination, /Layout, /Page ou /Background.
+
+pdf-check-PdfWarnArtifactSubtypeMissing-why =
+    Les lecteurs proposent d'ignorer les artefacts de façon sélective, par exemple les en-têtes courants mais pas les filets. Un artefact non classé ne peut être ignoré qu'en bloc, ou pas du tout.
+
+pdf-check-PdfWarnArtifactSubtypeMissing-who =
+    Les personnes utilisant un lecteur d'écran qui parcourent page par page de longs documents.
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-name =
+    Correspondance Unicode des formules valide (avertissement)
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-short-title =
+    Polices de formule vers la zone à usage privé
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-what =
+    Le document contient des éléments Formula et au moins une police fait correspondre ses glyphes à des points de code de la zone à usage privé d'Unicode plutôt qu'à de vrais caractères.
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-why =
+    Un point de code à usage privé n'a aucun sens hors de la police qui le définit. Un lecteur d'écran qui le lit ne produit rien, et le texte copié arrive sous forme de caractères de remplacement.
+
+pdf-check-PdfWarnFormulaUnicodePrivateUse-who =
+    Les personnes utilisant un lecteur d'écran, et quiconque copie de la notation mathématique depuis le document.
+
+pdf-check-PdfWarnPronunciationHintsMissing-name =
+    Indications de prononciation des abréviations (avertissement)
+
+pdf-check-PdfWarnPronunciationHintsMissing-short-title =
+    Abréviations sans indication de prononciation
+
+pdf-check-PdfWarnPronunciationHintsMissing-what =
+    De courtes suites de majuscules apparaissent sans /E, /Phoneme ni /PhoneticAlphabet pour indiquer comment les lire.
+
+pdf-check-PdfWarnPronunciationHintsMissing-why =
+    Sans indication, un lecteur choisit au hasard entre épeler l'abréviation et la prononcer comme un mot, et son choix varie d'un endroit à l'autre du même document.
+
+pdf-check-PdfWarnPronunciationHintsMissing-who =
+    Les personnes utilisant un lecteur d'écran, ainsi que les outils de lecture à voix haute et de synthèse vocale.
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-name =
+    Balisage de la langue des parties (échec)
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-short-title =
+    Passages en langue étrangère non balisés
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-what =
+    Des passages semblent rédigés dans une langue autre que celle du document et ne portent pas de /Lang propre — ou le document ne déclare aucune langue et aucune n'a pu être déduite de son texte.
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-why =
+    Un lecteur d'écran prononce chaque passage avec la voix du document sauf indication contraire. Un paragraphe français lu avec une voix anglaise va du comique à l'inintelligible.
+
+pdf-check-PdfErrLanguageOfPartsUnmarked-who =
+    Les personnes utilisant un lecteur d'écran, en particulier dans les documents bilingues.
+
+pdf-check-PdfWarnComplexTableHeadersMissing-name =
+    Association des en-têtes de tableaux complexes (avertissement)
+
+pdf-check-PdfWarnComplexTableHeadersMissing-short-title =
+    Cellules de tableau complexe sans /Headers
+
+pdf-check-PdfWarnComplexTableHeadersMissing-what =
+    Un tableau dont les en-têtes courent à la fois en ligne et en colonne, ou comportant des cellules fusionnées, contient des cellules de données qui ne nomment pas leurs en-têtes au moyen de l'attribut /Headers.
+
+pdf-check-PdfWarnComplexTableHeadersMissing-why =
+    Dans une grille simple, un lecteur déduit de la position quel en-tête régit une cellule. Dès que les en-têtes courent dans les deux sens ou que des cellules fusionnent, la position ne suffit plus et la cellule est annoncée sans les libellés qui lui donnent son sens.
+
+pdf-check-PdfWarnComplexTableHeadersMissing-who =
+    Les personnes utilisant un lecteur d'écran pour consulter des données tabulaires.
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-name =
+    Champs obligatoires indiqués visuellement (échec)
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-short-title =
+    Champs obligatoires non signalés visuellement
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-what =
+    Des champs que le formulaire marque comme obligatoires au moyen de l'indicateur /Ff Required ne comportent aucun repère visible — ni astérisque, ni mention « obligatoire », ni autre signal.
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-why =
+    L'indicateur Required n'est lu que par les technologies d'assistance. Une personne voyante qui remplit le formulaire n'a aucun moyen de savoir quels champs sont obligatoires avant l'échec de l'envoi.
+
+pdf-check-PdfErrRequiredFieldsNotVisuallyIndicated-who =
+    Les personnes voyantes, y compris celles ayant un handicap cognitif, pour qui un échec d'envoi inexpliqué est le plus difficile à surmonter.
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-name =
+    Champs obligatoires indiqués visuellement (avertissement)
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-short-title =
+    Repères des champs obligatoires à vérifier
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-what =
+    Les champs obligatoires ne comportent ni astérisque ni mention « obligatoire » dans leur nom ou leur infobulle : l'existence d'un repère visible n'a pas pu être établie à partir des seules métadonnées. Ou bien des champs paraissent obligatoires sans porter l'indicateur sémantique.
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-why =
+    Un repère dessiné sur la page satisfait l'exigence tout en restant invisible à une vérification fondée sur les métadonnées ; un repère purement visuel satisfait les personnes voyantes et laisse les technologies d'assistance dans l'ignorance. Dans les deux cas, il faut confronter les deux moitiés.
+
+pdf-check-PdfWarnRequiredFieldsIndicatorUnverified-who =
+    Les personnes voyantes et celles utilisant un lecteur d'écran, selon la moitié qui manque.
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-name =
+    Contraste non textuel suffisant (échec)
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-short-title =
+    Contraste non textuel inférieur à 3:1
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-what =
+    Les bordures ou les limites des champs de formulaire, ou des graphiques tracés, n'atteignent pas le rapport de contraste de 3:1 exigé par le critère WCAG 1.4.11 par rapport à la couleur adjacente.
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-why =
+    Un contrôle que personne ne voit est un contrôle que personne n'utilise. Il en va de même d'une barre de graphique ou d'un séparateur porteur de sens : s'il ne se distingue pas de son fond, l'information qu'il porte est perdue.
+
+pdf-check-PdfErrNonTextContrastBelowMinimum-who =
+    Les personnes malvoyantes, et quiconque lit en pleine lumière ou sur un écran de piètre qualité.
+
+pdf-check-PdfWarnNonTextContrastConcern-name =
+    Contraste non textuel suffisant (avertissement)
+
+pdf-check-PdfWarnNonTextContrastConcern-short-title =
+    Contraste non textuel préoccupant
+
+pdf-check-PdfWarnNonTextContrastConcern-what =
+    Le contraste mesuré est au seuil ou tout juste au-dessus, ou l'analyse visuelle a signalé des éléments dont la visibilité est douteuse sans être franchement inférieure à 3:1.
+
+pdf-check-PdfWarnNonTextContrastConcern-why =
+    Un élément qui atteint tout juste le seuil échoue dès que l'écran, l'éclairage ou l'impression change. C'est la marge qui rend la conception robuste plutôt que conforme sur le papier.
+
+pdf-check-PdfWarnNonTextContrastConcern-who =
+    Les personnes malvoyantes, et quiconque lit dans des conditions imparfaites.
+
+pdf-check-PdfWarnAltTextInadequate-name =
+    Pertinence du texte de remplacement (avertissement)
+
+pdf-check-PdfWarnAltTextInadequate-short-title =
+    Texte de remplacement inadéquat
+
+pdf-check-PdfWarnAltTextInadequate-what =
+    Les figures possèdent un texte de remplacement, mais l'analyse par IA l'a jugé inexact, incomplet ou inutile dans le contexte où il apparaît.
+
+pdf-check-PdfWarnAltTextInadequate-why =
+    Un texte de remplacement qui existe sans décrire l'image est pire qu'un texte manifestement absent : rien n'indique à la personne qui lit qu'il lui manque quelque chose.
+
+pdf-check-PdfWarnAltTextInadequate-who =
+    Les personnes utilisant un lecteur d'écran, et quiconque consulte le document sans les images.
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-name =
+    Pertinence du texte de remplacement (non évaluée)
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-short-title =
+    Pertinence du texte de remplacement non évaluée
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-what =
+    La qualité des textes de remplacement n'a pas été évaluée, car l'analyse par IA n'a pas été exécutée pour ce document.
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-why =
+    Seul un lecteur capable de voir l'image — humain ou modèle — peut dire si sa description est exacte. Un audit structurel peut confirmer la présence d'un texte de remplacement, rien de plus.
+
+pdf-check-PdfInfoAltTextAdequacyNotAssessed-who =
+    Les personnes utilisant un lecteur d'écran, dont cet audit ne peut décrire l'expérience des images.
+
+pdf-check-PdfWarnImagesOfTextDetected-name =
+    Images de texte accompagnées d'un texte de remplacement correspondant (avertissement)
+
+pdf-check-PdfWarnImagesOfTextDetected-short-title =
+    Images de texte détectées
+
+pdf-check-PdfWarnImagesOfTextDetected-what =
+    Du texte a été trouvé à l'intérieur d'images, sans être repris dans le texte de remplacement des figures qui le contiennent.
+
+pdf-check-PdfWarnImagesOfTextDetected-why =
+    Le texte incrusté dans une image ne se redimensionne pas, ne se redistribue pas, ne change pas de style et ne réagit pas à un thème à fort contraste ; un lecteur d'écran ne peut pas le lire du tout, sauf si le texte de remplacement le répète.
+
+pdf-check-PdfWarnImagesOfTextDetected-who =
+    Les personnes utilisant un lecteur d'écran, celles qui agrandissent le texte et celles qui emploient des thèmes de couleurs personnalisés.
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-name =
+    Images de texte accompagnées d'un texte de remplacement correspondant (non évaluées)
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-short-title =
+    Images de texte non évaluées
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-what =
+    La présence de texte dans les images n'a pas été évaluée, car l'analyse par IA n'a pas été exécutée pour ce document.
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-why =
+    Lire le texte d'une image exige un lecteur capable de la voir. Rien dans la structure du document n'indique si une image contient du texte.
+
+pdf-check-PdfInfoImagesOfTextNotAssessed-who =
+    Les personnes utilisant un lecteur d'écran et celles qui agrandissent le texte.
+
+pdf-check-PdfErrColorSoleIndicator-name =
+    La couleur n'est pas le seul indicateur (échec)
+
+pdf-check-PdfErrColorSoleIndicator-short-title =
+    La couleur est le seul indicateur
+
+pdf-check-PdfErrColorSoleIndicator-what =
+    De l'information est transmise par la seule couleur — un état signalé uniquement en rouge ou en vert, un champ obligatoire marqué par une simple bordure colorée, une série de graphique distinguée par la seule teinte.
+
+pdf-check-PdfErrColorSoleIndicator-why =
+    La couleur n'est pas accessible à tout le monde. Les personnes daltoniennes, celles qui utilisent un thème à fort contraste et quiconque lit une impression en noir et blanc reçoivent la mise en page sans le sens.
+
+pdf-check-PdfErrColorSoleIndicator-who =
+    Les personnes ayant une déficience de la vision des couleurs, celles qui utilisent des thèmes personnalisés, et quiconque lit une copie en noir et blanc.
+
+pdf-check-PdfWarnColorPrimaryIndicator-name =
+    La couleur n'est pas le seul indicateur (avertissement)
+
+pdf-check-PdfWarnColorPrimaryIndicator-short-title =
+    La couleur est l'indicateur principal
+
+pdf-check-PdfWarnColorPrimaryIndicator-what =
+    La couleur est le principal moyen de transmettre certaines informations, un second signal existant mais restant faible — une différence de forme ou de formulation qui risque de passer inaperçue.
+
+pdf-check-PdfWarnColorPrimaryIndicator-why =
+    Un signal secondaire n'aide que si on le remarque. Une distinction qui existe techniquement mais se lit comme un hasard laisse la personne dépendante de la couleur malgré tout.
+
+pdf-check-PdfWarnColorPrimaryIndicator-who =
+    Les personnes ayant une déficience de la vision des couleurs et celles qui utilisent des thèmes personnalisés.
+
+pdf-check-PdfInfoColorUseNotAssessed-name =
+    La couleur n'est pas le seul indicateur (non évalué)
+
+pdf-check-PdfInfoColorUseNotAssessed-short-title =
+    Usage de la couleur non évalué
+
+pdf-check-PdfInfoColorUseNotAssessed-what =
+    La question de savoir si la couleur porte seule du sens n'a pas été évaluée, car l'analyse par IA n'a pas été exécutée pour ce document.
+
+pdf-check-PdfInfoColorUseNotAssessed-why =
+    En juger exige un lecteur capable de voir la page : le même texte rouge constitue un échec dans un document et une décoration dans un autre, et seul le contexte tranche.
+
+pdf-check-PdfInfoColorUseNotAssessed-who =
+    Les personnes ayant une déficience de la vision des couleurs et celles qui utilisent des thèmes personnalisés.

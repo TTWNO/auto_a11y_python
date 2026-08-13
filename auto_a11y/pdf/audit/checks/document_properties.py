@@ -43,12 +43,6 @@ check catalogue can map them.
 
 Deferred from this commit:
 
-* ``Accessibility permission not restricted`` (Matterhorn 26-001;
-  pdfMax line ~4565). Requires reading ``pdf.allow.extract_for_accessibility``
-  on encrypted documents — pikepdf's ``allow`` accessor is documented
-  but its stub typing is awkward to consume under strict mode without a
-  helper. TODO(phase 4 followup): add a typed wrapper around the
-  permission flags before porting this check.
 * ``Artifact classification subtypes`` (PDF/UA-2; pdfMax line ~7569).
   Requires regex parsing of decoded content streams to correlate
   artifact markers with MCID positions; this is significantly more
@@ -925,9 +919,74 @@ def check_document_has_text_layer(ctx: AuditContext) -> list[CheckResult]:
     )]
 
 
+def check_accessibility_permission_not_restricted(
+    ctx: AuditContext,
+) -> list[CheckResult]:
+    """Matterhorn 26-001: encryption must not block accessibility extraction.
+
+    Mirrors pdfMax line ~4565. A PDF can be encrypted such that text
+    extraction is forbidden, which stops assistive technology reading it at
+    all — the document may be perfectly tagged and still be unusable.
+
+    Reads pikepdf's ``allow.accessibility`` and falls back to bit 10
+    (``0x200``) of ``/P``, which is the flag that accessor derives. An
+    unencrypted document passes: there is no restriction to violate.
+
+    (pdfMax read ``allow.extract_for_accessibility``, which pikepdf does
+    not define — its ``AttributeError`` fallback meant this check silently
+    ran on the ``/P`` bit every time.)
+    """
+    name = "Accessibility permission not restricted"
+    standard = "Matterhorn 26-001"
+
+    try:
+        encrypt = ctx.pdf.Root.get("/Encrypt")
+    except Exception:  # noqa: BLE001 — a malformed catalog is not this check
+        encrypt = None
+
+    if encrypt is None:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="PDF is not encrypted — no permission restrictions",
+            )
+        ]
+
+    permitted: bool
+    basis = ""
+    try:
+        permitted = bool(ctx.pdf.allow.accessibility)
+    except (AttributeError, TypeError):
+        p_value = pikepdf_helpers.get_int(encrypt, "/P") or 0
+        permitted = bool(p_value & 0x200)
+        basis = " (P bit 10 set)" if permitted else " (P bit 10 not set)"
+
+    if permitted:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    "PDF is encrypted but accessibility extraction is "
+                    f"permitted{basis}"
+                ),
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                "PDF encryption restricts content extraction for "
+                f"accessibility{basis} — assistive technology cannot read "
+                "this document"
+            ),
+        )
+    ]
+
+
 DOCUMENT_PROPERTIES_CHECKS: list[
     Callable[[AuditContext], list[CheckResult]]
 ] = [
+    check_accessibility_permission_not_restricted,
     check_document_has_text_layer,
     check_document_title_set,
     check_pdf_is_tagged,

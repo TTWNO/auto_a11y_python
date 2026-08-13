@@ -1,6 +1,6 @@
 """Claude-powered analysis for the PDF audit.
 
-Six passes, ported from pdfMax, run by :func:`analyze`:
+Eight passes, ported from pdfMax, run by :func:`analyze`:
 
 ============================  =========  =====================================
 Pass                          Kind       What it catches
@@ -14,6 +14,12 @@ Alt-text adequacy             vision     Alt text that exists but is wrong,
 Images of text                vision     Text baked into graphics (WCAG 1.4.5)
 Use of colour                 vision     Colour as the sole carrier of
                                          meaning (WCAG 1.4.1)
+Non-text contrast             vision     Field borders and graphics that are
+                                         there but not visible enough to
+                                         find (WCAG 1.4.11)
+Required-field indicators     vision     Fields a form treats as mandatory
+                                         with nothing on the page saying so
+                                         (WCAG 3.3.2)
 Executive summary             text       A verdict a non-technical owner can
                                          act on
 Language detection            text       Fallback when the deterministic
@@ -40,13 +46,19 @@ from auto_a11y.pdf.audit.ai.client import (
     AIUnavailable,
     Usage,
 )
+from auto_a11y.pdf.audit.ai.forms_visual import (
+    analyze_non_text_contrast,
+    analyze_required_indicators,
+)
 from auto_a11y.pdf.audit.ai.schemas import (
     ALT_TEXT_ADEQUACY_SCHEMA,
     COLOR_USE_ANALYSIS_SCHEMA,
     EXECUTIVE_SUMMARY_SCHEMA,
     IMAGE_TEXT_SCHEMA,
     LANGUAGE_SCHEMA,
+    NON_TEXT_CONTRAST_SCHEMA,
     PAGE_IMAGE_TEXT_SCHEMA,
+    REQUIRED_INDICATOR_SCHEMA,
     SEMANTIC_ANALYSIS_SCHEMA,
 )
 from auto_a11y.pdf.audit.ai.semantic import analyze_semantics, severity_counts
@@ -56,6 +68,7 @@ from auto_a11y.pdf.audit.ai.vision import (
     assess_alt_text,
     detect_images_of_text,
 )
+from auto_a11y.pdf.audit.ai.verdicts import derive_check_results
 from auto_a11y.pdf.audit.ai.visual_references import (
     VisualReference,
     scan_visual_references,
@@ -76,14 +89,19 @@ __all__ = [
     "EXECUTIVE_SUMMARY_SCHEMA",
     "IMAGE_TEXT_SCHEMA",
     "LANGUAGE_SCHEMA",
+    "NON_TEXT_CONTRAST_SCHEMA",
     "PAGE_IMAGE_TEXT_SCHEMA",
+    "REQUIRED_INDICATOR_SCHEMA",
     "SEMANTIC_ANALYSIS_SCHEMA",
     "AIClient",
     "AIUnavailable",
     "Usage",
     "VisualReference",
     "analyze",
+    "derive_check_results",
     "analyze_color_use",
+    "analyze_non_text_contrast",
+    "analyze_required_indicators",
     "assess_alt_text",
     "analyze_semantics",
     "detect_images_of_text",
@@ -112,12 +130,15 @@ def analyze(
     images_dir: Path | None,
     api_key: str | None = None,
     model: str = DEFAULT_MODEL,
-) -> tuple[AIAnalysisResult, dict[str, object]]:
+) -> tuple[AIAnalysisResult, dict[str, object], list[CheckResult]]:
     """Run every AI pass over an audited document.
 
-    Returns the :class:`AIAnalysisResult` for the audit plus a dict of extra
-    report sections (``alt_text_adequacy``, ``images_of_text``,
-    ``color_use``, ``ai_executive_summary``) for the renderer.
+    Returns three things: the :class:`AIAnalysisResult` for the audit, a
+    dict of extra report sections (``alt_text_adequacy``,
+    ``images_of_text``, ``color_use``, ``ai_executive_summary``) for the
+    renderer, and the check verdicts the vision passes imply — pdfMax's AI
+    functions each contribute a CheckResult, so an AI run moves the
+    pass/fail counts rather than sitting in a sidebar of its own.
 
     Raises:
         AIUnavailable: no API key, or the SDK is missing. The caller decides
@@ -183,6 +204,32 @@ def analyze(
         sections["color_use"] = color
         findings.extend(_findings_from_color(color))
 
+    if ctx.non_text_contrast is not None:
+        contrast = analyze_non_text_contrast(
+            client,
+            pdf_path=ctx.pdf_path,
+            page_count=len(ctx.pdf.pages),
+            data=ctx.non_text_contrast,
+            form_inventory_text=_section_text(report_sections, "form_inventory"),
+            doc_lang=_declared_lang(ctx.pdf),
+        )
+        if contrast is not None:
+            sections["non_text_contrast"] = contrast
+
+    if ctx.required_fields is not None:
+        required = analyze_required_indicators(
+            client,
+            pdf_path=ctx.pdf_path,
+            page_count=len(ctx.pdf.pages),
+            data=ctx.required_fields,
+            form_inventory_text=_section_text(report_sections, "form_inventory"),
+            doc_lang=_declared_lang(ctx.pdf),
+        )
+        if required is not None:
+            sections["required_indicators"] = required
+
+    language_verdict = _language_of_parts_verdict(client, ctx)
+
     # ---- Executive summary --------------------------------------------
     summary = generate_executive_summary(
         client,
@@ -218,7 +265,44 @@ def analyze(
         "AI analysis complete: %d finding(s) across %d call(s) on %s",
         len(findings), client.usage.calls, client.model,
     )
-    return result, sections
+    verdicts = derive_check_results(sections)
+    if language_verdict is not None:
+        verdicts.extend(language_verdict)
+    return result, sections, verdicts
+
+
+def _language_of_parts_verdict(
+    client: AIClient, ctx: AuditContext
+) -> list[CheckResult] | None:
+    """Re-decide ``Language of parts markup`` when Claude can name the language.
+
+    The deterministic check compares each passage against the document's
+    language, and cannot compare anything when the document declares no
+    ``/Lang`` and word frequency will not choose. That is the one thing
+    the AI adds here — pdfMax asks Claude for the document language
+    before falling back to word frequency, and the comparison that
+    follows is identical either way.
+
+    Returns ``None`` whenever the deterministic answer already stands:
+    the document declares a language, the detector inferred one, or
+    Claude declined to.
+    """
+    from auto_a11y.pdf.audit.checks.language import (
+        evaluate_language_of_parts,
+        infer_document_language,
+    )
+
+    declared, _was_inferred = infer_document_language(ctx)
+    if declared is not None:
+        return None
+
+    text = " ".join(e.text_content for e in ctx.elements if e.text_content)
+    if not text.strip():
+        return None
+    detected = detect_language(client, text)
+    if detected is None:
+        return None
+    return evaluate_language_of_parts(ctx, detected.lower()[:2], inferred=True)
 
 
 # ---------------------------------------------------------------------------

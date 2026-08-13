@@ -23,9 +23,12 @@ Resilience model:
 
 AI analysis:
 
-* When ``run_ai=True``, :mod:`auto_a11y.pdf.audit.ai` runs its six passes
+* When ``run_ai=True``, :mod:`auto_a11y.pdf.audit.ai` runs its eight passes
   after the deterministic checks and the report sections — every prompt is
   assembled from those inventories, so the AI step cannot run earlier.
+* Two AI verdicts share a name with a deterministic check and replace it
+  via :func:`merge_ai_checks`, because the deterministic half of each says
+  in its own details that it could not see the page.
 * AI never fails the audit. A missing key, a declined request or a crash
   yields an :class:`AIAnalysisResult` whose ``model`` says which happened
   (``(unavailable)`` / ``(failed)``) and whose ``executive_summary`` carries
@@ -49,7 +52,9 @@ from auto_a11y.pdf.audit import (
     font_metadata as font_metadata_collector,
     fonts,
     images,
+    non_text_contrast,
     reading_order,
+    required_fields,
     structure,
 )
 from auto_a11y.pdf.audit.checks import ALL_CHECKS
@@ -215,6 +220,23 @@ def _run_audit_with_pdf(
         except (pikepdf.PdfError, OSError, ValueError, TypeError):
             images_list = []
 
+    # ---- Step 6b: non-text contrast + required-field indicators ---------
+    # Both read the AcroForm and both rasterise pages, so they run
+    # together while the page images are still warm in the OS cache.
+    # Failures are absorbed: a malformed form or an unrenderable page
+    # costs these two checks, not the audit.
+    _emit(progress, "Measuring non-text contrast", 0.65)
+    try:
+        non_text = non_text_contrast.collect_non_text_contrast(
+            pdf, pdf_path, elements,
+        )
+    except (pikepdf.PdfError, OSError, ValueError, TypeError, KeyError, AttributeError):
+        non_text = None
+    try:
+        required_field_data = required_fields.collect_required_fields(pdf, elements)
+    except (pikepdf.PdfError, OSError, ValueError, TypeError, KeyError, AttributeError):
+        required_field_data = None
+
     # ---- Step 7: visual reading order -----------------------------------
     # The pdfminer parse here is the second-largest cost after colours;
     # tick per page through the band [0.66, 0.78] so the user doesn't see
@@ -264,6 +286,8 @@ def _run_audit_with_pdf(
         fg_only_colors=fg_only,
         form_color_pairs=form_pairs,
         content_classification=content_class,
+        non_text_contrast=non_text,
+        required_fields=required_field_data,
         images=images_list,
         visual_blocks=visual_blocks,
         page_dimensions=page_dims,
@@ -351,7 +375,7 @@ def _run_audit_with_pdf(
         _emit(progress, "Running AI analysis", 0.98)
         from auto_a11y.pdf.audit import ai as ai_module
         try:
-            ai_analysis, ai_sections = ai_module.analyze(
+            ai_analysis, ai_sections, ai_checks = ai_module.analyze(
                 ctx,
                 check_results=check_results,
                 report_sections=report_sections,
@@ -362,6 +386,23 @@ def _run_audit_with_pdf(
             # AI sections sit alongside the deterministic ones; the
             # images_of_text key replaces its own "AI required" placeholder.
             report_sections.update(ai_sections)
+            # The AI verdicts are checks like any other, so they belong in
+            # the same list. Two of them share a name with a deterministic
+            # check that said in its own details it could not see the
+            # page; those replace it in place rather than appearing
+            # twice. The executive summary was built before this step, so
+            # rebuild it or its counts disagree with the list directly
+            # beneath it.
+            merge_ai_checks(check_results, ai_checks)
+            try:
+                from auto_a11y.pdf.audit.report_sections import (
+                    build_executive_summary,
+                )
+                report_sections["executive_summary"] = build_executive_summary(
+                    check_results
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not refresh the executive summary: %s", exc)
         except ai_module.AIUnavailable as exc:
             # An explicit opt-in that cannot run is worth saying out loud —
             # returning a clean audit would imply the AI passes found nothing.
@@ -434,6 +475,29 @@ def _read_catalog_lang(pdf: pikepdf.Pdf) -> str | None:
     if not rendered.strip():
         return None
     return rendered
+
+
+def merge_ai_checks(
+    check_results: list[CheckResult], ai_checks: list[CheckResult]
+) -> None:
+    """Fold AI verdicts into the check list, replacing same-named ones.
+
+    A verdict that shares its name with a deterministic check is the same
+    check answered better — ``Non-text contrast sufficient`` and
+    ``Required fields visually indicated`` both say in their
+    deterministic details that they could not see the page. Replacing in
+    place keeps the check's position in the report; appending would show
+    the reader two verdicts for one criterion and leave them to guess
+    which counts.
+    """
+    by_name = {result.name: index for index, result in enumerate(check_results)}
+    for verdict in ai_checks:
+        existing = by_name.get(verdict.name)
+        if existing is None:
+            by_name[verdict.name] = len(check_results)
+            check_results.append(verdict)
+        else:
+            check_results[existing] = verdict
 
 
 def _emit(

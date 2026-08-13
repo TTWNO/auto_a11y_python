@@ -33,6 +33,28 @@ _Context: TypeAlias = Literal["tagged", "artifact", "other"]
 
 
 @dataclass(frozen=True)
+class ArtifactMark:
+    """One ``/Artifact`` marked-content section found on a page.
+
+    PDF/UA-2 asks that an artifact say *what kind* it is — ``/Pagination``,
+    ``/Layout``, ``/Page`` or ``/Background`` — so a reader can offer
+    "skip running headers" rather than only "skip decoration".
+
+    Attributes:
+        has_subtype: ``True`` when the marker is a ``BDC`` whose property
+            dictionary carries ``/Subtype``. A bare ``BMC`` never can,
+            so it is always ``False``.
+        nearest_mcid: the marked-content id closest to this marker in
+            stream order, or ``None`` when the page declares no MCIDs.
+            Used only to name a structure element in the report — an
+            artifact has no element of its own to point at.
+    """
+
+    has_subtype: bool
+    nearest_mcid: int | None
+
+
+@dataclass(frozen=True)
 class PageContentClassification:
     """What one page's content stream declared about itself."""
 
@@ -48,6 +70,16 @@ class PageContentClassification:
     separates a scan from a document whose text is merely untagged."""
     image_operators: int = 0
     """Every image drawn on the page, tagged or not."""
+    mcid_marks: int = 0
+    """Marked-content sections carrying an ``/MCID``.
+
+    Zero on a page that has text means none of that text is reachable
+    from the structure tree, which is a stronger statement than the
+    per-operator counts above: they only see marks outside *any*
+    section, so text wrapped in a section that has no ``/MCID`` is
+    untagged without being uncounted."""
+    artifact_marks: tuple[ArtifactMark, ...] = ()
+    """Every ``/Artifact`` section on the page, in stream order."""
 
     @property
     def untagged_operators(self) -> int:
@@ -113,8 +145,16 @@ def _classify_page(
     untagged_images = 0
     text_operators = 0
     image_operators = 0
+    # Positions are operator ordinals, not byte offsets. pdfMax measured
+    # the distance between an /Artifact marker and an /MCID in decoded
+    # stream bytes; ordinals answer the same "which MCID is nearest"
+    # question without depending on how the stream happens to be encoded.
+    position = 0
+    mcid_positions: list[tuple[int, int]] = []
+    artifact_positions: list[tuple[int, bool]] = []
 
     for instruction in instructions:
+        position += 1
         if isinstance(instruction, pikepdf.ContentStreamInlineImage):
             # An inline image draws directly, exactly like a Do on an
             # image XObject.
@@ -137,10 +177,18 @@ def _classify_page(
             if tag == "/Artifact":
                 if _innermost(stack) == "tagged":
                     artifact_inside_tagged += 1
+                has_subtype = (
+                    isinstance(properties, pikepdf.Dictionary)
+                    and properties.get(Name("/Subtype")) is not None
+                )
+                artifact_positions.append((position, has_subtype))
                 stack.append("artifact")
             elif has_mcid:
                 if _innermost(stack) == "artifact":
                     tagged_inside_artifact += 1
+                mcid = _mcid_value(properties)
+                if mcid is not None:
+                    mcid_positions.append((position, mcid))
                 stack.append("tagged")
             else:
                 stack.append("other")
@@ -170,7 +218,37 @@ def _classify_page(
         untagged_image_operators=untagged_images,
         text_operators=text_operators,
         image_operators=image_operators,
+        mcid_marks=len(mcid_positions),
+        artifact_marks=tuple(
+            ArtifactMark(
+                has_subtype=has_subtype,
+                nearest_mcid=_nearest_mcid(at, mcid_positions),
+            )
+            for at, has_subtype in artifact_positions
+        ),
     )
+
+
+def _mcid_value(properties: object) -> int | None:
+    """The ``/MCID`` integer from a ``BDC`` property dictionary, if any."""
+    if not isinstance(properties, pikepdf.Dictionary):
+        return None
+    raw = properties.get(Name("/MCID"))
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _nearest_mcid(
+    position: int, mcid_positions: list[tuple[int, int]]
+) -> int | None:
+    """The marked-content id closest to *position* in stream order."""
+    if not mcid_positions:
+        return None
+    return min(mcid_positions, key=lambda pair: abs(pair[0] - position))[1]
 
 
 def classify_content(pdf: pikepdf.Pdf) -> list[PageContentClassification]:

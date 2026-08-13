@@ -5370,3 +5370,66 @@ pdf-remediation-PdfErrNoTextLayer =
     How to fix in Adobe Acrobat Pro
     
     Run Scan and OCR, then Recognise Text. Do this before anything else in this report: every other fault listed depends on there being text to tag, and correcting them first means redoing the work. Once the text exists, check the recognition against the page — OCR misreads are silent, and a wrong word is worse than a missing one.
+
+pdf-remediation-PdfWarnUntaggedListsDetected =
+    Retag the paragraph run as a list: wrap the items in an L element, each item in an LI, and put the marker in an Lbl with the text in an LBody. Remove the literal bullet or number characters from the text once the Lbl carries them, so the marker is not announced twice.
+
+pdf-remediation-PdfWarnHeadingSizeHierarchy =
+    Set the heading styles so each level is visibly smaller than the one above it, and keep every heading of a given level at the same size. Change the visual styling, not the tag levels — the tag hierarchy is what assistive technology follows and should not be altered to match the appearance.
+
+pdf-remediation-PdfInfoHeadingSizeNoFontData =
+    No action is available. Font data could not be collected for this document, so re-run the audit on a copy that is not damaged or encrypted if you need this check to report.
+
+pdf-remediation-PdfErrAccessibilityPermissionRestricted =
+    Re-save the document with content extraction for accessibility permitted. In Acrobat this is Properties, Security, Permissions — enable "Enable text access for screen reader devices for the visually impaired". If the file must stay restricted for other reasons, that single permission can be granted on its own.
+
+pdf-remediation-PdfErrPageContentUntagged =
+    Tag the page content. Run Acrobat's Autotag on the affected pages and then correct the result in the Tags panel, or return to the source document, apply real styles, and re-export with tagging enabled. Pages that carry only decoration should be marked as artifacts rather than left untagged.
+
+pdf-remediation-PdfWarnArtifactSubtypeMissing =
+    Add a /Subtype to each artifact's property dictionary: /Pagination for running headers, footers and page numbers, /Layout for rules and decorative frames, /Page for printer marks, /Background for watermarks and background art. Most authoring tools set this automatically when the artifact is created through their own header/footer feature rather than drawn by hand.
+
+pdf-remediation-PdfWarnFormulaUnicodePrivateUse =
+    Re-embed the font with a ToUnicode CMap that maps each glyph to its real Unicode code point — mathematical operators, Greek letters and set symbols all have standard ones. Where a glyph genuinely has no Unicode equivalent, put the reading on the Formula element as /ActualText so the meaning survives even if the glyph does not.
+
+pdf-remediation-PdfWarnPronunciationHintsMissing =
+    Add an /E expansion to the Span carrying the abbreviation — "CNIB" expands to "Canadian National Institute for the Blind". Where the reading matters more than the expansion, add /Phoneme with /PhoneticAlphabet naming the notation used. Setting the expansion once on the first occurrence is the common convention.
+
+pdf-remediation-PdfErrLanguageOfPartsUnmarked =
+    Set /Lang on the structure element wrapping each foreign-language passage, using a BCP 47 tag such as fr-CA or en-CA. Where the document declares no language at all, set the catalog /Lang first: that is the baseline every passage is compared against, and without it no passage can be identified as an exception.
+
+pdf-remediation-PdfWarnComplexTableHeadersMissing =
+    Give each header cell an /ID and list the governing header IDs in each data cell's /Headers array. Acrobat's table editor can do this through the Table Cell Properties dialog; for large tables it is usually faster to correct the source document's table structure and re-export.
+
+pdf-remediation-PdfErrRequiredFieldsNotVisuallyIndicated =
+    Mark each required field visibly: an asterisk beside the label, or the word "required" in the label itself. If asterisks are used, add a legend near the top of the form explaining what they mean — "Fields marked with * are required". Keep the /Ff Required flag set as well; the two signals are for different readers and both are needed.
+
+pdf-remediation-PdfWarnRequiredFieldsIndicatorUnverified =
+    Look at the form and confirm each required field carries a visible indicator. Where one is missing, add an asterisk or "required" to the label. Where a field looks required but has no /Ff Required flag, set the flag so assistive technology reports it too. Running the audit again with AI analysis enabled answers this from the rendered page rather than from metadata.
+
+pdf-remediation-PdfErrNonTextContrastBelowMinimum =
+    Darken the field borders until they reach 3:1 against the page — a mid grey on white is usually enough — or give the fields a fill that differs from the page by the same margin. For charts and rules, choose colours with the same 3:1 margin against whatever sits behind them, and do not rely on a hairline to carry a boundary.
+
+pdf-remediation-PdfWarnNonTextContrastConcern =
+    Review the flagged elements and give them more margin than the minimum — aim well above 3:1 rather than at it. Where the flag is on a decorative element that carries no meaning, no change is needed; confirm it is decorative rather than assuming it.
+
+pdf-remediation-PdfWarnAltTextInadequate =
+    Rewrite the flagged alt text to say what the image conveys in its context. Describe the information, not the picture: a chart's alt text should give the finding, not list its axes. Keep the surrounding text in mind — an image already described in the paragraph beside it needs only a short label.
+
+pdf-remediation-PdfInfoAltTextAdequacyNotAssessed =
+    Re-run the audit with AI analysis enabled to have the alt text assessed against the images, or review the figures manually against the full alt-text inventory in this report.
+
+pdf-remediation-PdfWarnImagesOfTextDetected =
+    Replace images of text with real text wherever the image is not itself the point — a heading set as a graphic, a table screenshot, a quote in a decorative frame. Where the image must stay, such as a logo or a diagram whose layout carries meaning, put its full text in the alt text so nothing is lost.
+
+pdf-remediation-PdfInfoImagesOfTextNotAssessed =
+    Re-run the audit with AI analysis enabled to have the images read, or review them manually and confirm that any text they contain also appears in their alt text or in the surrounding page text.
+
+pdf-remediation-PdfErrColorSoleIndicator =
+    Add a second signal alongside the colour: a text label, an icon, a pattern or a shape. Red text becomes red text with the word "Error"; a coloured chart series gets a direct label or a distinct pattern; a coloured required-field border gains an asterisk. Keep the colour — it helps the readers who can see it — and add to it rather than replacing it.
+
+pdf-remediation-PdfWarnColorPrimaryIndicator =
+    Strengthen the second signal until it stands on its own: make the label explicit rather than implied, the icon distinct rather than subtle, the pattern visible at reading size. A useful test is to view the page in greyscale and see whether the distinction still reads.
+
+pdf-remediation-PdfInfoColorUseNotAssessed =
+    Re-run the audit with AI analysis enabled to have the pages examined, or review the document manually in greyscale and confirm that every distinction still reads without colour.

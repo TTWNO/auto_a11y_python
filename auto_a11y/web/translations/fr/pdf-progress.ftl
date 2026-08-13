@@ -22,3 +22,4 @@ pdf-progress-stage-done = Done
 pdf-progress-stage-reading-order-detecting-columns = Reading order: detecting columns
 pdf-progress-stage-reading-order-matching-elements = Reading order: matching elements
 pdf-progress-stage-classifying-page-content = Classification du contenu des pages
+pdf-progress-stage-measuring-non-text-contrast = Mesure du contraste des éléments non textuels

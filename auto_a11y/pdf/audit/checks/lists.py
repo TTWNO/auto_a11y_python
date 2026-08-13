@@ -14,12 +14,11 @@ Four checks ported from pdfMax's
 * :func:`check_list_item_labels` (PDF/UA best practice) — pdfMax line
   ~6707. Every non-empty ``LI`` carries an ``Lbl``.
 
-The "Untagged lists detected" check (pdfMax line ~6733) is *deferred*:
-it depends on :func:`pdfMax.find_list_candidates`, which walks
-``actual_text``/``text_content`` looking for bullet-prefix runs across
-sibling paragraphs. Porting that helper requires a regex-driven
-heuristic over typed structure elements; tracked as a Phase 4 follow-up
-once the wider plan settles which collector should own the helper.
+* :func:`check_untagged_lists_detected` (WCAG 1.3.1) — pdfMax line
+  ~6733. Runs of sibling paragraphs whose text carries list markers but
+  which are tagged ``P`` rather than ``L`` > ``LI``. The heuristic lives
+  in :mod:`auto_a11y.pdf.audit.candidates` because the AI semantic pass
+  consumes the same shortlist.
 
 Mirrors the convention established in
 :mod:`auto_a11y.pdf.audit.checks.headings`: each check is a plain
@@ -32,6 +31,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from auto_a11y.pdf.audit.candidates import find_list_candidates
 from auto_a11y.pdf.audit.structure import StructElement
 from auto_a11y.pdf.models import AuditContext, CheckResult
 
@@ -315,6 +315,66 @@ def check_list_item_labels(ctx: AuditContext) -> list[CheckResult]:
 
 
 # ---------------------------------------------------------------------------
+# check_untagged_lists_detected
+# ---------------------------------------------------------------------------
+
+
+def check_untagged_lists_detected(ctx: AuditContext) -> list[CheckResult]:
+    """WCAG 1.3.1: paragraph runs that read as lists but are not tagged as one.
+
+    Mirrors pdfMax line ~6733. A screen reader announces a real list with
+    its item count and lets the user jump between items; the same content
+    as consecutive ``P`` elements offers none of that, which is why this
+    is a finding even though the text is identical on the page.
+
+    ``WARN`` rather than ``FAIL``: the detection is a marker-pattern
+    heuristic, and prose legitimately begins with "1." now and then.
+    """
+    candidates = find_list_candidates(ctx.elements)
+    if not candidates:
+        return [
+            CheckResult(
+                name="Untagged lists detected",
+                standard="WCAG 1.3.1",
+                result="PASS",
+                details=(
+                    "No paragraph sequences detected that appear to be "
+                    "untagged lists"
+                ),
+            )
+        ]
+
+    total_items = sum(len(group.elements) for group in candidates)
+    patterns = sorted({group.pattern for group in candidates})
+
+    # First few affected elements, 1-based to match every other reference
+    # in this report. (pdfMax printed these 0-based, which did not agree
+    # with its own element numbering elsewhere.)
+    refs: list[str] = []
+    affected: list[int] = []
+    for group in candidates:
+        for item in group.elements:
+            affected.append(item.index)
+            if len(refs) < 5:
+                refs.append(f"[{item.index + 1}]")
+
+    return [
+        CheckResult(
+            name="Untagged lists detected",
+            standard="WCAG 1.3.1",
+            result="WARN",
+            details=(
+                f"{len(candidates)} sequence(s) of paragraph tags "
+                f"({total_items} items total) appear to be lists "
+                f"({', '.join(patterns)}) but are tagged as P, not L > LI: "
+                f"{' '.join(refs)}"
+            ),
+            elements=tuple(affected),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
 
@@ -326,6 +386,7 @@ LIST_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_no_empty_lists,
     check_list_nesting_valid,
     check_list_item_labels,
+    check_untagged_lists_detected,
 ]
 
 
@@ -335,4 +396,5 @@ __all__ = [
     "check_list_nesting_valid",
     "check_list_structure_valid",
     "check_no_empty_lists",
+    "check_untagged_lists_detected",
 ]

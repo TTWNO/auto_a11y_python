@@ -70,8 +70,8 @@ def fake_client(monkeypatch: pytest.MonkeyPatch) -> AIClient:
     """An AIClient whose SDK calls are captured rather than sent."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
     client = AIClient(model="claude-opus-5")
-    client._client = MagicMock()  # noqa: SLF001 — the point of the fixture
-    client._client.messages.create.return_value = _message()
+    client.sdk = MagicMock()
+    client.sdk.messages.create.return_value = _message()
     return client
 
 
@@ -127,7 +127,7 @@ def test_refusal_returns_none_instead_of_reading_content(
     """A refusal is HTTP 200 with empty content — indexing it would raise."""
     refusal = _message(stop_reason="refusal")
     refusal.content = []
-    fake_client._client.messages.create.return_value = refusal  # noqa: SLF001
+    fake_client.sdk.messages.create.return_value = refusal
 
     result = fake_client.json_call(
         [ai_client.text_block("hi")],
@@ -138,7 +138,7 @@ def test_refusal_returns_none_instead_of_reading_content(
 
 
 def test_malformed_json_returns_none(fake_client: AIClient) -> None:
-    fake_client._client.messages.create.return_value = _message(  # noqa: SLF001
+    fake_client.sdk.messages.create.return_value = _message(
         "not json at all"
     )
     result = fake_client.json_call(
@@ -151,7 +151,7 @@ def test_malformed_json_returns_none(fake_client: AIClient) -> None:
 
 def test_api_exception_returns_none(fake_client: AIClient) -> None:
     """One failed call costs its own analysis, not the audit."""
-    fake_client._client.messages.create.side_effect = RuntimeError("boom")  # noqa: SLF001
+    fake_client.sdk.messages.create.side_effect = RuntimeError("boom")
     result = fake_client.json_call(
         [ai_client.text_block("hi")],
         schema=SEMANTIC_ANALYSIS_SCHEMA,
@@ -178,15 +178,15 @@ def test_large_budgets_stream_to_avoid_http_timeouts(
     """Above the streaming threshold the SDK's non-streaming path can time out."""
     stream_ctx = MagicMock()
     stream_ctx.__enter__.return_value.get_final_message.return_value = _message()
-    fake_client._client.messages.stream.return_value = stream_ctx  # noqa: SLF001
+    fake_client.sdk.messages.stream.return_value = stream_ctx
 
     fake_client.json_call(
         [ai_client.text_block("hi")],
         schema=SEMANTIC_ANALYSIS_SCHEMA,
         max_tokens=16000,
     )
-    assert fake_client._client.messages.stream.called  # noqa: SLF001
-    assert not fake_client._client.messages.create.called  # noqa: SLF001
+    assert fake_client.sdk.messages.stream.called
+    assert not fake_client.sdk.messages.create.called
 
 
 # ---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ def test_semantic_call_sends_schema_image_and_effort(
             "potential_lists": [],
         })
     )
-    fake_client._client.messages.stream.return_value = stream_ctx  # noqa: SLF001
+    fake_client.sdk.messages.stream.return_value = stream_ctx
 
     result = analyze_semantics(
         fake_client,
@@ -224,7 +224,7 @@ def test_semantic_call_sends_schema_image_and_effort(
     )
     assert result is not None
 
-    kwargs = fake_client._client.messages.stream.call_args.kwargs  # noqa: SLF001
+    kwargs = fake_client.sdk.messages.stream.call_args.kwargs
     assert kwargs["model"] == "claude-opus-5"
     assert kwargs["output_config"]["format"]["schema"] is SEMANTIC_ANALYSIS_SCHEMA
     assert kwargs["output_config"]["effort"] == "high"
@@ -240,7 +240,7 @@ def test_semantic_prompt_asks_for_empty_arrays_when_no_candidates(
     """Without the explicit instruction the model invents candidates."""
     stream_ctx = MagicMock()
     stream_ctx.__enter__.return_value.get_final_message.return_value = _message("{}")
-    fake_client._client.messages.stream.return_value = stream_ctx  # noqa: SLF001
+    fake_client.sdk.messages.stream.return_value = stream_ctx
 
     analyze_semantics(
         fake_client,
@@ -256,7 +256,7 @@ def test_semantic_prompt_asks_for_empty_arrays_when_no_candidates(
         heading_candidates=[],
         list_candidates=[],
     )
-    prompt = fake_client._client.messages.stream.call_args.kwargs[  # noqa: SLF001
+    prompt = fake_client.sdk.messages.stream.call_args.kwargs[
         "messages"
     ][0]["content"][0]["text"]
     assert 'empty "unmarked_headings" array' in prompt
@@ -296,7 +296,7 @@ def test_severity_counts_ignores_unknown_severities() -> None:
 def test_language_detection_validates_the_code(
     fake_client: AIClient, reply: str, expected: str | None
 ) -> None:
-    fake_client._client.messages.create.return_value = _message(  # noqa: SLF001
+    fake_client.sdk.messages.create.return_value = _message(
         json.dumps({"language_code": reply, "confidence": "high"})
     )
     assert detect_language(fake_client, "Bonjour le monde") == expected
@@ -305,7 +305,7 @@ def test_language_detection_validates_the_code(
 def test_language_detection_skips_empty_text(fake_client: AIClient) -> None:
     """No text means nothing to classify — don't pay for the call."""
     assert detect_language(fake_client, "   ") is None
-    assert not fake_client._client.messages.create.called  # noqa: SLF001
+    assert not fake_client.sdk.messages.create.called
 
 
 # ---------------------------------------------------------------------------

@@ -269,10 +269,12 @@ FIXABLE_CHECKS: dict[str, FixableCheck] = {
 #: would surface them, which lands with the outstanding audit checks.
 #: Listed explicitly so the completeness test can tell "not implemented
 #: yet" from "typo in a check name".
-PENDING_CHECKS: frozenset[str] = frozenset({
-    "Accessibility permission not restricted",
-    "Untagged lists detected",
-})
+#:
+#: Empty as of the check port completing "Accessibility permission not
+#: restricted" and "Untagged lists detected" — every fix in the catalogue
+#: is now reachable from a check the engine emits. Kept rather than
+#: deleted because the next fix ported ahead of its check belongs here.
+PENDING_CHECKS: frozenset[str] = frozenset()
 
 
 #: Fixes no check offers, and why.

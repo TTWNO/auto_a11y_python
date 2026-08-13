@@ -622,7 +622,7 @@ it is not vendored here, only ported from.
 
 | Piece | Location | State |
 |---|---|---|
-| Checker (125 checks) | `auto_a11y/pdf/audit/checks/` | 114 of 125; 11 outstanding |
+| Checker (125 checks) | `auto_a11y/pdf/audit/checks/` | Complete — every check pdfMax emits |
 | Fixer (59 fixes) | `auto_a11y/pdf/fix/` | Complete |
 | Remediation guide | `auto_a11y/pdf/translation/remediation_guide.py` + `pdf-remediation.ftl` | Complete, bilingual |
 | Check → fix map | `auto_a11y/pdf/fix/catalogue.py` | Complete, bilingual input labels |
@@ -705,10 +705,7 @@ Known gaps in this flow, in priority order:
    pdfMax's `AuditingScreen` markup with an indeterminate progress bar. Wiring
    it to the real progress stream (as `PdfAuditJob` does for the project path)
    is the next step; the screen is already there to receive it.
-2. **No AI toggle.** pdfMax's "Include Claude AI semantic analysis" checkbox is
-   omitted because `run_audit(run_ai=True)` is still the Task 5.1 stub that
-   returns a placeholder summary. Put the checkbox back when the real call lands.
-3. **No result filter bar.** pdfMax filters on the
+2. **No result filter bar.** pdfMax filters on the
    `<details data-check-result="...">` blocks its ReportTab renders; our ported
    Markdown does not emit those attributes. The same gap makes the report
    body's `#check=` deep-link handler inert. Emitting the attributes from

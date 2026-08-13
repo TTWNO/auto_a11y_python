@@ -75,15 +75,7 @@ def find_heading_candidates(
     if body_size <= 0:
         return []
 
-    # Fuzzy text → (size, name) lookup, matching the original's approach of
-    # joining structure elements to font runs by their leading characters.
-    # Neither source carries a shared identifier, so this is the available join.
-    text_to_font: dict[str, tuple[float, str]] = {}
-    for info in font_analysis.fonts.values():
-        sample = info.sample.strip()[:30].lower()
-        if not sample or not info.sizes:
-            continue
-        text_to_font[sample] = (max(info.sizes), info.name)
+    text_to_font = build_font_lookup(font_analysis)
 
     candidates: list[HeadingCandidate] = []
     for elem in elements:
@@ -97,7 +89,7 @@ def find_heading_candidates(
         if not elem.mcids:
             continue
 
-        matched = _match_font(text, text_to_font)
+        matched = match_font(text, text_to_font)
         if matched is None:
             continue
         font_size, font_name = matched
@@ -125,6 +117,39 @@ def find_heading_candidates(
     return candidates
 
 
+def build_font_lookup(font_analysis: FontAnalysis) -> dict[str, tuple[float, str]]:
+    """Fuzzy text→(size, font name) lookup built from a font analysis.
+
+    Structure elements and font runs share no identifier, so the join is by
+    leading characters — the same approach pdfMax used. Public because the
+    heading size-hierarchy check needs the identical mapping and a second
+    copy would drift.
+    """
+    lookup: dict[str, tuple[float, str]] = {}
+    for info in font_analysis.fonts.values():
+        sample = info.sample.strip()[:30].lower()
+        if not sample or not info.sizes:
+            continue
+        lookup[sample] = (max(info.sizes), info.name)
+    return lookup
+
+
+def match_font(
+    text: str, lookup: dict[str, tuple[float, str]]
+) -> tuple[float, str] | None:
+    """Best fuzzy font match for an element's leading text, or None."""
+    text_clean = text[:30].lower()
+    best: tuple[float, str] | None = None
+    best_overlap = 0
+    for snippet, font_info in lookup.items():
+        if text_clean[:15] in snippet or snippet[:15] in text_clean:
+            overlap = len(set(text_clean.split()) & set(snippet.split()))
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best = font_info
+    return best
+
+
 def _body_font_size(font_analysis: FontAnalysis) -> float:
     """The dominant text size — the most-used font's largest recorded size."""
     best_count = 0
@@ -134,22 +159,6 @@ def _body_font_size(font_analysis: FontAnalysis) -> float:
             best_count = info.char_count
             best_size = max(info.sizes)
     return best_size
-
-
-def _match_font(
-    text: str, text_to_font: dict[str, tuple[float, str]]
-) -> tuple[float, str] | None:
-    """Best fuzzy font match for an element's leading text, or None."""
-    text_clean = text[:30].lower()
-    best: tuple[float, str] | None = None
-    best_overlap = 0
-    for snippet, font_info in text_to_font.items():
-        if text_clean[:15] in snippet or snippet[:15] in text_clean:
-            overlap = len(set(text_clean.split()) & set(snippet.split()))
-            if overlap > best_overlap:
-                best_overlap = overlap
-                best = font_info
-    return best
 
 
 # ---------------------------------------------------------------------------

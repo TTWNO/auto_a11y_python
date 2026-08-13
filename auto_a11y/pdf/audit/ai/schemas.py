@@ -271,3 +271,96 @@ LANGUAGE_SCHEMA: dict[str, Any] = {
     "required": ["language_code", "confidence"],
     "additionalProperties": False,
 }
+
+# ---------------------------------------------------------------------------
+# Non-text contrast (WCAG 1.4.11)
+# ---------------------------------------------------------------------------
+
+NON_TEXT_CONTRAST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "findings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "form_field_border", "form_field_boundary",
+                            "button_boundary", "graphical_element",
+                            "icon", "divider_line", "chart_element",
+                        ],
+                    },
+                    "severity": {
+                        "type": "string",
+                        "enum": ["fail", "warning", "pass"],
+                    },
+                    "page": {"type": "integer"},
+                    "description": {"type": "string"},
+                    "recommendation": {"type": "string"},
+                },
+                "required": [
+                    "category", "severity", "page", "description",
+                    "recommendation",
+                ],
+                "additionalProperties": False,
+            },
+        },
+        "overall_assessment": {"type": "string"},
+        "pass": {"type": "boolean"},
+    },
+    "required": ["findings", "overall_assessment", "pass"],
+    "additionalProperties": False,
+}
+
+# ---------------------------------------------------------------------------
+# Required-field visual indicators (WCAG 3.3.2)
+# ---------------------------------------------------------------------------
+
+REQUIRED_INDICATOR_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "has_legend": {"type": "boolean"},
+        "legend_text": {"type": "string"},
+        "field_results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "field_name": {"type": "string"},
+                    "has_visual_indicator": {"type": "boolean"},
+                    "indicator_type": {
+                        "type": "string",
+                        "enum": ["asterisk", "text", "icon", "color", "none"],
+                    },
+                    "indicator_description": {"type": "string"},
+                },
+                "required": [
+                    "field_name", "has_visual_indicator", "indicator_type",
+                    "indicator_description",
+                ],
+                "additionalProperties": False,
+            },
+        },
+        "visual_only_required": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "description": {"type": "string"},
+                    "page": {"type": "integer"},
+                },
+                "required": ["description", "page"],
+                "additionalProperties": False,
+            },
+        },
+        "overall_assessment": {"type": "string"},
+        "pass": {"type": "boolean"},
+    },
+    "required": [
+        "has_legend", "legend_text", "field_results",
+        "visual_only_required", "overall_assessment", "pass",
+    ],
+    "additionalProperties": False,
+}

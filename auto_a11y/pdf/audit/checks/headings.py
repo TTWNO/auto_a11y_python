@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from auto_a11y.pdf.audit.candidates import build_font_lookup, match_font
 from auto_a11y.pdf.models import AuditContext, CheckResult
 
 
@@ -225,6 +226,130 @@ def check_no_mixed_heading_tag_types(ctx: AuditContext) -> list[CheckResult]:
 
 
 # ---------------------------------------------------------------------------
+# check_heading_size_hierarchy
+# ---------------------------------------------------------------------------
+
+
+#: Two heading levels whose average size differs by less than this read as
+#: the same size on the page — no visual hierarchy for a sighted reader.
+_SAME_SIZE_TOLERANCE_PT = 1.0
+
+#: Spread within one level beyond which the level looks inconsistent.
+_LEVEL_SPREAD_TOLERANCE_PT = 4.0
+
+
+def check_heading_size_hierarchy(ctx: AuditContext) -> list[CheckResult]:
+    """WCAG 1.3.1 (best practice): visual heading sizes follow the tag levels.
+
+    Mirrors pdfMax line ~10880. The tag tree can be a perfect H1→H2→H3 while
+    the page shows every heading at the same size, or an H2 larger than its
+    H1 — correct for a screen reader, meaningless for someone reading
+    visually. This is the check that compares the two.
+
+    ``WARN`` throughout: the heading→size join is the same fuzzy text match
+    the candidate finders use, so a mismatch is a strong hint rather than
+    proof.
+    """
+    name = "Heading size hierarchy"
+    standard = "WCAG 1.3.1 (best practice)"
+
+    if ctx.font_analysis is None or not ctx.font_analysis.fonts:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="INFO",
+                details=(
+                    "Font data not collected; cannot compare heading sizes."
+                ),
+            )
+        ]
+
+    lookup = build_font_lookup(ctx.font_analysis)
+    sizes_by_level: dict[int, list[float]] = {}
+    elements_by_level: dict[int, list[int]] = {}
+    for elem in ctx.elements:
+        if elem.resolved_tag not in _NUMBERED_HEADING_TAGS:
+            continue
+        text = (elem.text_content or elem.alt_text or "").strip()
+        if not text:
+            continue
+        matched = match_font(text, lookup)
+        if matched is None:
+            continue
+        level = int(elem.resolved_tag[1])
+        sizes_by_level.setdefault(level, []).append(matched[0])
+        elements_by_level.setdefault(level, []).append(elem.index)
+
+    if not sizes_by_level:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="NA",
+                details=(
+                    "No headings could be matched to a font size — nothing "
+                    "to compare."
+                ),
+            )
+        ]
+
+    averages = {
+        level: sum(sizes) / len(sizes) for level, sizes in sizes_by_level.items()
+    }
+    issues: list[str] = []
+    affected: list[int] = []
+
+    levels = sorted(averages)
+    for higher, lower in zip(levels, levels[1:]):
+        high_avg, low_avg = averages[higher], averages[lower]
+        high_ref = f"[{elements_by_level[higher][0] + 1}]"
+        low_ref = f"[{elements_by_level[lower][0] + 1}]"
+        if low_avg > high_avg + _SAME_SIZE_TOLERANCE_PT:
+            issues.append(
+                f"{low_ref} H{lower} avg {low_avg:.0f}pt is larger than "
+                + f"{high_ref} H{higher} avg {high_avg:.0f}pt"
+            )
+            affected += [elements_by_level[lower][0], elements_by_level[higher][0]]
+        elif abs(low_avg - high_avg) < _SAME_SIZE_TOLERANCE_PT:
+            issues.append(
+                f"{high_ref} H{higher} ({high_avg:.0f}pt) and {low_ref} "
+                + f"H{lower} ({low_avg:.0f}pt) are the same size — no visual "
+                + "differentiation"
+            )
+            affected += [elements_by_level[higher][0], elements_by_level[lower][0]]
+
+    for level, sizes in sorted(sizes_by_level.items()):
+        if max(sizes) - min(sizes) > _LEVEL_SPREAD_TOLERANCE_PT:
+            refs = " ".join(
+                f"[{i + 1}]" for i in elements_by_level[level][:3]
+            )
+            issues.append(
+                f"H{level} sizes vary significantly: {min(sizes):.0f}pt to "
+                + f"{max(sizes):.0f}pt ({refs})"
+            )
+            affected += elements_by_level[level][:3]
+
+    if not issues:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="Heading sizes decrease appropriately with heading level",
+            )
+        ]
+
+    summary = ", ".join(
+        f"H{level}: {avg:.0f}pt" for level, avg in sorted(averages.items())
+    )
+    return [
+        CheckResult(
+            name=name, standard=standard, result="WARN",
+            details=(
+                f"Visual heading sizes don't follow hierarchy ({summary}): "
+                + "; ".join(issues)
+            ),
+            elements=tuple(dict.fromkeys(affected)),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
 
@@ -235,12 +360,14 @@ HEADING_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_heading_hierarchy,
     check_no_multiple_headings_per_node,
     check_no_mixed_heading_tag_types,
+    check_heading_size_hierarchy,
 ]
 
 
 __all__ = [
     "HEADING_CHECKS",
     "check_heading_hierarchy",
+    "check_heading_size_hierarchy",
     "check_no_mixed_heading_tag_types",
     "check_no_multiple_headings_per_node",
 ]

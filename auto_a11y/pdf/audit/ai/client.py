@@ -73,7 +73,13 @@ class AIClient:
     api_key: str | None = None
     model: str = DEFAULT_MODEL
     usage: Usage = field(default_factory=Usage)
-    _client: Any = field(default=None, repr=False)
+    sdk: Any = field(default=None, repr=False)
+    """The Anthropic SDK client, built in ``__post_init__``.
+
+    Public rather than private because it is the seam tests replace to
+    exercise every branch of :meth:`json_call` — retries, refusals,
+    malformed JSON — without a network call. Callers outside a test have
+    no reason to touch it."""
 
     def __post_init__(self) -> None:
         try:
@@ -90,7 +96,7 @@ class AIClient:
             raise AIUnavailable(
                 "No Claude API key is configured, so AI analysis cannot run."
             )
-        self._client = Anthropic(api_key=key)
+        self.sdk = Anthropic(api_key=key)
 
     # -- calls ---------------------------------------------------------
 
@@ -149,10 +155,10 @@ class AIClient:
 
         try:
             if max_tokens > _STREAM_ABOVE_MAX_TOKENS:
-                with self._client.messages.stream(**kwargs) as stream:
+                with self.sdk.messages.stream(**kwargs) as stream:
                     message = stream.get_final_message()
             else:
-                message = self._client.messages.create(**kwargs)
+                message = self.sdk.messages.create(**kwargs)
         except Exception as exc:  # noqa: BLE001 — one failed call is not fatal
             logger.warning("Claude call failed: %s: %s", type(exc).__name__, exc)
             return None

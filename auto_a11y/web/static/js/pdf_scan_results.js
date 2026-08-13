@@ -31,8 +31,8 @@
         return;
     }
 
+    var sidebar = document.getElementById('results-sidebar');
     var activeTab = 'report';
-    var viewerShown = false;
 
     function selectTab(name, moveFocus) {
         if (TABS.indexOf(name) === -1) {
@@ -47,16 +47,25 @@
             panels[key].hidden = !isActive;
         });
 
+        /* The sections sidebar belongs to the report. Every link in it
+         * points into the report panel, which is hidden on the viewer
+         * tab — so on the viewer it is a list of links to nothing, and
+         * it takes width the page rendering needs. `hidden` rather than
+         * a class: it leaves the tab order and the accessibility tree
+         * too, which is the point. The viewer has its own issue list. */
+        if (sidebar) {
+            sidebar.hidden = (name !== 'report');
+        }
+
         if (moveFocus) {
             tabs[name].focus();
         }
 
         /* The viewer draws its connector lines from getBoundingClientRect,
-         * which reads zero for everything while the panel is hidden. The
-         * first time the panel becomes visible, ask for the redraw the
-         * viewer already performs on resize. */
-        if (name === 'viewer' && !viewerShown) {
-            viewerShown = true;
+         * which reads zero for everything while the panel is hidden — and
+         * again after the sidebar's width is returned to it. Redraw on
+         * every switch to the viewer, not only the first. */
+        if (name === 'viewer') {
             window.dispatchEvent(new Event('resize'));
         }
     }
@@ -98,7 +107,6 @@
      * the content element and prepend them once it gains children.
      */
     var reportContent = document.getElementById('pdfmax-report-content');
-    var sidebar = document.getElementById('results-sidebar');
     var sectionList = document.getElementById('results-sections-list');
 
     function buildSections() {

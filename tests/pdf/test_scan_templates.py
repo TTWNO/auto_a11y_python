@@ -162,3 +162,35 @@ def test_the_verdict_headings_are_inserted_at_the_marker() -> None:
 
     assert "results-sections-verdict-marker" in js
     assert "insertBefore" in js
+
+
+def test_the_sections_sidebar_is_hidden_on_the_viewer_tab() -> None:
+    """It belongs to the report, and the viewer needs the width.
+
+    Every link in it points into the report panel, which is hidden while
+    the viewer is showing — so on the viewer it is a list of links to
+    nothing, occupying 220px the page rendering could use. The viewer has
+    its own issue list on the right.
+    """
+    js = (
+        REPO_ROOT / "auto_a11y" / "web" / "static" / "js"
+        / "pdf_scan_results.js"
+    ).read_text(encoding="utf-8")
+
+    assert "sidebar.hidden = (name !== 'report')" in js
+
+
+def test_the_viewer_redraws_on_every_switch_not_only_the_first() -> None:
+    """Its connectors are measured from the DOM.
+
+    They were drawn once, the first time the panel appeared. Now that the
+    sidebar's width is handed back and forth on every switch, a stale
+    measurement puts the lines in the wrong place.
+    """
+    js = (
+        REPO_ROOT / "auto_a11y" / "web" / "static" / "js"
+        / "pdf_scan_results.js"
+    ).read_text(encoding="utf-8")
+
+    assert "viewerShown" not in js, "the once-only guard is back"
+    assert "new Event('resize')" in js

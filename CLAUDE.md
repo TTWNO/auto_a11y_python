@@ -761,17 +761,36 @@ is what would close the rest.
 
 ## Windows builds
 
-`build/build-windows.sh` runs to completion **on a Windows host** — a Parallels
-VM is fine. Run it from Git Bash there, not from macOS: two of its steps execute
-the bundled `python.exe`, and electron-builder's NSIS target needs Windows or
-wine.
+`build/build-windows.sh` **cross-builds from macOS**. Nothing in it executes a
+Windows binary, so it produces the NSIS installer here and Windows is only where
+the result gets installed and tested. Three things make that possible:
 
-Cross-building from macOS is nearly possible — 135 of the 136 pinned
-requirements publish `win_amd64` wheels, so pip can populate site-packages with
-`--platform win_amd64 --only-binary=:all:` without ever running `python.exe`.
-Playwright's installer and electron-builder are what stop it. Not worth the
-complexity while a VM exists, and an installer nobody has launched on Windows is
-a guess.
+- 135 of the 136 pinned requirements publish `win_amd64` wheels, so
+  `pip install --platform win_amd64 --only-binary=:all: --target` populates
+  site-packages without `python.exe` ever running. The exception is
+  `wcag-contrast-ratio`, sdist-only and pure Python: the build makes a wheel
+  from it. `requirements-windows.txt` is that list, and
+  `tests/test_requirements_windows.py` is what keeps it in step with
+  `requirements.txt` — two dependency lists that drift silently is otherwise a
+  bundle missing a package nobody notices until launch.
+- The browsers come from Playwright's CDN **by URL**, not through
+  `playwright install`, which would need the Windows interpreter. The revisions
+  are read from the host's Playwright with `--dry-run`, so `HOST_PYTHON` must be
+  one that has it installed; the build refuses to continue otherwise. The
+  `INSTALLATION_COMPLETE` and `DEPENDENCIES_VALIDATED` markers are written by
+  hand because the installer normally writes them.
+- **electron-builder downloads its own wine** for the NSIS target. It also
+  defaults to the host architecture, which on Apple Silicon means an arm64
+  shell around an x64 Python bundle, so `--win --x64` is passed explicitly.
+
+**It uses `build/staging-windows`, not `build/staging`.** That one belongs to
+the macOS build, and both `./python` and `./.venv` are symlinks into its
+`python/`; since step 1 begins with `rm -rf`, sharing it swaps the development
+interpreter for a Windows one and every test run, type check and git hook stops
+working until `build-mac.sh` runs again.
+
+**Nothing here can tell you the installer launches.** Verify on Windows before
+shipping.
 
 Three things differ from the macOS build and are easy to get wrong:
 

@@ -1,10 +1,19 @@
 # Requirements for the Windows cross-build (build/build-windows.sh).
 #
-# Generated from requirements.txt. It exists for one reason: pip's
-# cross-install mode (--platform win_amd64 --only-binary=:all:)
-# refuses any package with no Windows wheel, and one pinned package
-# publishes only an sdist. That package is pure Python, so the build
-# unpacks it separately rather than abandoning the cross-install.
+# Generated from requirements.txt. It exists for two reasons.
+#
+# 1. pip's cross-install mode (--platform win_amd64 --only-binary=:all:)
+#    refuses any package with no Windows wheel, and one pinned package
+#    publishes only an sdist. That package is pure Python, so the build
+#    builds a wheel from it separately rather than abandoning the
+#    cross-install.
+#
+# 2. pip picks *wheels* for --platform but evaluates *environment
+#    markers* against the interpreter that is running. Every dependency
+#    guarded by `platform_system == "Windows"` is therefore skipped when
+#    resolving on macOS, silently, because the marker really is false
+#    here. Those have to be named outright — see the section at the
+#    bottom.
 #
 # Keep in step with requirements.txt — tests/test_requirements_windows.py
 # fails if the two drift.
@@ -148,3 +157,19 @@ PyYAML==6.0.2
 types-PyYAML==6.0.12.20240917
 markdown-it-py==3.0.0
 openapi-spec-validator>=0.7.1,<0.9
+
+# --- Windows-only transitive dependencies ---------------------------
+# These are declared by packages above under a Windows environment
+# marker, which pip evaluates against the host and so never installs
+# when cross-resolving from macOS. They are not in requirements.txt
+# because on macOS and Linux nothing needs them.
+#
+# build-windows.sh re-reads the staged metadata and fails if a new one
+# appears, so this list does not have to be maintained by hand.
+#
+# tzdata: Windows ships no IANA time zone database, so zoneinfo falls
+# back to this package. Without it the app dies at startup with
+# "No time zone found with key America/Toronto". (tzlocal, pandas)
+tzdata==2026.3
+# win32-setctime: loguru imports it unguarded under os.name == "nt".
+win32-setctime==1.2.0

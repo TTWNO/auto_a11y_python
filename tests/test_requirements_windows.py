@@ -27,6 +27,20 @@ _HANDLED_SEPARATELY = {
     "wcag-contrast-ratio": "sdist only; the build builds a wheel from it",
 }
 
+#: Packages the Windows list carries that requirements.txt does not, and
+#: why. pip resolves wheels for ``--platform`` but evaluates environment
+#: markers against the *host*, so a dependency guarded by
+#: ``platform_system == "Windows"`` is dropped without a warning when
+#: cross-installing from macOS. Naming it here is what puts it back.
+#:
+#: Nothing needs these on macOS or Linux, which is why adding them to
+#: requirements.txt would be wrong.
+_WINDOWS_ONLY = {
+    "tzdata": "Windows has no system IANA database; zoneinfo falls back "
+              "to this. Required by tzlocal and pandas.",
+    "win32-setctime": "loguru imports it unguarded under os.name == 'nt'.",
+}
+
 #: Any requirement line, not only ``==`` ones. Matching pins alone let
 #: ``openapi-spec-validator>=0.7.1,<0.9`` through unseen — a requirement
 #: the guard was blind to is exactly the one that goes missing quietly.
@@ -68,11 +82,31 @@ def test_every_requirement_is_in_the_windows_list() -> None:
     )
 
 
-def test_the_windows_list_adds_nothing_of_its_own() -> None:
-    """A Windows-only dependency would go untested everywhere else."""
-    extra = sorted(set(_pins(_WINDOWS)) - set(_pins(_BASE)))
+def test_the_windows_list_adds_nothing_undocumented() -> None:
+    """A Windows-only dependency goes untested everywhere else, so each
+    one has to be a deliberate, explained entry rather than a stray."""
+    allowed = {name.lower() for name in _WINDOWS_ONLY}
+    extra = sorted(set(_pins(_WINDOWS)) - set(_pins(_BASE)) - allowed)
 
-    assert not extra, f"only in requirements-windows.txt: {extra}"
+    assert not extra, (
+        "only in requirements-windows.txt and not explained in "
+        f"_WINDOWS_ONLY: {extra}"
+    )
+
+
+def test_every_windows_only_package_is_actually_listed() -> None:
+    """The reverse: an entry documented here but missing from the file
+    means the dependency it describes is not being staged."""
+    windows = _pins(_WINDOWS)
+
+    absent = sorted(
+        name for name in _WINDOWS_ONLY if name.lower() not in windows
+    )
+
+    assert not absent, (
+        "documented as Windows-only but not in requirements-windows.txt, "
+        f"so the Windows build ships without them: {absent}"
+    )
 
 
 def test_the_requirements_agree_line_for_line() -> None:

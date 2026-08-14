@@ -168,6 +168,79 @@ done
 # carries a compiled extension, so its tag is the canary.
 ls "$SITE_PACKAGES"/pikepdf/_core*.pyd >/dev/null 2>&1 \
     || { echo "ERROR: pikepdf has no Windows extension module in site-packages — a host wheel was installed" >&2; exit 1; }
+
+# pip picks wheels for --platform but evaluates environment markers
+# against the interpreter that is running, so every dependency guarded by
+# `platform_system == "Windows"` is skipped here without a word. That
+# shipped an installer that died at startup on "No time zone found with
+# key America/Toronto" — tzlocal's tzdata, never staged.
+#
+# Re-evaluating the staged metadata under a Windows environment is the
+# only way to see what pip decided not to install. Offline, and it needs
+# no hand-maintained list: a dependency added upstream next year fails
+# the build here instead of on a user's machine.
+"$HOST_PYTHON" - "$SITE_PACKAGES" <<'PYEOF'
+import sys
+from pathlib import Path
+
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
+site_packages = Path(sys.argv[1])
+
+WINDOWS = {
+    "os_name": "nt",
+    "sys_platform": "win32",
+    "platform_system": "Windows",
+    "platform_machine": "AMD64",
+    "platform_python_implementation": "CPython",
+    "implementation_name": "cpython",
+    "python_version": "3.12",
+    "python_full_version": "3.12.8",
+    # No extras are requested, so `extra == "..."` guards stay false.
+    "extra": "",
+}
+
+staged = {
+    canonicalize_name(path.name.split("-")[0])
+    for path in site_packages.glob("*.dist-info")
+}
+
+missing: dict[str, set[str]] = {}
+for metadata in site_packages.glob("*.dist-info/METADATA"):
+    owner = metadata.parent.name.split("-")[0]
+    for line in metadata.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.startswith("Requires-Dist:"):
+            continue
+        if line.strip() == "":
+            break
+        try:
+            requirement = Requirement(line.split(":", 1)[1].strip())
+        except Exception:
+            continue
+        if requirement.marker is not None and not requirement.marker.evaluate(WINDOWS):
+            continue
+        if canonicalize_name(requirement.name) not in staged:
+            missing.setdefault(canonicalize_name(requirement.name), set()).add(owner)
+
+if missing:
+    print(
+        "ERROR: these are required on Windows but were not staged — pip "
+        "evaluated their markers against macOS:",
+        file=sys.stderr,
+    )
+    for name, owners in sorted(missing.items()):
+        print(f"  {name}   (required by {', '.join(sorted(owners))})", file=sys.stderr)
+    print(
+        "Add them to requirements-windows.txt under the Windows-only "
+        "section at the bottom.",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+print(f"Windows dependency closure complete: {len(staged)} distributions")
+PYEOF
+
 echo "pip dependencies staged for win_amd64 in $SITE_PACKAGES"
 
 # -------------------------------------------------------

@@ -72,13 +72,18 @@ def _render(checks: list[CheckResult], locale: str = "en") -> str:
 
 
 def test_every_check_is_a_details_block() -> None:
+    """Counted by the attribute, not by the tag.
+
+    A check's remediation carries its own nested disclosure for the
+    before/after example, so closing tags outnumber checks.
+    """
     markdown = _render([
         _check("Document title set", "FAIL"),
         _check("PDF is tagged", "PASS"),
     ])
 
     assert markdown.count("<details data-check-name=") == 2
-    assert markdown.count("</details>") == 2
+    assert markdown.count("</details>") >= 2
 
 
 @pytest.mark.parametrize(
@@ -240,3 +245,100 @@ def test_the_viewer_link_and_the_report_agree_on_the_check_name() -> None:
         "the viewer links to checks the report does not name: "
         f"{sorted(linked - rendered)}"
     )
+
+
+# ---------------------------------------------------------------------------
+# The remediation guide reaching the reader
+# ---------------------------------------------------------------------------
+
+# It was ported and translated long before it was rendered: the report
+# printed a one-line finding and dropped every word of the guidance —
+# why the finding matters, what has to change, and the steps to change it
+# in Acrobat, Word and InDesign.
+
+
+def test_a_failing_check_carries_its_remediation() -> None:
+    markdown = _render([_check("Document title set", "FAIL")])
+
+    assert "Why it matters" in markdown
+    assert "What needs to change" in markdown
+    assert "Adobe Acrobat Pro" in markdown
+    assert "Microsoft Word" in markdown
+    assert "Adobe InDesign" in markdown
+
+
+def test_the_fix_steps_are_an_ordered_list() -> None:
+    """A wall of prose is not a procedure."""
+    markdown = _render([_check("Document title set", "FAIL")])
+
+    assert re.search(r"^1\. ", markdown, re.M)
+    assert re.search(r"^2\. ", markdown, re.M)
+
+
+def test_a_passing_check_carries_no_remediation() -> None:
+    """Nothing to remediate, so nothing to say."""
+    markdown = _render([_check("Document title set", "PASS")])
+
+    assert "Why it matters" not in markdown
+
+
+def test_no_developer_placeholder_reaches_the_report() -> None:
+    """``TODO_REMEDIATION`` is a note to whoever ports the next check.
+
+    Six checks had no pdfMax guidance — the contrast ones, which are the
+    most common finding in any real audit, and the scanned-document case,
+    which is the most serious. Their guidance is written here instead.
+    """
+    for verdict in ("FAIL", "WARN", "INFO"):
+        for name in (
+            "Text contrast (WCAG AA)",
+            "Text contrast (WCAG AAA)",
+            "Document has a text layer",
+            "Alt text adequacy",
+        ):
+            markdown = _render([_check(name, verdict)])
+            assert "TODO_REMEDIATION" not in markdown, f"{name} / {verdict}"
+
+
+def test_checks_are_grouped_and_numbered() -> None:
+    """pdfMax numbers findings and groups them by area.
+
+    "#14 Table headers defined" is how a reader refers to one, and the
+    group heading is what makes a 125-item list navigable.
+    """
+    markdown = _render([
+        _check("Table captions", "FAIL"),
+        _check("Document title set", "FAIL"),
+    ])
+
+    assert "#1 " in markdown and "#2 " in markdown
+    assert "### " in markdown
+
+
+def test_numbering_runs_on_across_verdicts() -> None:
+    """One sequence for the report, not one per section."""
+    markdown = _render([
+        _check("Document title set", "FAIL"),
+        _check("PDF is tagged", "PASS"),
+    ])
+
+    assert "#1 " in markdown
+    assert "#2 " in markdown
+
+
+def test_the_before_after_example_is_its_own_disclosure() -> None:
+    """So a reader scanning the fixes is not made to scroll past a block
+    of PDF internals to reach the next one."""
+    markdown = _render([_check("Document title set", "FAIL")])
+
+    assert "<summary>Before / after example</summary>" in markdown
+
+
+def test_the_remediation_is_translated() -> None:
+    english = _render([_check("Document title set", "FAIL")], locale="en")
+    french = _render([_check("Document title set", "FAIL")], locale="fr")
+
+    assert "Why it matters" in english
+    # French is placeholder English for the generated entries, so this
+    # asserts the lookup resolves rather than that it is translated.
+    assert "Why it matters" in french or "Pourquoi" in french

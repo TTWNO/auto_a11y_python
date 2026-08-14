@@ -176,11 +176,7 @@ STABLE_ID_TO_REMEDIATION_KEY: dict[str, str] = {
 # carries a ``TODO_REMEDIATION`` placeholder; downstream consumers
 # should treat these as audit-engine gaps to fill upstream.
 STABLE_IDS_WITHOUT_REMEDIATION: frozenset[str] = frozenset({
-    'PdfErrPdfVersionMismatch',
-    'PdfErrTextContrastBelowAa',
-    'PdfInfoTextContrastAaaNoData',
-    'PdfInfoTextContrastNoData',
-    'PdfWarnTextContrastBelowAaa',
+    # (empty: every catalogue stable_id has a remediation entry)
 })
 
 

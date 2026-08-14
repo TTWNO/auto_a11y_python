@@ -28,6 +28,7 @@ import argparse
 import datetime as _dt
 import importlib.util
 import logging
+import re
 import sys
 import types
 from pathlib import Path
@@ -179,72 +180,100 @@ def _as_step_list(field: object) -> list[str]:
     raise TypeError(msg)
 
 
-def _section(header: str, body: str) -> str:
-    """Build a ``Header\\n\\nBody`` chunk for a remediation section."""
-    return f"{header}\n\n{body}"
-
-
 def _format_steps(steps: list[str]) -> str:
-    """Format numbered steps as ``  1. ...`` / ``  2. ...`` lines."""
-    return "\n".join(f"  {i}. {step}" for i, step in enumerate(steps, start=1))
+    """Numbered steps as a Markdown ordered list."""
+    return "\n".join(f"{i}. {step}" for i, step in enumerate(steps, start=1))
 
 
 def _render_remediation_value(entry: Mapping[str, object]) -> str:
-    """Render a pdfMax ``REMEDIATION_GUIDE`` entry as a flat multi-paragraph string.
+    """Render a pdfMax ``REMEDIATION_GUIDE`` entry as Markdown.
 
-    The result is intended to be the *value* portion of a Fluent message
-    (i.e. the text after ``message-id =``). It contains literal newlines
-    and blank lines; the caller indents it for inclusion in a ``.ftl``
-    file.
+    Mirrors what pdfMax's own report builds (``_render_check_item``, line
+    ~12016): a labelled paragraph for why it matters and what has to
+    change, an ordered list of steps per authoring tool, the before/after
+    example inside a nested disclosure, and a reference link.
+
+    Emphasis is ``<strong>`` rather than ``**``. A Fluent continuation
+    line may not begin with ``*`` or ``[``, which are precisely the
+    characters Markdown reserves for emphasis and links — so the markup
+    that survives the round trip is HTML. The report sanitises it
+    client-side along with the rest of the body.
     """
     parts: list[str] = []
 
     why = entry.get("why_it_matters")
     if isinstance(why, str) and why:
-        parts.append(_section("Why it matters", why))
+        parts.append(f"<strong>Why it matters</strong>: {why}")
 
     principle = entry.get("general_principle")
     if isinstance(principle, str) and principle:
-        parts.append(_section("Principle", principle))
+        parts.append(f"<strong>What needs to change</strong>: {principle}")
 
-    fix_acrobat_raw = entry.get("fix_acrobat")
-    if fix_acrobat_raw is not None:
-        steps = _as_step_list(fix_acrobat_raw)
+    for key, label in (
+        ("fix_acrobat", "Adobe Acrobat Pro"),
+        ("fix_word", "Microsoft Word (source document)"),
+        ("fix_indesign", "Adobe InDesign"),
+    ):
+        raw = entry.get(key)
+        if raw is None:
+            continue
+        steps = _as_step_list(raw)
         if steps:
-            parts.append(_section("How to fix in Adobe Acrobat Pro", _format_steps(steps)))
-
-    fix_word_raw = entry.get("fix_word")
-    if fix_word_raw is not None:
-        steps = _as_step_list(fix_word_raw)
-        if steps:
-            parts.append(_section("How to fix in Microsoft Word", _format_steps(steps)))
-
-    fix_indesign_raw = entry.get("fix_indesign")
-    if fix_indesign_raw is not None:
-        steps = _as_step_list(fix_indesign_raw)
-        if steps:
-            parts.append(_section("How to fix in Adobe InDesign", _format_steps(steps)))
+            parts.append(
+                f"<strong>{label}</strong>:\n{_format_steps(steps)}"
+            )
 
     before_after_raw = entry.get("before_after")
     if isinstance(before_after_raw, dict):
         before_after = cast(Mapping[str, object], before_after_raw)
-        before_label = before_after.get("before_label")
-        before_content = before_after.get("before_content")
-        after_label = before_after.get("after_label")
-        after_content = before_after.get("after_content")
-        explanation = before_after.get("explanation")
-        if isinstance(before_label, str) and isinstance(before_content, str):
-            parts.append(_section("Before", f"{before_label}\n{before_content}"))
-        if isinstance(after_label, str) and isinstance(after_content, str):
-            parts.append(_section("After", f"{after_label}\n{after_content}"))
-        if isinstance(explanation, str) and explanation:
-            parts.append(explanation)
+        example = _render_before_after(before_after)
+        if example:
+            parts.append(example)
 
     learn_more = entry.get("learn_more_url")
     if isinstance(learn_more, str) and learn_more:
-        parts.append(f"Learn more: {learn_more}")
+        parts.append(
+            f'<strong>Reference</strong>: <a href="{learn_more}">{learn_more}</a>'
+        )
 
     return "\n\n".join(parts)
+
+
+def _render_before_after(before_after: Mapping[str, object]) -> str:
+    """The worked example, inside its own disclosure.
+
+    Nested so a reader scanning the fixes is not made to scroll past a
+    block of PDF internals to reach the next one — pdfMax's own
+    arrangement. The content is fenced because it is literal structure,
+    which proportional text mangles.
+    """
+    before_label = before_after.get("before_label")
+    before_content = before_after.get("before_content")
+    after_label = before_after.get("after_label")
+    after_content = before_after.get("after_content")
+    explanation = before_after.get("explanation")
+
+    body: list[str] = []
+    if isinstance(before_label, str) and isinstance(before_content, str):
+        body.append(
+            f"<strong>{before_label}</strong>:\n```\n{before_content}\n```"
+        )
+    if isinstance(after_label, str) and isinstance(after_content, str):
+        body.append(
+            f"<strong>{after_label}</strong>:\n```\n{after_content}\n```"
+        )
+    if not body:
+        return ""
+    if isinstance(explanation, str) and explanation:
+        body.append(explanation)
+
+    inner = "\n\n".join(body)
+    return (
+        "<details>\n"
+        "<summary>Before / after example</summary>\n\n"
+        f"{inner}\n\n"
+        "</details>"
+    )
 
 
 def _render_placeholder_value(stable_id: str, pdfmax_check_name: str) -> str:
@@ -326,11 +355,42 @@ def _render_mapping_module(
 # Driver
 # ---------------------------------------------------------------------------
 
+def _existing_values(path: Path) -> dict[str, str]:
+    """Message id to its current Fluent block, for entries already written.
+
+    pdfMax has no guidance for a handful of checks — text contrast among
+    them, which is the most common finding in a real audit — and those
+    entries were written here instead. Re-running this script must not
+    replace them with a TODO placeholder, which is what it did before:
+    the placeholder is a note to a developer and would have gone out in
+    a user's report.
+    """
+    if not path.is_file():
+        return {}
+    existing: dict[str, str] = {}
+    pattern = re.compile(r"^(pdf-remediation-\S+) =\n((?:(?: {4}.*)?\n)+)", re.M)
+    for match in pattern.finditer(path.read_text(encoding="utf-8")):
+        body = match.group(2)
+        if "TODO_REMEDIATION" in body:
+            continue
+        # Normalised to exactly one trailing newline, matching what
+        # _format_fluent_message emits. Without this the blank line the
+        # capture keeps is added again on every run, and the file grows
+        # a line per preserved entry each time the porter is run.
+        existing[match.group(1)] = body.rstrip("\n") + "\n"
+    return existing
+
+
 def _build_artifacts(
     pdfmax_remediation: Mapping[str, Mapping[str, object]],
+    existing_en: Mapping[str, str] | None = None,
+    existing_fr: Mapping[str, str] | None = None,
 ) -> tuple[str, str, str, list[tuple[str, str]], set[str]]:
     """Return (en_ftl, fr_ftl, mapping_py, unmapped_pdfmax_keys, gaps)."""
+    kept_en = existing_en or {}
+    kept_fr = existing_fr or {}
     en_messages: list[str] = []
+    fr_messages: list[str] = []
     stable_id_to_key: dict[str, str] = {}
     gaps: set[str] = set()
     used_pdfmax_keys: set[str] = set()
@@ -348,19 +408,38 @@ def _build_artifacts(
         stable_id_to_key[stable_id] = message_id
 
         entry = pdfmax_remediation.get(pdfmax_name)
-        if entry is None:
+        if entry is not None:
+            used_pdfmax_keys.add(pdfmax_name)
+            value = _render_remediation_value(entry)
+            en_messages.append(_format_fluent_message(message_id, value))
+            # French is a placeholder copy until somebody translates it;
+            # an existing translation is never overwritten.
+            fr_messages.append(
+                f"{message_id} =\n{kept_fr[message_id]}"
+                if message_id in kept_fr
+                else _format_fluent_message(message_id, value)
+            )
+            continue
+
+        # No pdfMax entry. Keep whatever is already written before
+        # falling back to a placeholder.
+        if message_id in kept_en:
+            en_messages.append(f"{message_id} =\n{kept_en[message_id]}")
+        else:
             gaps.add(stable_id)
-            value = _render_placeholder_value(stable_id, pdfmax_name)
             logger.warning(
                 "No pdfMax remediation entry for %s (stable id: %s) — emitting TODO_REMEDIATION placeholder.",
                 pdfmax_name,
                 stable_id,
             )
-        else:
-            used_pdfmax_keys.add(pdfmax_name)
-            value = _render_remediation_value(entry)
-
-        en_messages.append(_format_fluent_message(message_id, value))
+            en_messages.append(_format_fluent_message(
+                message_id, _render_placeholder_value(stable_id, pdfmax_name),
+            ))
+        fr_messages.append(
+            f"{message_id} =\n{kept_fr[message_id]}"
+            if message_id in kept_fr
+            else en_messages[-1]
+        )
 
     en_header = (
         "# PDF remediation guidance — English\n"
@@ -383,7 +462,7 @@ def _build_artifacts(
         "###\n"
         "\n"
     )
-    fr_ftl = fr_header + "\n".join(en_messages)
+    fr_ftl = fr_header + "\n".join(fr_messages)
 
     mapping_py = _render_mapping_module(stable_id_to_key, gaps)
 
@@ -426,7 +505,14 @@ def main(argv: list[str] | None = None) -> int:
     pdfmax_remediation = _load_pdfmax_remediation(source_dir)
     logger.info("Loaded %d pdfMax remediation entries", len(pdfmax_remediation))
 
-    en_ftl, fr_ftl, mapping_py, unmapped_pdfmax, gaps = _build_artifacts(pdfmax_remediation)
+    # Existing entries are read back first: pdfMax has no guidance for a
+    # handful of checks, theirs was written here, and a regeneration must
+    # not replace it with a developer's TODO note.
+    en_ftl, fr_ftl, mapping_py, unmapped_pdfmax, gaps = _build_artifacts(
+        pdfmax_remediation,
+        existing_en=_existing_values(_EN_FTL_PATH),
+        existing_fr=_existing_values(_FR_FTL_PATH),
+    )
 
     _write(_EN_FTL_PATH, en_ftl)
     _write(_FR_FTL_PATH, fr_ftl)

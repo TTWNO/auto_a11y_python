@@ -889,3 +889,4 @@ pdf-report-nav-metadata = Metadata
 pdf-report-chart-donut-alt = { $percent }% of checks passed: { $pass } passed, { $warn } warnings, { $fail } failed.
 pdf-report-chart-col-area = Area
 pdf-report-chart-col-total = Total issues
+pdf-report-finding-label = Finding

@@ -4,43 +4,38 @@
 ### file is considered complete. The Phase 7.4 coverage test (pending)
 ### will refuse to pass while any English placeholder remains.
 ###
-### Generated: 2026-04-28T20:52:54+00:00
+### Generated: 2026-08-14T01:37:12+00:00
 ###
 
 pdf-remediation-PdfErrDocumentTitleNotSet =
-    Why it matters
+    <strong>Why it matters</strong>: Screen readers announce the document title when a user opens a PDF. Without a meaningful title, users hear the filename (e.g., 'scan_2025_v3.pdf'), which gives no indication of the document's content or purpose. The title also appears in browser tabs and task switchers, helping all users orient themselves.
     
-    Screen readers announce the document title when a user opens a PDF. Without a meaningful title, users hear the filename (e.g., 'scan_2025_v3.pdf'), which gives no indication of the document's content or purpose. The title also appears in browser tabs and task switchers, helping all users orient themselves.
+    <strong>What needs to change</strong>: The PDF must have a /Title entry in its document information dictionary, and /ViewerPreferences must set /DisplayDocTitle to true so PDF viewers show the title in the title bar instead of the filename.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties (Ctrl+D / Cmd+D).
+    2. In the Description tab, enter a clear, descriptive title in the Title field.
+    3. Click the Initial View tab.
+    4. Under Window Options, set 'Show' to 'Document Title'.
+    5. Click OK and save the file.
     
-    The PDF must have a /Title entry in its document information dictionary, and /ViewerPreferences must set /DisplayDocTitle to true so PDF viewers show the title in the title bar instead of the filename.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Go to File > Info (or File > Properties on Mac).
+    2. Click in the Title field under Properties and enter a descriptive title.
+    3. When exporting to PDF (File > Save As > PDF), click Options and ensure 'Document properties' is checked.
+    4. The title will be embedded in the PDF metadata automatically.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Go to File > File Info.
+    2. Enter a descriptive title in the Document Title field.
+    3. When exporting (File > Export > Adobe PDF), ensure 'Create Tagged PDF' is checked in the Advanced tab.
+    4. The title from File Info will be included in the PDF metadata.
     
-      1. Open File > Properties (Ctrl+D / Cmd+D).
-      2. In the Description tab, enter a clear, descriptive title in the Title field.
-      3. Click the Initial View tab.
-      4. Under Window Options, set 'Show' to 'Document Title'.
-      5. Click OK and save the file.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Go to File > Info (or File > Properties on Mac).
-      2. Click in the Title field under Properties and enter a descriptive title.
-      3. When exporting to PDF (File > Save As > PDF), click Options and ensure 'Document properties' is checked.
-      4. The title will be embedded in the PDF metadata automatically.
-    
-    How to fix in Adobe InDesign
-    
-      1. Go to File > File Info.
-      2. Enter a descriptive title in the Document Title field.
-      3. When exporting (File > Export > Adobe PDF), ensure 'Create Tagged PDF' is checked in the Advanced tab.
-      4. The title from File Info will be included in the PDF metadata.
-    
-    Before
-    
-    Incorrect: No title set
+    <strong>Incorrect: No title set</strong>:
+    ```
     Document Info:
       /Creator: Microsoft Word
       /Title: (empty)
@@ -48,10 +43,10 @@ pdf-remediation-PdfErrDocumentTitleNotSet =
       /DisplayDocTitle: false
     
     Result: Title bar shows 'receipt_final_v3.pdf'
+    ```
     
-    After
-    
-    Correct: Descriptive title displayed
+    <strong>Correct: Descriptive title displayed</strong>:
+    ```
     Document Info:
       /Creator: Microsoft Word
       /Title: CNIB 2025 Official Tax Receipt
@@ -59,45 +54,43 @@ pdf-remediation-PdfErrDocumentTitleNotSet =
       /DisplayDocTitle: true
     
     Result: Title bar shows 'CNIB 2025 Official Tax Receipt'
+    ```
     
     A good title describes the document's purpose concisely. It should not repeat the filename or include version numbers.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18</a>
 
 pdf-remediation-PdfWarnDocumentTitleNotDisplayed =
-    Why it matters
+    <strong>Why it matters</strong>: Screen readers announce the document title when a user opens a PDF. Without a meaningful title, users hear the filename (e.g., 'scan_2025_v3.pdf'), which gives no indication of the document's content or purpose. The title also appears in browser tabs and task switchers, helping all users orient themselves.
     
-    Screen readers announce the document title when a user opens a PDF. Without a meaningful title, users hear the filename (e.g., 'scan_2025_v3.pdf'), which gives no indication of the document's content or purpose. The title also appears in browser tabs and task switchers, helping all users orient themselves.
+    <strong>What needs to change</strong>: The PDF must have a /Title entry in its document information dictionary, and /ViewerPreferences must set /DisplayDocTitle to true so PDF viewers show the title in the title bar instead of the filename.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties (Ctrl+D / Cmd+D).
+    2. In the Description tab, enter a clear, descriptive title in the Title field.
+    3. Click the Initial View tab.
+    4. Under Window Options, set 'Show' to 'Document Title'.
+    5. Click OK and save the file.
     
-    The PDF must have a /Title entry in its document information dictionary, and /ViewerPreferences must set /DisplayDocTitle to true so PDF viewers show the title in the title bar instead of the filename.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Go to File > Info (or File > Properties on Mac).
+    2. Click in the Title field under Properties and enter a descriptive title.
+    3. When exporting to PDF (File > Save As > PDF), click Options and ensure 'Document properties' is checked.
+    4. The title will be embedded in the PDF metadata automatically.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Go to File > File Info.
+    2. Enter a descriptive title in the Document Title field.
+    3. When exporting (File > Export > Adobe PDF), ensure 'Create Tagged PDF' is checked in the Advanced tab.
+    4. The title from File Info will be included in the PDF metadata.
     
-      1. Open File > Properties (Ctrl+D / Cmd+D).
-      2. In the Description tab, enter a clear, descriptive title in the Title field.
-      3. Click the Initial View tab.
-      4. Under Window Options, set 'Show' to 'Document Title'.
-      5. Click OK and save the file.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Go to File > Info (or File > Properties on Mac).
-      2. Click in the Title field under Properties and enter a descriptive title.
-      3. When exporting to PDF (File > Save As > PDF), click Options and ensure 'Document properties' is checked.
-      4. The title will be embedded in the PDF metadata automatically.
-    
-    How to fix in Adobe InDesign
-    
-      1. Go to File > File Info.
-      2. Enter a descriptive title in the Document Title field.
-      3. When exporting (File > Export > Adobe PDF), ensure 'Create Tagged PDF' is checked in the Advanced tab.
-      4. The title from File Info will be included in the PDF metadata.
-    
-    Before
-    
-    Incorrect: No title set
+    <strong>Incorrect: No title set</strong>:
+    ```
     Document Info:
       /Creator: Microsoft Word
       /Title: (empty)
@@ -105,10 +98,10 @@ pdf-remediation-PdfWarnDocumentTitleNotDisplayed =
       /DisplayDocTitle: false
     
     Result: Title bar shows 'receipt_final_v3.pdf'
+    ```
     
-    After
-    
-    Correct: Descriptive title displayed
+    <strong>Correct: Descriptive title displayed</strong>:
+    ```
     Document Info:
       /Creator: Microsoft Word
       /Title: CNIB 2025 Official Tax Receipt
@@ -116,57 +109,55 @@ pdf-remediation-PdfWarnDocumentTitleNotDisplayed =
       /DisplayDocTitle: true
     
     Result: Title bar shows 'CNIB 2025 Official Tax Receipt'
+    ```
     
     A good title describes the document's purpose concisely. It should not repeat the filename or include version numbers.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18</a>
 
 pdf-remediation-PdfErrPdfNotTagged =
-    Why it matters
+    <strong>Why it matters</strong>: Tags are the foundation of PDF accessibility. Without tags, a PDF is just a visual layout — screen readers cannot determine what is a heading, paragraph, image, or list. An untagged PDF is essentially inaccessible to assistive technology users.
     
-    Tags are the foundation of PDF accessibility. Without tags, a PDF is just a visual layout — screen readers cannot determine what is a heading, paragraph, image, or list. An untagged PDF is essentially inaccessible to assistive technology users.
+    <strong>What needs to change</strong>: The PDF must have a /MarkInfo dictionary with /Marked set to true, indicating the document contains a structure tree that maps visual content to semantic elements.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the document in Acrobat Pro.
+    2. Go to Accessibility > Autotag Document to generate an initial tag structure.
+    3. Review and correct the auto-generated tags using the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    4. Manually fix any incorrectly tagged elements (e.g., images tagged as text, headings tagged as paragraphs).
+    5. Run Accessibility > Full Check to verify the tag structure.
     
-    The PDF must have a /MarkInfo dictionary with /Marked set to true, indicating the document contains a structure tree that maps visual content to semantic elements.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use built-in Heading styles (Heading 1, Heading 2, etc.) for all headings — do not just make text bold and large.
+    2. Use Word's built-in list tools for bulleted and numbered lists.
+    3. Add alt text to all images (right-click > Edit Alt Text).
+    4. Use Insert > Table for tabular data, not tabs or spaces.
+    5. When saving as PDF: File > Save As > PDF > Options > ensure 'Document structure tags for accessibility' is checked.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Map paragraph and character styles to PDF tags: go to each style's Export Tagging options.
+    2. Set heading styles to export as H1, H2, etc.
+    3. Set body text to export as P (paragraph).
+    4. When exporting to PDF, check 'Create Tagged PDF' in the Advanced tab.
+    5. Use the Articles panel (Window > Articles) to define reading order.
     
-      1. Open the document in Acrobat Pro.
-      2. Go to Accessibility > Autotag Document to generate an initial tag structure.
-      3. Review and correct the auto-generated tags using the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      4. Manually fix any incorrectly tagged elements (e.g., images tagged as text, headings tagged as paragraphs).
-      5. Run Accessibility > Full Check to verify the tag structure.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use built-in Heading styles (Heading 1, Heading 2, etc.) for all headings — do not just make text bold and large.
-      2. Use Word's built-in list tools for bulleted and numbered lists.
-      3. Add alt text to all images (right-click > Edit Alt Text).
-      4. Use Insert > Table for tabular data, not tabs or spaces.
-      5. When saving as PDF: File > Save As > PDF > Options > ensure 'Document structure tags for accessibility' is checked.
-    
-    How to fix in Adobe InDesign
-    
-      1. Map paragraph and character styles to PDF tags: go to each style's Export Tagging options.
-      2. Set heading styles to export as H1, H2, etc.
-      3. Set body text to export as P (paragraph).
-      4. When exporting to PDF, check 'Create Tagged PDF' in the Advanced tab.
-      5. Use the Articles panel (Window > Articles) to define reading order.
-    
-    Before
-    
-    Untagged PDF — screen reader experience
+    <strong>Untagged PDF — screen reader experience</strong>:
+    ```
     Screen reader output:
       'Page 1. [reads raw text stream in arbitrary order]
        CNIB 2025 Official Receipt Charitable Registration
        Number... 500.00 Thank you for your generous...'
     
     User has no headings to navigate, no structure to understand layout.
+    ```
     
-    After
-    
-    Tagged PDF — screen reader experience
+    <strong>Tagged PDF — screen reader experience</strong>:
+    ```
     Screen reader output:
       'Document: CNIB 2025 Tax Receipt
        Heading level 1: Official Receipt for Income Tax Purposes
@@ -175,129 +166,119 @@ pdf-remediation-PdfErrPdfNotTagged =
        Table with 3 rows and 2 columns...'
     
     User can navigate by headings, tables, and landmarks.
+    ```
     
     Tags give structure to flat visual content. Think of them as the HTML equivalent for PDF — without them, assistive technology has nothing to work with.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfWarnSuspectTags =
-    Why it matters
+    <strong>Why it matters</strong>: When a PDF's tags are auto-generated (e.g., by OCR or automatic tagging), the /Suspects flag warns that tags may be inaccurate. Assistive technology may treat the document with reduced confidence, and some validators flag it as non-conformant.
     
-    When a PDF's tags are auto-generated (e.g., by OCR or automatic tagging), the /Suspects flag warns that tags may be inaccurate. Assistive technology may treat the document with reduced confidence, and some validators flag it as non-conformant.
+    <strong>What needs to change</strong>: The /MarkInfo dictionary must not have /Suspects set to true. This flag should be cleared once the document author has reviewed and confirmed that the tag structure correctly represents the content.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the PDF in Acrobat Pro.
+    2. Review the tag structure in the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    3. Verify tags accurately reflect the document structure.
+    4. Run Accessibility > Full Check to identify any remaining tag issues.
+    5. Once satisfied, the /Suspects flag can be cleared programmatically or by re-saving.
     
-    The /MarkInfo dictionary must not have /Suspects set to true. This flag should be cleared once the document author has reviewed and confirmed that the tag structure correctly represents the content.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Regenerate the PDF from the source Word document using File > Save As > PDF.
+    2. Ensure the source document uses proper heading styles and structure.
+    3. Word-generated PDFs typically do not set the /Suspects flag.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export the PDF from InDesign with 'Create Tagged PDF' enabled.
+    2. Verify the Articles panel reflects the correct reading order.
+    3. InDesign-generated PDFs typically do not set the /Suspects flag.
     
-      1. Open the PDF in Acrobat Pro.
-      2. Review the tag structure in the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      3. Verify tags accurately reflect the document structure.
-      4. Run Accessibility > Full Check to identify any remaining tag issues.
-      5. Once satisfied, the /Suspects flag can be cleared programmatically or by re-saving.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Regenerate the PDF from the source Word document using File > Save As > PDF.
-      2. Ensure the source document uses proper heading styles and structure.
-      3. Word-generated PDFs typically do not set the /Suspects flag.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export the PDF from InDesign with 'Create Tagged PDF' enabled.
-      2. Verify the Articles panel reflects the correct reading order.
-      3. InDesign-generated PDFs typically do not set the /Suspects flag.
-    
-    Before
-    
-    Incorrect: Suspects flag set
+    <strong>Incorrect: Suspects flag set</strong>:
+    ```
     /MarkInfo << /Marked true /Suspects true >>
+    ```
     
-    After
-    
-    Correct: No suspects
+    <strong>Correct: No suspects</strong>:
+    ```
     /MarkInfo << /Marked true >>
+    ```
     
     Removing the /Suspects flag signals that the tag structure has been reviewed and confirmed as accurate by the document author.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfWarnNoPdfUaIdentifier =
-    Why it matters
+    <strong>Why it matters</strong>: The PDF/UA identifier in XMP metadata signals to assistive technology and validators that this document claims conformance to the PDF/UA standard. Without it, tools may not apply PDF/UA-specific processing or may report the document as non-conformant.
     
-    The PDF/UA identifier in XMP metadata signals to assistive technology and validators that this document claims conformance to the PDF/UA standard. Without it, tools may not apply PDF/UA-specific processing or may report the document as non-conformant.
+    <strong>What needs to change</strong>: The document's XMP metadata stream must contain a pdfuaid:part element with the value '1' (for PDF/UA-1) in the http://www.aiim.org/pdfua/ns/id/ namespace. This is a required element for PDF/UA conformance.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties (Ctrl+D / Cmd+D).
+    2. Click the Custom tab.
+    3. The PDF/UA identifier is in the XMP metadata — Acrobat's Preflight tool can add it.
+    4. Go to Edit > Preflight > PDF/UA compliance fixups.
+    5. Select 'Set PDF/UA-1 entry' and click Fix.
     
-    The document's XMP metadata stream must contain a pdfuaid:part element with the value '1' (for PDF/UA-1) in the http://www.aiim.org/pdfua/ns/id/ namespace. This is a required element for PDF/UA conformance.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not add the PDF/UA identifier automatically when exporting to PDF.
+    2. After exporting, use Adobe Acrobat Pro's Preflight tool or a third-party tool to add it.
+    3. Alternatively, use the auto-fix feature in this tool to add it.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign does not add the PDF/UA identifier automatically.
+    2. After exporting, use Adobe Acrobat Pro's Preflight tool to add it.
+    3. Alternatively, use the auto-fix feature in this tool to add it.
     
-      1. Open File > Properties (Ctrl+D / Cmd+D).
-      2. Click the Custom tab.
-      3. The PDF/UA identifier is in the XMP metadata — Acrobat's Preflight tool can add it.
-      4. Go to Edit > Preflight > PDF/UA compliance fixups.
-      5. Select 'Set PDF/UA-1 entry' and click Fix.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
+    <strong>Missing: No PDF/UA identifier</strong>:
+    ```
+    <rdf:RDF>\n  <!-- no pdfuaid namespace -->\n</rdf:RDF>
+    ```
     
-      1. Word does not add the PDF/UA identifier automatically when exporting to PDF.
-      2. After exporting, use Adobe Acrobat Pro's Preflight tool or a third-party tool to add it.
-      3. Alternatively, use the auto-fix feature in this tool to add it.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign does not add the PDF/UA identifier automatically.
-      2. After exporting, use Adobe Acrobat Pro's Preflight tool to add it.
-      3. Alternatively, use the auto-fix feature in this tool to add it.
-    
-    Before
-    
-    Missing: No PDF/UA identifier
-    <rdf:RDF>
-      <!-- no pdfuaid namespace -->
-    </rdf:RDF>
-    
-    After
-    
-    Correct: PDF/UA-1 identifier present
-    <rdf:Description xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">
-      <pdfuaid:part>1</pdfuaid:part>
-    </rdf:Description>
+    <strong>Correct: PDF/UA-1 identifier present</strong>:
+    ```
+    <rdf:Description xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\">\n  <pdfuaid:part>1</pdfuaid:part>\n</rdf:Description>
+    ```
     
     The pdfuaid:part element declares PDF/UA conformance level. A value of 1 indicates PDF/UA-1 (ISO 14289-1).
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrNoXmpMetadataStream =
-    Why it matters
+    <strong>Why it matters</strong>: XMP metadata is the standard container for document metadata in modern PDFs. It carries the PDF/UA identifier, document title (dc:title), author information, and other properties that assistive technology and PDF validators depend on. Without a /Metadata stream, the document cannot declare PDF/UA conformance.
     
-    XMP metadata is the standard container for document metadata in modern PDFs. It carries the PDF/UA identifier, document title (dc:title), author information, and other properties that assistive technology and PDF validators depend on. Without a /Metadata stream, the document cannot declare PDF/UA conformance.
+    <strong>What needs to change</strong>: The document catalog must contain a /Metadata stream with valid XMP XML data. This is a mandatory requirement for PDF/UA-1 and PDF/UA-2 conformance.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Acrobat Pro adds XMP metadata automatically when editing document properties.
+    2. Go to File > Properties > Description and fill in Title, Author, Subject.
+    3. Use Edit > Preflight > Convert to PDF/A to ensure XMP metadata is created.
     
-    The document catalog must contain a /Metadata stream with valid XMP XML data. This is a mandatory requirement for PDF/UA-1 and PDF/UA-2 conformance.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Fill in document properties (File > Info > Properties) before exporting to PDF.
+    2. Word automatically generates XMP metadata when saving as PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Go to File > File Info and populate the metadata fields.
+    2. InDesign generates XMP metadata automatically during PDF export.
     
-      1. Acrobat Pro adds XMP metadata automatically when editing document properties.
-      2. Go to File > Properties > Description and fill in Title, Author, Subject.
-      3. Use Edit > Preflight > Convert to PDF/A to ensure XMP metadata is created.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Fill in document properties (File > Info > Properties) before exporting to PDF.
-      2. Word automatically generates XMP metadata when saving as PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Go to File > File Info and populate the metadata fields.
-      2. InDesign generates XMP metadata automatically during PDF export.
-    
-    Before
-    
-    Missing XMP metadata stream
+    <strong>Missing XMP metadata stream</strong>:
+    ```
     Catalog <<
       /Type /Catalog
       /Pages ...
@@ -305,10 +286,10 @@ pdf-remediation-PdfErrNoXmpMetadataStream =
     >>
     
     Validators: cannot verify PDF/UA conformance.
+    ```
     
-    After
-    
-    XMP metadata stream present
+    <strong>XMP metadata stream present</strong>:
+    ```
     Catalog <<
       /Type /Catalog
       /Pages ...
@@ -316,41 +297,85 @@ pdf-remediation-PdfErrNoXmpMetadataStream =
     >>
     
     Validators: can read PDF/UA identifier and dc:title.
+    ```
     
     The /Metadata entry points to a stream containing XMP XML. This is separate from the /Info dictionary (which is the older metadata format). PDF/UA requires XMP metadata to carry the pdfuaid:part identifier.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
+
+pdf-remediation-PdfErrAccessibilityPermissionRestricted =
+    <strong>Why it matters</strong>: When a PDF is encrypted with permissions that restrict content extraction, assistive technology cannot access the text. Screen readers need to extract text content to read it aloud, and search/copy functions depend on extraction. Blocking this permission makes the document completely inaccessible.
+    
+    <strong>What needs to change</strong>: If encryption is used, the permissions (bit 10 of the /P value in /Encrypt) must allow content extraction for accessibility. PDF/UA requires this permission to be set.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Go to File > Properties > Security tab.
+    2. Click 'Change Settings' to modify the security policy.
+    3. Under Permissions, check 'Enable text access for screen reader devices'.
+    4. Save the document with the updated permissions.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. When saving as PDF with password protection, ensure 'Enable text access for accessibility' is checked.
+    2. In the PDF Options dialog, verify the accessibility extraction permission.
+    
+    <strong>Adobe InDesign</strong>:
+    1. In Export PDF dialog, go to Security settings.
+    2. If encryption is enabled, ensure 'Enable text access for screen readers' is checked.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Accessibility extraction blocked</strong>:
+    ```
+    /Encrypt <<
+      /P -3904   ← bit 10 not set
+    >>
+    
+    Screen reader: 'Cannot access document content.'
+    ```
+    
+    <strong>Accessibility extraction permitted</strong>:
+    ```
+    /Encrypt <<
+      /P -1028   ← bit 10 set
+    >>
+    
+    Screen reader: reads document content normally.
+    ```
+    
+    Bit 10 (value 0x200 = 512) in the /P permissions integer specifically controls whether content can be extracted for accessibility purposes. This is separate from the general copy permission (bit 5).
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1</a>
 
 pdf-remediation-PdfErrXmpDcTitleMissing =
-    Why it matters
+    <strong>Why it matters</strong>: The dc:title property in XMP metadata is the authoritative document title for PDF/UA validators and assistive technology. While the /Info/Title field provides a basic title, dc:title in XMP is the standard location that PDF/UA requires.
     
-    The dc:title property in XMP metadata is the authoritative document title for PDF/UA validators and assistive technology. While the /Info/Title field provides a basic title, dc:title in XMP is the standard location that PDF/UA requires.
+    <strong>What needs to change</strong>: The XMP metadata must contain a dc:title element with a non-empty value. This should match the /Info/Title value for consistency.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Go to File > Properties > Description.
+    2. Enter a meaningful title in the Title field.
+    3. Acrobat updates both /Info/Title and dc:title in XMP.
     
-    The XMP metadata must contain a dc:title element with a non-empty value. This should match the /Info/Title value for consistency.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Go to File > Info > Properties > Title.
+    2. Enter a descriptive document title.
+    3. Re-export to PDF — Word populates both metadata locations.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Go to File > File Info > Basic tab.
+    2. Enter the document title in the Document Title field.
+    3. Re-export to PDF.
     
-      1. Go to File > Properties > Description.
-      2. Enter a meaningful title in the Title field.
-      3. Acrobat updates both /Info/Title and dc:title in XMP.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Go to File > Info > Properties > Title.
-      2. Enter a descriptive document title.
-      3. Re-export to PDF — Word populates both metadata locations.
-    
-    How to fix in Adobe InDesign
-    
-      1. Go to File > File Info > Basic tab.
-      2. Enter the document title in the Document Title field.
-      3. Re-export to PDF.
-    
-    Before
-    
-    Missing dc:title in XMP
+    <strong>Missing dc:title in XMP</strong>:
+    ```
     <rdf:RDF>
       <rdf:Description>
         <!-- no dc:title element -->
@@ -358,10 +383,10 @@ pdf-remediation-PdfErrXmpDcTitleMissing =
     </rdf:RDF>
     
     Screen reader: falls back to filename.
+    ```
     
-    After
-    
-    dc:title present in XMP
+    <strong>dc:title present in XMP</strong>:
+    ```
     <rdf:RDF>
       <rdf:Description>
         <dc:title>
@@ -373,265 +398,246 @@ pdf-remediation-PdfErrXmpDcTitleMissing =
     </rdf:RDF>
     
     Screen reader: announces 'Annual Report 2025'.
+    ```
     
     The dc:title uses Dublin Core metadata within XMP's RDF structure. The rdf:Alt wrapper supports multiple languages, with xml:lang attributes on each rdf:li element.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18</a>
 
 pdf-remediation-PdfWarnMetadataIncomplete =
-    Why it matters
+    <strong>Why it matters</strong>: Complete metadata helps users identify the document, its author, and its purpose. Search engines, document management systems, and assistive technology all use metadata to present and catalog documents.
     
-    Complete metadata helps users identify the document, its author, and its purpose. Search engines, document management systems, and assistive technology all use metadata to present and catalog documents.
+    <strong>What needs to change</strong>: The PDF's document information dictionary should include at minimum: /Title, /Author, /Subject, and /CreationDate.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties (Ctrl+D / Cmd+D).
+    2. In the Description tab, fill in Title, Author, Subject, and Keywords.
+    3. Click OK and save.
     
-    The PDF's document information dictionary should include at minimum: /Title, /Author, /Subject, and /CreationDate.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Go to File > Info.
+    2. Fill in Title, Author (Tags), Subject, and other fields under Properties.
+    3. These will be included in the PDF when you export.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Go to File > File Info.
+    2. Fill in the Description fields: Title, Author, Description (used as Subject).
     
-      1. Open File > Properties (Ctrl+D / Cmd+D).
-      2. In the Description tab, fill in Title, Author, Subject, and Keywords.
-      3. Click OK and save.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Go to File > Info.
-      2. Fill in Title, Author (Tags), Subject, and other fields under Properties.
-      3. These will be included in the PDF when you export.
-    
-    How to fix in Adobe InDesign
-    
-      1. Go to File > File Info.
-      2. Fill in the Description fields: Title, Author, Description (used as Subject).
-    
-    Before
-    
-    Incomplete metadata
+    <strong>Incomplete metadata</strong>:
+    ```
     Document Info:
       /Creator: Microsoft Word
       /Producer: macOS PDF
       (no Title, Author, Subject)
     
     Document management systems: file cannot be properly cataloged.
+    ```
     
-    After
-    
-    Complete metadata
+    <strong>Complete metadata</strong>:
+    ```
     Document Info:
       /Title: CNIB 2025 Official Tax Receipt
       /Author: CNIB - Canadian National Institute for the Blind
       /Subject: Official donation receipt for income tax purposes
       /Creator: Microsoft Word
       /CreationDate: 2025-03-15
+    ```
     
     Metadata is often the first thing assistive technology encounters. Complete metadata ensures the document is identifiable before it's even opened.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF18</a>
 
 pdf-remediation-PdfErrPageLabelsInconsistent =
-    Why it matters
+    <strong>Why it matters</strong>: Page labels define the logical page numbering shown to users (e.g., i, ii, 1, 2…). If /PageLabels exists but is misconfigured, screen readers and the viewer UI announce wrong page numbers, disorienting users.
     
-    Page labels define the logical page numbering shown to users (e.g., i, ii, 1, 2…). If /PageLabels exists but is misconfigured, screen readers and the viewer UI announce wrong page numbers, disorienting users.
+    <strong>What needs to change</strong>: If page labels are used, /Nums must start at page index 0 and cover all pages.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Edit → Preferences → Page Display. Or use Edit Page Labels from the page panel to set correct numbering for all page ranges.
     
-    If page labels are used, /Nums must start at page index 0 and cover all pages.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not generate /PageLabels. Add them in Acrobat if needed.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign section numbering carries over to PDF. Verify section starts in Layout → Pages → Numbering & Section Options.
     
-      1. Edit → Preferences → Page Display. Or use Edit Page Labels from the page panel to set correct numbering for all page ranges.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word does not generate /PageLabels. Add them in Acrobat if needed.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign section numbering carries over to PDF. Verify section starts in Layout → Pages → Numbering & Section Options.
-    
-    Before
-    
-    Before: /Nums starts at index 1
+    <strong>Before: /Nums starts at index 1</strong>:
+    ```
     First page has no label; viewer shows wrong number.
+    ```
     
-    After
-    
-    After: /Nums starts at index 0
+    <strong>After: /Nums starts at index 0</strong>:
+    ```
     All pages have correct labels from the start.
+    ```
     
     Page label ranges must start at index 0 (the first page).
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF17
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF17">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF17</a>
 
 pdf-remediation-PdfErrPdfVersionMismatch =
-    TODO_REMEDIATION
-    
-    No remediation entry found in pdfMax's REMEDIATION_GUIDE for the check 'PDF header and catalog version consistent' (stable id: PdfErrPdfVersionMismatch). When pdfMax adds an entry, re-run scripts/port_pdfmax_remediation_guide.py and commit the regenerated translation files.
+    <strong>Pourquoi c'est important</strong> : La version indiquée dans l'en-tête du fichier ne correspond pas à celle du catalogue du document. Les lecteurs ne s'accordent pas sur celle qu'il faut croire : une fonctionnalité dont dépend le document peut donc être honorée par l'un et ignorée par l'autre — y compris la structure et les métadonnées dont dépend l'accessibilité.
+
+    <strong>Ce qu'il faut changer</strong> : Les deux doivent concorder. L'entrée /Version du catalogue prime sur l'en-tête lorsqu'elle est présente : supprimez-la, ou alignez l'en-tête sur elle.
+
+    <strong>Adobe Acrobat Pro</strong> :
+    1. Choisissez Fichier, Enregistrer sous un autre nom, PDF optimisé.
+    2. Réglez « Rendre compatible avec » sur la version voulue, puis enregistrez.
+    3. Relancer le contrôle en amont avec un profil PDF/UA normalise également la version.
+
+    <strong>Microsoft Word (document source)</strong> :
+    1. Réexportez depuis la source plutôt que de modifier la version en place.
+
+    <strong>Référence</strong> : <a href="https://www.pdfa.org/resource/iso-32000-pdf/">ISO 32000, spécification PDF</a>
 
 pdf-remediation-PdfWarnPdf20TagsRemapped =
-    Why it matters
+    <strong>Why it matters</strong>: PDF 2.0 introduced semantic elements like Em (emphasis), Strong, Aside, FENote, and Title. If these are remapped via /RoleMap to older tags (e.g., Em→Span), their semantic meaning is lost and assistive technology cannot convey the intended emphasis.
     
-    PDF 2.0 introduced semantic elements like Em (emphasis), Strong, Aside, FENote, and Title. If these are remapped via /RoleMap to older tags (e.g., Em→Span), their semantic meaning is lost and assistive technology cannot convey the intended emphasis.
+    <strong>What needs to change</strong>: PDF 2.0 structure elements should be used natively, not remapped to older equivalents (PDF/UA-2 recommendation).
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Remove /RoleMap entries that remap PDF 2.0 tags. Ensure the document declares PDF 2.0 version.
     
-    PDF 2.0 structure elements should be used natively, not remapped to older equivalents (PDF/UA-2 recommendation).
+    <strong>Microsoft Word (source document)</strong>:
+    1. Current Word versions may not generate PDF 2.0 tags. Consider post-processing.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign 2024+ supports some PDF 2.0 tags. Check export settings for PDF 2.0 output.
     
-      1. Remove /RoleMap entries that remap PDF 2.0 tags. Ensure the document declares PDF 2.0 version.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Current Word versions may not generate PDF 2.0 tags. Consider post-processing.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign 2024+ supports some PDF 2.0 tags. Check export settings for PDF 2.0 output.
-    
-    Before
-    
-    Before: /RoleMap has Em→Span, Strong→Span
+    <strong>Before: /RoleMap has Em→Span, Strong→Span</strong>:
+    ```
     Emphasis and strong text appear as generic spans to AT.
+    ```
     
-    After
-    
-    After: Em and Strong used natively in PDF 2.0
+    <strong>After: Em and Strong used natively in PDF 2.0</strong>:
+    ```
     AT can convey emphasis and importance to users.
+    ```
     
     Native PDF 2.0 tags carry richer semantics than their PDF 1.7 equivalents.
     
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfWarnPdfUa2DeclarationsIncomplete =
-    Why it matters
+    <strong>Why it matters</strong>: The PDF/UA-2 identifier in XMP metadata declares that the document conforms to ISO 14289-2. Without this declaration, PDF viewers and validators cannot determine that the document is intended to be accessible, and may not apply accessibility features or validation rules.
     
-    The PDF/UA-2 identifier in XMP metadata declares that the document conforms to ISO 14289-2. Without this declaration, PDF viewers and validators cannot determine that the document is intended to be accessible, and may not apply accessibility features or validation rules.
+    <strong>What needs to change</strong>: The XMP metadata must include a pdfuaid:part value of 2 and pdfuaid:rev with the year of the standard (e.g., 2024). This declares PDF/UA-2 conformance in the document's machine-readable metadata.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties > Additional Metadata.
+    2. In the Advanced panel, locate the PDF/UA namespace (pdfuaid).
+    3. Set pdfuaid:part to '2'.
+    4. Set pdfuaid:rev to '2024' (or the appropriate revision year).
+    5. Save the document.
     
-    The XMP metadata must include a pdfuaid:part value of 2 and pdfuaid:rev with the year of the standard (e.g., 2024). This declares PDF/UA-2 conformance in the document's machine-readable metadata.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not natively produce PDF/UA-2 declarations.
+    2. Export to PDF normally, then add the PDF/UA-2 XMP declarations in Acrobat Pro.
+    3. Third-party Word-to-PDF tools (e.g., axesPDF) can add PDF/UA-2 declarations during conversion.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign 2024+ may support PDF/UA-2 export; check the export dialog for PDF 2.0 options.
+    2. If not available, export as PDF 2.0 and add the XMP declarations in Acrobat Pro.
+    3. Use the Advanced panel in Export options to set metadata.
     
-      1. Open File > Properties > Additional Metadata.
-      2. In the Advanced panel, locate the PDF/UA namespace (pdfuaid).
-      3. Set pdfuaid:part to '2'.
-      4. Set pdfuaid:rev to '2024' (or the appropriate revision year).
-      5. Save the document.
-    
-    How to fix in Microsoft Word
-    
-      1. Word does not natively produce PDF/UA-2 declarations.
-      2. Export to PDF normally, then add the PDF/UA-2 XMP declarations in Acrobat Pro.
-      3. Third-party Word-to-PDF tools (e.g., axesPDF) can add PDF/UA-2 declarations during conversion.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign 2024+ may support PDF/UA-2 export; check the export dialog for PDF 2.0 options.
-      2. If not available, export as PDF 2.0 and add the XMP declarations in Acrobat Pro.
-      3. Use the Advanced panel in Export options to set metadata.
-    
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfErrPdf20NamespaceMissing =
-    Why it matters
+    <strong>Why it matters</strong>: PDF 2.0 introduced a formal namespace system for structure elements. Without the correct namespace declarations, PDF 2.0 viewers may not recognize standard tags, causing the entire structure tree to be misinterpreted or ignored by assistive technology.
     
-    PDF 2.0 introduced a formal namespace system for structure elements. Without the correct namespace declarations, PDF 2.0 viewers may not recognize standard tags, causing the entire structure tree to be misinterpreted or ignored by assistive technology.
+    <strong>What needs to change</strong>: PDF 2.0 documents must declare the standard structure namespace (http://iso.org/pdf2/ssn) in the structure tree root's /Namespaces array. All standard structure elements must reference this namespace.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This typically requires a PDF library or advanced editor.
+    2. Open the document's structure tree root.
+    3. Add a /Namespaces array with the PDF 2.0 standard structure namespace.
+    4. Ensure structure elements reference the correct namespace.
     
-    PDF 2.0 documents must declare the standard structure namespace (http://iso.org/pdf2/ssn) in the structure tree root's /Namespaces array. All standard structure elements must reference this namespace.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not generate PDF 2.0 namespace declarations.
+    2. Export to PDF and add the namespace in Acrobat Pro or with a PDF processing tool.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Export as PDF 2.0 (if supported by your InDesign version).
+    2. Verify the namespace is included in the export.
+    3. If not, add it post-export using Acrobat Pro or a PDF library.
     
-      1. This typically requires a PDF library or advanced editor.
-      2. Open the document's structure tree root.
-      3. Add a /Namespaces array with the PDF 2.0 standard structure namespace.
-      4. Ensure structure elements reference the correct namespace.
-    
-    How to fix in Microsoft Word
-    
-      1. Word does not generate PDF 2.0 namespace declarations.
-      2. Export to PDF and add the namespace in Acrobat Pro or with a PDF processing tool.
-    
-    How to fix in Adobe InDesign
-    
-      1. Export as PDF 2.0 (if supported by your InDesign version).
-      2. Verify the namespace is included in the export.
-      3. If not, add it post-export using Acrobat Pro or a PDF library.
-    
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfErrPdfUa2RequiresPdf20 =
-    Why it matters
+    <strong>Why it matters</strong>: PDF/UA-2 (ISO 14289-2) is built on PDF 2.0 (ISO 32000-2). A document claiming PDF/UA-2 conformance but using an older PDF version (1.4–1.7) cannot meet the specification's requirements, as many PDF/UA-2 features depend on PDF 2.0 capabilities.
     
-    PDF/UA-2 (ISO 14289-2) is built on PDF 2.0 (ISO 32000-2). A document claiming PDF/UA-2 conformance but using an older PDF version (1.4–1.7) cannot meet the specification's requirements, as many PDF/UA-2 features depend on PDF 2.0 capabilities.
+    <strong>What needs to change</strong>: Documents claiming PDF/UA-2 conformance must be PDF version 2.0. The document header must read '%PDF-2.0' and the catalog must declare /Version /2.0 if overriding the header.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open Edit > Preflight.
+    2. Run the fixup 'Convert to PDF 2.0' if available, or use 'Set PDF version to 2.0'.
+    3. Verify the document properties show PDF version 2.0.
+    4. Ensure all PDF/UA-2 requirements are met after conversion.
     
-    Documents claiming PDF/UA-2 conformance must be PDF version 2.0. The document header must read '%PDF-2.0' and the catalog must declare /Version /2.0 if overriding the header.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word cannot directly export PDF 2.0.
+    2. Export to PDF normally, then convert to PDF 2.0 in Acrobat Pro using Preflight.
+    3. Third-party tools like axesPDF can produce PDF 2.0 output from Word.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign 2024+ may support PDF 2.0 export — check the Adobe PDF Preset options.
+    2. If not available, export as the highest version supported and convert in Acrobat Pro.
+    3. Verify the output is PDF 2.0 after export.
     
-      1. Open Edit > Preflight.
-      2. Run the fixup 'Convert to PDF 2.0' if available, or use 'Set PDF version to 2.0'.
-      3. Verify the document properties show PDF version 2.0.
-      4. Ensure all PDF/UA-2 requirements are met after conversion.
-    
-    How to fix in Microsoft Word
-    
-      1. Word cannot directly export PDF 2.0.
-      2. Export to PDF normally, then convert to PDF 2.0 in Acrobat Pro using Preflight.
-      3. Third-party tools like axesPDF can produce PDF 2.0 output from Word.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign 2024+ may support PDF 2.0 export — check the Adobe PDF Preset options.
-      2. If not available, export as the highest version supported and convert in Acrobat Pro.
-      3. Verify the output is PDF 2.0 after export.
-    
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfErrStructureTreeMissing =
-    Why it matters
+    <strong>Why it matters</strong>: The structure tree is the backbone of PDF accessibility — it defines the logical hierarchy of the document (headings, paragraphs, lists, tables, images). Without it, assistive technology cannot present the document in a meaningful way.
     
-    The structure tree is the backbone of PDF accessibility — it defines the logical hierarchy of the document (headings, paragraphs, lists, tables, images). Without it, assistive technology cannot present the document in a meaningful way.
+    <strong>What needs to change</strong>: The PDF must contain a /StructTreeRoot entry in the document catalog, with at least one child structure element under /K.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. If the PDF has no structure tree at all, use Accessibility > Autotag Document.
+    2. This creates a basic structure tree from the visual layout.
+    3. Review the Tags panel to verify and correct the generated structure.
     
-    The PDF must contain a /StructTreeRoot entry in the document catalog, with at least one child structure element under /K.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use structured styles (Heading 1-6, Normal, List, etc.) throughout the document.
+    2. Save as PDF with 'Document structure tags for accessibility' enabled.
+    3. Word will generate the structure tree automatically from your styles.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Map all paragraph styles to appropriate PDF tags in the style's Export Tagging options.
+    2. Export with 'Create Tagged PDF' checked in the Advanced tab.
     
-      1. If the PDF has no structure tree at all, use Accessibility > Autotag Document.
-      2. This creates a basic structure tree from the visual layout.
-      3. Review the Tags panel to verify and correct the generated structure.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use structured styles (Heading 1-6, Normal, List, etc.) throughout the document.
-      2. Save as PDF with 'Document structure tags for accessibility' enabled.
-      3. Word will generate the structure tree automatically from your styles.
-    
-    How to fix in Adobe InDesign
-    
-      1. Map all paragraph styles to appropriate PDF tags in the style's Export Tagging options.
-      2. Export with 'Create Tagged PDF' checked in the Advanced tab.
-    
-    Before
-    
-    No structure tree
+    <strong>No structure tree</strong>:
+    ```
     PDF Catalog:
       /Type /Catalog
       /Pages ...
       (no /StructTreeRoot)
     
     Screen reader: cannot navigate by structure, reads raw text only.
+    ```
     
-    After
-    
-    Structure tree present
+    <strong>Structure tree present</strong>:
+    ```
     PDF Catalog:
       /StructTreeRoot <<
         /Type /StructTreeRoot
@@ -639,717 +645,943 @@ pdf-remediation-PdfErrStructureTreeMissing =
       >>
     
     Screen reader: navigates headings, tables, lists, images.
+    ```
     
     The structure tree is automatically created when you export from Word or InDesign with accessibility options enabled. For scanned PDFs, you must add it manually in Acrobat.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9</a>
 
 pdf-remediation-PdfErrRoleMapInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Custom tag names (like 'BodyText' or 'CompanyName') are meaningless to screen readers unless they map to standard PDF tags. Invalid role mappings cause assistive technology to treat content as generic containers, losing all semantic meaning.
     
-    Custom tag names (like 'BodyText' or 'CompanyName') are meaningless to screen readers unless they map to standard PDF tags. Invalid role mappings cause assistive technology to treat content as generic containers, losing all semantic meaning.
+    <strong>What needs to change</strong>: The /RoleMap dictionary must map every custom tag name to a valid standard PDF structure type (Document, P, H1-H6, L, LI, Table, TR, TD, TH, Figure, Span, Link, etc.).
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Go to Options (hamburger menu) > Edit Role Map.
+    3. Find any custom tags that map to invalid standard types.
+    4. Change the mapping to a valid standard tag (e.g., map 'BodyText' to 'P', 'SectionTitle' to 'H2').
     
-    The /RoleMap dictionary must map every custom tag name to a valid standard PDF structure type (Document, P, H1-H6, L, LI, Table, TR, TD, TH, Figure, Span, Link, etc.).
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word generates standard tags automatically from built-in styles.
+    2. Avoid creating custom styles that don't correspond to standard document elements.
+    3. If custom styles are needed, ensure they're based on standard styles (Heading, Normal, List, etc.).
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Review Export Tagging for each paragraph and character style.
+    2. Ensure every style maps to a standard PDF tag (P, H1, Span, etc.).
+    3. Do not use made-up tag names that don't correspond to standard PDF structure types.
     
-      1. Open the Tags panel.
-      2. Go to Options (hamburger menu) > Edit Role Map.
-      3. Find any custom tags that map to invalid standard types.
-      4. Change the mapping to a valid standard tag (e.g., map 'BodyText' to 'P', 'SectionTitle' to 'H2').
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word generates standard tags automatically from built-in styles.
-      2. Avoid creating custom styles that don't correspond to standard document elements.
-      3. If custom styles are needed, ensure they're based on standard styles (Heading, Normal, List, etc.).
-    
-    How to fix in Adobe InDesign
-    
-      1. Review Export Tagging for each paragraph and character style.
-      2. Ensure every style maps to a standard PDF tag (P, H1, Span, etc.).
-      3. Do not use made-up tag names that don't correspond to standard PDF structure types.
-    
-    Before
-    
-    Invalid role mapping
+    <strong>Invalid role mapping</strong>:
+    ```
     /RoleMap <<
       /CompanyName /InvalidType  ← not a standard tag
     >>
     
     Screen reader: ignores semantic meaning, treats as generic container.
+    ```
     
-    After
-    
-    Valid role mapping
+    <strong>Valid role mapping</strong>:
+    ```
     /RoleMap <<
       /CompanyName /Span   ← maps to standard Span
       /SectionTitle /H2    ← maps to standard H2
     >>
     
     Screen reader: understands element roles correctly.
+    ```
     
     Custom tags are fine as long as they map to standard types. The RoleMap is how PDFs bridge authoring-tool-specific names to universal semantics.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrRoleMapCircular =
-    Why it matters
+    <strong>Why it matters</strong>: Circular role mappings (e.g., /CustomA maps to /CustomB which maps back to /CustomA) create infinite loops when assistive technology tries to resolve a tag's role. This makes the affected tags completely unresolvable, so screen readers cannot determine what type of content the element represents.
     
-    Circular role mappings (e.g., /CustomA maps to /CustomB which maps back to /CustomA) create infinite loops when assistive technology tries to resolve a tag's role. This makes the affected tags completely unresolvable, so screen readers cannot determine what type of content the element represents.
+    <strong>What needs to change</strong>: The /RoleMap dictionary must form a directed acyclic graph — every chain of custom-to-custom mappings must eventually terminate at a standard PDF tag. Cycles must be broken by removing or correcting one of the circular entries.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Go to Options > Edit Role Map.
+    3. Look for custom tags that map to other custom tags in a loop.
+    4. Change one of the mappings to point to a standard tag (P, Span, Div, etc.) to break the cycle.
     
-    The /RoleMap dictionary must form a directed acyclic graph — every chain of custom-to-custom mappings must eventually terminate at a standard PDF tag. Cycles must be broken by removing or correcting one of the circular entries.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Circular role mappings are rare in Word-generated PDFs.
+    2. If present, they likely came from post-processing. Re-export from Word to regenerate clean mappings.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Review Export Tagging for paragraph and character styles.
+    2. Ensure custom tag chains resolve to standard types, not back to themselves.
+    3. Re-export the PDF after correcting the mappings.
     
-      1. Open the Tags panel.
-      2. Go to Options > Edit Role Map.
-      3. Look for custom tags that map to other custom tags in a loop.
-      4. Change one of the mappings to point to a standard tag (P, Span, Div, etc.) to break the cycle.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Circular role mappings are rare in Word-generated PDFs.
-      2. If present, they likely came from post-processing. Re-export from Word to regenerate clean mappings.
-    
-    How to fix in Adobe InDesign
-    
-      1. Review Export Tagging for paragraph and character styles.
-      2. Ensure custom tag chains resolve to standard types, not back to themselves.
-      3. Re-export the PDF after correcting the mappings.
-    
-    Before
-    
-    Circular role mapping
+    <strong>Circular role mapping</strong>:
+    ```
     /RoleMap <<
       /CustomA /CustomB
       /CustomB /CustomA   ← cycle!
     >>
     
     Screen reader: cannot resolve tag role, falls back to generic container.
+    ```
     
-    After
-    
-    Resolved role mapping
+    <strong>Resolved role mapping</strong>:
+    ```
     /RoleMap <<
       /CustomA /CustomB
       /CustomB /P          ← resolves to standard P
     >>
     
     Screen reader: CustomA → CustomB → P (paragraph).
+    ```
     
     Breaking the cycle by mapping one entry to a standard tag lets the entire chain resolve. The automated fix removes the back-edge entry that creates the cycle.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrStandardTagsRemapped =
-    Why it matters
+    <strong>Why it matters</strong>: Standard PDF tags like H1, P, Table, and Span have universal meanings that assistive technology relies on. If a standard tag appears as a key in /RoleMap (e.g., /H1 remapped to /P), its meaning is overridden, causing screen readers to misinterpret the content. For example, remapping H1 to P turns all first-level headings into plain paragraphs.
     
-    Standard PDF tags like H1, P, Table, and Span have universal meanings that assistive technology relies on. If a standard tag appears as a key in /RoleMap (e.g., /H1 remapped to /P), its meaning is overridden, causing screen readers to misinterpret the content. For example, remapping H1 to P turns all first-level headings into plain paragraphs.
+    <strong>What needs to change</strong>: Only custom (non-standard) tag names should appear as keys in /RoleMap. Standard PDF structure types must never be remapped because they already have well-defined semantics.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Go to Options > Edit Role Map.
+    3. Find any standard tags (H1, H2, P, Table, Span, etc.) that appear as source mappings.
+    4. Delete those entries — standard tags should not be remapped.
+    5. If content was relying on the remapped meaning, change the actual tag names in the tree instead.
     
-    Only custom (non-standard) tag names should appear as keys in /RoleMap. Standard PDF structure types must never be remapped because they already have well-defined semantics.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Standard tag remapping is rare in Word-generated PDFs.
+    2. If present, re-export from Word to regenerate correct mappings.
+    3. Ensure heading styles (Heading 1, Heading 2, etc.) are used correctly.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Check Export Tagging settings — do not assign standard tag names as source tags.
+    2. If a style is tagged as H1 but should be P, change the export tag, don't remap H1.
+    3. Re-export the PDF after corrections.
     
-      1. Open the Tags panel.
-      2. Go to Options > Edit Role Map.
-      3. Find any standard tags (H1, H2, P, Table, Span, etc.) that appear as source mappings.
-      4. Delete those entries — standard tags should not be remapped.
-      5. If content was relying on the remapped meaning, change the actual tag names in the tree instead.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Standard tag remapping is rare in Word-generated PDFs.
-      2. If present, re-export from Word to regenerate correct mappings.
-      3. Ensure heading styles (Heading 1, Heading 2, etc.) are used correctly.
-    
-    How to fix in Adobe InDesign
-    
-      1. Check Export Tagging settings — do not assign standard tag names as source tags.
-      2. If a style is tagged as H1 but should be P, change the export tag, don't remap H1.
-      3. Re-export the PDF after corrections.
-    
-    Before
-    
-    Standard tag remapped
+    <strong>Standard tag remapped</strong>:
+    ```
     /RoleMap <<
       /H1 /P       ← H1 loses its heading meaning!
       /MyStyle /Span
     >>
     
     Screen reader: all <H1> elements are announced as paragraphs.
+    ```
     
-    After
-    
-    Only custom tags mapped
+    <strong>Only custom tags mapped</strong>:
+    ```
     /RoleMap <<
       /MyStyle /Span   ← custom to standard (correct)
     >>
     
     H1 entry removed — headings retain their standard meaning.
+    ```
     
     Standard tags already have correct semantics. Only custom tags need /RoleMap entries to tell assistive technology what they represent.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrTabOrderNotStructure =
-    Why it matters
+    <strong>Why it matters</strong>: When tab order does not follow the document structure, keyboard users encounter interactive elements (links, form fields) in an unpredictable sequence. A link that visually appears at the top of the page might receive focus last, causing confusion and disorientation.
     
-    When tab order does not follow the document structure, keyboard users encounter interactive elements (links, form fields) in an unpredictable sequence. A link that visually appears at the top of the page might receive focus last, causing confusion and disorientation.
+    <strong>What needs to change</strong>: Each page must set /Tabs to /S (structure order) in its page dictionary, so that tabbing through interactive elements follows the logical reading order defined by the structure tree, not the order objects were added to the page.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Go to the Pages panel (View > Show/Hide > Navigation Panes > Pages).
+    2. Select all pages (Ctrl+A / Cmd+A).
+    3. Right-click > Page Properties.
+    4. Set Tab Order to 'Use Document Structure'.
+    5. Click OK and save.
     
-    Each page must set /Tabs to /S (structure order) in its page dictionary, so that tabbing through interactive elements follows the logical reading order defined by the structure tree, not the order objects were added to the page.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word sets tab order to structure order automatically when exporting tagged PDFs.
+    2. If the tab order is wrong, verify that your document uses proper heading and paragraph styles.
+    3. Re-export with 'Document structure tags for accessibility' checked.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use the Articles panel (Window > Articles) to set the reading order of content.
+    2. Interactive elements will tab in the order defined by the Articles panel.
+    3. Export with 'Create Tagged PDF' checked.
     
-      1. Go to the Pages panel (View > Show/Hide > Navigation Panes > Pages).
-      2. Select all pages (Ctrl+A / Cmd+A).
-      3. Right-click > Page Properties.
-      4. Set Tab Order to 'Use Document Structure'.
-      5. Click OK and save.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word sets tab order to structure order automatically when exporting tagged PDFs.
-      2. If the tab order is wrong, verify that your document uses proper heading and paragraph styles.
-      3. Re-export with 'Document structure tags for accessibility' checked.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use the Articles panel (Window > Articles) to set the reading order of content.
-      2. Interactive elements will tab in the order defined by the Articles panel.
-      3. Export with 'Create Tagged PDF' checked.
-    
-    Before
-    
-    Tab order does not follow structure
+    <strong>Tab order does not follow structure</strong>:
+    ```
     Page dictionary:
       /Tabs /R  (row order — based on position)
     
     Tab sequence: footer link → header link → body link
     (confusing for keyboard users)
+    ```
     
-    After
-    
-    Tab order follows structure
+    <strong>Tab order follows structure</strong>:
+    ```
     Page dictionary:
       /Tabs /S  (structure order)
     
     Tab sequence: header link → body link → footer link
     (logical and predictable)
+    ```
     
     Structure-based tab order (/S) ensures keyboard navigation matches the logical reading order. Row-based (/R) or column-based (/C) tab orders depend on visual position and often produce illogical sequences.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3</a>
 
 pdf-remediation-PdfErrTocStructureInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: A Table of Contents (TOC) in the tag structure enables screen reader users to navigate the document by section. An invalid TOC structure — with incorrect nesting, missing TOCI (TOC Item) children, or wrong tag types — prevents assistive technology from presenting the table of contents as a navigable list.
     
-    A Table of Contents (TOC) in the tag structure enables screen reader users to navigate the document by section. An invalid TOC structure — with incorrect nesting, missing TOCI (TOC Item) children, or wrong tag types — prevents assistive technology from presenting the table of contents as a navigable list.
+    <strong>What needs to change</strong>: TOC elements must contain only TOCI (Table of Contents Item) children. Each TOCI should contain a Reference element with a link to the target section. Nested TOCs (sub-sections) are represented as TOC elements nested inside TOCI elements.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the TOC element.
+    2. Verify it contains only TOCI children (not P, Span, or other tags).
+    3. For each TOC entry, ensure it is wrapped in a TOCI tag.
+    4. Each TOCI should contain a Reference element linking to the target heading.
+    5. Fix nesting: sub-section TOC entries should be in a nested TOC inside the parent TOCI.
     
-    TOC elements must contain only TOCI (Table of Contents Item) children. Each TOCI should contain a Reference element with a link to the target section. Nested TOCs (sub-sections) are represented as TOC elements nested inside TOCI elements.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's built-in Table of Contents feature (References > Table of Contents).
+    2. Do not manually type a table of contents — the generated one produces proper structure.
+    3. Update the TOC after all headings are finalized: right-click the TOC > Update Field.
+    4. Re-export to PDF with 'Document structure tags for accessibility' enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use InDesign's Table of Contents feature (Layout > Table of Contents).
+    2. Map TOC styles to the appropriate heading levels.
+    3. Ensure the TOC paragraph style is mapped to the TOC tag in Export Tagging.
+    4. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Tags panel and locate the TOC element.
-      2. Verify it contains only TOCI children (not P, Span, or other tags).
-      3. For each TOC entry, ensure it is wrapped in a TOCI tag.
-      4. Each TOCI should contain a Reference element linking to the target heading.
-      5. Fix nesting: sub-section TOC entries should be in a nested TOC inside the parent TOCI.
-    
-    How to fix in Microsoft Word
-    
-      1. Use Word's built-in Table of Contents feature (References > Table of Contents).
-      2. Do not manually type a table of contents — the generated one produces proper structure.
-      3. Update the TOC after all headings are finalized: right-click the TOC > Update Field.
-      4. Re-export to PDF with 'Document structure tags for accessibility' enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use InDesign's Table of Contents feature (Layout > Table of Contents).
-      2. Map TOC styles to the appropriate heading levels.
-      3. Ensure the TOC paragraph style is mapped to the TOC tag in Export Tagging.
-      4. Re-export with 'Create Tagged PDF' checked.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrRubyStructureInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Ruby annotations are used in CJK (Chinese, Japanese, Korean) text to show pronunciation guides (e.g., furigana in Japanese) above or beside base characters. An invalid Ruby structure means screen readers cannot associate the pronunciation guide with the base text, losing essential reading assistance for CJK users.
     
-    Ruby annotations are used in CJK (Chinese, Japanese, Korean) text to show pronunciation guides (e.g., furigana in Japanese) above or beside base characters. An invalid Ruby structure means screen readers cannot associate the pronunciation guide with the base text, losing essential reading assistance for CJK users.
+    <strong>What needs to change</strong>: Ruby structure elements must follow the PDF specification: a Ruby element must contain an RB (Ruby Base) element and an RT (Ruby Text) element. Optionally, it may contain RP (Ruby Punctuation) elements. The nesting must be valid per ISO 32000.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate Ruby elements.
+    2. Verify each Ruby contains RB (base text) and RT (annotation text) children.
+    3. If RP elements are present, ensure they bracket the RT element.
+    4. Fix any incorrect nesting by dragging tags to the correct positions.
     
-    Ruby structure elements must follow the PDF specification: a Ruby element must contain an RB (Ruby Base) element and an RT (Ruby Text) element. Optionally, it may contain RP (Ruby Punctuation) elements. The nesting must be valid per ISO 32000.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's Phonetic Guide feature for Ruby text (Home > Font group > Phonetic Guide).
+    2. This generates the correct Ruby structure on export to PDF.
+    3. Verify the Ruby is correctly associated with the base text.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use InDesign's Ruby feature for CJK text (Type > Ruby).
+    2. Ensure Ruby settings specify the correct alignment and position.
+    3. Map Ruby styles to appropriate PDF tags in Export Tagging.
+    4. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Tags panel and locate Ruby elements.
-      2. Verify each Ruby contains RB (base text) and RT (annotation text) children.
-      3. If RP elements are present, ensure they bracket the RT element.
-      4. Fix any incorrect nesting by dragging tags to the correct positions.
-    
-    How to fix in Microsoft Word
-    
-      1. Use Word's Phonetic Guide feature for Ruby text (Home > Font group > Phonetic Guide).
-      2. This generates the correct Ruby structure on export to PDF.
-      3. Verify the Ruby is correctly associated with the base text.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use InDesign's Ruby feature for CJK text (Type > Ruby).
-      2. Ensure Ruby settings specify the correct alignment and position.
-      3. Map Ruby styles to appropriate PDF tags in Export Tagging.
-      4. Re-export with 'Create Tagged PDF' checked.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrWarichuStructureInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Warichu is a Japanese typographic convention where a small annotation is split across two half-height lines within the main text flow. An invalid Warichu structure means screen readers cannot properly read the inline annotation, potentially presenting text in the wrong order or omitting it entirely.
     
-    Warichu is a Japanese typographic convention where a small annotation is split across two half-height lines within the main text flow. An invalid Warichu structure means screen readers cannot properly read the inline annotation, potentially presenting text in the wrong order or omitting it entirely.
+    <strong>What needs to change</strong>: Warichu structure elements must follow the PDF specification: a Warichu element must contain WT (Warichu Text) and WP (Warichu Punctuation) elements in the correct order. The nesting must be valid per ISO 32000.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate Warichu elements.
+    2. Verify each Warichu contains WT (text) and WP (punctuation) children in the correct order.
+    3. Fix any incorrect nesting by dragging tags to the correct positions.
+    4. If the Warichu structure is severely broken, delete and recreate the tags manually.
     
-    Warichu structure elements must follow the PDF specification: a Warichu element must contain WT (Warichu Text) and WP (Warichu Punctuation) elements in the correct order. The nesting must be valid per ISO 32000.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not natively support Warichu text.
+    2. If Warichu is needed, create the structure in Acrobat Pro post-export.
+    3. Alternatively, use a specialized DTP tool that supports Warichu.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use InDesign's Warichu feature for Japanese text (Type > Warichu).
+    2. Ensure the text is correctly formatted and nested.
+    3. Map Warichu styles to PDF tags in Export Tagging.
+    4. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Tags panel and locate Warichu elements.
-      2. Verify each Warichu contains WT (text) and WP (punctuation) children in the correct order.
-      3. Fix any incorrect nesting by dragging tags to the correct positions.
-      4. If the Warichu structure is severely broken, delete and recreate the tags manually.
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
+
+pdf-remediation-PdfErrNoTextLayer =
+    <strong>Pourquoi c'est important</strong> : Une page sans couche de texte est une image de document. Un lecteur d'écran n'y trouve rien à lire, le texte ne peut être ni recherché, ni sélectionné, ni copié, ni redistribué, et l'agrandir le rend flou plutôt que plus gros. C'est l'obstacle le plus complet qu'un PDF puisse présenter.
+
+    <strong>Ce qu'il faut changer</strong> : La page doit porter du vrai texte. Produisez le PDF à partir du document source plutôt que d'une numérisation, ou appliquez une reconnaissance optique de caractères puis corrigez le résultat — la sortie de l'OCR est un brouillon, pas une réponse.
+
+    <strong>Adobe Acrobat Pro</strong> :
+    1. Ouvrez le fichier et choisissez Outils, puis Numérisation et OCR.
+    2. Choisissez Reconnaître le texte, puis Dans ce fichier.
+    3. Réglez la langue sur celle du document avant de lancer le traitement.
+    4. Relisez le résultat en le comparant à la page — l'OCR se trompe sur les chiffres, les titres et tout ce qui est en colonnes.
+    5. Balisez le document (Outils, Accessibilité, Baliser automatiquement) une fois le texte correct, puis corrigez les balises.
+
+    <strong>Microsoft Word (document source)</strong> :
+    1. Si le document d'origine existe encore, utilisez-le. Réexporter depuis la source vaut toujours mieux que récupérer une numérisation.
+    2. Dans Word, choisissez Fichier, Enregistrer sous, puis PDF.
+    3. Cliquez sur Options et cochez « Balises de structure de document pour l'accessibilité ».
+
+    <strong>Adobe InDesign</strong> :
+    1. Reconstruisez la page à partir des éléments d'origine plutôt que d'y placer la numérisation comme image.
+    2. À l'exportation, choisissez Adobe PDF et cochez « Créer un PDF balisé » dans l'onglet Avancé.
+
+    <strong>Référence</strong> : <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7">Technique WCAG PDF7 : appliquer l'OCR à un PDF numérisé</a>
+
+pdf-remediation-PdfErrArtifactInsideTagged =
+    <strong>Why it matters</strong>: When an artifact (decorative content like watermarks, page borders, or background graphics) is nested inside a tagged content section, assistive technology may try to present it as meaningful content. This creates confusion for screen reader users who hear decorative text mixed with real content.
     
-    How to fix in Microsoft Word
+    <strong>What needs to change</strong>: In content streams, /Artifact BMC/BDC sections must not appear nested inside a marked content section with an MCID. Artifacts and tagged content must be at the same nesting level or in separate content stream segments.
     
-      1. Word does not natively support Warichu text.
-      2. If Warichu is needed, create the structure in Acrobat Pro post-export.
-      3. Alternatively, use a specialized DTP tool that supports Warichu.
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and the Content panel side by side.
+    2. Find the artifact content that is incorrectly nested inside a tagged element.
+    3. Drag the artifact content out of the tagged element in the Content panel.
+    4. Or right-click the content and select 'Change Tag to Artifact'.
     
-    How to fix in Adobe InDesign
+    <strong>Microsoft Word (source document)</strong>:
+    1. This issue is rare in Word-generated PDFs.
+    2. If present, re-export from Word — Word creates clean content stream nesting.
     
-      1. Use InDesign's Warichu feature for Japanese text (Type > Warichu).
-      2. Ensure the text is correctly formatted and nested.
-      3. Map Warichu styles to PDF tags in Export Tagging.
-      4. Re-export with 'Create Tagged PDF' checked.
+    <strong>Adobe InDesign</strong>:
+    1. Review the Articles panel to ensure decorative elements are not threaded with content.
+    2. Mark decorative items as artifacts in Object > Object Export Options.
+    3. Re-export to PDF.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Artifact nested inside tagged content</strong>:
+    ```
+    /P <</MCID 0>> BDC
+      (Real paragraph text) Tj
+      /Artifact BMC          ← nested inside tagged!
+        (Watermark) Tj
+      EMC
+    EMC
+    ```
+    
+    <strong>Artifact and tagged content at same level</strong>:
+    ```
+    /P <</MCID 0>> BDC
+      (Real paragraph text) Tj
+    EMC
+    /Artifact BMC             ← separate section
+      (Watermark) Tj
+    EMC
+    ```
+    
+    Content streams use BDC/BMC/EMC operators to mark content sections. Tagged sections (with MCID) link to the structure tree. Artifact sections are explicitly excluded from the structure. Nesting one inside the other creates an ambiguous classification.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF4">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF4</a>
+
+pdf-remediation-PdfErrTaggedInsideArtifact =
+    <strong>Why it matters</strong>: When tagged content (real document content with an MCID) is nested inside an artifact section, it becomes invisible to assistive technology. The artifact wrapper tells screen readers to skip everything inside, so real content that should be read aloud is silently dropped.
+    
+    <strong>What needs to change</strong>: BDC operators with MCID properties must not appear inside /Artifact BMC/BDC sections. Real content must always be at the top level or inside other tagged content, never inside artifacts.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and identify the hidden tagged content.
+    2. In the Content panel, find the tagged section inside the artifact.
+    3. Drag the tagged content out of the artifact container.
+    4. Verify the content appears in the structure tree after the fix.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. This issue is rare in Word-generated PDFs.
+    2. If present, re-export from Word with updated styles.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Check the Articles panel — ensure all text frames with real content are included.
+    2. Items not in the Articles panel may be exported as artifacts.
+    3. Re-export to PDF after correcting the article threading.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Tagged content hidden inside artifact</strong>:
+    ```
+    /Artifact BMC
+      (Background decoration) Tj
+      /P <</MCID 0>> BDC     ← real content hidden!
+        (Important paragraph) Tj
+      EMC
+    EMC
+    ```
+    
+    <strong>Tagged content outside artifact</strong>:
+    ```
+    /Artifact BMC
+      (Background decoration) Tj
+    EMC
+    /P <</MCID 0>> BDC        ← visible to AT
+      (Important paragraph) Tj
+    EMC
+    ```
+    
+    Artifacts are explicitly excluded from the accessibility tree. Any content inside an artifact — including nested tagged sections — is treated as decorative and ignored by screen readers.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF4">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF4</a>
+
+pdf-remediation-PdfErrUntaggedContent =
+    <strong>Why it matters</strong>: Text that is neither tagged (with an MCID linking to the structure tree) nor marked as an artifact exists in a 'no-man's land' — it renders visually but is invisible to assistive technology. Screen readers skip it entirely, causing users to miss content that sighted users can see.
+    
+    <strong>What needs to change</strong>: Every text operator (Tj, TJ, etc.) in a content stream must be inside either a marked content section with an MCID (tagged content) or an /Artifact section. No text should exist outside these classifications.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Use Find (Options > Find) to locate untagged content.
+    3. For each piece of untagged content, either:
+    4.   - Tag it with an appropriate tag (P, Span, H1, etc.) if it's real content
+    5.   - Mark it as an artifact if it's decorative (background, watermark, etc.)
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure all content uses paragraph styles (not direct formatting).
+    2. Content outside styled paragraphs may not get tagged during PDF export.
+    3. Re-export to PDF after applying styles to all content.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Ensure all text frames are threaded into the Articles panel.
+    2. Items not in the Articles panel are exported without tags.
+    3. For decorative items, mark them as artifacts in Object > Object Export Options.
+    4. Re-export to PDF.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Unclassified text in content stream</strong>:
+    ```
+    BT
+      /F1 12 Tf
+      (This text has no marking) Tj  ← outside any BDC/EMC
+    ET
+    
+    Screen reader: skips this text entirely.
+    ```
+    
+    <strong>All text properly classified</strong>:
+    ```
+    /P <</MCID 0>> BDC
+      BT
+        /F1 12 Tf
+        (This text is tagged) Tj
+      ET
+    EMC
+    
+    Screen reader: reads 'This text is tagged'.
+    ```
+    
+    The BDC/EMC operators create marked content sections in the content stream. Sections with /MCID link to the structure tree (tagged content). Sections with /Artifact are explicitly decorative. Text outside any marked section is unclassified and inaccessible.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9</a>
+
+pdf-remediation-PdfWarnEmptyTags =
+    <strong>Why it matters</strong>: Empty tags create 'phantom' elements that screen readers may announce as blank content, causing confusion. Users hear pauses or empty announcements that break reading flow and waste time as they try to figure out if they missed something.
+    
+    <strong>What needs to change</strong>: Every leaf element in the structure tree should contain meaningful content: text via MCIDs, /Alt text, or /ActualText. Empty leaf tags should be removed.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Use Find Tag (Options > Find) to locate empty tags.
+    3. Select each empty tag and verify it truly has no content.
+    4. Delete empty tags by right-clicking > Delete Tag.
+    5. Be careful not to delete structural containers that group other elements.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Empty tags usually come from empty paragraphs or blank table cells in Word.
+    2. Find and remove extra blank paragraphs (show paragraph marks with ¶).
+    3. For intentionally blank table cells, add a non-breaking space or mark as decorative.
+    4. Re-export to PDF.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Check for empty text frames or frames with only whitespace.
+    2. Delete empty frames or add content.
+    3. In the Articles panel, remove any empty articles.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Empty tags in structure</strong>:
+    ```
+    <Document>
+      <H1>Report Title</H1>
+      <P></P>              ← Empty: screen reader pauses
+      <P>Introduction</P>
+      <Span></Span>        ← Empty: announced as blank
+      <P>Content here</P>
+    
+    Screen reader: 'Report Title. [pause]. Introduction. [blank]. Content here.'
+    ```
+    
+    <strong>Empty tags removed</strong>:
+    ```
+    <Document>
+      <H1>Report Title</H1>
+      <P>Introduction</P>
+      <P>Content here</P>
+    
+    Screen reader: 'Report Title. Introduction. Content here.'
+    ```
+    
+    Removing empty tags streamlines the reading experience. If spacing is needed visually, use CSS/styling rather than empty structure elements.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF4">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF4</a>
+
+pdf-remediation-PdfErrIncorrectNesting =
+    <strong>Why it matters</strong>: Screen readers rely on correct tag nesting to understand document structure. A table cell outside a table row, or a paragraph inside another paragraph, confuses assistive technology and may cause content to be skipped or misread.
+    
+    <strong>What needs to change</strong>: PDF structure tags must follow proper parent-child relationships as defined in PDF/UA: TD/TH must be in TR; TR must be in Table/THead/TBody/TFoot; LI must be in L; P must not nest in P; headings must not nest in headings.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and identify misplaced tags.
+    2. Drag-and-drop tags to their correct parent in the tag tree.
+    3. For table issues: ensure TR is directly inside Table (or THead/TBody/TFoot), and TD/TH are directly inside TR.
+    4. For nested paragraphs: split the outer P into separate P elements.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Nesting issues often come from complex table layouts or nested text boxes.
+    2. Simplify table structures — avoid merged cells where possible.
+    3. Don't place text boxes inside table cells.
+    4. Use proper paragraph spacing instead of nested paragraphs.
+    5. Re-export to PDF and check the tag tree in Acrobat.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Check the Articles panel for elements in the wrong order.
+    2. Verify table structures are properly set up in the Table Options.
+    3. Use the Tags panel to correct any misnested elements.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Incorrect nesting</strong>:
+    ```
+    <Table>
+      <TD>Name</TD>         ← TD directly in Table, not in TR
+      <TD>Amount</TD>
+      <TR>
+        <TD>Jane</TD>
+        <TD>$100</TD>
+      </TR>
+    
+    Screen reader: may skip the orphaned cells or read them out of context.
+    ```
+    
+    <strong>Correct nesting</strong>:
+    ```
+    <Table>
+      <TR>
+        <TH>Name</TH>
+        <TH>Amount</TH>
+      </TR>
+      <TR>
+        <TD>Jane</TD>
+        <TD>$100</TD>
+      </TR>
+    
+    Screen reader: 'Name: Jane. Amount: $100.'
+    ```
+    
+    Correct nesting ensures screen readers can traverse the structure tree logically. Each element type has specific rules about what its parent must be.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF20">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF20</a>
 
 pdf-remediation-PdfErrNoteIdsNotUnique =
-    Why it matters
+    <strong>Why it matters</strong>: Footnotes and endnotes tagged as Note elements need unique /ID attributes so that reference links (e.g., superscript numbers) can link to the correct note. Without unique IDs, footnote navigation is broken.
     
-    Footnotes and endnotes tagged as Note elements need unique /ID attributes so that reference links (e.g., superscript numbers) can link to the correct note. Without unique IDs, footnote navigation is broken.
+    <strong>What needs to change</strong>: Every Note structure element must have a unique /ID string attribute.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Tags panel, select each Note tag → Properties → add a unique ID value.
     
-    Every Note structure element must have a unique /ID string attribute.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's built-in footnote/endnote feature. These generate unique IDs on PDF export.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use InDesign's footnote feature. Ensure 'Create Tagged PDF' is checked on export.
     
-      1. In Tags panel, select each Note tag → Properties → add a unique ID value.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use Word's built-in footnote/endnote feature. These generate unique IDs on PDF export.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use InDesign's footnote feature. Ensure 'Create Tagged PDF' is checked on export.
-    
-    Before
-    
-    Before: Note element for footnote 1 has no /ID
+    <strong>Before: Note element for footnote 1 has no /ID</strong>:
+    ```
     reference link cannot navigate to it.
+    ```
     
-    After
-    
-    After: Note element has /ID = 'fn1'
+    <strong>After: Note element has /ID = 'fn1'</strong>:
+    ```
     clicking the superscript '1' jumps to footnote 1.
+    ```
     
     /ID enables cross-referencing between footnote markers and note content.
     
-    Learn more: https://support.axes4.com/hc/en-us/articles/7371707948818-Add-Note-IDs
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://support.axes4.com/hc/en-us/articles/7371707948818-Add-Note-IDs">https://support.axes4.com/hc/en-us/articles/7371707948818-Add-Note-IDs</a>
 
 pdf-remediation-PdfErrFormulaMissingAlt =
-    Why it matters
+    <strong>Why it matters</strong>: Mathematical formulas rendered as images or special fonts are meaningless to screen readers without a text alternative. Users who cannot see the formula need a textual description or the actual mathematical expression.
     
-    Mathematical formulas rendered as images or special fonts are meaningless to screen readers without a text alternative. Users who cannot see the formula need a textual description or the actual mathematical expression.
+    <strong>What needs to change</strong>: Add /Alt (description) or /ActualText (character replacement) to every Formula structure element.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Tags panel, select the Formula tag → Properties → enter Alt Text or Actual Text.
     
-    Add /Alt (description) or /ActualText (character replacement) to every Formula structure element.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Right-click equation → 'Edit Alt Text'. Or use MathML which exports as accessible.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Add alt text via Object > Object Export Options for each formula frame.
     
-      1. In Tags panel, select the Formula tag → Properties → enter Alt Text or Actual Text.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Right-click equation → 'Edit Alt Text'. Or use MathML which exports as accessible.
-    
-    How to fix in Adobe InDesign
-    
-      1. Add alt text via Object > Object Export Options for each formula frame.
-    
-    Before
-    
-    Before: Formula element renders 'E=mc²' as image
+    <strong>Before: Formula element renders 'E=mc²' as image</strong>:
+    ```
     screen reader says nothing.
+    ```
     
-    After
-    
-    After: Formula has /Alt = 'E equals m c squared'
+    <strong>After: Formula has /Alt = 'E equals m c squared'</strong>:
+    ```
     screen reader reads the formula.
+    ```
     
     /Alt or /ActualText provides the text alternative for the visual formula.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7</a>
 
 pdf-remediation-PdfWarnFormulaWithoutMathMl =
-    Why it matters
+    <strong>Why it matters</strong>: Formula elements represent mathematical expressions. Without an associated MathML representation (via /AF associated files or inline markup), assistive technology can only read the alt text, losing the mathematical structure and meaning.
     
-    Formula elements represent mathematical expressions. Without an associated MathML representation (via /AF associated files or inline markup), assistive technology can only read the alt text, losing the mathematical structure and meaning.
+    <strong>What needs to change</strong>: Formula elements should have MathML associated files (/AF) for semantic math access (PDF/UA-2 recommendation).
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Add MathML as an associated file to each Formula element. This is an advanced operation requiring PDF editing tools.
     
-    Formula elements should have MathML associated files (/AF) for semantic math access (PDF/UA-2 recommendation).
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's equation editor (not images). MathML export support varies by Word version.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use MathTools plugin for InDesign, or add MathML post-export.
     
-      1. Add MathML as an associated file to each Formula element. This is an advanced operation requiring PDF editing tools.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use Word's equation editor (not images). MathML export support varies by Word version.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use MathTools plugin for InDesign, or add MathML post-export.
-    
-    Before
-    
-    Before: Formula has /Alt text only
+    <strong>Before: Formula has /Alt text only</strong>:
+    ```
     AT reads 'x squared plus y squared equals z squared' as flat text.
+    ```
     
-    After
-    
-    After: Formula has /AF with MathML file
+    <strong>After: Formula has /AF with MathML file</strong>:
+    ```
     AT can navigate the equation structure: base, exponent, operator, etc.
+    ```
     
     MathML provides semantic structure that plain alt text cannot convey.
     
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfWarnAssociatedFilesMissing =
-    Why it matters
+    <strong>Why it matters</strong>: PDF 2.0 introduced the /AF (Associated Files) mechanism to formally associate supplementary files with document elements. Without /AF, embedded files, alternate representations (e.g., HTML, MathML), and source data are undiscoverable by assistive technology and validators.
     
-    PDF 2.0 introduced the /AF (Associated Files) mechanism to formally associate supplementary files with document elements. Without /AF, embedded files, alternate representations (e.g., HTML, MathML), and source data are undiscoverable by assistive technology and validators.
+    <strong>What needs to change</strong>: Embedded content in PDF/UA-2 documents must use the /AF (Associated Files) property to declare the relationship between the host element and the embedded file. Each /AF entry must include an /AFRelationship value (Source, Data, Alternative, etc.).
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This requires advanced PDF editing with a PDF library (e.g., pikepdf, iText).
+    2. Add an /AF array to the structure element or page that hosts the embedded content.
+    3. Each entry in /AF should be a file specification dictionary with /AFRelationship.
+    4. Common relationship values: /Source, /Data, /Alternative, /Supplement.
     
-    Embedded content in PDF/UA-2 documents must use the /AF (Associated Files) property to declare the relationship between the host element and the embedded file. Each /AF entry must include an /AFRelationship value (Source, Data, Alternative, etc.).
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not generate /AF properties for embedded content.
+    2. Export to PDF and add /AF entries using Acrobat Pro or a PDF processing library.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign does not natively generate /AF properties.
+    2. Export to PDF and add /AF entries post-export using a PDF library.
     
-      1. This requires advanced PDF editing with a PDF library (e.g., pikepdf, iText).
-      2. Add an /AF array to the structure element or page that hosts the embedded content.
-      3. Each entry in /AF should be a file specification dictionary with /AFRelationship.
-      4. Common relationship values: /Source, /Data, /Alternative, /Supplement.
-    
-    How to fix in Microsoft Word
-    
-      1. Word does not generate /AF properties for embedded content.
-      2. Export to PDF and add /AF entries using Acrobat Pro or a PDF processing library.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign does not natively generate /AF properties.
-      2. Export to PDF and add /AF entries post-export using a PDF library.
-    
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfErrOptionalContentGroupMissingName =
-    Why it matters
+    <strong>Why it matters</strong>: Optional content groups (layers) without a /Name attribute cannot be identified by assistive technology or the viewer UI. Users cannot discover, toggle, or navigate unnamed layers.
     
-    Optional content groups (layers) without a /Name attribute cannot be identified by assistive technology or the viewer UI. Users cannot discover, toggle, or navigate unnamed layers.
+    <strong>What needs to change</strong>: Every optional content group (OCG) must have a descriptive /Name.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In the Layers panel, right-click each layer and ensure it has a name. Unnamed layers need to be named via Edit Layer Properties.
     
-    Every optional content group (OCG) must have a descriptive /Name.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not typically create optional content layers.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Name all layers in the Layers panel before export. Ensure 'Create Acrobat Layers' is checked in export settings.
     
-      1. In the Layers panel, right-click each layer and ensure it has a name. Unnamed layers need to be named via Edit Layer Properties.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word does not typically create optional content layers.
-    
-    How to fix in Adobe InDesign
-    
-      1. Name all layers in the Layers panel before export. Ensure 'Create Acrobat Layers' is checked in export settings.
-    
-    Before
-    
-    Before: OCG dictionary has no /Name key
+    <strong>Before: OCG dictionary has no /Name key</strong>:
+    ```
     Layer appears as unnamed in viewer; AT cannot identify it.
+    ```
     
-    After
-    
-    After: OCG has /Name (Background Graphics)
+    <strong>After: OCG has /Name (Background Graphics)</strong>:
+    ```
     Layer is identifiable and can be toggled by name.
+    ```
     
     The /Name entry provides the human-readable layer identifier.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrOptionalContentHasAsEntry =
-    Why it matters
+    <strong>Why it matters</strong>: The /AS (auto-state) entry in optional content configuration allows layers to change visibility automatically based on zoom level or other conditions. This can hide content without the user's knowledge, making the document unreliable for AT.
     
-    The /AS (auto-state) entry in optional content configuration allows layers to change visibility automatically based on zoom level or other conditions. This can hide content without the user's knowledge, making the document unreliable for AT.
+    <strong>What needs to change</strong>: Optional content must not use auto-state (/AS) entries. Layer visibility should be explicit.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Acrobat's Layers panel, remove any auto-state rules. Use Preflight to detect and remove /AS entries.
     
-    Optional content must not use auto-state (/AS) entries. Layer visibility should be explicit.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not create optional content with auto-state.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Avoid layer visibility rules tied to zoom or print state. Remove in Acrobat post-export if present.
     
-      1. In Acrobat's Layers panel, remove any auto-state rules. Use Preflight to detect and remove /AS entries.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word does not create optional content with auto-state.
-    
-    How to fix in Adobe InDesign
-    
-      1. Avoid layer visibility rules tied to zoom or print state. Remove in Acrobat post-export if present.
-    
-    Before
-    
-    Before: /OCProperties/D has /AS array with auto-visibility rules
+    <strong>Before: /OCProperties/D has /AS array with auto-visibility rules</strong>:
+    ```
     Layers change visibility automatically, potentially hiding content from AT.
+    ```
     
-    After
-    
-    After: No /AS entry in default configuration
+    <strong>After: No /AS entry in default configuration</strong>:
+    ```
     All layers have stable, user-controlled visibility.
+    ```
     
     /AS entries allow content to appear or disappear based on context, violating PDF/UA.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrEmbeddedFileMissingFKeys =
-    Why it matters
+    <strong>Why it matters</strong>: Embedded file specifications must have both /F (file name) and /UF (Unicode file name) keys so assistive technology can identify and present the attachment to users. Without these keys, embedded files are effectively unnamed.
     
-    Embedded file specifications must have both /F (file name) and /UF (Unicode file name) keys so assistive technology can identify and present the attachment to users. Without these keys, embedded files are effectively unnamed.
+    <strong>What needs to change</strong>: Every embedded file specification must include both /F and /UF filename entries.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In the Attachments panel, check each file's properties. Re-attach files if filename keys are missing.
     
-    Every embedded file specification must include both /F and /UF filename entries.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not typically embed files. If present, fix in Acrobat.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign can embed files via hyperlinks. Verify attachments have names in Acrobat post-export.
     
-      1. In the Attachments panel, check each file's properties. Re-attach files if filename keys are missing.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word does not typically embed files. If present, fix in Acrobat.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign can embed files via hyperlinks. Verify attachments have names in Acrobat post-export.
-    
-    Before
-    
-    Before: File spec has /F but no /UF
+    <strong>Before: File spec has /F but no /UF</strong>:
+    ```
     Non-ASCII characters in filename may not display correctly.
+    ```
     
-    After
-    
-    After: File spec has both /F and /UF
+    <strong>After: File spec has both /F and /UF</strong>:
+    ```
     Filename is available in both legacy and Unicode forms.
+    ```
     
     /UF provides the Unicode filename for proper display in modern viewers and AT.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrReferenceXObjectsPresent =
-    Why it matters
+    <strong>Why it matters</strong>: Reference XObjects point to content in external PDF files. They are prohibited by PDF/UA because the document is not self-contained — the external content may be unavailable, making the document incomplete for assistive technology.
     
-    Reference XObjects point to content in external PDF files. They are prohibited by PDF/UA because the document is not self-contained — the external content may be unavailable, making the document incomplete for assistive technology.
+    <strong>What needs to change</strong>: All content must be embedded within the PDF. Remove any XObjects with /Ref keys.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Flatten the document using Print to PDF or Preflight fixups to embed all referenced content.
     
-    All content must be embedded within the PDF. Remove any XObjects with /Ref keys.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not create Reference XObjects. This issue comes from specialized PDF tools.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign does not create Reference XObjects. Re-export or flatten in Acrobat.
     
-      1. Flatten the document using Print to PDF or Preflight fixups to embed all referenced content.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word does not create Reference XObjects. This issue comes from specialized PDF tools.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign does not create Reference XObjects. Re-export or flatten in Acrobat.
-    
-    Before
-    
-    Before: XObject has /Ref pointing to external file
+    <strong>Before: XObject has /Ref pointing to external file</strong>:
+    ```
     Content depends on external PDF that may not be available.
+    ```
     
-    After
-    
-    After: Content embedded directly
+    <strong>After: Content embedded directly</strong>:
+    ```
     Document is self-contained and all content is available.
+    ```
     
     PDF/UA requires self-contained documents for reliable assistive technology access.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrFormXObjectMcidReused =
-    Why it matters
+    <strong>Why it matters</strong>: When a Form XObject containing marked content IDs (MCIDs) is used on multiple pages, the same MCID appears in multiple page content streams. This creates conflicting references in the structure tree, making the tag structure ambiguous.
     
-    When a Form XObject containing marked content IDs (MCIDs) is used on multiple pages, the same MCID appears in multiple page content streams. This creates conflicting references in the structure tree, making the tag structure ambiguous.
+    <strong>What needs to change</strong>: Form XObjects with marked content must be unique per page. Duplicate them if needed on multiple pages.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Preflight to detect and fix. May require re-exporting from the source application.
     
-    Form XObjects with marked content must be unique per page. Duplicate them if needed on multiple pages.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export the PDF. Word typically does not create reused Form XObjects with MCIDs.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export. If the issue persists, flatten the PDF in Acrobat.
     
-      1. Use Preflight to detect and fix. May require re-exporting from the source application.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export the PDF. Word typically does not create reused Form XObjects with MCIDs.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export. If the issue persists, flatten the PDF in Acrobat.
-    
-    Before
-    
-    Before: Form XObject with MCID 5 used on pages 1 and 3
+    <strong>Before: Form XObject with MCID 5 used on pages 1 and 3</strong>:
+    ```
     Structure tree has conflicting references for MCID 5.
+    ```
     
-    After
-    
-    After: Separate Form XObjects per page
+    <strong>After: Separate Form XObjects per page</strong>:
+    ```
     Each page's MCIDs map uniquely to structure elements.
+    ```
     
     MCIDs must be unique within each page's content stream.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfWarnNonStructureDestinations =
-    Why it matters
+    <strong>Why it matters</strong>: Intra-document links (GoTo actions) navigate to page locations. Structure destinations (/SD) additionally identify the target structure element, allowing assistive technology to navigate directly to the tagged content rather than just a page coordinate.
     
-    Intra-document links (GoTo actions) navigate to page locations. Structure destinations (/SD) additionally identify the target structure element, allowing assistive technology to navigate directly to the tagged content rather than just a page coordinate.
+    <strong>What needs to change</strong>: Internal links should include /SD (structure destination) pointing to the target element (PDF/UA-2 recommendation).
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This requires advanced PDF editing. Add /SD entries to link annotations that reference GoTo destinations.
     
-    Internal links should include /SD (structure destination) pointing to the target element (PDF/UA-2 recommendation).
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word cross-references and bookmarks do not generate /SD. Add in Acrobat post-export.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign cross-references do not generate /SD. Add in Acrobat post-export.
     
-      1. This requires advanced PDF editing. Add /SD entries to link annotations that reference GoTo destinations.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word cross-references and bookmarks do not generate /SD. Add in Acrobat post-export.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign cross-references do not generate /SD. Add in Acrobat post-export.
-    
-    Before
-    
-    Before: Link has /Dest [page /XYZ 72 700 0]
+    <strong>Before: Link has /Dest [page /XYZ 72 700 0]</strong>:
+    ```
     AT navigates to page coordinates; may not land on correct element.
+    ```
     
-    After
-    
-    After: Link has /SD pointing to target structure element
+    <strong>After: Link has /SD pointing to target structure element</strong>:
+    ```
     AT navigates directly to the heading or paragraph being linked to.
+    ```
     
     /SD provides a structure-level destination for precise AT navigation.
     
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfWarnPdfUa2HeadingHierarchy =
-    Why it matters
+    <strong>Why it matters</strong>: PDF/UA-2 requires numbered headings (H1–H6) rather than the generic H tag. Generic H tags rely on a /headinglevel attribute that many assistive technologies ignore, leaving users without a navigable heading structure.
     
-    PDF/UA-2 requires numbered headings (H1–H6) rather than the generic H tag. Generic H tags rely on a /headinglevel attribute that many assistive technologies ignore, leaving users without a navigable heading structure.
+    <strong>What needs to change</strong>: In PDF/UA-2 (ISO 14289-2), documents must use H1–H6 numbered heading tags. Generic H tags are not permitted. The heading levels must form a logical hierarchy without skipping levels (e.g., H1 → H3 without H2 is invalid).
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    2. Find all generic H tags and change each to the appropriate H1–H6 level.
+    3. Verify the heading hierarchy: H1 for main title, H2 for sections, H3 for sub-sections, etc.
+    4. Ensure no heading levels are skipped.
     
-    In PDF/UA-2 (ISO 14289-2), documents must use H1–H6 numbered heading tags. Generic H tags are not permitted. The heading levels must form a logical hierarchy without skipping levels (e.g., H1 → H3 without H2 is invalid).
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's built-in Heading 1–Heading 6 styles consistently.
+    2. Do not skip heading levels (e.g., go from Heading 1 directly to Heading 3).
+    3. Export to PDF ensuring 'Document structure tags for accessibility' is enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Map heading paragraph styles to H1–H6 in Export Tagging (not generic H).
+    2. Verify the hierarchy in the Articles panel before export.
+    3. Export as PDF 2.0 with 'Create Tagged PDF' checked.
     
-      1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      2. Find all generic H tags and change each to the appropriate H1–H6 level.
-      3. Verify the heading hierarchy: H1 for main title, H2 for sections, H3 for sub-sections, etc.
-      4. Ensure no heading levels are skipped.
-    
-    How to fix in Microsoft Word
-    
-      1. Use Word's built-in Heading 1–Heading 6 styles consistently.
-      2. Do not skip heading levels (e.g., go from Heading 1 directly to Heading 3).
-      3. Export to PDF ensuring 'Document structure tags for accessibility' is enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. Map heading paragraph styles to H1–H6 in Export Tagging (not generic H).
-      2. Verify the hierarchy in the Articles panel before export.
-      3. Export as PDF 2.0 with 'Create Tagged PDF' checked.
-    
-    Learn more: https://pdfa.org/iso-14289-2-pdfua-2/
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfErrReadingOrderMismatch =
-    Why it matters
+    <strong>Why it matters</strong>: If the structure tree order doesn't match the visual layout, screen reader users hear content in a different sequence than sighted users see it. For example, a footer might be read before the main content, or a right column before a left column, creating confusion about the document's flow.
     
-    If the structure tree order doesn't match the visual layout, screen reader users hear content in a different sequence than sighted users see it. For example, a footer might be read before the main content, or a right column before a left column, creating confusion about the document's flow.
+    <strong>What needs to change</strong>: The structure tree must present content in the same logical order as the visual layout: top-to-bottom, left-to-right (for LTR languages), with multi-column layouts reading column by column.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Order panel (View > Show/Hide > Navigation Panes > Order).
+    2. Or use the Tags panel to see and rearrange the tag order.
+    3. Drag tags to reorder them so they match the visual reading sequence.
+    4. Use the Reading Order tool (Accessibility > Reading Order) to visually assign reading order regions.
     
-    The structure tree must present content in the same logical order as the visual layout: top-to-bottom, left-to-right (for LTR languages), with multi-column layouts reading column by column.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure content in the Word document is in the correct order.
+    2. Avoid using text boxes or floating elements that may be read out of order.
+    3. Use simple, single-column layouts where possible.
+    4. If multi-column layout is needed, use Word's Columns feature (not side-by-side text boxes).
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use the Articles panel (Window > Articles) to define reading order.
+    2. Add content to articles in the correct visual reading sequence.
+    3. For multi-column text frames, InDesign typically handles order correctly.
+    4. Check the order by viewing the exported PDF's Tags panel in Acrobat.
     
-      1. Open the Order panel (View > Show/Hide > Navigation Panes > Order).
-      2. Or use the Tags panel to see and rearrange the tag order.
-      3. Drag tags to reorder them so they match the visual reading sequence.
-      4. Use the Reading Order tool (Accessibility > Reading Order) to visually assign reading order regions.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure content in the Word document is in the correct order.
-      2. Avoid using text boxes or floating elements that may be read out of order.
-      3. Use simple, single-column layouts where possible.
-      4. If multi-column layout is needed, use Word's Columns feature (not side-by-side text boxes).
-    
-    How to fix in Adobe InDesign
-    
-      1. Use the Articles panel (Window > Articles) to define reading order.
-      2. Add content to articles in the correct visual reading sequence.
-      3. For multi-column text frames, InDesign typically handles order correctly.
-      4. Check the order by viewing the exported PDF's Tags panel in Acrobat.
-    
-    Before
-    
-    Reading order doesn't match visual layout
+    <strong>Reading order doesn't match visual layout</strong>:
+    ```
     Visual layout (left to right, top to bottom):
       {""}[Header] [Logo]
       {""}[Left column: main content]
@@ -1357,50 +1589,48 @@ pdf-remediation-PdfErrReadingOrderMismatch =
     
     Screen reader reads: Logo → Sidebar → Header → Main content
     (structure tree is in object-creation order, not visual order)
+    ```
     
-    After
-    
-    Reading order matches visual layout
+    <strong>Reading order matches visual layout</strong>:
+    ```
     Screen reader reads: Header → Logo → Main content → Sidebar
     (structure tree follows visual flow)
+    ```
     
     Reading order mismatches are especially common in PDFs created from design software where elements are layered, not flowed. Always verify reading order after export.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3</a>
 
 pdf-remediation-PdfWarnReadingOrderUnverified =
-    Why it matters
+    <strong>Why it matters</strong>: If the structure tree order doesn't match the visual layout, screen reader users hear content in a different sequence than sighted users see it. For example, a footer might be read before the main content, or a right column before a left column, creating confusion about the document's flow.
     
-    If the structure tree order doesn't match the visual layout, screen reader users hear content in a different sequence than sighted users see it. For example, a footer might be read before the main content, or a right column before a left column, creating confusion about the document's flow.
+    <strong>What needs to change</strong>: The structure tree must present content in the same logical order as the visual layout: top-to-bottom, left-to-right (for LTR languages), with multi-column layouts reading column by column.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Order panel (View > Show/Hide > Navigation Panes > Order).
+    2. Or use the Tags panel to see and rearrange the tag order.
+    3. Drag tags to reorder them so they match the visual reading sequence.
+    4. Use the Reading Order tool (Accessibility > Reading Order) to visually assign reading order regions.
     
-    The structure tree must present content in the same logical order as the visual layout: top-to-bottom, left-to-right (for LTR languages), with multi-column layouts reading column by column.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure content in the Word document is in the correct order.
+    2. Avoid using text boxes or floating elements that may be read out of order.
+    3. Use simple, single-column layouts where possible.
+    4. If multi-column layout is needed, use Word's Columns feature (not side-by-side text boxes).
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use the Articles panel (Window > Articles) to define reading order.
+    2. Add content to articles in the correct visual reading sequence.
+    3. For multi-column text frames, InDesign typically handles order correctly.
+    4. Check the order by viewing the exported PDF's Tags panel in Acrobat.
     
-      1. Open the Order panel (View > Show/Hide > Navigation Panes > Order).
-      2. Or use the Tags panel to see and rearrange the tag order.
-      3. Drag tags to reorder them so they match the visual reading sequence.
-      4. Use the Reading Order tool (Accessibility > Reading Order) to visually assign reading order regions.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure content in the Word document is in the correct order.
-      2. Avoid using text boxes or floating elements that may be read out of order.
-      3. Use simple, single-column layouts where possible.
-      4. If multi-column layout is needed, use Word's Columns feature (not side-by-side text boxes).
-    
-    How to fix in Adobe InDesign
-    
-      1. Use the Articles panel (Window > Articles) to define reading order.
-      2. Add content to articles in the correct visual reading sequence.
-      3. For multi-column text frames, InDesign typically handles order correctly.
-      4. Check the order by viewing the exported PDF's Tags panel in Acrobat.
-    
-    Before
-    
-    Reading order doesn't match visual layout
+    <strong>Reading order doesn't match visual layout</strong>:
+    ```
     Visual layout (left to right, top to bottom):
       {""}[Header] [Logo]
       {""}[Left column: main content]
@@ -1408,104 +1638,100 @@ pdf-remediation-PdfWarnReadingOrderUnverified =
     
     Screen reader reads: Logo → Sidebar → Header → Main content
     (structure tree is in object-creation order, not visual order)
+    ```
     
-    After
-    
-    Reading order matches visual layout
+    <strong>Reading order matches visual layout</strong>:
+    ```
     Screen reader reads: Header → Logo → Main content → Sidebar
     (structure tree follows visual flow)
+    ```
     
     Reading order mismatches are especially common in PDFs created from design software where elements are layered, not flowed. Always verify reading order after export.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3</a>
 
 pdf-remediation-PdfErrHeadingHierarchyInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Screen reader users rely on headings as their primary navigation method in documents — they can jump from heading to heading to scan the document structure. Skipped heading levels (e.g., H1 → H3 with no H2) break this navigation model and make users think they've missed a section.
     
-    Screen reader users rely on headings as their primary navigation method in documents — they can jump from heading to heading to scan the document structure. Skipped heading levels (e.g., H1 → H3 with no H2) break this navigation model and make users think they've missed a section.
+    <strong>What needs to change</strong>: Heading levels must be sequential and hierarchical: H1 → H2 → H3, never skipping levels. Multiple H2s under one H1 are fine, but an H3 should never appear without a preceding H2.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Find heading tags that skip levels (e.g., H3 following H1).
+    3. Right-click the tag > Properties > Type: change to the correct heading level.
+    4. Ensure the heading hierarchy descends logically: H1 > H2 > H3.
     
-    Heading levels must be sequential and hierarchical: H1 → H2 → H3, never skipping levels. Multiple H2s under one H1 are fine, but an H3 should never appear without a preceding H2.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use the Navigation Pane (View > Navigation Pane) to see your heading hierarchy.
+    2. Select any mis-leveled heading text.
+    3. Apply the correct Heading style (Heading 1, Heading 2, etc.) from the Styles gallery.
+    4. Do not use bold formatting as a substitute for heading styles.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Review your paragraph styles' Export Tagging settings.
+    2. Ensure heading styles map to sequential levels: your main title style → H1, section headings → H2, subsections → H3.
+    3. Do not skip tag levels in the Export Tagging mappings.
     
-      1. Open the Tags panel.
-      2. Find heading tags that skip levels (e.g., H3 following H1).
-      3. Right-click the tag > Properties > Type: change to the correct heading level.
-      4. Ensure the heading hierarchy descends logically: H1 > H2 > H3.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use the Navigation Pane (View > Navigation Pane) to see your heading hierarchy.
-      2. Select any mis-leveled heading text.
-      3. Apply the correct Heading style (Heading 1, Heading 2, etc.) from the Styles gallery.
-      4. Do not use bold formatting as a substitute for heading styles.
-    
-    How to fix in Adobe InDesign
-    
-      1. Review your paragraph styles' Export Tagging settings.
-      2. Ensure heading styles map to sequential levels: your main title style → H1, section headings → H2, subsections → H3.
-      3. Do not skip tag levels in the Export Tagging mappings.
-    
-    Before
-    
-    Incorrect: Skipped heading levels
+    <strong>Incorrect: Skipped heading levels</strong>:
+    ```
     Tag structure:
       <H1> Official Receipt
       <H3> Donation Details    ← ERROR: skipped H2
       <H4> Payment Method      ← ERROR: H4 after missing H2
     
     Screen reader user thinks they've missed a section.
+    ```
     
-    After
-    
-    Correct: Sequential heading hierarchy
+    <strong>Correct: Sequential heading hierarchy</strong>:
+    ```
     Tag structure:
       <H1> Official Receipt
       <H2> Donation Details    ← proper sequence
       <H3> Payment Method      ← proper sequence
     
     Screen reader user can navigate the full document structure.
+    ```
     
     Think of headings as an outline: each level represents a deeper section. The document should have one H1, with H2s for major sections, H3s for subsections, etc.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9</a>
 
 pdf-remediation-PdfErrMultipleHeadingsPerNode =
-    Why it matters
+    <strong>Why it matters</strong>: When a single structure element (such as a Sect or Div) contains more than one heading, screen readers cannot determine which heading labels that section. Users navigating by headings may hear duplicate or contradictory announcements, making it impossible to understand the document's logical outline.
     
-    When a single structure element (such as a Sect or Div) contains more than one heading, screen readers cannot determine which heading labels that section. Users navigating by headings may hear duplicate or contradictory announcements, making it impossible to understand the document's logical outline.
+    <strong>What needs to change</strong>: Each structure element must contain at most one heading child (H, H1–H6). This is Matterhorn Protocol check 14-006 and applies to both PDF/UA-1 (PDF 1.7) and PDF/UA-2 (PDF 2.0). If a section requires sub-sections, wrap each in its own Sect element with its own heading.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    2. Locate the parent element that contains multiple headings.
+    3. Create new Sect (or Div) child elements under the parent for each logical sub-section.
+    4. Drag each heading into its own Sect element so every Sect has exactly one heading.
+    5. Verify each section's content follows its heading within the same Sect.
     
-    Each structure element must contain at most one heading child (H, H1–H6). This is Matterhorn Protocol check 14-006 and applies to both PDF/UA-1 (PDF 1.7) and PDF/UA-2 (PDF 2.0). If a section requires sub-sections, wrap each in its own Sect element with its own heading.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Review the document outline — each section should have exactly one heading.
+    2. If two headings appear consecutively without body content between them, combine them or restructure into sub-sections.
+    3. Use Heading 1 for top-level sections, Heading 2 for sub-sections, etc.
+    4. Re-export to PDF with 'Document structure tags for accessibility' enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. In the Articles panel, verify each article group has one heading.
+    2. If a text frame produces multiple headings at the same structural level, split into separate frames or use nested sections.
+    3. Map each heading paragraph style to the appropriate H1–H6 tag in Export Tagging.
+    4. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      2. Locate the parent element that contains multiple headings.
-      3. Create new Sect (or Div) child elements under the parent for each logical sub-section.
-      4. Drag each heading into its own Sect element so every Sect has exactly one heading.
-      5. Verify each section's content follows its heading within the same Sect.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Review the document outline — each section should have exactly one heading.
-      2. If two headings appear consecutively without body content between them, combine them or restructure into sub-sections.
-      3. Use Heading 1 for top-level sections, Heading 2 for sub-sections, etc.
-      4. Re-export to PDF with 'Document structure tags for accessibility' enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. In the Articles panel, verify each article group has one heading.
-      2. If a text frame produces multiple headings at the same structural level, split into separate frames or use nested sections.
-      3. Map each heading paragraph style to the appropriate H1–H6 tag in Export Tagging.
-      4. Re-export with 'Create Tagged PDF' checked.
-    
-    Before
-    
-    Incorrect: Sect with multiple headings
+    <strong>Incorrect: Sect with multiple headings</strong>:
+    ```
     Structure tree:
       Sect
         H1: 'Introduction'
@@ -1513,10 +1739,10 @@ pdf-remediation-PdfErrMultipleHeadingsPerNode =
         P: 'Some text...'
     
     Screen reader: Two headings announced for one section — confusing.
+    ```
     
-    After
-    
-    Correct: Each Sect has one heading
+    <strong>Correct: Each Sect has one heading</strong>:
+    ```
     Structure tree:
       Sect
         H1: 'Introduction'
@@ -1525,1042 +1751,948 @@ pdf-remediation-PdfErrMultipleHeadingsPerNode =
           P: 'Some text...'
     
     Screen reader: Clear hierarchy — H1 section with H2 sub-section.
+    ```
     
     The fix is to nest sub-sections inside their own Sect elements, giving each section exactly one heading that labels it.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrMixedHeadingTagTypes =
-    Why it matters
+    <strong>Why it matters</strong>: PDF supports two heading schemes: generic H tags (with a /headinglevel attribute) and numbered H1–H6 tags. Mixing both in one document confuses assistive technology — screen readers may not correlate the two systems, causing headings to appear out of order or at incorrect nesting levels.
     
-    PDF supports two heading schemes: generic H tags (with a /headinglevel attribute) and numbered H1–H6 tags. Mixing both in one document confuses assistive technology — screen readers may not correlate the two systems, causing headings to appear out of order or at incorrect nesting levels.
+    <strong>What needs to change</strong>: A document must use either generic H tags exclusively or numbered H1–H6 tags exclusively, never both. Matterhorn Protocol check 14-002 / 14-003 requires consistency. Numbered H1–H6 is more widely supported and recommended.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    2. Decide which heading scheme to use (H1–H6 is recommended).
+    3. Find all generic H tags: right-click each and change its Type to the appropriate H1–H6 level.
+    4. If using generic H, convert all H1–H6 to H and set /headinglevel attributes.
+    5. Verify the heading hierarchy is correct after conversion.
     
-    A document must use either generic H tags exclusively or numbered H1–H6 tags exclusively, never both. Matterhorn Protocol check 14-002 / 14-003 requires consistency. Numbered H1–H6 is more widely supported and recommended.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use only Word's built-in Heading 1–Heading 6 styles for headings.
+    2. Do not manually tag any text as generic H — Word does not produce generic H tags.
+    3. If generic H tags appeared from a previous tool, re-export from Word to get clean H1–H6 tags.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Map heading paragraph styles to H1–H6 (not generic H) in each style's Export Tagging settings.
+    2. Ensure no style is mapped to the generic 'H' tag.
+    3. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      2. Decide which heading scheme to use (H1–H6 is recommended).
-      3. Find all generic H tags: right-click each and change its Type to the appropriate H1–H6 level.
-      4. If using generic H, convert all H1–H6 to H and set /headinglevel attributes.
-      5. Verify the heading hierarchy is correct after conversion.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use only Word's built-in Heading 1–Heading 6 styles for headings.
-      2. Do not manually tag any text as generic H — Word does not produce generic H tags.
-      3. If generic H tags appeared from a previous tool, re-export from Word to get clean H1–H6 tags.
-    
-    How to fix in Adobe InDesign
-    
-      1. Map heading paragraph styles to H1–H6 (not generic H) in each style's Export Tagging settings.
-      2. Ensure no style is mapped to the generic 'H' tag.
-      3. Re-export with 'Create Tagged PDF' checked.
-    
-    Before
-    
-    Incorrect: Mixed heading types
+    <strong>Incorrect: Mixed heading types</strong>:
+    ```
     Structure tree:
       H: 'Chapter 1' (generic)
       H1: 'Section A' (numbered)
       H2: 'Sub-section' (numbered)
     
     Screen reader: Cannot determine if H and H1 are the same level.
+    ```
     
-    After
-    
-    Correct: Consistent H1–H6 headings
+    <strong>Correct: Consistent H1–H6 headings</strong>:
+    ```
     Structure tree:
       H1: 'Chapter 1'
       H2: 'Section A'
       H3: 'Sub-section'
     
     Screen reader: Clear heading hierarchy using numbered levels.
+    ```
     
     Pick one heading system and convert all headings to match. H1–H6 is recommended because it has wider assistive technology support.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrDocumentLanguageNotSet =
-    Why it matters
+    <strong>Why it matters</strong>: Screen readers use the document language to select the correct pronunciation engine. Without it, a French document may be read with English pronunciation rules, making the content unintelligible. This affects every word in the document.
     
-    Screen readers use the document language to select the correct pronunciation engine. Without it, a French document may be read with English pronunciation rules, making the content unintelligible. This affects every word in the document.
+    <strong>What needs to change</strong>: The PDF catalog dictionary must include a /Lang entry with a valid BCP 47 language code (e.g., 'en', 'fr', 'en-CA'). This sets the default language for all text in the document.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties (Ctrl+D / Cmd+D).
+    2. Click the Advanced tab.
+    3. In the Reading Options section, select the correct language from the Language dropdown.
+    4. Click OK and save.
     
-    The PDF catalog dictionary must include a /Lang entry with a valid BCP 47 language code (e.g., 'en', 'fr', 'en-CA'). This sets the default language for all text in the document.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select all text (Ctrl+A / Cmd+A).
+    2. Go to Review > Language > Set Proofing Language.
+    3. Select the document's primary language and click OK.
+    4. When saving as PDF, the language will be embedded automatically.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select all text frames or use Edit > Select All.
+    2. In the Character panel, set the Language dropdown to the correct language.
+    3. When exporting to PDF, the language attribute will be included.
     
-      1. Open File > Properties (Ctrl+D / Cmd+D).
-      2. Click the Advanced tab.
-      3. In the Reading Options section, select the correct language from the Language dropdown.
-      4. Click OK and save.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select all text (Ctrl+A / Cmd+A).
-      2. Go to Review > Language > Set Proofing Language.
-      3. Select the document's primary language and click OK.
-      4. When saving as PDF, the language will be embedded automatically.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select all text frames or use Edit > Select All.
-      2. In the Character panel, set the Language dropdown to the correct language.
-      3. When exporting to PDF, the language attribute will be included.
-    
-    Before
-    
-    Incorrect: No language specified
+    <strong>Incorrect: No language specified</strong>:
+    ```
     PDF Catalog:
       /Type /Catalog
       /Pages ...
       (no /Lang entry)
     
     Result: Screen reader guesses language, often incorrectly
+    ```
     
-    After
-    
-    Correct: Language specified
+    <strong>Correct: Language specified</strong>:
+    ```
     PDF Catalog:
       /Type /Catalog
       /Pages ...
       /Lang (en-CA)
     
     Result: Screen reader uses Canadian English pronunciation
+    ```
     
     Use the most specific language code available: 'en-CA' rather than just 'en' for Canadian English, 'fr-CA' for Canadian French.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF16
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF16">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF16</a>
 
 pdf-remediation-PdfErrLangValuesInvalidBcp47 =
-    Why it matters
+    <strong>Why it matters</strong>: Language tags must follow the BCP 47 standard (e.g., 'en', 'en-US', 'fr-CA') so assistive technology can select the correct speech synthesizer. Invalid tags like 'english' or 'en_US' cause AT to fall back to a default voice.
     
-    Language tags must follow the BCP 47 standard (e.g., 'en', 'en-US', 'fr-CA') so assistive technology can select the correct speech synthesizer. Invalid tags like 'english' or 'en_US' cause AT to fall back to a default voice.
+    <strong>What needs to change</strong>: Use valid BCP 47 language codes: 2-3 letter ISO 639 primary subtag, optional region.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. File > Properties > Advanced > Language. Use codes like 'en', 'en-US', 'fr-CA'. For element-level, edit in Tags panel.
     
-    Use valid BCP 47 language codes: 2-3 letter ISO 639 primary subtag, optional region.
+    <strong>Microsoft Word (source document)</strong>:
+    1. File > Options > Language. Ensure proofing language is set to a standard locale.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Set language per text frame or paragraph style. Export preserves these.
     
-      1. File > Properties > Advanced > Language. Use codes like 'en', 'en-US', 'fr-CA'. For element-level, edit in Tags panel.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. File > Options > Language. Ensure proofing language is set to a standard locale.
-    
-    How to fix in Adobe InDesign
-    
-      1. Set language per text frame or paragraph style. Export preserves these.
-    
-    Before
-    
-    Before: /Lang = 'english'
+    <strong>Before: /Lang = 'english'</strong>:
+    ```
     invalid, AT cannot determine voice.
+    ```
     
-    After
-    
-    After: /Lang = 'en'
+    <strong>After: /Lang = 'en'</strong>:
+    ```
     valid BCP 47 tag, AT selects English voice.
+    ```
     
     BCP 47 uses standardized codes, not full language names.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF16
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF16">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF16</a>
 
 pdf-remediation-PdfErrAnnotationLanguageIndeterminable =
-    Why it matters
+    <strong>Why it matters</strong>: The /Contents text of annotations (tooltips, alt text, descriptions) must have a determinable language so screen readers pronounce it correctly. Without a language attribute, annotation text may be read with the wrong pronunciation engine.
     
-    The /Contents text of annotations (tooltips, alt text, descriptions) must have a determinable language so screen readers pronounce it correctly. Without a language attribute, annotation text may be read with the wrong pronunciation engine.
+    <strong>What needs to change</strong>: Annotation /Contents text inherits the document language unless overridden. If the annotation text is in a different language than the document, a /Lang entry must be set on the annotation or its parent structure element. This is Matterhorn Protocol check 11-006.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the structure element associated with the annotation.
+    2. Right-click the element and choose Properties.
+    3. In the Tag tab, set the Language field to the correct BCP 47 code (e.g., 'fr' for French).
+    4. If the annotation text matches the document language, ensure the document language is set correctly.
     
-    Annotation /Contents text inherits the document language unless overridden. If the annotation text is in a different language than the document, a /Lang entry must be set on the annotation or its parent structure element. This is Matterhorn Protocol check 11-006.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the text associated with the annotation (hyperlink, comment, etc.).
+    2. Go to Review > Language > Set Proofing Language.
+    3. Set the correct language for that text span.
+    4. Re-export to PDF — Word will include the language attribute.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the text frame or text associated with the annotation.
+    2. In the Character panel, set the Language dropdown to the correct language.
+    3. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Tags panel and locate the structure element associated with the annotation.
-      2. Right-click the element and choose Properties.
-      3. In the Tag tab, set the Language field to the correct BCP 47 code (e.g., 'fr' for French).
-      4. If the annotation text matches the document language, ensure the document language is set correctly.
-    
-    How to fix in Microsoft Word
-    
-      1. Select the text associated with the annotation (hyperlink, comment, etc.).
-      2. Go to Review > Language > Set Proofing Language.
-      3. Set the correct language for that text span.
-      4. Re-export to PDF — Word will include the language attribute.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the text frame or text associated with the annotation.
-      2. In the Character panel, set the Language dropdown to the correct language.
-      3. Re-export with 'Create Tagged PDF' checked.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrFormFieldTooltipLanguageIndeterminable =
-    Why it matters
+    <strong>Why it matters</strong>: Form field tooltips (/TU key) are read aloud by screen readers to describe the purpose of each field. If the tooltip language cannot be determined, the screen reader may mispronounce it, confusing users trying to fill out the form.
     
-    Form field tooltips (/TU key) are read aloud by screen readers to describe the purpose of each field. If the tooltip language cannot be determined, the screen reader may mispronounce it, confusing users trying to fill out the form.
+    <strong>What needs to change</strong>: The /TU (tooltip) text of form fields must have a determinable language, either inherited from the document language or explicitly set via /Lang on the field or its parent structure element. Matterhorn Protocol check 11-005.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Form tool (Prepare Form).
+    2. Double-click the form field to open its Properties.
+    3. In the General tab, verify the Tooltip field has meaningful text.
+    4. In the Tags panel, find the field's parent element and set its Language property if the tooltip is in a different language than the document.
     
-    The /TU (tooltip) text of form fields must have a determinable language, either inherited from the document language or explicitly set via /Lang on the field or its parent structure element. Matterhorn Protocol check 11-005.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the form field (content control or legacy form field).
+    2. Set the proofing language on the field's label text: Review > Language > Set Proofing Language.
+    3. Ensure the field has a descriptive tooltip: right-click > Properties > enter a tooltip.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the form field (button, text field, etc.).
+    2. In the Buttons and Forms panel, verify the Description field is filled in.
+    3. Set the correct language on the text frame containing the field.
+    4. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Form tool (Prepare Form).
-      2. Double-click the form field to open its Properties.
-      3. In the General tab, verify the Tooltip field has meaningful text.
-      4. In the Tags panel, find the field's parent element and set its Language property if the tooltip is in a different language than the document.
-    
-    How to fix in Microsoft Word
-    
-      1. Select the form field (content control or legacy form field).
-      2. Set the proofing language on the field's label text: Review > Language > Set Proofing Language.
-      3. Ensure the field has a descriptive tooltip: right-click > Properties > enter a tooltip.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the form field (button, text field, etc.).
-      2. In the Buttons and Forms panel, verify the Description field is filled in.
-      3. Set the correct language on the text frame containing the field.
-      4. Re-export with 'Create Tagged PDF' checked.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrDocumentMetadataLanguageIndeterminable =
-    Why it matters
+    <strong>Why it matters</strong>: XMP metadata fields (title, description, author) may be presented to users by screen readers or displayed in document properties dialogs. If the language of this metadata is not determinable, it may be mispronounced or misinterpreted.
     
-    XMP metadata fields (title, description, author) may be presented to users by screen readers or displayed in document properties dialogs. If the language of this metadata is not determinable, it may be mispronounced or misinterpreted.
+    <strong>What needs to change</strong>: The document's XMP metadata must have a determinable language. The xml:lang attribute should be set on XMP text properties, or the document /Lang entry must cover metadata. Matterhorn Protocol check 11-007.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties (Ctrl+D / Cmd+D).
+    2. In the Advanced tab, set the document language under Reading Options.
+    3. Click Additional Metadata to open the XMP editor.
+    4. Ensure text fields (title, description) have the correct xml:lang attribute.
     
-    The document's XMP metadata must have a determinable language. The xml:lang attribute should be set on XMP text properties, or the document /Lang entry must cover metadata. Matterhorn Protocol check 11-007.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Go to File > Info and verify the Title and other metadata fields are filled in.
+    2. Set the document language: Review > Language > Set Proofing Language on all text.
+    3. Re-export to PDF — Word includes the document language which covers metadata.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Go to File > File Info and fill in metadata fields.
+    2. Set the document language on all text frames.
+    3. Re-export to PDF — the document language will be included.
     
-      1. Open File > Properties (Ctrl+D / Cmd+D).
-      2. In the Advanced tab, set the document language under Reading Options.
-      3. Click Additional Metadata to open the XMP editor.
-      4. Ensure text fields (title, description) have the correct xml:lang attribute.
-    
-    How to fix in Microsoft Word
-    
-      1. Go to File > Info and verify the Title and other metadata fields are filled in.
-      2. Set the document language: Review > Language > Set Proofing Language on all text.
-      3. Re-export to PDF — Word includes the document language which covers metadata.
-    
-    How to fix in Adobe InDesign
-    
-      1. Go to File > File Info and fill in metadata fields.
-      2. Set the document language on all text frames.
-      3. Re-export to PDF — the document language will be included.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfWarnAbbreviationsMissingExpansion =
-    Why it matters
+    <strong>Why it matters</strong>: Abbreviations and acronyms (e.g., 'PDF', 'WCAG', 'CNIB') are often mispronounced by screen readers. The /E (expansion) attribute provides the full text so AT can announce the expanded form.
     
-    Abbreviations and acronyms (e.g., 'PDF', 'WCAG', 'CNIB') are often mispronounced by screen readers. The /E (expansion) attribute provides the full text so AT can announce the expanded form.
+    <strong>What needs to change</strong>: Add /E expansion text to Span elements that contain abbreviations or acronyms.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Tags panel, select the Span containing the abbreviation → Properties → Expansion Text field.
     
-    Add /E expansion text to Span elements that contain abbreviations or acronyms.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Not directly supported — add expansion text in Acrobat after export.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Not directly supported — add expansion text in Acrobat after export.
     
-      1. In Tags panel, select the Span containing the abbreviation → Properties → Expansion Text field.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Not directly supported — add expansion text in Acrobat after export.
-    
-    How to fix in Adobe InDesign
-    
-      1. Not directly supported — add expansion text in Acrobat after export.
-    
-    Before
-    
-    Before: Span contains 'CNIB' with no /E
+    <strong>Before: Span contains 'CNIB' with no /E</strong>:
+    ```
     screen reader says 'C-N-I-B' or 'knib'.
+    ```
     
-    After
-    
-    After: Span has /E = 'Canadian National Institute for the Blind'
+    <strong>After: Span has /E = 'Canadian National Institute for the Blind'</strong>:
+    ```
     screen reader can announce full name.
+    ```
     
     /E gives AT the expanded form of abbreviations for correct pronunciation.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF8
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF8">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF8</a>
 
 pdf-remediation-PdfErrFigureMissingAltText =
-    Why it matters
+    <strong>Why it matters</strong>: Images without alternative text are invisible to screen reader users — they are either skipped entirely or announced as 'image' with no description. If the image conveys important information (logos, charts, diagrams, signatures), that information is completely lost.
     
-    Images without alternative text are invisible to screen reader users — they are either skipped entirely or announced as 'image' with no description. If the image conveys important information (logos, charts, diagrams, signatures), that information is completely lost.
+    <strong>What needs to change</strong>: Every Figure or Art structure element that conveys meaningful content must have an /Alt attribute with a text description. Purely decorative images should be tagged as Artifacts instead, which tells screen readers to skip them.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    2. Find each <Figure> tag that is missing alt text.
+    3. Right-click the tag > Properties.
+    4. Enter descriptive alt text in the 'Alternate Text' field.
+    5. For decorative images: right-click > Change Tag to Artifact instead.
     
-    Every Figure or Art structure element that conveys meaningful content must have an /Alt attribute with a text description. Purely decorative images should be tagged as Artifacts instead, which tells screen readers to skip them.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Right-click the image and select 'Edit Alt Text' (or Alt Text in the ribbon).
+    2. Enter a concise description that conveys the image's purpose and content.
+    3. For decorative images, check 'Mark as decorative'.
+    4. Re-export to PDF — alt text will be included automatically.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the image frame.
+    2. Go to Object > Object Export Options.
+    3. In the Alt Text tab, choose 'Custom' and enter a description.
+    4. For decorative images, set the tag to Artifact in the Export Tagging options.
     
-      1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      2. Find each <Figure> tag that is missing alt text.
-      3. Right-click the tag > Properties.
-      4. Enter descriptive alt text in the 'Alternate Text' field.
-      5. For decorative images: right-click > Change Tag to Artifact instead.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Right-click the image and select 'Edit Alt Text' (or Alt Text in the ribbon).
-      2. Enter a concise description that conveys the image's purpose and content.
-      3. For decorative images, check 'Mark as decorative'.
-      4. Re-export to PDF — alt text will be included automatically.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the image frame.
-      2. Go to Object > Object Export Options.
-      3. In the Alt Text tab, choose 'Custom' and enter a description.
-      4. For decorative images, set the tag to Artifact in the Export Tagging options.
-    
-    Before
-    
-    Missing alt text
+    <strong>Missing alt text</strong>:
+    ```
     Tags panel:
       <Figure>
         Alternate Text: (empty)
     
     Screen reader: 'Image' (no description) or skips entirely.
+    ```
     
-    After
-    
-    Descriptive alt text provided
+    <strong>Descriptive alt text provided</strong>:
+    ```
     Tags panel:
       <Figure>
         Alternate Text: 'CNIB logo — Canadian National Institute for the Blind'
     
     Screen reader: 'Image: CNIB logo — Canadian National Institute for the Blind'
+    ```
     
     Good alt text is concise and describes the image's purpose, not just its appearance. For a logo, include the organization name. For a chart, summarize the data trend. Avoid starting with 'Image of...' — screen readers already announce it as an image.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1</a>
 
 pdf-remediation-PdfWarnAltTextRedundantRoleText =
-    Why it matters
+    <strong>Why it matters</strong>: Screen readers already announce the element type ('image', 'link', 'button'). If the alt text also starts with 'Image of...' or 'Link to...', users hear it twice: 'Image: Image of the CNIB logo'. This is redundant and clutters the experience.
     
-    Screen readers already announce the element type ('image', 'link', 'button'). If the alt text also starts with 'Image of...' or 'Link to...', users hear it twice: 'Image: Image of the CNIB logo'. This is redundant and clutters the experience.
+    <strong>What needs to change</strong>: Alt text should describe the content, not the element type. Avoid words like 'image', 'picture', 'photo', 'graphic', 'icon', 'link', 'button' at the start of alt text.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Find Figure/Art tags with role words in their alt text.
+    3. Right-click > Properties.
+    4. Edit the Alternate Text to remove leading role words (e.g., change 'Image of CNIB logo' to 'CNIB logo').
     
-    Alt text should describe the content, not the element type. Avoid words like 'image', 'picture', 'photo', 'graphic', 'icon', 'link', 'button' at the start of alt text.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Right-click the image > Edit Alt Text.
+    2. Remove role words from the beginning of the description.
+    3. Write: 'CNIB logo' instead of 'Image of the CNIB logo'.
+    4. Write: 'Bar chart showing donation growth' instead of 'Picture of a bar chart'.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the image frame > Object > Object Export Options > Alt Text tab.
+    2. Edit to remove role words from the beginning.
     
-      1. Open the Tags panel.
-      2. Find Figure/Art tags with role words in their alt text.
-      3. Right-click > Properties.
-      4. Edit the Alternate Text to remove leading role words (e.g., change 'Image of CNIB logo' to 'CNIB logo').
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Right-click the image > Edit Alt Text.
-      2. Remove role words from the beginning of the description.
-      3. Write: 'CNIB logo' instead of 'Image of the CNIB logo'.
-      4. Write: 'Bar chart showing donation growth' instead of 'Picture of a bar chart'.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the image frame > Object > Object Export Options > Alt Text tab.
-      2. Edit to remove role words from the beginning.
-    
-    Before
-    
-    Redundant role text in alt
+    <strong>Redundant role text in alt</strong>:
+    ```
     Alt text: 'Image of the CNIB logo'
     
     Screen reader: 'Image, Image of the CNIB logo'
     (announces 'image' twice)
+    ```
     
-    After
-    
-    Clean alt text
+    <strong>Clean alt text</strong>:
+    ```
     Alt text: 'CNIB logo — Canadian National Institute for the Blind'
     
     Screen reader: 'Image, CNIB logo — Canadian National Institute for the Blind'
     (announces role once, then the description)
+    ```
     
     Screen readers prefix alt text with the element role automatically. Your alt text should complement this, not repeat it.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1</a>
 
 pdf-remediation-PdfErrAltTextHidesInteractive =
-    Why it matters
+    <strong>Why it matters</strong>: When a parent element has alt text, screen readers may read only the alt text and skip all children — including links, buttons, and form fields inside it. This effectively hides interactive elements, making them unreachable.
     
-    When a parent element has alt text, screen readers may read only the alt text and skip all children — including links, buttons, and form fields inside it. This effectively hides interactive elements, making them unreachable.
+    <strong>What needs to change</strong>: Structure elements that contain interactive children (Link, Form, etc.) must not have /Alt text on the parent. Instead, each child should have its own accessible name.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Find the parent element (Figure/Art) that has alt text AND contains interactive children.
+    3. Remove the alt text from the parent (right-click > Properties > clear Alternate Text).
+    4. Add appropriate alt text or accessible names to each child element individually.
     
-    Structure elements that contain interactive children (Link, Form, etc.) must not have /Alt text on the parent. Instead, each child should have its own accessible name.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure images that contain links or form fields are not grouped with a single alt text.
+    2. Each interactive element should have its own alt text or label.
+    3. If an image map is used, each clickable region needs its own description.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. In the Object Export Options, remove alt text from container elements that have interactive children.
+    2. Set alt text on individual interactive elements instead.
     
-      1. Open the Tags panel.
-      2. Find the parent element (Figure/Art) that has alt text AND contains interactive children.
-      3. Remove the alt text from the parent (right-click > Properties > clear Alternate Text).
-      4. Add appropriate alt text or accessible names to each child element individually.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure images that contain links or form fields are not grouped with a single alt text.
-      2. Each interactive element should have its own alt text or label.
-      3. If an image map is used, each clickable region needs its own description.
-    
-    How to fix in Adobe InDesign
-    
-      1. In the Object Export Options, remove alt text from container elements that have interactive children.
-      2. Set alt text on individual interactive elements instead.
-    
-    Before
-    
-    Alt text hides child links
+    <strong>Alt text hides child links</strong>:
+    ```
     <Figure Alt='Contact information'>
       <Link> 'cnib.ca'          ← HIDDEN from screen reader
       <Link> 'info@cnib.ca'     ← HIDDEN from screen reader
     
     Screen reader: 'Image, Contact information' (links unreachable)
+    ```
     
-    After
-    
-    Children have their own accessible names
+    <strong>Children have their own accessible names</strong>:
+    ```
     <Figure>                      ← no alt text on parent
       <Link> 'Visit CNIB website'
       <Link> 'Email CNIB'
     
     Screen reader: 'Link, Visit CNIB website' then 'Link, Email CNIB'
+    ```
     
     This is a subtle but critical issue. Alt text on a container element acts as a replacement for all child content, not a supplement.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1</a>
 
 pdf-remediation-PdfErrFigureMissingBBox =
-    Why it matters
+    <strong>Why it matters</strong>: Figure elements without a bounding box (/BBox) cannot be properly positioned by assistive technology. The BBox tells AT where the figure appears on the page, which is needed for reflow, zoom, and spatial navigation.
     
-    Figure elements without a bounding box (/BBox) cannot be properly positioned by assistive technology. The BBox tells AT where the figure appears on the page, which is needed for reflow, zoom, and spatial navigation.
+    <strong>What needs to change</strong>: Every Figure structure element should have a /BBox attribute with four coordinates defining its position.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Tags panel, select the Figure tag → Properties → check 'Specify bounding box' or set /BBox manually.
     
-    Every Figure structure element should have a /BBox attribute with four coordinates defining its position.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word-generated PDFs typically include BBox for images. If missing, fix in Acrobat.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign exports typically include BBox. If missing, fix in Acrobat post-export.
     
-      1. In Tags panel, select the Figure tag → Properties → check 'Specify bounding box' or set /BBox manually.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word-generated PDFs typically include BBox for images. If missing, fix in Acrobat.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign exports typically include BBox. If missing, fix in Acrobat post-export.
-    
-    Before
-    
-    Before: Figure element has no /BBox
+    <strong>Before: Figure element has no /BBox</strong>:
+    ```
     AT cannot determine figure position or size.
+    ```
     
-    After
-    
-    After: Figure has /BBox = [72 400 540 700]
+    <strong>After: Figure has /BBox = [72 400 540 700]</strong>:
+    ```
     AT knows exact page position.
+    ```
     
     /BBox = [x1 y1 x2 y2] defines the figure's rectangle in page coordinates.
     
-    Learn more: https://theaccessibilityguy.com/how-to-solve-the-pac-2024-error-figure-element-on-a-single-page-has-no-bounding-box-adobe-acrobat-pro-dc/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://theaccessibilityguy.com/how-to-solve-the-pac-2024-error-figure-element-on-a-single-page-has-no-bounding-box-adobe-acrobat-pro-dc/">https://theaccessibilityguy.com/how-to-solve-the-pac-2024-error-figure-element-on-a-single-page-has-no-bounding-box-adobe-acrobat-pro-dc/</a>
 
 pdf-remediation-PdfErrLinkAnnotationEmpty =
-    Why it matters
+    <strong>Why it matters</strong>: Links without accessible text are announced by screen readers as just 'link' with no indication of where the link goes. Users must guess or skip the link entirely. This is one of the most common and frustrating accessibility barriers in PDFs.
     
-    Links without accessible text are announced by screen readers as just 'link' with no indication of where the link goes. Users must guess or skip the link entirely. This is one of the most common and frustrating accessibility barriers in PDFs.
+    <strong>What needs to change</strong>: Every /Link annotation must be associated with a structure element that contains readable text, or the annotation itself must have a /Contents entry providing a text alternative.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and find each <Link> tag.
+    2. Ensure each Link tag contains a child <Span> or text content that describes the link destination.
+    3. If the link has no text, right-click the Link tag > Properties and add alt text in the Alternate Text field.
+    4. For links that are just URLs, add descriptive text: e.g., 'Visit CNIB website' instead of 'https://cnib.ca'.
     
-    Every /Link annotation must be associated with a structure element that contains readable text, or the annotation itself must have a /Contents entry providing a text alternative.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the hyperlink text in your document.
+    2. Right-click > Edit Hyperlink.
+    3. Ensure the 'Text to display' field contains descriptive text (not just a URL).
+    4. Use meaningful phrases: 'View our annual report' instead of 'Click here' or 'https://...'.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the text frame containing the link.
+    2. Ensure the visible text describes the link destination.
+    3. Use Window > Interactive > Hyperlinks to manage hyperlinks.
+    4. Set the hyperlink source to the descriptive text, not a bare URL.
     
-      1. Open the Tags panel and find each <Link> tag.
-      2. Ensure each Link tag contains a child <Span> or text content that describes the link destination.
-      3. If the link has no text, right-click the Link tag > Properties and add alt text in the Alternate Text field.
-      4. For links that are just URLs, add descriptive text: e.g., 'Visit CNIB website' instead of 'https://cnib.ca'.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the hyperlink text in your document.
-      2. Right-click > Edit Hyperlink.
-      3. Ensure the 'Text to display' field contains descriptive text (not just a URL).
-      4. Use meaningful phrases: 'View our annual report' instead of 'Click here' or 'https://...'.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the text frame containing the link.
-      2. Ensure the visible text describes the link destination.
-      3. Use Window > Interactive > Hyperlinks to manage hyperlinks.
-      4. Set the hyperlink source to the descriptive text, not a bare URL.
-    
-    Before
-    
-    Link with no accessible text
+    <strong>Link with no accessible text</strong>:
+    ```
     Tags panel:
       <Link>
         <OBJR> (link annotation, no text)
     
     Screen reader: 'Link' (destination unknown)
+    ```
     
-    After
-    
-    Link with descriptive text
+    <strong>Link with descriptive text</strong>:
+    ```
     Tags panel:
       <Link>
         <Span> 'Visit cnib.ca for more information'
         <OBJR> (link annotation)
     
     Screen reader: 'Link: Visit cnib.ca for more information'
+    ```
     
     Link text should describe the destination or action, not the mechanics. Avoid 'Click here', 'Read more', or bare URLs as link text.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF11
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF11">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF11</a>
 
 pdf-remediation-PdfErrLinkAnnotationMissingContents =
-    Why it matters
+    <strong>Why it matters</strong>: The /Contents key of a link annotation provides the text that screen readers announce when a user encounters the link. Without it, assistive technology may read the raw URL or nothing at all, leaving users unable to understand the link's purpose or destination.
     
-    The /Contents key of a link annotation provides the text that screen readers announce when a user encounters the link. Without it, assistive technology may read the raw URL or nothing at all, leaving users unable to understand the link's purpose or destination.
+    <strong>What needs to change</strong>: Every link annotation (/Subtype /Link) must have a /Contents entry that describes the link's purpose. This is required by the Matterhorn Protocol and ensures link text is accessible to all assistive technologies.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Edit PDF tool or use the Link tool to select the link annotation.
+    2. Right-click the link and choose Properties.
+    3. In the General tab, enter descriptive text in the 'Alternate Text' (Contents) field.
+    4. The text should describe the link's destination or purpose (e.g., 'Visit CNIB website').
+    5. Repeat for all link annotations missing the /Contents key.
     
-    Every link annotation (/Subtype /Link) must have a /Contents entry that describes the link's purpose. This is required by the Matterhorn Protocol and ensures link text is accessible to all assistive technologies.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the hyperlink text and right-click > Edit Hyperlink.
+    2. Ensure the 'Text to display' field contains a meaningful description.
+    3. Add a ScreenTip (click ScreenTip button) with a description of the link destination.
+    4. Re-export to PDF — Word maps the display text to the link's accessible content.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the hyperlink in the Hyperlinks panel (Window > Interactive > Hyperlinks).
+    2. In the Hyperlink Options, ensure the source text is descriptive.
+    3. Add an Alt Text description via the link's accessibility properties.
+    4. Re-export with 'Create Tagged PDF' checked.
     
-      1. Open the Edit PDF tool or use the Link tool to select the link annotation.
-      2. Right-click the link and choose Properties.
-      3. In the General tab, enter descriptive text in the 'Alternate Text' (Contents) field.
-      4. The text should describe the link's destination or purpose (e.g., 'Visit CNIB website').
-      5. Repeat for all link annotations missing the /Contents key.
-    
-    How to fix in Microsoft Word
-    
-      1. Select the hyperlink text and right-click > Edit Hyperlink.
-      2. Ensure the 'Text to display' field contains a meaningful description.
-      3. Add a ScreenTip (click ScreenTip button) with a description of the link destination.
-      4. Re-export to PDF — Word maps the display text to the link's accessible content.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the hyperlink in the Hyperlinks panel (Window > Interactive > Hyperlinks).
-      2. In the Hyperlink Options, ensure the source text is descriptive.
-      3. Add an Alt Text description via the link's accessibility properties.
-      4. Re-export with 'Create Tagged PDF' checked.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrLinkAnnotationNotInLinkTag =
-    Why it matters
+    <strong>Why it matters</strong>: Link annotations must be enclosed in Link structure elements so assistive technology can identify them as hyperlinks. Without this nesting, users cannot distinguish links from regular text.
     
-    Link annotations must be enclosed in Link structure elements so assistive technology can identify them as hyperlinks. Without this nesting, users cannot distinguish links from regular text.
+    <strong>What needs to change</strong>: Every Link annotation should be referenced via OBJR from a Link structure element.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Tags panel, ensure each link annotation is inside a Link tag. Use 'Create Tag from Selection' if missing.
     
-    Every Link annotation should be referenced via OBJR from a Link structure element.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Insert > Hyperlink for all links. Avoid manual URL text without hyperlink formatting.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use Hyperlinks panel. Ensure 'Create Tagged PDF' is checked on export.
     
-      1. In Tags panel, ensure each link annotation is inside a Link tag. Use 'Create Tag from Selection' if missing.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use Insert > Hyperlink for all links. Avoid manual URL text without hyperlink formatting.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use Hyperlinks panel. Ensure 'Create Tagged PDF' is checked on export.
-    
-    Before
-    
-    Before: Link annotation under Span tag
+    <strong>Before: Link annotation under Span tag</strong>:
+    ```
     screen reader reads text but doesn't announce it as a link.
+    ```
     
-    After
-    
-    After: Link annotation under Link tag
+    <strong>After: Link annotation under Link tag</strong>:
+    ```
     screen reader announces 'link: Visit our website'.
+    ```
     
     The Link structure element identifies the annotation as a navigable hyperlink.
     
-    Learn more: https://taggedpdf.com/508-pdf-help-center/link-annotation-is-not-nested-inside-a-link-structure-element/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://taggedpdf.com/508-pdf-help-center/link-annotation-is-not-nested-inside-a-link-structure-element/">https://taggedpdf.com/508-pdf-help-center/link-annotation-is-not-nested-inside-a-link-structure-element/</a>
 
 pdf-remediation-PdfErrAnnotationMissingAltDescription =
-    Why it matters
+    <strong>Why it matters</strong>: Visible annotations without a /Contents description provide no text for screen readers to announce. The user may see a visual indicator but cannot understand what the annotation says.
     
-    Visible annotations without a /Contents description provide no text for screen readers to announce. The user may see a visual indicator but cannot understand what the annotation says.
+    <strong>What needs to change</strong>: Every visible, non-link, non-widget annotation should have a /Contents key with a text description of the annotation's purpose or content.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Double-click the annotation → enter text in the Description or Contents field.
     
-    Every visible, non-link, non-widget annotation should have a /Contents key with a text description of the annotation's purpose or content.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Not applicable — annotations are typically added in the PDF workflow.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Not applicable — use Acrobat to add annotation descriptions after export.
     
-      1. Double-click the annotation → enter text in the Description or Contents field.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Not applicable — annotations are typically added in the PDF workflow.
-    
-    How to fix in Adobe InDesign
-    
-      1. Not applicable — use Acrobat to add annotation descriptions after export.
-    
-    Before
-    
-    Before
+    <strong>Before</strong>:
+    ```
     Highlight annotation on page 1 with no /Contents. Screen reader says nothing.
+    ```
     
-    After
-    
-    After
+    <strong>After</strong>:
+    ```
     Highlight annotation with /Contents 'Important deadline'. Screen reader announces the text.
+    ```
     
     The /Contents key provides the accessible text for the annotation.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13</a>
 
 pdf-remediation-PdfErrNonLinkWidgetAnnotationUntagged =
-    Why it matters
+    <strong>Why it matters</strong>: Annotations (comments, highlights, stamps, etc.) that are not included in the document's structure tree are invisible to assistive technology. Screen reader users will not know these annotations exist.
     
-    Annotations (comments, highlights, stamps, etc.) that are not included in the document's structure tree are invisible to assistive technology. Screen reader users will not know these annotations exist.
+    <strong>What needs to change</strong>: Every visible annotation that is not a Link, Widget, or Popup must appear as an Object Reference (OBJR) in the structure tree so assistive technology can discover it.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Reading Order panel → right-click annotation → 'Create Tag from Selection'. Verify in Tags panel.
     
-    Every visible annotation that is not a Link, Widget, or Popup must appear as an Object Reference (OBJR) in the structure tree so assistive technology can discover it.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Not applicable — annotations are added in the PDF workflow, not in Word.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Not applicable — use Acrobat to tag annotations after export.
     
-      1. Use Reading Order panel → right-click annotation → 'Create Tag from Selection'. Verify in Tags panel.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Not applicable — annotations are added in the PDF workflow, not in Word.
-    
-    How to fix in Adobe InDesign
-    
-      1. Not applicable — use Acrobat to tag annotations after export.
-    
-    Before
-    
-    Before: Text annotation on page 2
+    <strong>Before: Text annotation on page 2</strong>:
+    ```
     not in structure tree. Screen reader skips it entirely.
+    ```
     
-    After
-    
-    After: Text annotation tagged as Annot structure element
+    <strong>After: Text annotation tagged as Annot structure element</strong>:
+    ```
     screen reader announces 'Comment: ...'.
+    ```
     
     Tagging annotations makes them part of the document structure so AT can navigate to them.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13</a>
 
 pdf-remediation-PdfErrMultimediaAnnotationUntagged =
-    Why it matters
+    <strong>Why it matters</strong>: Multimedia content (video, audio, 3D, rich media) embedded as annotations must be tagged in the structure tree. Without tagging, assistive technology cannot discover or navigate to the media content.
     
-    Multimedia content (video, audio, 3D, rich media) embedded as annotations must be tagged in the structure tree. Without tagging, assistive technology cannot discover or navigate to the media content.
+    <strong>What needs to change</strong>: All multimedia annotations must be included in the document's tag structure.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In the Tags panel, use Find → Unmarked Annotations to locate untagged media. Tag each one by creating a structure element.
     
-    All multimedia annotations must be included in the document's tag structure.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Embedded media in Word should carry over to PDF tags. Verify in Acrobat.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Ensure media objects are in the document structure. Verify tags in Acrobat post-export.
     
-      1. In the Tags panel, use Find → Unmarked Annotations to locate untagged media. Tag each one by creating a structure element.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Embedded media in Word should carry over to PDF tags. Verify in Acrobat.
-    
-    How to fix in Adobe InDesign
-    
-      1. Ensure media objects are in the document structure. Verify tags in Acrobat post-export.
-    
-    Before
-    
-    Before: Screen annotation not in structure tree
+    <strong>Before: Screen annotation not in structure tree</strong>:
+    ```
     Video player is invisible to screen readers.
+    ```
     
-    After
-    
-    After: Screen annotation tagged with text alternative
+    <strong>After: Screen annotation tagged with text alternative</strong>:
+    ```
     Screen reader can find and describe the video content.
+    ```
     
     Multimedia annotations need OBJR references in the structure tree.
     
-    Learn more: https://www.w3.org/TR/WCAG22/#audio-only-and-video-only-prerecorded
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/TR/WCAG22/#audio-only-and-video-only-prerecorded">https://www.w3.org/TR/WCAG22/#audio-only-and-video-only-prerecorded</a>
 
 pdf-remediation-PdfErrMediaClipAnnotationMissingAlt =
-    Why it matters
+    <strong>Why it matters</strong>: Embedded media (video, audio, interactive content) without text descriptions are completely inaccessible to users who cannot see or hear the media content.
     
-    Embedded media (video, audio, interactive content) without text descriptions are completely inaccessible to users who cannot see or hear the media content.
+    <strong>What needs to change</strong>: Every media clip annotation (Screen, RichMedia, Sound, Movie) must have a /Contents description.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Right-click the media annotation → Properties → set the Description field.
     
-    Every media clip annotation (Screen, RichMedia, Sound, Movie) must have a /Contents description.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Not applicable — media clips are typically added in the PDF workflow.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Add alt text to media objects via Object > Object Export Options before PDF export.
     
-      1. Right-click the media annotation → Properties → set the Description field.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Not applicable — media clips are typically added in the PDF workflow.
-    
-    How to fix in Adobe InDesign
-    
-      1. Add alt text to media objects via Object > Object Export Options before PDF export.
-    
-    Before
-    
-    Before: Video annotation with no /Contents
+    <strong>Before: Video annotation with no /Contents</strong>:
+    ```
     screen reader says nothing about the video.
+    ```
     
-    After
-    
-    After: Video annotation with /Contents 'Product demo video'
+    <strong>After: Video annotation with /Contents 'Product demo video'</strong>:
+    ```
     screen reader announces the description.
+    ```
     
     /Contents provides a text description for media that AT can announce.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13</a>
 
 pdf-remediation-PdfErrMediaClipAltMissing =
-    Why it matters
+    <strong>Why it matters</strong>: Embedded media (audio, video) in a PDF needs alternative text so users who cannot perceive the media understand its content. Screen reader users rely on alt text to know what the media contains and whether it is relevant.
     
-    Embedded media (audio, video) in a PDF needs alternative text so users who cannot perceive the media understand its content. Screen reader users rely on alt text to know what the media contains and whether it is relevant.
+    <strong>What needs to change</strong>: Media clip annotations (RichMedia, Screen) must include an /Alt entry providing a text description of the media content. This is required by the Matterhorn Protocol.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Select the multimedia annotation in the document.
+    2. Right-click and choose Properties.
+    3. In the General tab, add descriptive alt text in the Description/Contents field.
+    4. The alt text should describe the media content (e.g., 'Video: Annual report presentation with CEO remarks').
     
-    Media clip annotations (RichMedia, Screen) must include an /Alt entry providing a text description of the media content. This is required by the Matterhorn Protocol.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not natively embed rich media in PDFs.
+    2. If media was inserted via a plugin, ensure alt text is added before export.
+    3. Add alt text to the media object in Word: right-click > Edit Alt Text.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the media object in the layout.
+    2. Open Object > Object Export Options > Alt Text tab.
+    3. Enter a description of the media content.
+    4. Re-export with 'Create Tagged PDF' checked.
     
-      1. Select the multimedia annotation in the document.
-      2. Right-click and choose Properties.
-      3. In the General tab, add descriptive alt text in the Description/Contents field.
-      4. The alt text should describe the media content (e.g., 'Video: Annual report presentation with CEO remarks').
-    
-    How to fix in Microsoft Word
-    
-      1. Word does not natively embed rich media in PDFs.
-      2. If media was inserted via a plugin, ensure alt text is added before export.
-      3. Add alt text to the media object in Word: right-click > Edit Alt Text.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the media object in the layout.
-      2. Open Object > Object Export Options > Alt Text tab.
-      3. Enter a description of the media content.
-      4. Re-export with 'Create Tagged PDF' checked.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrMediaClipContentTypeMissing =
-    Why it matters
+    <strong>Why it matters</strong>: The /CT (content type) key tells PDF readers and assistive technology what type of media is embedded (e.g., video/mp4, audio/mpeg). Without it, the viewer may not be able to play the media, and screen readers cannot announce the media type.
     
-    The /CT (content type) key tells PDF readers and assistive technology what type of media is embedded (e.g., video/mp4, audio/mpeg). Without it, the viewer may not be able to play the media, and screen readers cannot announce the media type.
+    <strong>What needs to change</strong>: Media clip annotations must include a /CT entry with the MIME content type. This is required by the Matterhorn Protocol for media accessibility.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Select the multimedia annotation in the document.
+    2. Open the annotation's properties through Edit > Preflight or a PDF editor.
+    3. Add or correct the /CT entry with the appropriate MIME type (e.g., 'video/mp4', 'audio/mpeg').
+    4. Save the document.
     
-    Media clip annotations must include a /CT entry with the MIME content type. This is required by the Matterhorn Protocol for media accessibility.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not typically embed rich media directly.
+    2. If media was inserted, ensure the source file has a standard format (MP4, MP3).
+    3. The content type is usually inferred from the file extension during export.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use standard media formats (MP4, MP3) when placing media files.
+    2. InDesign sets the content type automatically for recognized formats.
+    3. If the issue persists, correct it in Acrobat Pro post-export.
     
-      1. Select the multimedia annotation in the document.
-      2. Open the annotation's properties through Edit > Preflight or a PDF editor.
-      3. Add or correct the /CT entry with the appropriate MIME type (e.g., 'video/mp4', 'audio/mpeg').
-      4. Save the document.
-    
-    How to fix in Microsoft Word
-    
-      1. Word does not typically embed rich media directly.
-      2. If media was inserted, ensure the source file has a standard format (MP4, MP3).
-      3. The content type is usually inferred from the file extension during export.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use standard media formats (MP4, MP3) when placing media files.
-      2. InDesign sets the content type automatically for recognized formats.
-      3. If the issue persists, correct it in Acrobat Pro post-export.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrAnnotationTabOrderInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Pages with annotations must have a /Tabs entry specifying the tab order. Without it, keyboard users cannot predictably navigate between annotations using Tab.
     
-    Pages with annotations must have a /Tabs entry specifying the tab order. Without it, keyboard users cannot predictably navigate between annotations using Tab.
+    <strong>What needs to change</strong>: Set /Tabs = /S (structure order) on every page that contains annotations.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Accessibility > Full Check will flag this. Fix via Document Properties > Advanced > Tab Order = Use Document Structure.
     
-    Set /Tabs = /S (structure order) on every page that contains annotations.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Save as tagged PDF from Word — tab order is typically set automatically.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Export with 'Use Structure for Tab Order' checked in accessibility options.
     
-      1. Accessibility > Full Check will flag this. Fix via Document Properties > Advanced > Tab Order = Use Document Structure.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Save as tagged PDF from Word — tab order is typically set automatically.
-    
-    How to fix in Adobe InDesign
-    
-      1. Export with 'Use Structure for Tab Order' checked in accessibility options.
-    
-    Before
-    
-    Before: Page 3 has 5 link annotations but no /Tabs key
+    <strong>Before: Page 3 has 5 link annotations but no /Tabs key</strong>:
+    ```
     Tab key order is unpredictable.
+    ```
     
-    After
-    
-    After: Page 3 has /Tabs = /S
+    <strong>After: Page 3 has /Tabs = /S</strong>:
+    ```
     Tab key follows document structure order.
+    ```
     
     /Tabs = /S ensures tab order matches the reading order from the structure tree.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3</a>
 
 pdf-remediation-PdfErrNonStandardAnnotationSubtype =
-    Why it matters
+    <strong>Why it matters</strong>: PDF readers and assistive technologies are designed to handle standard annotation subtypes (Link, Widget, Text, Highlight, etc.). Non-standard subtypes may be ignored entirely, causing users to miss interactive content or important notes.
     
-    PDF readers and assistive technologies are designed to handle standard annotation subtypes (Link, Widget, Text, Highlight, etc.). Non-standard subtypes may be ignored entirely, causing users to miss interactive content or important notes.
+    <strong>What needs to change</strong>: All annotations must use subtypes defined in the PDF specification (ISO 32000). Custom or proprietary annotation subtypes are not permitted in PDF/UA-conforming documents. The Matterhorn Protocol requires only standard subtypes.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open Edit > Preflight and run the PDF/UA compliance check to identify non-standard annotations.
+    2. In the Content panel, locate the annotations with non-standard subtypes.
+    3. Replace non-standard annotations with equivalent standard types (e.g., use /Text for notes, /Link for hyperlinks).
+    4. If the annotation serves no accessibility purpose, convert it to an artifact.
     
-    All annotations must use subtypes defined in the PDF specification (ISO 32000). Custom or proprietary annotation subtypes are not permitted in PDF/UA-conforming documents. The Matterhorn Protocol requires only standard subtypes.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word produces only standard annotation types (links, form fields, comments).
+    2. If non-standard annotations appear, they were likely added by a third-party tool.
+    3. Re-export from Word to get a clean PDF with only standard annotations.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign produces standard annotation types when using its built-in interactive features.
+    2. Avoid third-party plugins that inject custom annotation types.
+    3. Re-export to PDF to ensure only standard annotations are included.
     
-      1. Open Edit > Preflight and run the PDF/UA compliance check to identify non-standard annotations.
-      2. In the Content panel, locate the annotations with non-standard subtypes.
-      3. Replace non-standard annotations with equivalent standard types (e.g., use /Text for notes, /Link for hyperlinks).
-      4. If the annotation serves no accessibility purpose, convert it to an artifact.
-    
-    How to fix in Microsoft Word
-    
-      1. Word produces only standard annotation types (links, form fields, comments).
-      2. If non-standard annotations appear, they were likely added by a third-party tool.
-      3. Re-export from Word to get a clean PDF with only standard annotations.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign produces standard annotation types when using its built-in interactive features.
-      2. Avoid third-party plugins that inject custom annotation types.
-      3. Re-export to PDF to ensure only standard annotations are included.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrTrapNetAnnotationPresent =
-    Why it matters
+    <strong>Why it matters</strong>: TrapNet annotations are pre-press production artifacts used for color trapping. They are prohibited in PDF/UA because they serve no user-facing purpose and can confuse assistive technology.
     
-    TrapNet annotations are pre-press production artifacts used for color trapping. They are prohibited in PDF/UA because they serve no user-facing purpose and can confuse assistive technology.
+    <strong>What needs to change</strong>: Remove all TrapNet annotations from the document before publishing.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Preflight → remove TrapNet annotations, or use Print Production → Flattener Preview.
     
-    Remove all TrapNet annotations from the document before publishing.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Not applicable — TrapNet is added by pre-press workflows.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Export without trap presets, or remove TrapNet annotations in Acrobat post-export.
     
-      1. Use Preflight → remove TrapNet annotations, or use Print Production → Flattener Preview.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Not applicable — TrapNet is added by pre-press workflows.
-    
-    How to fix in Adobe InDesign
-    
-      1. Export without trap presets, or remove TrapNet annotations in Acrobat post-export.
-    
-    Before
-    
-    Before: PDF contains TrapNet annotation on page 3
+    <strong>Before: PDF contains TrapNet annotation on page 3</strong>:
+    ```
     fails PDF/UA validation.
+    ```
     
-    After
-    
-    After: TrapNet annotation removed
+    <strong>After: TrapNet annotation removed</strong>:
+    ```
     document passes this check.
+    ```
     
     TrapNet is a pre-press artifact with no accessibility purpose.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrPrinterMarkAnnotationInStructure =
-    Why it matters
+    <strong>Why it matters</strong>: PrinterMark annotations (crop marks, registration marks, color bars) are pre-press production marks. If included in the structure tree, they appear as content to screen readers, confusing users.
     
-    PrinterMark annotations (crop marks, registration marks, color bars) are pre-press production marks. If included in the structure tree, they appear as content to screen readers, confusing users.
+    <strong>What needs to change</strong>: PrinterMark annotations should be marked as artifacts, not tagged in the structure tree.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Tags panel, find any PrinterMark references and delete them. Mark as Artifact instead.
     
-    PrinterMark annotations should be marked as artifacts, not tagged in the structure tree.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Not applicable — printer marks are added in the PDF/pre-press workflow.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. In Export to PDF, under Marks and Bleeds, do not include printer marks, or mark them as artifacts.
     
-      1. In Tags panel, find any PrinterMark references and delete them. Mark as Artifact instead.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Not applicable — printer marks are added in the PDF/pre-press workflow.
-    
-    How to fix in Adobe InDesign
-    
-      1. In Export to PDF, under Marks and Bleeds, do not include printer marks, or mark them as artifacts.
-    
-    Before
-    
-    Before: Crop marks tagged in structure tree
+    <strong>Before: Crop marks tagged in structure tree</strong>:
+    ```
     screen reader announces mysterious marks.
+    ```
     
-    After
-    
-    After: Crop marks marked as artifacts
+    <strong>After: Crop marks marked as artifacts</strong>:
+    ```
     screen reader ignores them.
+    ```
     
     Production marks should be artifacts, not tagged content.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrFileAttachmentAnnotationInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: File attachment annotations embed files within the PDF. Without proper structure (description, filename, relationship), assistive technology users cannot discover or understand attached files. The attachment may be completely invisible to screen readers.
     
-    File attachment annotations embed files within the PDF. Without proper structure (description, filename, relationship), assistive technology users cannot discover or understand attached files. The attachment may be completely invisible to screen readers.
+    <strong>What needs to change</strong>: File attachment annotations must have a /Contents entry describing the attachment, a valid /FS (file specification) with both /F and /UF (Unicode filename) keys, and be tagged in the structure tree. This ensures all users can access attachments.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Attachments panel (View > Show/Hide > Navigation Panes > Attachments).
+    2. For each attachment, right-click and choose Properties.
+    3. Add a Description that explains the attachment's purpose.
+    4. Ensure the filename is present and meaningful.
+    5. In the Tags panel, verify the attachment annotation is tagged (not an artifact).
     
-    File attachment annotations must have a /Contents entry describing the attachment, a valid /FS (file specification) with both /F and /UF (Unicode filename) keys, and be tagged in the structure tree. This ensures all users can access attachments.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not natively create PDF file attachments.
+    2. If embedded objects are present, add alt text: right-click > Edit Alt Text.
+    3. File attachments typically need to be added and configured in Acrobat post-export.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign does not natively create PDF file attachments.
+    2. Add file attachments in Acrobat Pro after export.
+    3. Ensure each attachment has a description and proper file specification.
     
-      1. Open the Attachments panel (View > Show/Hide > Navigation Panes > Attachments).
-      2. For each attachment, right-click and choose Properties.
-      3. Add a Description that explains the attachment's purpose.
-      4. Ensure the filename is present and meaningful.
-      5. In the Tags panel, verify the attachment annotation is tagged (not an artifact).
-    
-    How to fix in Microsoft Word
-    
-      1. Word does not natively create PDF file attachments.
-      2. If embedded objects are present, add alt text: right-click > Edit Alt Text.
-      3. File attachments typically need to be added and configured in Acrobat post-export.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign does not natively create PDF file attachments.
-      2. Add file attachments in Acrobat Pro after export.
-      3. Ensure each attachment has a description and proper file specification.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfWarnLinkAltTextNotDescriptive =
-    Why it matters
+    <strong>Why it matters</strong>: When link text is a raw URL like 'https://www.cnib.ca/en/donate', screen readers spell out every character. Users hear a long string of characters instead of a meaningful description. This is one of the most irritating accessibility issues.
     
-    When link text is a raw URL like 'https://www.cnib.ca/en/donate', screen readers spell out every character. Users hear a long string of characters instead of a meaningful description. This is one of the most irritating accessibility issues.
+    <strong>What needs to change</strong>: Link text should describe the destination or action, not display the URL. If the visible text must be a URL, the structure element should have /Alt text providing a descriptive alternative.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and find the <Link> tags with URL-only text.
+    2. Right-click > Properties.
+    3. Add Alternate Text that describes the link destination: e.g., 'Donate to CNIB'.
+    4. Alternatively, edit the visible text in the content to be descriptive.
     
-    Link text should describe the destination or action, not display the URL. If the visible text must be a URL, the structure element should have /Alt text providing a descriptive alternative.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Right-click the hyperlink > Edit Hyperlink.
+    2. Change 'Text to display' from the URL to a descriptive phrase.
+    3. Example: change 'https://www.cnib.ca/donate' to 'Donate to CNIB'.
+    4. If the URL must be visible, add a ScreenTip via the ScreenTip button in the hyperlink dialog.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the link text and change it to a descriptive phrase.
+    2. Use the Hyperlinks panel to verify the link URL is still correct.
     
-      1. Open the Tags panel and find the <Link> tags with URL-only text.
-      2. Right-click > Properties.
-      3. Add Alternate Text that describes the link destination: e.g., 'Donate to CNIB'.
-      4. Alternatively, edit the visible text in the content to be descriptive.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Right-click the hyperlink > Edit Hyperlink.
-      2. Change 'Text to display' from the URL to a descriptive phrase.
-      3. Example: change 'https://www.cnib.ca/donate' to 'Donate to CNIB'.
-      4. If the URL must be visible, add a ScreenTip via the ScreenTip button in the hyperlink dialog.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the link text and change it to a descriptive phrase.
-      2. Use the Hyperlinks panel to verify the link URL is still correct.
-    
-    Before
-    
-    URL as link text
+    <strong>URL as link text</strong>:
+    ```
     Link text: 'https://www.cnib.ca/en/programs-and-services'
     
     Screen reader: 'Link, h-t-t-p-s-colon-slash-slash-w-w-w-dot...'
     (spells out the entire URL)
+    ```
     
-    After
-    
-    Descriptive link text
+    <strong>Descriptive link text</strong>:
+    ```
     Link text: 'CNIB Programs and Services'
     URL target: https://www.cnib.ca/en/programs-and-services
     
     Screen reader: 'Link, CNIB Programs and Services'
+    ```
     
     If you must display the URL (e.g., in print-oriented documents), keep it short and add alt text on the Link structure element.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF13</a>
 
 pdf-remediation-PdfWarnBookmarksMissing =
-    Why it matters
+    <strong>Why it matters</strong>: Bookmarks (also called outlines) let users jump directly to sections in longer documents. Without bookmarks, screen reader users must read through the entire document sequentially to find the section they need. Sighted users also benefit from the navigation panel.
     
-    Bookmarks (also called outlines) let users jump directly to sections in longer documents. Without bookmarks, screen reader users must read through the entire document sequentially to find the section they need. Sighted users also benefit from the navigation panel.
+    <strong>What needs to change</strong>: PDF/UA requires that documents of more than a few pages provide bookmarks. The /Outlines dictionary in the document catalog should contain entries corresponding to the document's heading structure.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Bookmarks panel (View > Show/Hide > Navigation Panes > Bookmarks).
+    2. If no bookmarks exist, use Acrobat's auto-generate feature: open the Tags panel, select the structure root, then use Options > New Bookmarks From Structure.
+    3. Alternatively, navigate to each heading, select its text, and press Ctrl+B (Cmd+B) to add a bookmark.
+    4. Organize bookmarks hierarchically to match the heading structure.
     
-    PDF/UA requires that documents of more than a few pages provide bookmarks. The /Outlines dictionary in the document catalog should contain entries corresponding to the document's heading structure.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure all headings use Word's built-in Heading styles (Heading 1, Heading 2, etc.).
+    2. When exporting to PDF (File > Save As > PDF), click Options.
+    3. Check 'Create bookmarks using: Headings'.
+    4. Word will automatically generate bookmarks from heading styles.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Open the Bookmarks panel (Window > Interactive > Bookmarks).
+    2. Create bookmarks manually or use Table of Contents styles.
+    3. When exporting to PDF, ensure 'Bookmarks' is checked in the General tab.
     
-      1. Open the Bookmarks panel (View > Show/Hide > Navigation Panes > Bookmarks).
-      2. If no bookmarks exist, use Acrobat's auto-generate feature: open the Tags panel, select the structure root, then use Options > New Bookmarks From Structure.
-      3. Alternatively, navigate to each heading, select its text, and press Ctrl+B (Cmd+B) to add a bookmark.
-      4. Organize bookmarks hierarchically to match the heading structure.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure all headings use Word's built-in Heading styles (Heading 1, Heading 2, etc.).
-      2. When exporting to PDF (File > Save As > PDF), click Options.
-      3. Check 'Create bookmarks using: Headings'.
-      4. Word will automatically generate bookmarks from heading styles.
-    
-    How to fix in Adobe InDesign
-    
-      1. Open the Bookmarks panel (Window > Interactive > Bookmarks).
-      2. Create bookmarks manually or use Table of Contents styles.
-      3. When exporting to PDF, ensure 'Bookmarks' is checked in the General tab.
-    
-    Before
-    
-    No bookmarks in a long document
+    <strong>No bookmarks in a long document</strong>:
+    ```
     Document: 28-page annual report
     Bookmarks panel: (empty)
     
     Screen reader user must read all 28 pages sequentially
     to find the financial summary section.
+    ```
     
-    After
-    
-    Bookmarks mirror heading structure
+    <strong>Bookmarks mirror heading structure</strong>:
+    ```
     Bookmarks panel:
       + Cover Page
       + Message from the CEO
@@ -2571,148 +2703,142 @@ pdf-remediation-PdfWarnBookmarksMissing =
       + Looking Ahead
     
     User jumps directly to 'Financial Summary' in one click.
+    ```
     
     Bookmarks provide a table of contents for PDF navigation. They should match the document's heading hierarchy and use descriptive names rather than generic labels like 'Section 1'.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF2
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF2">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF2</a>
 
 pdf-remediation-PdfWarnCrossLanguageLinksUnverified =
-    Why it matters
+    <strong>Why it matters</strong>: When a link leads to content in a different language than the document, users should be warned before following it. A French-speaking user clicking a link expecting French content but arriving at an English page has a poor experience.
     
-    When a link leads to content in a different language than the document, users should be warned before following it. A French-speaking user clicking a link expecting French content but arriving at an English page has a poor experience.
+    <strong>What needs to change</strong>: Links to resources in a language different from the document's default language should include a visual and accessible indication of the target language (e.g., '(en anglais)' or '(in French)').
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Find links that point to resources in a different language.
+    2. Edit the link text to include a language indicator: e.g., 'Annual Report (in English)'.
+    3. Set the /Lang attribute on the language indicator text to the document's language (since the indicator text IS in the document's language).
     
-    Links to resources in a language different from the document's default language should include a visual and accessible indication of the target language (e.g., '(en anglais)' or '(in French)').
+    <strong>Microsoft Word (source document)</strong>:
+    1. Add a language indicator after link text that points to a different language.
+    2. Example: 'Rapport annuel (in English)' or 'Annual Report (en français)'.
+    3. Use parentheses to set the indicator apart from the link text.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Edit link text to include language indicators where the target is in a different language.
     
-      1. Find links that point to resources in a different language.
-      2. Edit the link text to include a language indicator: e.g., 'Annual Report (in English)'.
-      3. Set the /Lang attribute on the language indicator text to the document's language (since the indicator text IS in the document's language).
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Add a language indicator after link text that points to a different language.
-      2. Example: 'Rapport annuel (in English)' or 'Annual Report (en français)'.
-      3. Use parentheses to set the indicator apart from the link text.
-    
-    How to fix in Adobe InDesign
-    
-      1. Edit link text to include language indicators where the target is in a different language.
-    
-    Before
-    
-    No language warning on cross-language link
+    <strong>No language warning on cross-language link</strong>:
+    ```
     In a French document:
       <Link> 'Privacy Policy'
       URL: https://example.com/en/privacy
     
     User expects French content but gets English page.
+    ```
     
-    After
-    
-    Language of target indicated
+    <strong>Language of target indicated</strong>:
+    ```
     In a French document:
       <Link> 'Privacy Policy (en anglais)'
       URL: https://example.com/en/privacy
     
     User knows the target is in English before clicking.
+    ```
     
     This is especially important for Canadian bilingual documents where some links may go to English-only or French-only pages.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/general/G197
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/general/G197">https://www.w3.org/WAI/WCAG22/Techniques/general/G197</a>
 
 pdf-remediation-PdfErrCrossLanguageLinksUnidentified =
-    Why it matters
+    <strong>Why it matters</strong>: When a link leads to content in a different language than the document, users should be warned before following it. A French-speaking user clicking a link expecting French content but arriving at an English page has a poor experience.
     
-    When a link leads to content in a different language than the document, users should be warned before following it. A French-speaking user clicking a link expecting French content but arriving at an English page has a poor experience.
+    <strong>What needs to change</strong>: Links to resources in a language different from the document's default language should include a visual and accessible indication of the target language (e.g., '(en anglais)' or '(in French)').
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Find links that point to resources in a different language.
+    2. Edit the link text to include a language indicator: e.g., 'Annual Report (in English)'.
+    3. Set the /Lang attribute on the language indicator text to the document's language (since the indicator text IS in the document's language).
     
-    Links to resources in a language different from the document's default language should include a visual and accessible indication of the target language (e.g., '(en anglais)' or '(in French)').
+    <strong>Microsoft Word (source document)</strong>:
+    1. Add a language indicator after link text that points to a different language.
+    2. Example: 'Rapport annuel (in English)' or 'Annual Report (en français)'.
+    3. Use parentheses to set the indicator apart from the link text.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Edit link text to include language indicators where the target is in a different language.
     
-      1. Find links that point to resources in a different language.
-      2. Edit the link text to include a language indicator: e.g., 'Annual Report (in English)'.
-      3. Set the /Lang attribute on the language indicator text to the document's language (since the indicator text IS in the document's language).
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Add a language indicator after link text that points to a different language.
-      2. Example: 'Rapport annuel (in English)' or 'Annual Report (en français)'.
-      3. Use parentheses to set the indicator apart from the link text.
-    
-    How to fix in Adobe InDesign
-    
-      1. Edit link text to include language indicators where the target is in a different language.
-    
-    Before
-    
-    No language warning on cross-language link
+    <strong>No language warning on cross-language link</strong>:
+    ```
     In a French document:
       <Link> 'Privacy Policy'
       URL: https://example.com/en/privacy
     
     User expects French content but gets English page.
+    ```
     
-    After
-    
-    Language of target indicated
+    <strong>Language of target indicated</strong>:
+    ```
     In a French document:
       <Link> 'Privacy Policy (en anglais)'
       URL: https://example.com/en/privacy
     
     User knows the target is in English before clicking.
+    ```
     
     This is especially important for Canadian bilingual documents where some links may go to English-only or French-only pages.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/general/G197
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/general/G197">https://www.w3.org/WAI/WCAG22/Techniques/general/G197</a>
 
 pdf-remediation-PdfErrListStructureInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Screen readers announce list structure to help users understand grouped content: 'List with 5 items'. If lists are improperly structured (missing LI, Lbl, or LBody), screen readers may not announce the list at all, or may read items incorrectly.
     
-    Screen readers announce list structure to help users understand grouped content: 'List with 5 items'. If lists are improperly structured (missing LI, Lbl, or LBody), screen readers may not announce the list at all, or may read items incorrectly.
+    <strong>What needs to change</strong>: PDF lists must follow the structure: L (list) > LI (list item) > Lbl (label/bullet) + LBody (content). The L element may only contain LI children. Each LI must contain Lbl and/or LBody.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and find the L (list) tag.
+    2. Ensure every child of L is an LI tag.
+    3. Inside each LI, ensure there is a Lbl (for the bullet/number) and LBody (for the content).
+    4. If tags are wrong, right-click > Properties and change the tag type.
+    5. For nested lists, the inner L should be inside an LBody of the parent LI.
     
-    PDF lists must follow the structure: L (list) > LI (list item) > Lbl (label/bullet) + LBody (content). The L element may only contain LI children. Each LI must contain Lbl and/or LBody.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's built-in bullet or numbered list features (Home > Bullets or Numbering).
+    2. Do not simulate lists with manual dashes or numbers followed by tabs.
+    3. Word automatically creates proper L > LI > Lbl + LBody structure when using built-in lists.
+    4. Re-export to PDF after fixing.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use InDesign's built-in Lists feature (Type > Bulleted & Numbered Lists).
+    2. In the Tags panel, map list items to the L, LI, Lbl, and LBody tags.
+    3. Check the exported PDF in Acrobat to verify proper structure.
     
-      1. Open the Tags panel and find the L (list) tag.
-      2. Ensure every child of L is an LI tag.
-      3. Inside each LI, ensure there is a Lbl (for the bullet/number) and LBody (for the content).
-      4. If tags are wrong, right-click > Properties and change the tag type.
-      5. For nested lists, the inner L should be inside an LBody of the parent LI.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use Word's built-in bullet or numbered list features (Home > Bullets or Numbering).
-      2. Do not simulate lists with manual dashes or numbers followed by tabs.
-      3. Word automatically creates proper L > LI > Lbl + LBody structure when using built-in lists.
-      4. Re-export to PDF after fixing.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use InDesign's built-in Lists feature (Type > Bulleted & Numbered Lists).
-      2. In the Tags panel, map list items to the L, LI, Lbl, and LBody tags.
-      3. Check the exported PDF in Acrobat to verify proper structure.
-    
-    Before
-    
-    Malformed list structure
+    <strong>Malformed list structure</strong>:
+    ```
     <L>
       <P>• First item</P>     ← Should be LI > Lbl + LBody
       <P>• Second item</P>
     
     Screen reader: reads as plain paragraphs,
     no 'List with 2 items' announcement.
+    ```
     
-    After
-    
-    Correct list structure
+    <strong>Correct list structure</strong>:
+    ```
     <L>
       <LI>
         <Lbl>•</Lbl>
@@ -2724,93 +2850,89 @@ pdf-remediation-PdfErrListStructureInvalid =
       </LI>
     
     Screen reader: 'List with 2 items. Bullet, First item. Bullet, Second item.'
+    ```
     
     The three-level L > LI > Lbl/LBody structure gives screen readers enough information to announce lists correctly and let users skip between items.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21</a>
 
 pdf-remediation-PdfErrEmptyList =
-    Why it matters
+    <strong>Why it matters</strong>: Empty list elements with no list items are confusing artifacts. Screen readers announce 'List with 0 items' which interrupts the reading flow and confuses users about the document structure.
     
-    Empty list elements with no list items are confusing artifacts. Screen readers announce 'List with 0 items' which interrupts the reading flow and confuses users about the document structure.
+    <strong>What needs to change</strong>: Every L (list) element in the structure tree should contain at least one LI (list item) child. Empty lists should be removed.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the empty L element.
+    2. If the list is unnecessary, delete it from the Tags panel.
+    3. If content should be in the list, add LI child tags with Lbl and LBody.
+    4. Re-run the accessibility checker to verify.
     
-    Every L (list) element in the structure tree should contain at least one LI (list item) child. Empty lists should be removed.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Find the empty list in your Word document.
+    2. If it's an artifact, remove it.
+    3. If it should contain items, add the missing content using built-in list features.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Locate the empty list in your InDesign layout.
+    2. Delete it if unused, or add content if it should have items.
+    3. Re-export to PDF and verify in Acrobat's Tags panel.
     
-      1. Open the Tags panel and locate the empty L element.
-      2. If the list is unnecessary, delete it from the Tags panel.
-      3. If content should be in the list, add LI child tags with Lbl and LBody.
-      4. Re-run the accessibility checker to verify.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Find the empty list in your Word document.
-      2. If it's an artifact, remove it.
-      3. If it should contain items, add the missing content using built-in list features.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Locate the empty list in your InDesign layout.
-      2. Delete it if unused, or add content if it should have items.
-      3. Re-export to PDF and verify in Acrobat's Tags panel.
-    
-    Before
-    
-    Empty list element
+    <strong>Empty list element</strong>:
+    ```
     <L>
       (no children)
     </L>
     
     Screen reader: 'List with 0 items.'
     User wonders what content they're missing.
+    ```
     
-    After
-    
-    Empty list removed
+    <strong>Empty list removed</strong>:
+    ```
     (L element deleted from structure tree)
     
     Screen reader: continues to next content seamlessly.
+    ```
     
     Removing the empty list eliminates a confusing announcement and keeps the document structure clean.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21</a>
 
 pdf-remediation-PdfWarnListNestingDeep =
-    Why it matters
+    <strong>Why it matters</strong>: Nested lists (sub-lists) must be placed inside the LBody of a parent LI element. When a nested L is placed directly inside L or directly inside LI (without LBody), screen readers cannot correctly convey the list hierarchy to users.
     
-    Nested lists (sub-lists) must be placed inside the LBody of a parent LI element. When a nested L is placed directly inside L or directly inside LI (without LBody), screen readers cannot correctly convey the list hierarchy to users.
+    <strong>What needs to change</strong>: A nested list (L) must appear inside the LBody of its parent list item: L > LI > LBody > L > LI > ... Placing a nested L directly inside L or directly inside LI breaks the expected hierarchy.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and find the incorrectly nested L element.
+    2. If L is a direct child of another L, move it inside the LBody of the appropriate LI.
+    3. If L is a direct child of LI (without LBody), create an LBody tag inside the LI first, then move the nested L into it.
+    4. Verify the structure: L > LI > LBody > L > LI > Lbl + LBody.
     
-    A nested list (L) must appear inside the LBody of its parent list item: L > LI > LBody > L > LI > ... Placing a nested L directly inside L or directly inside LI breaks the expected hierarchy.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's built-in list indentation (Tab key) to create sub-lists.
+    2. Do not manually indent text to simulate nested lists.
+    3. Word automatically creates proper nested list structure when using built-in features.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use InDesign's nested list features to create sub-lists.
+    2. In the Tags panel, ensure nested L elements are inside LBody tags.
+    3. Re-export to PDF and verify in Acrobat's Tags panel.
     
-      1. Open the Tags panel and find the incorrectly nested L element.
-      2. If L is a direct child of another L, move it inside the LBody of the appropriate LI.
-      3. If L is a direct child of LI (without LBody), create an LBody tag inside the LI first, then move the nested L into it.
-      4. Verify the structure: L > LI > LBody > L > LI > Lbl + LBody.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use Word's built-in list indentation (Tab key) to create sub-lists.
-      2. Do not manually indent text to simulate nested lists.
-      3. Word automatically creates proper nested list structure when using built-in features.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use InDesign's nested list features to create sub-lists.
-      2. In the Tags panel, ensure nested L elements are inside LBody tags.
-      3. Re-export to PDF and verify in Acrobat's Tags panel.
-    
-    Before
-    
-    Incorrectly nested list
+    <strong>Incorrectly nested list</strong>:
+    ```
     <L>
       <LI>
         <Lbl>1.</Lbl>
@@ -2822,10 +2944,10 @@ pdf-remediation-PdfWarnListNestingDeep =
     </L>
     
     Screen reader may not announce this as a sub-list.
+    ```
     
-    After
-    
-    Correctly nested list
+    <strong>Correctly nested list</strong>:
+    ```
     <L>
       <LI>
         <Lbl>1.</Lbl>
@@ -2839,98 +2961,256 @@ pdf-remediation-PdfWarnListNestingDeep =
     </L>
     
     Screen reader: 'List with 1 item. 1. First item. List with ... items.'
+    ```
     
     Placing nested lists inside LBody preserves the parent-child relationship so screen readers can announce list depth correctly.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21</a>
 
 pdf-remediation-PdfWarnListItemLabelsInconsistent =
-    Why it matters
+    <strong>Why it matters</strong>: The Lbl (label) element inside a list item provides the bullet character, number, or letter marker. Without Lbl, screen readers cannot distinguish the marker from the content, reducing navigability.
     
-    The Lbl (label) element inside a list item provides the bullet character, number, or letter marker. Without Lbl, screen readers cannot distinguish the marker from the content, reducing navigability.
+    <strong>What needs to change</strong>: Each LI (list item) should contain both a Lbl (label/marker) and LBody (content) child. The Lbl holds the bullet, number, or letter; LBody holds the item text. This two-part structure lets screen readers announce markers separately.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and find LI elements that lack a Lbl child.
+    2. Inside the LI, create a new Lbl tag.
+    3. Move or copy the bullet/number character into the Lbl tag.
+    4. Ensure the remaining content is inside a LBody tag.
     
-    Each LI (list item) should contain both a Lbl (label/marker) and LBody (content) child. The Lbl holds the bullet, number, or letter; LBody holds the item text. This two-part structure lets screen readers announce markers separately.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's built-in bullet or numbered list features.
+    2. Built-in lists automatically generate Lbl + LBody structure.
+    3. Avoid manually typing bullet characters (•, -, *) at the start of paragraphs.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use InDesign's Bulleted & Numbered Lists feature.
+    2. Map list markers to Lbl tags in the Tags panel.
+    3. Re-export to PDF and verify in Acrobat's Tags panel.
     
-      1. Open the Tags panel and find LI elements that lack a Lbl child.
-      2. Inside the LI, create a new Lbl tag.
-      3. Move or copy the bullet/number character into the Lbl tag.
-      4. Ensure the remaining content is inside a LBody tag.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Use Word's built-in bullet or numbered list features.
-      2. Built-in lists automatically generate Lbl + LBody structure.
-      3. Avoid manually typing bullet characters (•, -, *) at the start of paragraphs.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use InDesign's Bulleted & Numbered Lists feature.
-      2. Map list markers to Lbl tags in the Tags panel.
-      3. Re-export to PDF and verify in Acrobat's Tags panel.
-    
-    Before
-    
-    List item without Lbl
+    <strong>List item without Lbl</strong>:
+    ```
     <LI>
       <LBody>• First item</LBody>  ← Bullet mixed into content
     </LI>
     
     Screen reader: 'bullet First item' (reads bullet as text).
+    ```
     
-    After
-    
-    List item with Lbl
+    <strong>List item with Lbl</strong>:
+    ```
     <LI>
       <Lbl>•</Lbl>                ← Bullet in its own element
       <LBody>First item</LBody>
     </LI>
     
     Screen reader: 'Bullet, First item' (properly separated).
+    ```
     
     Separating the marker into Lbl lets screen readers announce it distinctly and allows users to skip markers when navigating items.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21</a>
+
+pdf-remediation-PdfWarnUntaggedListsDetected =
+    <strong>Why it matters</strong>: Sequences of paragraphs that begin with bullets (•, -, *), numbers (1., 2.), or letters (a., b.) are visually presented as lists but tagged as disconnected P elements. Screen readers read each line as a separate paragraph with no list context — users cannot navigate between items, jump to the next list, or hear the total item count. This is one of the most common accessibility failures in Word-to-PDF exports.
+    
+    <strong>What needs to change</strong>: Any visual sequence of items sharing a common marker pattern (bullets, numbers, letters, roman numerals) must use proper list structure: L (list) containing LI (list item) children, each with Lbl (label/marker) and LBody (content). This enables screen readers to announce 'List, 5 items' and lets users navigate item-by-item.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the consecutive P elements.
+    2. Select all the P elements that form the list.
+    3. Right-click and choose New Tag > L to create a list container.
+    4. For each P element: create an LI tag inside the L, then create Lbl and LBody inside the LI.
+    5. Move the bullet/number text into Lbl and the remaining content into LBody.
+    6. If the original P contained the full text, you may need to split it using the Content panel to separate the marker from the body text.
+    7. Verify the final structure: L > LI > Lbl + LBody for each item.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the paragraph lines that should be a list.
+    2. Apply a proper list style: use the Bullets or Numbering button in the Home ribbon, or apply a built-in List Bullet / List Number style.
+    3. Do NOT manually type bullet characters followed by text — use Word's list formatting.
+    4. If items already have manually typed markers, remove them and apply list formatting.
+    5. For nested lists, use Increase Indent to create sub-levels.
+    6. Re-export to PDF — Word will generate proper L > LI structure automatically.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Select the text frames containing the list-like paragraphs.
+    2. Apply a paragraph style that uses InDesign's Bullets and Numbering feature (Type > Bulleted & Numbered Lists).
+    3. In the Export Tagging options for the paragraph style, map it to the L/LI tag structure.
+    4. Alternatively, manually assign tags in the Tags panel: wrap items in an L tag, each item in LI, with Lbl and LBody sub-tags.
+    5. Re-export to tagged PDF.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Paragraphs with bullet markers</strong>:
+    ```
+    <Sect>
+      <P>• First item</P>     ← Tagged as paragraph
+      <P>• Second item</P>    ← Tagged as paragraph
+      <P>• Third item</P>     ← Tagged as paragraph
+    </Sect>
+    
+    Screen reader: 'First item' ... 'Second item' ... 'Third item'
+    (No list context, no item count, no list navigation).
+    ```
+    
+    <strong>Proper list structure</strong>:
+    ```
+    <L>
+      <LI>
+        <Lbl>•</Lbl>
+        <LBody>First item</LBody>
+      </LI>
+      <LI>
+        <Lbl>•</Lbl>
+        <LBody>Second item</LBody>
+      </LI>
+      <LI>
+        <Lbl>•</Lbl>
+        <LBody>Third item</LBody>
+      </LI>
+    </L>
+    
+    Screen reader: 'List, 3 items. Bullet, First item. Bullet, Second item...'
+    ```
+    
+    Proper list tagging tells assistive technology this is a list of related items. Users hear the item count, can navigate between items with keyboard shortcuts, and understand the relationship between entries.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF21</a>
+
+pdf-remediation-PdfWarnHeadingSizeHierarchy =
+    <strong>Why it matters</strong>: When heading sizes don't decrease with heading level (e.g., H2 is visually larger than H1), sighted users receive conflicting signals about the document hierarchy. The visual size should reinforce the structural level, not contradict it.
+    
+    <strong>What needs to change</strong>: Heading font sizes should decrease with each level: H1 should be the largest, H2 smaller than H1, H3 smaller than H2, and so on. Size differences should be noticeable (at least 2pt between levels).
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select headings with incorrect sizes.
+    2. Adjust font sizes so they decrease with heading level.
+    3. Example: H1 at 24pt, H2 at 18pt, H3 at 14pt.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Modify your Heading styles (right-click a heading style > Modify).
+    2. Set font sizes in descending order: Heading 1 > Heading 2 > Heading 3.
+    3. Ensure at least 2pt difference between adjacent levels.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Update paragraph styles for headings to use descending font sizes.
+    2. Review the Type > Paragraph Styles panel.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Heading sizes don't match hierarchy</strong>:
+    ```
+    H1: 18pt (smaller than H2!)
+    H2: 24pt
+    H3: 14pt
+    
+    Visual hierarchy contradicts structural hierarchy.
+    ```
+    
+    <strong>Heading sizes match hierarchy</strong>:
+    ```
+    H1: 24pt
+    H2: 18pt
+    H3: 14pt
+    
+    Visual and structural hierarchies reinforce each other.
+    ```
+    
+    Consistent heading sizing helps all users quickly scan the document structure. Size differences should be noticeable but not extreme.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html">https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html</a>
+
+pdf-remediation-PdfInfoHeadingSizeNoFontData =
+    <strong>Why it matters</strong>: When heading sizes don't decrease with heading level (e.g., H2 is visually larger than H1), sighted users receive conflicting signals about the document hierarchy. The visual size should reinforce the structural level, not contradict it.
+    
+    <strong>What needs to change</strong>: Heading font sizes should decrease with each level: H1 should be the largest, H2 smaller than H1, H3 smaller than H2, and so on. Size differences should be noticeable (at least 2pt between levels).
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select headings with incorrect sizes.
+    2. Adjust font sizes so they decrease with heading level.
+    3. Example: H1 at 24pt, H2 at 18pt, H3 at 14pt.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Modify your Heading styles (right-click a heading style > Modify).
+    2. Set font sizes in descending order: Heading 1 > Heading 2 > Heading 3.
+    3. Ensure at least 2pt difference between adjacent levels.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Update paragraph styles for headings to use descending font sizes.
+    2. Review the Type > Paragraph Styles panel.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Heading sizes don't match hierarchy</strong>:
+    ```
+    H1: 18pt (smaller than H2!)
+    H2: 24pt
+    H3: 14pt
+    
+    Visual hierarchy contradicts structural hierarchy.
+    ```
+    
+    <strong>Heading sizes match hierarchy</strong>:
+    ```
+    H1: 24pt
+    H2: 18pt
+    H3: 14pt
+    
+    Visual and structural hierarchies reinforce each other.
+    ```
+    
+    Consistent heading sizing helps all users quickly scan the document structure. Size differences should be noticeable but not extreme.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html">https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html</a>
 
 pdf-remediation-PdfErrTableHeadersMissing =
-    Why it matters
+    <strong>Why it matters</strong>: Screen readers use table header cells (TH) to announce column or row labels as users navigate between data cells. Without headers, users hear raw data values with no context — they cannot tell which column or row a value belongs to.
     
-    Screen readers use table header cells (TH) to announce column or row labels as users navigate between data cells. Without headers, users hear raw data values with no context — they cannot tell which column or row a value belongs to.
+    <strong>What needs to change</strong>: Every data table must have header cells tagged as TH. Headers must be associated with data cells via the /Scope attribute (Column, Row, or Both) or explicit /Headers IDs.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the Table structure.
+    2. For each header cell, right-click the TD tag and select Properties.
+    3. Change the Type from TD (data) to TH (header).
+    4. Set the Scope attribute: Column, Row, or Both.
+    5. Use the Table Editor (Accessibility > Table Editor) for visual table editing.
     
-    Every data table must have header cells tagged as TH. Headers must be associated with data cells via the /Scope attribute (Column, Row, or Both) or explicit /Headers IDs.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the header row in your table.
+    2. Go to Table Design tab and check 'Header Row' in Table Style Options.
+    3. For complex tables, right-click the header row > Table Properties > Row tab.
+    4. Check 'Repeat as header row at the top of each page'.
+    5. Re-export to PDF — Word maps header rows to TH cells.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the header cells in your table.
+    2. Go to Table > Table Options > Headers and Footers.
+    3. Set the number of Header Rows.
+    4. In the Tags panel, verify header cells are tagged as TH after export.
     
-      1. Open the Tags panel and locate the Table structure.
-      2. For each header cell, right-click the TD tag and select Properties.
-      3. Change the Type from TD (data) to TH (header).
-      4. Set the Scope attribute: Column, Row, or Both.
-      5. Use the Table Editor (Accessibility > Table Editor) for visual table editing.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the header row in your table.
-      2. Go to Table Design tab and check 'Header Row' in Table Style Options.
-      3. For complex tables, right-click the header row > Table Properties > Row tab.
-      4. Check 'Repeat as header row at the top of each page'.
-      5. Re-export to PDF — Word maps header rows to TH cells.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the header cells in your table.
-      2. Go to Table > Table Options > Headers and Footers.
-      3. Set the number of Header Rows.
-      4. In the Tags panel, verify header cells are tagged as TH after export.
-    
-    Before
-    
-    Table with no headers
+    <strong>Table with no headers</strong>:
+    ```
     <Table>
       <TR>
         <TD>Name</TD>        ← Should be TH
@@ -2947,10 +3227,10 @@ pdf-remediation-PdfErrTableHeadersMissing =
     Row 1: Name. Amount. Date.
     Row 2: Jane Smith. $100.00. 2025-01-15.'
     (No association between headers and data)
+    ```
     
-    After
-    
-    Table with proper TH headers
+    <strong>Table with proper TH headers</strong>:
+    ```
     <Table>
       <TR>
         <TH Scope=Column>Name</TH>
@@ -2964,43 +3244,41 @@ pdf-remediation-PdfErrTableHeadersMissing =
       </TR>
     
     Screen reader: 'Name: Jane Smith. Amount: $100.00. Date: 2025-01-15.'
+    ```
     
     TH cells with Scope attributes let screen readers announce 'Name: Jane Smith' instead of just 'Jane Smith', giving context to every data cell in the table.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrTableHeaderScopeMissing =
-    Why it matters
+    <strong>Why it matters</strong>: The /Scope attribute on TH cells tells screen readers whether a header applies to its column, its row, or both. Without Scope, screen readers may not correctly associate headers with data cells, especially in complex tables.
     
-    The /Scope attribute on TH cells tells screen readers whether a header applies to its column, its row, or both. Without Scope, screen readers may not correctly associate headers with data cells, especially in complex tables.
+    <strong>What needs to change</strong>: Every TH cell must have a /Scope attribute set to Column, Row, or Both. Column headers apply downward; row headers apply across. For cells that serve as both column and row headers, use Both.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate TH elements inside Table structures.
+    2. Right-click each TH tag and select Properties.
+    3. In the Attributes pane, add or edit the Scope attribute.
+    4. Set Scope to 'Column' for column headers, 'Row' for row headers, or 'Both'.
+    5. Verify in the Table Editor (Accessibility > Table Editor).
     
-    Every TH cell must have a /Scope attribute set to Column, Row, or Both. Column headers apply downward; row headers apply across. For cells that serve as both column and row headers, use Both.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word automatically sets column scope for header rows on export.
+    2. For row headers, there is no direct Word setting — fix in Acrobat after export.
+    3. Ensure 'Header Row' is checked in Table Design > Table Style Options.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign sets header rows via Table > Table Options > Headers and Footers.
+    2. After export, verify /Scope is set on TH cells using Acrobat's Tags panel.
+    3. Row headers must be set manually in the exported PDF.
     
-      1. Open the Tags panel and locate TH elements inside Table structures.
-      2. Right-click each TH tag and select Properties.
-      3. In the Attributes pane, add or edit the Scope attribute.
-      4. Set Scope to 'Column' for column headers, 'Row' for row headers, or 'Both'.
-      5. Verify in the Table Editor (Accessibility > Table Editor).
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word automatically sets column scope for header rows on export.
-      2. For row headers, there is no direct Word setting — fix in Acrobat after export.
-      3. Ensure 'Header Row' is checked in Table Design > Table Style Options.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign sets header rows via Table > Table Options > Headers and Footers.
-      2. After export, verify /Scope is set on TH cells using Acrobat's Tags panel.
-      3. Row headers must be set manually in the exported PDF.
-    
-    Before
-    
-    TH cells without Scope
+    <strong>TH cells without Scope</strong>:
+    ```
     <Table>
       <TR>
         <TH>Name</TH>          ← No Scope attribute
@@ -3012,10 +3290,10 @@ pdf-remediation-PdfErrTableHeaderScopeMissing =
       </TR>
     
     Screen reader may say: 'Jane Smith' (no header announced)
+    ```
     
-    After
-    
-    TH cells with Scope=Column
+    <strong>TH cells with Scope=Column</strong>:
+    ```
     <Table>
       <TR>
         <TH Scope=Column>Name</TH>
@@ -3027,53 +3305,51 @@ pdf-remediation-PdfErrTableHeaderScopeMissing =
       </TR>
     
     Screen reader says: 'Name: Jane Smith. Amount: $100.00.'
+    ```
     
     The Scope attribute creates an explicit association between each TH and the cells it labels, enabling screen readers to announce headers when navigating data cells.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfWarnTableSectionsMissing =
-    Why it matters
+    <strong>Why it matters</strong>: THead and TBody section wrappers help assistive technology distinguish header rows from data rows. PDF 2.0 (PDF/UA-2) requires them. Without these wrappers, screen readers may not correctly repeat headers when scrolling through long tables.
     
-    THead and TBody section wrappers help assistive technology distinguish header rows from data rows. PDF 2.0 (PDF/UA-2) requires them. Without these wrappers, screen readers may not correctly repeat headers when scrolling through long tables.
+    <strong>What needs to change</strong>: Each data table should wrap its header row(s) in a THead element and its data rows in a TBody element. An optional TFoot wraps footer rows.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and find the Table element.
+    2. Select the header TR(s) and right-click > New Tag > choose THead.
+    3. Move the header TR(s) inside the new THead element.
+    4. Create a TBody element and move the remaining data TRs into it.
+    5. Verify structure: Table > THead > TR, Table > TBody > TR.
     
-    Each data table should wrap its header row(s) in a THead element and its data rows in a TBody element. An optional TFoot wraps footer rows.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word automatically creates THead when 'Repeat as header row' is set.
+    2. Go to Table Properties > Row tab > check 'Repeat as header row at top of each page'.
+    3. Re-export to PDF to generate THead/TBody wrappers.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Set Header Rows in Table > Table Options > Headers and Footers.
+    2. InDesign maps header rows to THead on PDF export.
+    3. Verify the exported structure includes THead and TBody elements.
     
-      1. Open the Tags panel and find the Table element.
-      2. Select the header TR(s) and right-click > New Tag > choose THead.
-      3. Move the header TR(s) inside the new THead element.
-      4. Create a TBody element and move the remaining data TRs into it.
-      5. Verify structure: Table > THead > TR, Table > TBody > TR.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word automatically creates THead when 'Repeat as header row' is set.
-      2. Go to Table Properties > Row tab > check 'Repeat as header row at top of each page'.
-      3. Re-export to PDF to generate THead/TBody wrappers.
-    
-    How to fix in Adobe InDesign
-    
-      1. Set Header Rows in Table > Table Options > Headers and Footers.
-      2. InDesign maps header rows to THead on PDF export.
-      3. Verify the exported structure includes THead and TBody elements.
-    
-    Before
-    
-    Table without section wrappers
+    <strong>Table without section wrappers</strong>:
+    ```
     <Table>
       <TR> <TH>Name</TH> <TH>Amount</TH> </TR>    ← Header row
       <TR> <TD>Jane</TD> <TD>$100</TD> </TR>       ← Data row
       <TR> <TD>Bob</TD>  <TD>$200</TD> </TR>       ← Data row
     
     No distinction between header and data rows in structure.
+    ```
     
-    After
-    
-    Table with THead/TBody wrappers
+    <strong>Table with THead/TBody wrappers</strong>:
+    ```
     <Table>
       <THead>
         <TR> <TH>Name</TH> <TH>Amount</TH> </TR>
@@ -3084,149 +3360,143 @@ pdf-remediation-PdfWarnTableSectionsMissing =
       </TBody>
     
     Header row is structurally separated from data rows.
+    ```
     
     THead/TBody wrappers give assistive technology a clear signal about which rows contain headers. This is especially important for tables that span multiple pages.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfWarnTableIrregular =
-    Why it matters
+    <strong>Why it matters</strong>: When rows have different numbers of cells, screen readers lose track of which column a cell belongs to. This makes the table data meaningless to users who cannot see the visual layout.
     
-    When rows have different numbers of cells, screen readers lose track of which column a cell belongs to. This makes the table data meaningless to users who cannot see the visual layout.
+    <strong>What needs to change</strong>: Every row in a table should have the same number of effective columns. Use ColSpan or RowSpan attributes when cells span multiple columns or rows.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and inspect each TR in the Table.
+    2. Count TD/TH cells per row — all rows should have the same count.
+    3. For cells spanning columns, set the ColSpan attribute in Properties.
+    4. For cells spanning rows, set the RowSpan attribute in Properties.
+    5. Use the Table Editor for visual alignment of rows and columns.
     
-    Every row in a table should have the same number of effective columns. Use ColSpan or RowSpan attributes when cells span multiple columns or rows.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the table in Word and check for merged cells.
+    2. Ensure merging is done via Merge Cells, not by deleting cell borders.
+    3. Split any cells that cause unequal column counts.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Check the table for merged cells in Table > Merge/Split Cells.
+    2. Ensure all rows have consistent cell counts.
+    3. After export, verify ColSpan/RowSpan in Acrobat's Tags panel.
     
-      1. Open the Tags panel and inspect each TR in the Table.
-      2. Count TD/TH cells per row — all rows should have the same count.
-      3. For cells spanning columns, set the ColSpan attribute in Properties.
-      4. For cells spanning rows, set the RowSpan attribute in Properties.
-      5. Use the Table Editor for visual alignment of rows and columns.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the table in Word and check for merged cells.
-      2. Ensure merging is done via Merge Cells, not by deleting cell borders.
-      3. Split any cells that cause unequal column counts.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Check the table for merged cells in Table > Merge/Split Cells.
-      2. Ensure all rows have consistent cell counts.
-      3. After export, verify ColSpan/RowSpan in Acrobat's Tags panel.
-    
-    Before
-    
-    Irregular table (different cell counts)
+    <strong>Irregular table (different cell counts)</strong>:
+    ```
     <Table>
       <TR> <TH>Name</TH> <TH>Q1</TH> <TH>Q2</TH> </TR>   ← 3 cells
       <TR> <TD>Alice</TD> <TD>$100</TD> </TR>              ← 2 cells!
       <TR> <TD>Bob</TD> <TD>$200</TD> <TD>$300</TD> </TR>  ← 3 cells
     
     Screen reader loses column alignment after the short row.
+    ```
     
-    After
-    
-    Regular table with ColSpan
+    <strong>Regular table with ColSpan</strong>:
+    ```
     <Table>
       <TR> <TH>Name</TH> <TH>Q1</TH> <TH>Q2</TH> </TR>   ← 3 cells
       <TR> <TD>Alice</TD> <TD ColSpan=2>$100</TD> </TR>    ← 1+2=3
       <TR> <TD>Bob</TD> <TD>$200</TD> <TD>$300</TD> </TR>  ← 3 cells
     
     All rows have 3 effective columns.
+    ```
     
     Using ColSpan on Alice's second cell makes the table regular. Screen readers can now correctly associate every cell with its column header.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrEmptyTable =
-    Why it matters
+    <strong>Why it matters</strong>: Empty table elements with no data cells are confusing artifacts. Screen readers announce 'Table with 0 rows, 0 columns' which interrupts the reading flow and confuses users about the document structure.
     
-    Empty table elements with no data cells are confusing artifacts. Screen readers announce 'Table with 0 rows, 0 columns' which interrupts the reading flow and confuses users about the document structure.
+    <strong>What needs to change</strong>: Every Table element in the structure tree should contain at least one TR with TD or TH cells. Empty tables should be removed.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the empty Table element.
+    2. If the table is unnecessary, delete it from the Tags panel.
+    3. If content should be in the table, add TR and TD/TH child tags.
+    4. Re-run the accessibility checker to verify.
     
-    Every Table element in the structure tree should contain at least one TR with TD or TH cells. Empty tables should be removed.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Find the empty table in your Word document.
+    2. If it's an artifact (e.g. used for layout), remove it and use text positioning instead.
+    3. If it should contain data, add the missing content.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Locate the empty table frame in your InDesign layout.
+    2. Delete the frame if it's unused, or add content if it should have data.
+    3. Re-export to PDF and verify in Acrobat's Tags panel.
     
-      1. Open the Tags panel and locate the empty Table element.
-      2. If the table is unnecessary, delete it from the Tags panel.
-      3. If content should be in the table, add TR and TD/TH child tags.
-      4. Re-run the accessibility checker to verify.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Find the empty table in your Word document.
-      2. If it's an artifact (e.g. used for layout), remove it and use text positioning instead.
-      3. If it should contain data, add the missing content.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Locate the empty table frame in your InDesign layout.
-      2. Delete the frame if it's unused, or add content if it should have data.
-      3. Re-export to PDF and verify in Acrobat's Tags panel.
-    
-    Before
-    
-    Empty table element
+    <strong>Empty table element</strong>:
+    ```
     <Table>
       (no children — or TR with no cells)
     </Table>
     
     Screen reader: 'Table with 0 rows, 0 columns.'
     User wonders what content they're missing.
+    ```
     
-    After
-    
-    Empty table removed
+    <strong>Empty table removed</strong>:
+    ```
     (Table element deleted from structure tree)
     
     Screen reader: continues to next content seamlessly.
+    ```
     
     Removing the empty table eliminates a confusing announcement and keeps the document structure clean.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfWarnTableCaptionMissing =
-    Why it matters
+    <strong>Why it matters</strong>: A Caption element provides a brief, accessible summary of a table's purpose. Screen readers announce the caption before the user enters the table, giving context about what data to expect. Without a caption, users must navigate into the table and read cells to understand its purpose.
     
-    A Caption element provides a brief, accessible summary of a table's purpose. Screen readers announce the caption before the user enters the table, giving context about what data to expect. Without a caption, users must navigate into the table and read cells to understand its purpose.
+    <strong>What needs to change</strong>: Each data table should have a Caption child element containing a short text summary of the table's content or purpose. The Caption should be the first child of the Table element in the structure tree.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the Table element.
+    2. Right-click the Table tag and select New Tag.
+    3. Choose 'Caption' as the tag type.
+    4. Move the Caption tag to be the first child of the Table.
+    5. Add appropriate text content to the Caption (e.g., 'Quarterly revenue by department').
     
-    Each data table should have a Caption child element containing a short text summary of the table's content or purpose. The Caption should be the first child of the Table element in the structure tree.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the table and go to References > Insert Caption.
+    2. Enter a descriptive caption like 'Table 1: Quarterly revenue by department'.
+    3. Position the caption above the table.
+    4. Re-export to PDF — Word maps captions to Caption elements.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Add a text frame above or below the table with the caption text.
+    2. In the Tags panel, tag the caption text frame as Caption.
+    3. Ensure the Caption is a child of the Table in the structure tree.
+    4. Verify the export order places Caption before the table rows.
     
-      1. Open the Tags panel and locate the Table element.
-      2. Right-click the Table tag and select New Tag.
-      3. Choose 'Caption' as the tag type.
-      4. Move the Caption tag to be the first child of the Table.
-      5. Add appropriate text content to the Caption (e.g., 'Quarterly revenue by department').
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the table and go to References > Insert Caption.
-      2. Enter a descriptive caption like 'Table 1: Quarterly revenue by department'.
-      3. Position the caption above the table.
-      4. Re-export to PDF — Word maps captions to Caption elements.
-    
-    How to fix in Adobe InDesign
-    
-      1. Add a text frame above or below the table with the caption text.
-      2. In the Tags panel, tag the caption text frame as Caption.
-      3. Ensure the Caption is a child of the Table in the structure tree.
-      4. Verify the export order places Caption before the table rows.
-    
-    Before
-    
-    Table without caption
+    <strong>Table without caption</strong>:
+    ```
     <Table>
       <TR> <TH>Quarter</TH> <TH>Revenue</TH> </TR>
       <TR> <TD>Q1</TD> <TD>$1.2M</TD> </TR>
@@ -3234,10 +3504,10 @@ pdf-remediation-PdfWarnTableCaptionMissing =
     
     Screen reader: 'Table with 5 rows, 2 columns.'
     (User has no context about the table's purpose)
+    ```
     
-    After
-    
-    Table with caption
+    <strong>Table with caption</strong>:
+    ```
     <Table>
       <Caption>Quarterly revenue for 2025</Caption>
       <TR> <TH>Quarter</TH> <TH>Revenue</TH> </TR>
@@ -3245,233 +3515,223 @@ pdf-remediation-PdfWarnTableCaptionMissing =
       {""}...
     
     Screen reader: 'Table: Quarterly revenue for 2025. 5 rows, 2 columns.'
+    ```
     
     The Caption gives users an immediate summary of the table's content before they start navigating cells. This is especially helpful when a page contains multiple tables.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrWidgetAnnotationNotInFormTag =
-    Why it matters
+    <strong>Why it matters</strong>: Form field widgets (text boxes, checkboxes, radio buttons) must be enclosed in Form structure elements so assistive technology can identify them as interactive form controls and provide appropriate interaction cues.
     
-    Form field widgets (text boxes, checkboxes, radio buttons) must be enclosed in Form structure elements so assistive technology can identify them as interactive form controls and provide appropriate interaction cues.
+    <strong>What needs to change</strong>: Every Widget annotation should be referenced via OBJR from a Form structure element in the tag tree.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. In Tags panel, find the Widget annotation → drag it inside a Form tag. Or use Accessibility > Fix Reading Order.
     
-    Every Widget annotation should be referenced via OBJR from a Form structure element in the tag tree.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure form fields are inserted using Developer tab controls, not drawn shapes.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use Buttons and Forms panel for interactive elements; tag as Form on export.
     
-      1. In Tags panel, find the Widget annotation → drag it inside a Form tag. Or use Accessibility > Fix Reading Order.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure form fields are inserted using Developer tab controls, not drawn shapes.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use Buttons and Forms panel for interactive elements; tag as Form on export.
-    
-    Before
-    
-    Before: Checkbox widget under P tag
+    <strong>Before: Checkbox widget under P tag</strong>:
+    ```
     screen reader announces it as text, not a form control.
+    ```
     
-    After
-    
-    After: Checkbox widget under Form tag
+    <strong>After: Checkbox widget under Form tag</strong>:
+    ```
     screen reader announces 'checkbox, not checked'.
+    ```
     
     The Form structure element tells AT this is an interactive control.
     
-    Learn more: https://theaccessibilityguy.com/widget-annotation-not-nested-inside-a-form-structure-element-pac-2021-error-pdf-ua-compliance/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://theaccessibilityguy.com/widget-annotation-not-nested-inside-a-form-structure-element-pac-2021-error-pdf-ua-compliance/">https://theaccessibilityguy.com/widget-annotation-not-nested-inside-a-form-structure-element-pac-2021-error-pdf-ua-compliance/</a>
 
 pdf-remediation-PdfErrXfaFormsPresent =
-    Why it matters
+    <strong>Why it matters</strong>: XFA (XML Forms Architecture) is a proprietary Adobe technology that creates dynamic forms inaccessible to assistive technology. Screen readers cannot identify, navigate, or interact with XFA form fields. XFA forms are prohibited in PDF/UA and deprecated in PDF 2.0.
     
-    XFA (XML Forms Architecture) is a proprietary Adobe technology that creates dynamic forms inaccessible to assistive technology. Screen readers cannot identify, navigate, or interact with XFA form fields. XFA forms are prohibited in PDF/UA and deprecated in PDF 2.0.
+    <strong>What needs to change</strong>: PDF documents must use standard AcroForm fields instead of XFA forms. AcroForm fields support proper labeling, tab order, and screen reader interaction.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the XFA form in Acrobat Pro.
+    2. Go to Forms > Convert XFA to Acrobat Form (if available).
+    3. Review and label all converted form fields.
+    4. Alternatively, recreate the form using Acrobat's standard form tools.
     
-    PDF documents must use standard AcroForm fields instead of XFA forms. AcroForm fields support proper labeling, tab order, and screen reader interaction.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word generates standard AcroForm fields by default — XFA is not an issue.
+    2. If the PDF originated from Adobe LiveCycle Designer, recreate in Word.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign generates AcroForm fields by default — XFA is not an issue.
+    2. If the XFA form came from another tool, recreate using InDesign's form features.
     
-      1. Open the XFA form in Acrobat Pro.
-      2. Go to Forms > Convert XFA to Acrobat Form (if available).
-      3. Review and label all converted form fields.
-      4. Alternatively, recreate the form using Acrobat's standard form tools.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word generates standard AcroForm fields by default — XFA is not an issue.
-      2. If the PDF originated from Adobe LiveCycle Designer, recreate in Word.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign generates AcroForm fields by default — XFA is not an issue.
-      2. If the XFA form came from another tool, recreate using InDesign's form features.
-    
-    Before
-    
-    XFA form data present
+    <strong>XFA form data present</strong>:
+    ```
     /AcroForm <<
       /XFA (stream)    ← XFA form data
       /Fields [...]
     >>
     
     Screen reader: cannot interact with form fields.
+    ```
     
-    After
-    
-    Standard AcroForm only
+    <strong>Standard AcroForm only</strong>:
+    ```
     /AcroForm <<
       /Fields [...]    ← standard AcroForm fields
     >>
     
     Screen reader: can navigate and fill form fields.
+    ```
     
     XFA forms use XML-based rendering that bypasses the standard PDF page model. Standard AcroForm fields are part of the PDF annotation system and support accessibility features like /TU tooltips and structure tree integration.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
 
 pdf-remediation-PdfErrFormFieldUnlabeled =
-    Why it matters
+    <strong>Why it matters</strong>: Screen readers identify form fields by their accessible name. Without one, users hear only the field type ('edit text', 'checkbox') with no indication of what information to enter. This makes forms impossible to complete independently.
     
-    Screen readers identify form fields by their accessible name. Without one, users hear only the field type ('edit text', 'checkbox') with no indication of what information to enter. This makes forms impossible to complete independently.
+    <strong>What needs to change</strong>: Every interactive form field needs a /TU (tooltip) entry in its field dictionary. The /TU value is what screen readers announce as the field name. The /T (technical field name) is often a programmer-style identifier like 'field_3' and is not a suitable label for users.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Prepare Form tool (Tools > Prepare Form).
+    2. Double-click each field to open its Properties dialog.
+    3. In the General tab, enter a clear description in the Tooltip field.
+    4. For example: 'First Name (required)' or 'Email Address'.
+    5. Run Accessibility Check (Tools > Accessibility > Full Check) to verify.
     
-    Every interactive form field needs a /TU (tooltip) entry in its field dictionary. The /TU value is what screen readers announce as the field name. The /T (technical field name) is often a programmer-style identifier like 'field_3' and is not a suitable label for users.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the form control (text box, checkbox, dropdown).
+    2. Right-click and choose Properties or use the Developer tab.
+    3. Set the Title or ScreenTip property to a descriptive label.
+    4. Ensure a visible label is adjacent to each field in the document.
+    5. Re-export to PDF with 'Create tagged PDF' enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the form field with the Buttons and Forms panel.
+    2. Set the Description field to a clear accessible name.
+    3. Ensure a text frame with the visible label is positioned next to the field.
+    4. Export to Interactive PDF -- InDesign maps Description to /TU.
     
-      1. Open the Prepare Form tool (Tools > Prepare Form).
-      2. Double-click each field to open its Properties dialog.
-      3. In the General tab, enter a clear description in the Tooltip field.
-      4. For example: 'First Name (required)' or 'Email Address'.
-      5. Run Accessibility Check (Tools > Accessibility > Full Check) to verify.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the form control (text box, checkbox, dropdown).
-      2. Right-click and choose Properties or use the Developer tab.
-      3. Set the Title or ScreenTip property to a descriptive label.
-      4. Ensure a visible label is adjacent to each field in the document.
-      5. Re-export to PDF with 'Create tagged PDF' enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the form field with the Buttons and Forms panel.
-      2. Set the Description field to a clear accessible name.
-      3. Ensure a text frame with the visible label is positioned next to the field.
-      4. Export to Interactive PDF -- InDesign maps Description to /TU.
-    
-    Before
-    
-    Incorrect: No tooltip on form field
+    <strong>Incorrect: No tooltip on form field</strong>:
+    ```
     /T (field_1)          << technical name only
     /TU (empty)           << no accessible name
     
     Screen reader: 'Edit text'  (user has no idea what to type)
+    ```
     
-    After
-    
-    Correct: Descriptive tooltip set
+    <strong>Correct: Descriptive tooltip set</strong>:
+    ```
     /T (field_1)          << technical name (internal)
     /TU (Full Name)       << accessible name for screen readers
     
     Screen reader: 'Full Name, edit text'  (user knows what to enter)
+    ```
     
     The /TU tooltip is the primary accessible name for form fields in PDF. It must be a human-readable description, not a technical identifier. Include '(required)' in the tooltip for mandatory fields so screen reader users know before they start typing.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12</a>
 
 pdf-remediation-PdfWarnRequiredFieldsNotFlagged =
-    Why it matters
+    <strong>Why it matters</strong>: Sighted users can see asterisks or 'required' labels next to mandatory fields. Screen reader users need the same information conveyed semantically through the /Ff (field flags) Required bit, so their software can announce 'required' automatically.
     
-    Sighted users can see asterisks or 'required' labels next to mandatory fields. Screen reader users need the same information conveyed semantically through the /Ff (field flags) Required bit, so their software can announce 'required' automatically.
+    <strong>What needs to change</strong>: Set bit 2 of the /Ff (field flags) value for every required field. This is the PDF equivalent of the HTML 'required' attribute. Additionally, include '(required)' in the /TU tooltip as a belt-and-suspenders approach.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open Prepare Form tool.
+    2. Double-click the required field to open Properties.
+    3. Check the 'Required' checkbox in the General tab.
+    4. Also add '(required)' to the Tooltip text.
+    5. Ensure there is a visual indicator (e.g., asterisk) next to the label.
     
-    Set bit 2 of the /Ff (field flags) value for every required field. This is the PDF equivalent of the HTML 'required' attribute. Additionally, include '(required)' in the /TU tooltip as a belt-and-suspenders approach.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word form controls do not have a native 'required' property.
+    2. Add '(required)' to the field's Title/ScreenTip.
+    3. After export, open in Acrobat and set the Required flag.
+    4. Alternatively, use a macro or third-party tool to set flags.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign's Buttons and Forms panel does not expose Required directly.
+    2. Add '(required)' to the Description field.
+    3. After export, open in Acrobat and check the Required property.
     
-      1. Open Prepare Form tool.
-      2. Double-click the required field to open Properties.
-      3. Check the 'Required' checkbox in the General tab.
-      4. Also add '(required)' to the Tooltip text.
-      5. Ensure there is a visual indicator (e.g., asterisk) next to the label.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word form controls do not have a native 'required' property.
-      2. Add '(required)' to the field's Title/ScreenTip.
-      3. After export, open in Acrobat and set the Required flag.
-      4. Alternatively, use a macro or third-party tool to set flags.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign's Buttons and Forms panel does not expose Required directly.
-      2. Add '(required)' to the Description field.
-      3. After export, open in Acrobat and check the Required property.
-    
-    Before
-    
-    Incorrect: Visual-only required indicator
+    <strong>Incorrect: Visual-only required indicator</strong>:
+    ```
     Visual label: 'Email Address *'
     /Ff = 0                << Required bit NOT set
     /TU = 'Email Address'  << no 'required' in tooltip
     
     Screen reader: 'Email Address, edit text'  (no required announcement)
+    ```
     
-    After
-    
-    Correct: Semantic + visual required indicator
+    <strong>Correct: Semantic + visual required indicator</strong>:
+    ```
     Visual label: 'Email Address *'
     /Ff = 2                << Required bit IS set
     /TU = 'Email Address (required)'
     
     Screen reader: 'Email Address, required, edit text'
+    ```
     
     The Required flag lets assistive technology announce that a field must be completed before submission. Without it, screen reader users may submit incomplete forms and face unexpected errors.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12</a>
 
 pdf-remediation-PdfErrFormFieldNotInStructure =
-    Why it matters
+    <strong>Why it matters</strong>: Form fields must be tagged in the document structure tree with <Form> elements so screen readers can discover them when navigating by structure. Untagged fields exist only as visual widgets -- invisible to the document's logical structure.
     
-    Form fields must be tagged in the document structure tree with <Form> elements so screen readers can discover them when navigating by structure. Untagged fields exist only as visual widgets -- invisible to the document's logical structure.
+    <strong>What needs to change</strong>: Each interactive form field should have a corresponding <Form> structure element in the tag tree. The structure element connects the field to the document's logical reading order, so screen readers encounter it at the right position.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    2. Open the Accessibility tool and run Fix Reading Order.
+    3. For each untagged field: right-click in the Tags panel > Create Tag From Selection.
+    4. Choose 'Form' as the tag type.
+    5. Drag the new tag to the correct position in the tag tree.
     
-    Each interactive form field should have a corresponding <Form> structure element in the tag tree. The structure element connects the field to the document's logical reading order, so screen readers encounter it at the right position.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure form controls are inline with the document content (not floating).
+    2. Use Developer tab > Legacy Tools for form fields.
+    3. Re-export with 'Create tagged PDF' enabled.
+    4. Word generally tags form controls automatically when they are inline.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use the Buttons and Forms panel to define interactive elements.
+    2. Set the export order in the Articles panel.
+    3. Export to Interactive PDF -- InDesign tags form fields automatically.
+    4. Verify in Acrobat that <Form> tags appear in the tag tree.
     
-      1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      2. Open the Accessibility tool and run Fix Reading Order.
-      3. For each untagged field: right-click in the Tags panel > Create Tag From Selection.
-      4. Choose 'Form' as the tag type.
-      5. Drag the new tag to the correct position in the tag tree.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure form controls are inline with the document content (not floating).
-      2. Use Developer tab > Legacy Tools for form fields.
-      3. Re-export with 'Create tagged PDF' enabled.
-      4. Word generally tags form controls automatically when they are inline.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use the Buttons and Forms panel to define interactive elements.
-      2. Set the export order in the Articles panel.
-      3. Export to Interactive PDF -- InDesign tags form fields automatically.
-      4. Verify in Acrobat that <Form> tags appear in the tag tree.
-    
-    Before
-    
-    Incorrect: Form field not in structure tree
+    <strong>Incorrect: Form field not in structure tree</strong>:
+    ```
     Structure tree:
       Document
         H1: 'Contact Form'
@@ -3479,10 +3739,10 @@ pdf-remediation-PdfErrFormFieldNotInStructure =
         << no Form tag -- field is orphaned >>
     
     Screen reader in structure navigation: skips the field entirely
+    ```
     
-    After
-    
-    Correct: Form field tagged in structure
+    <strong>Correct: Form field tagged in structure</strong>:
+    ```
     Structure tree:
       Document
         H1: 'Contact Form'
@@ -3490,45 +3750,43 @@ pdf-remediation-PdfErrFormFieldNotInStructure =
         Form: (linked to name text field)
     
     Screen reader in structure navigation: 'Enter your name, edit text'
+    ```
     
     The <Form> tag in the structure tree is how screen readers find form fields during structural navigation. Without it, users must switch to a different navigation mode to find the field.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12</a>
 
 pdf-remediation-PdfWarnFormFieldStructureUnverified =
-    Why it matters
+    <strong>Why it matters</strong>: Form fields must be tagged in the document structure tree with <Form> elements so screen readers can discover them when navigating by structure. Untagged fields exist only as visual widgets -- invisible to the document's logical structure.
     
-    Form fields must be tagged in the document structure tree with <Form> elements so screen readers can discover them when navigating by structure. Untagged fields exist only as visual widgets -- invisible to the document's logical structure.
+    <strong>What needs to change</strong>: Each interactive form field should have a corresponding <Form> structure element in the tag tree. The structure element connects the field to the document's logical reading order, so screen readers encounter it at the right position.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    2. Open the Accessibility tool and run Fix Reading Order.
+    3. For each untagged field: right-click in the Tags panel > Create Tag From Selection.
+    4. Choose 'Form' as the tag type.
+    5. Drag the new tag to the correct position in the tag tree.
     
-    Each interactive form field should have a corresponding <Form> structure element in the tag tree. The structure element connects the field to the document's logical reading order, so screen readers encounter it at the right position.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure form controls are inline with the document content (not floating).
+    2. Use Developer tab > Legacy Tools for form fields.
+    3. Re-export with 'Create tagged PDF' enabled.
+    4. Word generally tags form controls automatically when they are inline.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use the Buttons and Forms panel to define interactive elements.
+    2. Set the export order in the Articles panel.
+    3. Export to Interactive PDF -- InDesign tags form fields automatically.
+    4. Verify in Acrobat that <Form> tags appear in the tag tree.
     
-      1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
-      2. Open the Accessibility tool and run Fix Reading Order.
-      3. For each untagged field: right-click in the Tags panel > Create Tag From Selection.
-      4. Choose 'Form' as the tag type.
-      5. Drag the new tag to the correct position in the tag tree.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure form controls are inline with the document content (not floating).
-      2. Use Developer tab > Legacy Tools for form fields.
-      3. Re-export with 'Create tagged PDF' enabled.
-      4. Word generally tags form controls automatically when they are inline.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use the Buttons and Forms panel to define interactive elements.
-      2. Set the export order in the Articles panel.
-      3. Export to Interactive PDF -- InDesign tags form fields automatically.
-      4. Verify in Acrobat that <Form> tags appear in the tag tree.
-    
-    Before
-    
-    Incorrect: Form field not in structure tree
+    <strong>Incorrect: Form field not in structure tree</strong>:
+    ```
     Structure tree:
       Document
         H1: 'Contact Form'
@@ -3536,10 +3794,10 @@ pdf-remediation-PdfWarnFormFieldStructureUnverified =
         << no Form tag -- field is orphaned >>
     
     Screen reader in structure navigation: skips the field entirely
+    ```
     
-    After
-    
-    Correct: Form field tagged in structure
+    <strong>Correct: Form field tagged in structure</strong>:
+    ```
     Structure tree:
       Document
         H1: 'Contact Form'
@@ -3547,1875 +3805,2114 @@ pdf-remediation-PdfWarnFormFieldStructureUnverified =
         Form: (linked to name text field)
     
     Screen reader in structure navigation: 'Enter your name, edit text'
+    ```
     
     The <Form> tag in the structure tree is how screen readers find form fields during structural navigation. Without it, users must switch to a different navigation mode to find the field.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12</a>
 
 pdf-remediation-PdfErrFormTabOrderInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Keyboard users press Tab to move between form fields. If the tab order does not follow the visual layout, users end up jumping unpredictably around the page. Setting /Tabs to /S (Structure) ensures tab order follows the tag tree.
     
-    Keyboard users press Tab to move between form fields. If the tab order does not follow the visual layout, users end up jumping unpredictably around the page. Setting /Tabs to /S (Structure) ensures tab order follows the tag tree.
+    <strong>What needs to change</strong>: Every page that contains form fields must have /Tabs set to /S (structure order) in the page dictionary. This tells PDF viewers to use the tag tree sequence for keyboard navigation, matching the logical reading order.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Page Thumbnails panel.
+    2. Select all pages (Ctrl+A / Cmd+A).
+    3. Right-click > Page Properties.
+    4. Set Tab Order to 'Use Document Structure'.
+    5. Save the file.
     
-    Every page that contains form fields must have /Tabs set to /S (structure order) in the page dictionary. This tells PDF viewers to use the tag tree sequence for keyboard navigation, matching the logical reading order.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word sets tab order automatically when exporting tagged PDFs.
+    2. If missing, re-export with 'Create tagged PDF' enabled.
+    3. Verify in Acrobat by checking Page Properties > Tab Order.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Set reading order in the Articles panel before export.
+    2. Export to Interactive PDF.
+    3. Verify in Acrobat: Page Thumbnails > Page Properties > Tab Order = Use Document Structure.
     
-      1. Open the Page Thumbnails panel.
-      2. Select all pages (Ctrl+A / Cmd+A).
-      3. Right-click > Page Properties.
-      4. Set Tab Order to 'Use Document Structure'.
-      5. Save the file.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word sets tab order automatically when exporting tagged PDFs.
-      2. If missing, re-export with 'Create tagged PDF' enabled.
-      3. Verify in Acrobat by checking Page Properties > Tab Order.
-    
-    How to fix in Adobe InDesign
-    
-      1. Set reading order in the Articles panel before export.
-      2. Export to Interactive PDF.
-      3. Verify in Acrobat: Page Thumbnails > Page Properties > Tab Order = Use Document Structure.
-    
-    Before
-    
-    Incorrect: Tab order not set
+    <strong>Incorrect: Tab order not set</strong>:
+    ```
     Page dictionary:
       /Tabs not present  (or /Tabs /R = row order)
     
     Keyboard user tabs: Name -> Message -> Email -> Phone
     (jumps around unpredictably)
+    ```
     
-    After
-    
-    Correct: Tab order follows structure
+    <strong>Correct: Tab order follows structure</strong>:
+    ```
     Page dictionary:
       /Tabs /S  (structure order)
     
     Keyboard user tabs: Name -> Email -> Phone -> Message
     (follows logical top-to-bottom order)
+    ```
     
     Structure-based tab order (/Tabs /S) is the only reliable method. Row-based (/Tabs /R) and column-based (/Tabs /C) depend on physical position and often fail with complex layouts.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3</a>
 
 pdf-remediation-PdfWarnFormFieldNamesNotUnique =
-    Why it matters
+    <strong>Why it matters</strong>: When multiple fields share the same /T name, they are treated as the same field by the PDF viewer. Entering data in one silently overwrites the other. This causes data loss and confusion for all users, not just those using assistive technology.
     
-    When multiple fields share the same /T name, they are treated as the same field by the PDF viewer. Entering data in one silently overwrites the other. This causes data loss and confusion for all users, not just those using assistive technology.
+    <strong>What needs to change</strong>: Every form field must have a unique /T (field name) value. Duplicate names cause fields to be linked -- changing one changes all fields with that name.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open Prepare Form tool.
+    2. Look for fields with identical names in the field list.
+    3. Double-click each duplicate and change its name to be unique.
+    4. For example: 'phone_home', 'phone_work' instead of two 'phone' fields.
     
-    Every form field must have a unique /T (field name) value. Duplicate names cause fields to be linked -- changing one changes all fields with that name.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Each form control in Word should have a unique bookmark name.
+    2. Check Developer tab > Properties for each control.
+    3. Re-export to PDF after fixing duplicates.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. In the Buttons and Forms panel, ensure each field has a unique Name.
+    2. InDesign prevents some duplicates but check after export in Acrobat.
     
-      1. Open Prepare Form tool.
-      2. Look for fields with identical names in the field list.
-      3. Double-click each duplicate and change its name to be unique.
-      4. For example: 'phone_home', 'phone_work' instead of two 'phone' fields.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Each form control in Word should have a unique bookmark name.
-      2. Check Developer tab > Properties for each control.
-      3. Re-export to PDF after fixing duplicates.
-    
-    How to fix in Adobe InDesign
-    
-      1. In the Buttons and Forms panel, ensure each field has a unique Name.
-      2. InDesign prevents some duplicates but check after export in Acrobat.
-    
-    Before
-    
-    Incorrect: Duplicate field names
+    <strong>Incorrect: Duplicate field names</strong>:
+    ```
     Field 1: /T = 'name'  /TU = 'First Name'
     Field 2: /T = 'name'  /TU = 'Last Name'
     
     User types 'Jane' in first, 'Doe' in second.
     Result: BOTH fields show 'Doe' (last write wins)
+    ```
     
-    After
-    
-    Correct: Unique field names
+    <strong>Correct: Unique field names</strong>:
+    ```
     Field 1: /T = 'first_name'  /TU = 'First Name'
     Field 2: /T = 'last_name'   /TU = 'Last Name'
     
     User types 'Jane' in first, 'Doe' in second.
     Result: Fields retain their individual values
+    ```
     
     PDF field names (/T) serve as the programmatic identifier. Duplicates link fields together, which is sometimes intentional (e.g., header fields on multiple pages) but usually a bug.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF12</a>
 
 pdf-remediation-PdfWarnFormRedundantEntry =
-    Why it matters
+    <strong>Why it matters</strong>: Requiring users to re-enter the same information (such as name, email, or address) on multiple pages of a form creates a significant burden for people with cognitive, memory, or motor disabilities. Each additional entry increases the chance of errors and fatigue.
     
-    Requiring users to re-enter the same information (such as name, email, or address) on multiple pages of a form creates a significant burden for people with cognitive, memory, or motor disabilities. Each additional entry increases the chance of errors and fatigue.
+    <strong>What needs to change</strong>: Information previously entered by or provided to the user that is required to be entered again in the same process must be either auto-populated or available for the user to select, unless re-entering the information is essential, the information is security-related, or the previously entered information is no longer valid.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the form in Acrobat Pro and identify fields that appear on multiple pages.
+    2. For fields that collect the same data: use JavaScript to auto-populate later occurrences from the first entry (e.g., a document-level script that copies values).
+    3. Alternatively, restructure the form so each piece of information is only asked once.
+    4. Consider using calculated fields that reference the original field's value.
     
-    Information previously entered by or provided to the user that is required to be entered again in the same process must be either auto-populated or available for the user to select, unless re-entering the information is essential, the information is security-related, or the previously entered information is no longer valid.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Review the form design to avoid asking for the same information on multiple pages.
+    2. Use content controls with the same tag to link fields that share data.
+    3. If the same field must appear on multiple pages, use mail-merge or macro-based pre-fill to avoid redundant manual entry.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Design the form layout so each data point is collected only once.
+    2. If summary pages need to show previously entered data, use read-only fields that are auto-populated rather than requiring re-entry.
+    3. Export to PDF and add auto-population JavaScript in Acrobat if needed.
     
-      1. Open the form in Acrobat Pro and identify fields that appear on multiple pages.
-      2. For fields that collect the same data: use JavaScript to auto-populate later occurrences from the first entry (e.g., a document-level script that copies values).
-      3. Alternatively, restructure the form so each piece of information is only asked once.
-      4. Consider using calculated fields that reference the original field's value.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Review the form design to avoid asking for the same information on multiple pages.
-      2. Use content controls with the same tag to link fields that share data.
-      3. If the same field must appear on multiple pages, use mail-merge or macro-based pre-fill to avoid redundant manual entry.
-    
-    How to fix in Adobe InDesign
-    
-      1. Design the form layout so each data point is collected only once.
-      2. If summary pages need to show previously entered data, use read-only fields that are auto-populated rather than requiring re-entry.
-      3. Export to PDF and add auto-population JavaScript in Acrobat if needed.
-    
-    Before
-    
-    Incorrect: Same field on two pages
+    <strong>Incorrect: Same field on two pages</strong>:
+    ```
     Page 1: 'Full Name' text field → user types 'Jane Doe'
     Page 3: 'Full Name' text field → user must re-type 'Jane Doe'
     
     No auto-fill or pre-population between pages.
+    ```
     
-    After
-    
-    Correct: Auto-populated from first entry
+    <strong>Correct: Auto-populated from first entry</strong>:
+    ```
     Page 1: 'Full Name' text field → user types 'Jane Doe'
     Page 3: 'Full Name' read-only field → auto-populated 'Jane Doe'
     
     JavaScript copies the value automatically.
+    ```
     
     WCAG 3.3.7 requires that within a single process (like filling out a multi-page form), users should not be asked to enter the same information more than once. Auto-population or selection from previous entries is required.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html">https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html</a>
 
 pdf-remediation-PdfWarnAuthenticationNotAccessible =
-    Why it matters
+    <strong>Why it matters</strong>: Password fields that block paste or auto-fill prevent people from using password managers and assistive technology to authenticate. This creates a barrier for users with cognitive disabilities who cannot memorise complex passwords, and for users with motor disabilities who struggle to type long strings accurately.
     
-    Password fields that block paste or auto-fill prevent people from using password managers and assistive technology to authenticate. This creates a barrier for users with cognitive disabilities who cannot memorise complex passwords, and for users with motor disabilities who struggle to type long strings accurately.
+    <strong>What needs to change</strong>: A cognitive function test (such as remembering a password) must not be the sole method of authentication unless the test allows paste and auto-fill by assistive technology, or an alternative authentication method is provided that does not rely on a cognitive function test.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the form in Acrobat Pro and locate password fields (text fields with the Password flag set in Field Properties > Options).
+    2. Ensure no JavaScript prevents paste (Ctrl+V / Cmd+V) into these fields.
+    3. Check that the field allows value pre-fill by form-filling software.
+    4. If possible, provide an alternative authentication method alongside the password (e.g., a 'Sign with certificate' button).
     
-    A cognitive function test (such as remembering a password) must not be the sole method of authentication unless the test allows paste and auto-fill by assistive technology, or an alternative authentication method is provided that does not rely on a cognitive function test.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Avoid creating password-protected forms within Word documents.
+    2. If authentication is needed, use a standard web-based login flow that supports password managers, rather than embedding password fields in a PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Avoid designing authentication flows within print/PDF documents.
+    2. If a password field is necessary, ensure it is a standard text field with the Password flag — do not add JavaScript that blocks paste or auto-fill.
     
-      1. Open the form in Acrobat Pro and locate password fields (text fields with the Password flag set in Field Properties > Options).
-      2. Ensure no JavaScript prevents paste (Ctrl+V / Cmd+V) into these fields.
-      3. Check that the field allows value pre-fill by form-filling software.
-      4. If possible, provide an alternative authentication method alongside the password (e.g., a 'Sign with certificate' button).
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Avoid creating password-protected forms within Word documents.
-      2. If authentication is needed, use a standard web-based login flow that supports password managers, rather than embedding password fields in a PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Avoid designing authentication flows within print/PDF documents.
-      2. If a password field is necessary, ensure it is a standard text field with the Password flag — do not add JavaScript that blocks paste or auto-fill.
-    
-    Before
-    
-    Incorrect: Paste blocked on password field
+    <strong>Incorrect: Paste blocked on password field</strong>:
+    ```
     Password field: /FT /Tx, /Ff 8192 (Password flag)
     JavaScript: onKeyPress blocks Ctrl+V
     
     User cannot paste from password manager.
     Must memorise and manually type the password.
+    ```
     
-    After
-    
-    Correct: Paste and auto-fill allowed
+    <strong>Correct: Paste and auto-fill allowed</strong>:
+    ```
     Password field: /FT /Tx, /Ff 8192 (Password flag)
     No restrictive JavaScript on key events
     
     User can paste from password manager.
     Assistive technology can auto-fill the field.
+    ```
     
     PDF password fields use the /Ff flag bit 14 (value 8192) to mask input. This is acceptable, but the field must still allow paste and auto-fill. WCAG 3.3.8 does not prohibit passwords — it requires that password managers and assistive technology can be used to complete authentication.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum.html">https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum.html</a>
 
 pdf-remediation-PdfErrLabelInNameMismatch =
-    Why it matters
+    <strong>Why it matters</strong>: Voice control users (Dragon NaturallySpeaking, Voice Control on Mac) speak what they see to activate controls. If the accessible name doesn't contain the visible text, the voice command won't work. For example, seeing 'Donate Now' but the accessible name being 'Make a contribution' means saying 'click Donate Now' fails.
     
-    Voice control users (Dragon NaturallySpeaking, Voice Control on Mac) speak what they see to activate controls. If the accessible name doesn't contain the visible text, the voice command won't work. For example, seeing 'Donate Now' but the accessible name being 'Make a contribution' means saying 'click Donate Now' fails.
+    <strong>What needs to change</strong>: The accessible name of every interactive element must contain the visible label text as a substring. The accessible name can be longer but must include the visible text.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and find elements where the accessible name differs from visible text.
+    2. Right-click > Properties.
+    3. Ensure the Alternate Text or Actual Text contains the visible text as a substring.
+    4. If the visible text is 'Donate Now', the accessible name could be 'Donate Now to CNIB' but not 'Make a contribution'.
     
-    The accessible name of every interactive element must contain the visible label text as a substring. The accessible name can be longer but must include the visible text.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure link text and button labels match their accessible names.
+    2. Avoid overriding alt text to something completely different from the visible text.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. In Object Export Options, ensure alt text includes the visible text.
     
-      1. Open the Tags panel and find elements where the accessible name differs from visible text.
-      2. Right-click > Properties.
-      3. Ensure the Alternate Text or Actual Text contains the visible text as a substring.
-      4. If the visible text is 'Donate Now', the accessible name could be 'Donate Now to CNIB' but not 'Make a contribution'.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure link text and button labels match their accessible names.
-      2. Avoid overriding alt text to something completely different from the visible text.
-    
-    How to fix in Adobe InDesign
-    
-      1. In Object Export Options, ensure alt text includes the visible text.
-    
-    Before
-    
-    Accessible name doesn't match visible text
+    <strong>Accessible name doesn't match visible text</strong>:
+    ```
     Visible text: 'Donate Now'
     Accessible name (/Alt): 'Make a financial contribution'
     
     Voice control user says 'Click Donate Now' → nothing happens.
+    ```
     
-    After
-    
-    Accessible name contains visible text
+    <strong>Accessible name contains visible text</strong>:
+    ```
     Visible text: 'Donate Now'
     Accessible name (/Alt): 'Donate Now to CNIB'
     
     Voice control user says 'Click Donate Now' → activates correctly.
+    ```
     
     The accessible name must include the visible label as a contiguous substring. It's fine to add more context, but never replace the visible text entirely.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/label-in-name.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/label-in-name.html">https://www.w3.org/WAI/WCAG22/Understanding/label-in-name.html</a>
 
 pdf-remediation-PdfWarnTargetSizeInsufficient =
-    Why it matters
+    <strong>Why it matters</strong>: Small click/tap targets are difficult for users with motor impairments, tremors, or limited dexterity. A tiny link target means users must position their cursor or finger with high precision, increasing errors and frustration.
     
-    Small click/tap targets are difficult for users with motor impairments, tremors, or limited dexterity. A tiny link target means users must position their cursor or finger with high precision, increasing errors and frustration.
+    <strong>What needs to change</strong>: Interactive elements should have a minimum target size of 24×24 CSS pixels (WCAG 2.5.8 Level AA) and ideally 44×44 pixels (WCAG 2.5.5 Level AAA). For PDFs, link annotation rectangles define the clickable area.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Select the link annotation with the Edit tool.
+    2. Drag the link boundary to increase the clickable area.
+    3. Ensure the link rectangle is at least 24pt × 24pt.
+    4. For small inline links, extend the rectangle slightly above and below the text.
     
-    Interactive elements should have a minimum target size of 24×24 CSS pixels (WCAG 2.5.8 Level AA) and ideally 44×44 pixels (WCAG 2.5.5 Level AAA). For PDFs, link annotation rectangles define the clickable area.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Make link text longer and more descriptive (more text = larger click area).
+    2. Avoid single-character or very short link text.
+    3. Use padding in table cells containing links to increase the clickable area.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Increase the size of interactive elements or their surrounding frames.
+    2. Ensure link annotations have sufficient padding around the text.
     
-      1. Select the link annotation with the Edit tool.
-      2. Drag the link boundary to increase the clickable area.
-      3. Ensure the link rectangle is at least 24pt × 24pt.
-      4. For small inline links, extend the rectangle slightly above and below the text.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Make link text longer and more descriptive (more text = larger click area).
-      2. Avoid single-character or very short link text.
-      3. Use padding in table cells containing links to increase the clickable area.
-    
-    How to fix in Adobe InDesign
-    
-      1. Increase the size of interactive elements or their surrounding frames.
-      2. Ensure link annotations have sufficient padding around the text.
-    
-    Before
-    
-    Small link target
+    <strong>Small link target</strong>:
+    ```
     Link annotation: 45pt × 8pt (width OK, height too small)
     
     Users with tremors or motor difficulties: miss the target frequently.
+    ```
     
-    After
-    
-    Adequate link target
+    <strong>Adequate link target</strong>:
+    ```
     Link annotation: 45pt × 26pt (meets 24pt minimum)
     
     Users can click/tap reliably.
+    ```
     
     The 24pt minimum height is critical. Most text links meet width requirements but fail on height because the annotation rect is only as tall as the text.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html">https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html</a>
 
 pdf-remediation-PdfWarnFocusIndicatorUnverified =
-    Why it matters
+    <strong>Why it matters</strong>: Keyboard users need a visible indicator showing which element currently has focus. Without visible borders on link annotations, users tabbing through the document have no idea where they are.
     
-    Keyboard users need a visible indicator showing which element currently has focus. Without visible borders on link annotations, users tabbing through the document have no idea where they are.
+    <strong>What needs to change</strong>: Link annotations should have visible border settings that provide a clear focus indicator when the element receives keyboard focus.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Select each link annotation with the Edit tool.
+    2. Right-click > Properties > Appearance tab.
+    3. Set Border Style to 'Underline' or 'Inset' with a visible width (at least 1pt).
+    4. Choose a high-contrast border color.
     
-    Link annotations should have visible border settings that provide a clear focus indicator when the element receives keyboard focus.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word link styling (blue underline) typically creates visible link annotations in PDF.
+    2. If links are styled without underlines, the PDF may lose focus indicators.
+    3. Keep the default blue underline styling for hyperlinks.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. In the Hyperlinks panel, set link appearance options.
+    2. Use a visible border or underline style that will translate to the PDF.
     
-      1. Select each link annotation with the Edit tool.
-      2. Right-click > Properties > Appearance tab.
-      3. Set Border Style to 'Underline' or 'Inset' with a visible width (at least 1pt).
-      4. Choose a high-contrast border color.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Word link styling (blue underline) typically creates visible link annotations in PDF.
-      2. If links are styled without underlines, the PDF may lose focus indicators.
-      3. Keep the default blue underline styling for hyperlinks.
-    
-    How to fix in Adobe InDesign
-    
-      1. In the Hyperlinks panel, set link appearance options.
-      2. Use a visible border or underline style that will translate to the PDF.
-    
-    Before
-    
-    No visible focus indicator
+    <strong>No visible focus indicator</strong>:
+    ```
     Link annotation:
       /Border [0 0 0]  (zero-width border — invisible)
     
     Keyboard user: tabs through links but cannot see which one is focused.
+    ```
     
-    After
-    
-    Visible focus indicator
+    <strong>Visible focus indicator</strong>:
+    ```
     Link annotation:
       /Border [0 0 1]  (1pt border — visible)
       /C [0 0 1]       (blue border color)
     
     Keyboard user: sees a blue border around the focused link.
+    ```
     
     PDF viewers also add their own focus indicators (usually a dotted rectangle), but relying solely on the viewer is inconsistent across applications.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html">https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html</a>
 
 pdf-remediation-PdfErrFocusObscured =
-    Why it matters
+    <strong>Why it matters</strong>: When an interactive element (form field, link, or button) is completely covered by another element, keyboard users cannot see the focus indicator when they tab to it. This makes the element effectively invisible and unusable for anyone who relies on keyboard navigation.
     
-    When an interactive element (form field, link, or button) is completely covered by another element, keyboard users cannot see the focus indicator when they tab to it. This makes the element effectively invisible and unusable for anyone who relies on keyboard navigation.
+    <strong>What needs to change</strong>: Interactive elements must not be completely hidden behind other content. When a user tabs to a form field or link, the focused component must be at least partially visible so the user knows where they are on the page.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the document in Acrobat Pro and go to Edit > Edit a PDF.
+    2. Use the Form field tool or Link tool to identify overlapping interactive elements.
+    3. Move or resize elements so no interactive element is completely hidden behind another.
+    4. Check the tab order (View > Navigation Panels > Order) to ensure all interactive elements are reachable and visible when focused.
     
-    Interactive elements must not be completely hidden behind other content. When a user tabs to a form field or link, the focused component must be at least partially visible so the user knows where they are on the page.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Open the source document and check for overlapping text boxes, shapes, or form controls.
+    2. Use the Selection Pane (Home > Editing > Select > Selection Pane) to see all objects.
+    3. Reposition any overlapping interactive elements so each is at least partially visible.
+    4. Re-export to PDF and verify the fix.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Open the source document and check for overlapping interactive objects.
+    2. Use the Layers panel to inspect stacking order.
+    3. Reposition or resize interactive elements to eliminate complete overlaps.
+    4. Re-export to tagged PDF and verify.
     
-      1. Open the document in Acrobat Pro and go to Edit > Edit a PDF.
-      2. Use the Form field tool or Link tool to identify overlapping interactive elements.
-      3. Move or resize elements so no interactive element is completely hidden behind another.
-      4. Check the tab order (View > Navigation Panels > Order) to ensure all interactive elements are reachable and visible when focused.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Open the source document and check for overlapping text boxes, shapes, or form controls.
-      2. Use the Selection Pane (Home > Editing > Select > Selection Pane) to see all objects.
-      3. Reposition any overlapping interactive elements so each is at least partially visible.
-      4. Re-export to PDF and verify the fix.
-    
-    How to fix in Adobe InDesign
-    
-      1. Open the source document and check for overlapping interactive objects.
-      2. Use the Layers panel to inspect stacking order.
-      3. Reposition or resize interactive elements to eliminate complete overlaps.
-      4. Re-export to tagged PDF and verify.
-    
-    Before
-    
-    Incorrect: Button hidden behind image
+    <strong>Incorrect: Button hidden behind image</strong>:
+    ```
     Submit button: Rect [100 200 200 220]
     Decorative image: Rect [90 190 210 230]
     
     The image completely covers the button.
     Keyboard user tabs to button but sees no focus indicator.
+    ```
     
-    After
-    
-    Correct: All elements visible
+    <strong>Correct: All elements visible</strong>:
+    ```
     Submit button: Rect [100 200 200 220]
     Decorative image: Rect [90 230 210 260]
     
     Elements do not overlap.
     Keyboard user sees focus indicator on the button.
+    ```
     
     Interactive annotations in PDF have a /Rect that defines their clickable area. If another annotation's /Rect completely encloses it, the element is visually hidden and its focus indicator cannot be seen.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html">https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html</a>
 
 pdf-remediation-PdfWarnDraggingNoAlternative =
-    Why it matters
+    <strong>Why it matters</strong>: Some people cannot perform dragging motions due to motor disabilities, tremors, or the use of alternative input devices. If a form widget requires a drag gesture (such as a slider), there must be a single-pointer or keyboard alternative to perform the same action.
     
-    Some people cannot perform dragging motions due to motor disabilities, tremors, or the use of alternative input devices. If a form widget requires a drag gesture (such as a slider), there must be a single-pointer or keyboard alternative to perform the same action.
+    <strong>What needs to change</strong>: Any functionality that uses a dragging movement for operation must have an alternative that can be operated with a single pointer without dragging, unless dragging is essential or the functionality is determined by the user agent.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Identify any custom JavaScript widgets that use mouse down/move/up events for dragging.
+    2. Add an alternative input method: a text field for direct value entry, or increment/decrement buttons alongside the drag control.
+    3. Ensure the alternative is keyboard-accessible and produces the same result.
     
-    Any functionality that uses a dragging movement for operation must have an alternative that can be operated with a single pointer without dragging, unless dragging is essential or the functionality is determined by the user agent.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Avoid using custom ActiveX or macro-based slider controls in Word documents.
+    2. Use standard form controls (text fields, dropdowns) that do not require drag gestures.
+    3. Re-export to PDF and verify no drag-only interactions remain.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Avoid creating interactive widgets that rely on drag gestures.
+    2. Use standard buttons, text fields, and dropdown menus instead.
+    3. If a slider is needed, pair it with a text input that accepts direct value entry.
     
-      1. Identify any custom JavaScript widgets that use mouse down/move/up events for dragging.
-      2. Add an alternative input method: a text field for direct value entry, or increment/decrement buttons alongside the drag control.
-      3. Ensure the alternative is keyboard-accessible and produces the same result.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Avoid using custom ActiveX or macro-based slider controls in Word documents.
-      2. Use standard form controls (text fields, dropdowns) that do not require drag gestures.
-      3. Re-export to PDF and verify no drag-only interactions remain.
-    
-    How to fix in Adobe InDesign
-    
-      1. Avoid creating interactive widgets that rely on drag gestures.
-      2. Use standard buttons, text fields, and dropdown menus instead.
-      3. If a slider is needed, pair it with a text input that accepts direct value entry.
-    
-    Before
-    
-    Incorrect: Slider requires drag
+    <strong>Incorrect: Slider requires drag</strong>:
+    ```
     Widget: Custom JavaScript slider
     Actions: /D (mouseDown) → track cursor → /U (mouseUp)
     
     User must click and drag to set a value.
     No alternative input method available.
+    ```
     
-    After
-    
-    Correct: Alternative input provided
+    <strong>Correct: Alternative input provided</strong>:
+    ```
     Widget: Slider with text field companion
     Slider: Drag to set value (visual aid)
     Text field: Type exact value directly
     
     Users who cannot drag can type the value instead.
+    ```
     
     WCAG 2.5.7 does not prohibit drag-based widgets — it requires that an alternative single-pointer or keyboard method exists. In PDFs, this typically means pairing any custom JavaScript drag widget with a standard text input.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html">https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html</a>
 
 pdf-remediation-PdfErrTextContrastBelowAa =
-    TODO_REMEDIATION
-    
-    No remediation entry found in pdfMax's REMEDIATION_GUIDE for the check 'Text contrast (WCAG AA)' (stable id: PdfErrTextContrastBelowAa). When pdfMax adds an entry, re-run scripts/port_pdfmax_remediation_guide.py and commit the regenerated translation files.
+    <strong>Pourquoi c'est important</strong> : Un texte trop proche en clarté de ce qui se trouve derrière lui est difficile à lire pour les personnes malvoyantes, et pour tout le monde en pleine lumière ou sur un écran médiocre. Le critère WCAG 1.4.3 fixe le seuil à 4,5:1 pour le texte normal et 3:1 pour le grand texte — 18 pt, ou 14 pt gras.
+
+    <strong>Ce qu'il faut changer</strong> : Assombrissez le texte, éclaircissez le fond, ou les deux, jusqu'à atteindre le seuil. Modifier le texte est généralement plus sûr : un fond fait souvent partie d'une charte graphique ou d'une photographie.
+
+    <strong>Adobe Acrobat Pro</strong> :
+    1. Acrobat ne peut pas restyler le texte de façon fiable — corrigez dans le document source et réexportez.
+    2. Pour savoir quelles paires échouent, consultez la section Couleur et contraste de ce rapport ; chaque ligne donne les deux couleurs et le rapport.
+
+    <strong>Microsoft Word (document source)</strong> :
+    1. Sélectionnez le texte et ouvrez le sélecteur de couleur de police.
+    2. Choisissez une teinte plus foncée, ou appliquez un style dont la couleur atteint déjà le rapport.
+    3. Vérifiez la paire avec un outil de contraste avant de réexporter — ne vous fiez pas à l'œil.
+    4. Réexportez avec Fichier, Enregistrer sous, PDF.
+
+    <strong>Adobe InDesign</strong> :
+    1. Corrigez le nuancier plutôt que les blocs individuels, pour que tous ses usages changent ensemble.
+    2. Ouvrez Fenêtre, Couleur, Nuancier, double-cliquez sur la nuance et ajustez ses valeurs.
+    3. Réexportez avec Fichier, Exporter, Adobe PDF.
+
+    <strong>Référence</strong> : <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum">Comprendre le critère WCAG 1.4.3 : contraste (minimum)</a>
 
 pdf-remediation-PdfInfoTextContrastNoData =
-    TODO_REMEDIATION
-    
-    No remediation entry found in pdfMax's REMEDIATION_GUIDE for the check 'Text contrast (WCAG AA)' (stable id: PdfInfoTextContrastNoData). When pdfMax adds an entry, re-run scripts/port_pdfmax_remediation_guide.py and commit the regenerated translation files.
+    <strong>Pourquoi c'est important</strong> : Aucune paire de couleurs n'a pu être mesurée : le contraste est donc inconnu, et non acceptable. Un document que personne n'a pu mesurer n'a pas réussi la vérification.
+
+    <strong>Ce qu'il faut changer</strong> : Cherchez pourquoi la mesure n'a rien trouvé. En général le document n'a pas de couche de texte — examinez ce constat d'abord — ou ses pages n'ont pas pu être rendues.
+
+    <strong>Adobe Acrobat Pro</strong> :
+    1. Ouvrez le fichier et essayez de sélectionner une ligne de texte. Si vous n'y parvenez pas, la page est une image ; voyez le constat sur la couche de texte.
+    2. Si le texte se sélectionne normalement, vérifiez le contraste à la main avec une pipette et un outil de contraste.
+
+    <strong>Référence</strong> : <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum">Comprendre le critère WCAG 1.4.3 : contraste (minimum)</a>
 
 pdf-remediation-PdfWarnTextContrastBelowAaa =
-    TODO_REMEDIATION
-    
-    No remediation entry found in pdfMax's REMEDIATION_GUIDE for the check 'Text contrast (WCAG AAA)' (stable id: PdfWarnTextContrastBelowAaa). When pdfMax adds an entry, re-run scripts/port_pdfmax_remediation_guide.py and commit the regenerated translation files.
+    <strong>Pourquoi c'est important</strong> : Le critère WCAG 1.4.6 demande 7:1 pour le texte normal et 4,5:1 pour le grand texte — à peu près le rapport à partir duquel la lecture cesse d'être pénible pour une personne ayant une acuité de 20/80 sans grossissement. Ce n'est pas exigé pour la conformité AA : d'où un avertissement plutôt qu'un échec, mais c'est le niveau à viser pour tout ce qui se lit longuement.
+
+    <strong>Ce qu'il faut changer</strong> : La même correction que pour le seuil AA, poussée plus loin. Si la maquette ne peut pas atteindre 7:1 partout, privilégiez le texte courant sur les mentions accessoires.
+
+    <strong>Adobe Acrobat Pro</strong> :
+    1. Corrigez dans le document source et réexportez ; Acrobat ne peut pas restyler le texte de façon fiable.
+
+    <strong>Microsoft Word (document source)</strong> :
+    1. Ajustez le style plutôt que des passages isolés, pour que la correction soit cohérente.
+    2. Vérifiez chaque paire avec un outil de contraste avant de réexporter.
+
+    <strong>Adobe InDesign</strong> :
+    1. Ajustez les styles de paragraphe et les nuances, puis réexportez.
+
+    <strong>Référence</strong> : <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced">Comprendre le critère WCAG 1.4.6 : contraste (amélioré)</a>
 
 pdf-remediation-PdfInfoTextContrastAaaNoData =
-    TODO_REMEDIATION
-    
-    No remediation entry found in pdfMax's REMEDIATION_GUIDE for the check 'Text contrast (WCAG AAA)' (stable id: PdfInfoTextContrastAaaNoData). When pdfMax adds an entry, re-run scripts/port_pdfmax_remediation_guide.py and commit the regenerated translation files.
+    <strong>Pourquoi c'est important</strong> : Aucune paire de couleurs n'a pu être mesurée au regard du seuil amélioré : le résultat est inconnu, et non acceptable.
+
+    <strong>Ce qu'il faut changer</strong> : Comme pour la mesure AA — établissez pourquoi rien n'a pu être mesuré avant de prendre l'absence de constats pour une réussite.
+
+    <strong>Adobe Acrobat Pro</strong> :
+    1. Vérifiez que le document possède une véritable couche de texte.
+    2. Si c'est le cas, vérifiez le contraste à la main avec une pipette et un outil de contraste.
+
+    <strong>Référence</strong> : <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced">Comprendre le critère WCAG 1.4.6 : contraste (amélioré)</a>
 
 pdf-remediation-PdfErrFontsNotEmbedded =
-    Why it matters
+    <strong>Why it matters</strong>: When fonts are not embedded, the PDF viewer substitutes a different font, which can change character spacing, line breaks, and even make some characters display incorrectly. This affects both visual readability and text extraction used by screen readers and search tools.
     
-    When fonts are not embedded, the PDF viewer substitutes a different font, which can change character spacing, line breaks, and even make some characters display incorrectly. This affects both visual readability and text extraction used by screen readers and search tools.
+    <strong>What needs to change</strong>: Every font used in the PDF must be fully embedded (or subset-embedded) so the document renders identically on any system, regardless of installed fonts.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open File > Properties > Fonts tab to see which fonts are not embedded.
+    2. Use Edit > Preflight > Fix: Embed missing fonts (under PDF Fixups).
+    3. Alternatively, use Print to PDF with 'Rely on system fonts only' unchecked.
     
-    Every font used in the PDF must be fully embedded (or subset-embedded) so the document renders identically on any system, regardless of installed fonts.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Go to File > Options > Save.
+    2. Check 'Embed fonts in the file'.
+    3. Optionally check 'Embed only the characters used in the document' to reduce file size.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. InDesign embeds fonts by default when exporting to PDF.
+    2. If you see unembedded fonts, check that the fonts are not restricted from embedding by their license.
+    3. Go to File > Package to collect all fonts, then re-export.
     
-      1. Open File > Properties > Fonts tab to see which fonts are not embedded.
-      2. Use Edit > Preflight > Fix: Embed missing fonts (under PDF Fixups).
-      3. Alternatively, use Print to PDF with 'Rely on system fonts only' unchecked.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Go to File > Options > Save.
-      2. Check 'Embed fonts in the file'.
-      3. Optionally check 'Embed only the characters used in the document' to reduce file size.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. InDesign embeds fonts by default when exporting to PDF.
-      2. If you see unembedded fonts, check that the fonts are not restricted from embedding by their license.
-      3. Go to File > Package to collect all fonts, then re-export.
-    
-    Before
-    
-    Font not embedded — substitution occurs
+    <strong>Font not embedded — substitution occurs</strong>:
+    ```
     Fonts tab:
       Helvetica — Not Embedded
       (viewer substitutes Arial or system default)
     
     Result: character widths differ, text may reflow or overlap.
+    ```
     
-    After
-    
-    Font embedded — renders correctly everywhere
+    <strong>Font embedded — renders correctly everywhere</strong>:
+    ```
     Fonts tab:
       Helvetica — Embedded Subset
       (exact font data included in PDF)
     
     Result: identical rendering on all devices.
+    ```
     
     Subset embedding includes only the characters actually used, keeping file size small. Full embedding includes the complete font, useful if the PDF will be edited later.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7</a>
 
 pdf-remediation-PdfErrFontSizeTooSmall =
-    Why it matters
+    <strong>Why it matters</strong>: Text below 9pt is extremely difficult to read, even for users with typical vision. For users with low vision who rely on magnification, small text requires extreme zoom levels that make the document unusable. PDF text cannot be resized by users — unlike web content, the authored size is final.
     
-    Text below 9pt is extremely difficult to read, even for users with typical vision. For users with low vision who rely on magnification, small text requires extreme zoom levels that make the document unusable. PDF text cannot be resized by users — unlike web content, the authored size is final.
+    <strong>What needs to change</strong>: Body text should be at least 12pt for comfortable reading. No text in the document should be below 9pt (absolute minimum). Footnotes and captions should be no smaller than 10pt.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF mode to select small text.
+    2. Increase the font size to at least 9pt (minimum) or 12pt (recommended).
+    3. Check that increasing text size doesn't cause overlap with other elements.
     
-    Body text should be at least 12pt for comfortable reading. No text in the document should be below 9pt (absolute minimum). Footnotes and captions should be no smaller than 10pt.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the small text and increase the font size.
+    2. Set your Normal style to at least 12pt.
+    3. For footnotes, use at least 10pt.
+    4. Re-export to PDF after making changes.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the small text frames and increase the font size in the Character panel.
+    2. Update paragraph styles to enforce minimum sizes.
     
-      1. Use Edit PDF mode to select small text.
-      2. Increase the font size to at least 9pt (minimum) or 12pt (recommended).
-      3. Check that increasing text size doesn't cause overlap with other elements.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the small text and increase the font size.
-      2. Set your Normal style to at least 12pt.
-      3. For footnotes, use at least 10pt.
-      4. Re-export to PDF after making changes.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the small text frames and increase the font size in the Character panel.
-      2. Update paragraph styles to enforce minimum sizes.
-    
-    Before
-    
-    Text too small to read
+    <strong>Text too small to read</strong>:
+    ```
     Font: Helvetica at 7pt
     Content: 'Charitable registration number: 119219790RR0001'
     
     Users with low vision: cannot read even at 200% magnification.
+    ```
     
-    After
-    
-    Text at readable size
+    <strong>Text at readable size</strong>:
+    ```
     Font: Helvetica at 12pt
     Content: 'Charitable registration number: 119219790RR0001'
     
     Users with low vision: readable at standard magnification.
+    ```
     
     Unlike web pages where users can zoom text independently, PDF text size is fixed. Authors must ensure readability at the authored size.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html">https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html</a>
 
 pdf-remediation-PdfWarnFontSizeBorderline =
-    Why it matters
+    <strong>Why it matters</strong>: Text below 9pt is extremely difficult to read, even for users with typical vision. For users with low vision who rely on magnification, small text requires extreme zoom levels that make the document unusable. PDF text cannot be resized by users — unlike web content, the authored size is final.
     
-    Text below 9pt is extremely difficult to read, even for users with typical vision. For users with low vision who rely on magnification, small text requires extreme zoom levels that make the document unusable. PDF text cannot be resized by users — unlike web content, the authored size is final.
+    <strong>What needs to change</strong>: Body text should be at least 12pt for comfortable reading. No text in the document should be below 9pt (absolute minimum). Footnotes and captions should be no smaller than 10pt.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF mode to select small text.
+    2. Increase the font size to at least 9pt (minimum) or 12pt (recommended).
+    3. Check that increasing text size doesn't cause overlap with other elements.
     
-    Body text should be at least 12pt for comfortable reading. No text in the document should be below 9pt (absolute minimum). Footnotes and captions should be no smaller than 10pt.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the small text and increase the font size.
+    2. Set your Normal style to at least 12pt.
+    3. For footnotes, use at least 10pt.
+    4. Re-export to PDF after making changes.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the small text frames and increase the font size in the Character panel.
+    2. Update paragraph styles to enforce minimum sizes.
     
-      1. Use Edit PDF mode to select small text.
-      2. Increase the font size to at least 9pt (minimum) or 12pt (recommended).
-      3. Check that increasing text size doesn't cause overlap with other elements.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the small text and increase the font size.
-      2. Set your Normal style to at least 12pt.
-      3. For footnotes, use at least 10pt.
-      4. Re-export to PDF after making changes.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the small text frames and increase the font size in the Character panel.
-      2. Update paragraph styles to enforce minimum sizes.
-    
-    Before
-    
-    Text too small to read
+    <strong>Text too small to read</strong>:
+    ```
     Font: Helvetica at 7pt
     Content: 'Charitable registration number: 119219790RR0001'
     
     Users with low vision: cannot read even at 200% magnification.
+    ```
     
-    After
-    
-    Text at readable size
+    <strong>Text at readable size</strong>:
+    ```
     Font: Helvetica at 12pt
     Content: 'Charitable registration number: 119219790RR0001'
     
     Users with low vision: readable at standard magnification.
+    ```
     
     Unlike web pages where users can zoom text independently, PDF text size is fixed. Authors must ensure readability at the authored size.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html">https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html</a>
 
 pdf-remediation-PdfWarnFontFaceReadability =
-    Why it matters
+    <strong>Why it matters</strong>: Script, decorative, narrow, and blackletter fonts are significantly harder to read for users with dyslexia, low vision, or cognitive disabilities. These fonts reduce reading speed and comprehension for all users.
     
-    Script, decorative, narrow, and blackletter fonts are significantly harder to read for users with dyslexia, low vision, or cognitive disabilities. These fonts reduce reading speed and comprehension for all users.
+    <strong>What needs to change</strong>: Use standard, highly legible fonts for body text: sans-serif fonts like Helvetica, Arial, Verdana, or serif fonts like Times New Roman, Georgia. Reserve decorative fonts for logos or very short decorative elements only.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select text in problematic fonts.
+    2. Change to a standard, readable font.
+    3. Note: Acrobat font editing can cause layout issues — prefer fixing in the source document.
     
-    Use standard, highly legible fonts for body text: sans-serif fonts like Helvetica, Arial, Verdana, or serif fonts like Times New Roman, Georgia. Reserve decorative fonts for logos or very short decorative elements only.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select text in the problematic font.
+    2. Change to a standard font: Arial, Calibri, Times New Roman, or Verdana.
+    3. Update your document styles to use readable fonts by default.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Update paragraph and character styles to use readable fonts.
+    2. Replace decorative fonts with standard alternatives.
     
-      1. Use Edit PDF to select text in problematic fonts.
-      2. Change to a standard, readable font.
-      3. Note: Acrobat font editing can cause layout issues — prefer fixing in the source document.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select text in the problematic font.
-      2. Change to a standard font: Arial, Calibri, Times New Roman, or Verdana.
-      3. Update your document styles to use readable fonts by default.
-    
-    How to fix in Adobe InDesign
-    
-      1. Update paragraph and character styles to use readable fonts.
-      2. Replace decorative fonts with standard alternatives.
-    
-    Before
-    
-    Decorative font reduces readability
+    <strong>Decorative font reduces readability</strong>:
+    ```
     Font: Brush Script MT at 14pt
     Category: Script/Cursive — PROBLEMATIC
     
     Users with dyslexia: letters blend together, significantly slower reading.
+    ```
     
-    After
-    
-    Standard font for readability
+    <strong>Standard font for readability</strong>:
+    ```
     Font: Arial at 14pt
     Category: Sans-serif — READABLE
     
     Clear letter differentiation, consistent spacing.
+    ```
     
     Decorative fonts can be used sparingly for logos or headings, but body text must always use a standard, highly legible font.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html">https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html</a>
 
 pdf-remediation-PdfWarnFontMagnificationRatio =
-    Why it matters
+    <strong>Why it matters</strong>: When the ratio between the largest and smallest font sizes is too great, magnification users face a dilemma: zoom enough to read the small text and the large text extends far beyond the viewport, or zoom for the large text and the small text remains unreadable.
     
-    When the ratio between the largest and smallest font sizes is too great, magnification users face a dilemma: zoom enough to read the small text and the large text extends far beyond the viewport, or zoom for the large text and the small text remains unreadable.
+    <strong>What needs to change</strong>: The ratio between the largest and smallest font sizes should not exceed 3:1. For example, if body text is 12pt, headings should not exceed 36pt.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Identify the smallest and largest text sizes in the font analysis.
+    2. Increase the smallest text size or decrease the largest to bring the ratio within 3:1.
     
-    The ratio between the largest and smallest font sizes should not exceed 3:1. For example, if body text is 12pt, headings should not exceed 36pt.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Reduce the size of the largest headings or increase the smallest body text.
+    2. Example: if footnotes are 8pt and headings are 28pt (3.5:1 ratio), either increase footnotes to 10pt or reduce headings to 24pt.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Review paragraph styles and adjust font sizes to narrow the range.
+    2. Keep the ratio between extremes under 3:1.
     
-      1. Identify the smallest and largest text sizes in the font analysis.
-      2. Increase the smallest text size or decrease the largest to bring the ratio within 3:1.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Reduce the size of the largest headings or increase the smallest body text.
-      2. Example: if footnotes are 8pt and headings are 28pt (3.5:1 ratio), either increase footnotes to 10pt or reduce headings to 24pt.
-    
-    How to fix in Adobe InDesign
-    
-      1. Review paragraph styles and adjust font sizes to narrow the range.
-      2. Keep the ratio between extremes under 3:1.
-    
-    Before
-    
-    Extreme font size ratio
+    <strong>Extreme font size ratio</strong>:
+    ```
     Smallest: 7pt (fine print)
     Largest: 36pt (heading)
     Ratio: 5.1:1 — exceeds 3:1 maximum
     
     Magnifier user: must zoom 5x to read fine print, but heading extends 5 screen-widths at that zoom.
+    ```
     
-    After
-    
-    Manageable font size ratio
+    <strong>Manageable font size ratio</strong>:
+    ```
     Smallest: 12pt (body text)
     Largest: 28pt (heading)
     Ratio: 2.3:1 — within 3:1 maximum
     
     Magnifier user: readable zoom level, heading fits in viewport.
+    ```
     
     The goal is to ensure that when a user magnifies to read the smallest text, the largest text doesn't become unmanageably large.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html">https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html</a>
 
 pdf-remediation-PdfWarnTextRotated =
-    Why it matters
+    <strong>Why it matters</strong>: Rotated text (vertical, diagonal, upside-down) is difficult to read for everyone and particularly challenging for users with cognitive or visual disabilities. Magnification users may not even realize rotated text exists if it falls outside their viewport.
     
-    Rotated text (vertical, diagonal, upside-down) is difficult to read for everyone and particularly challenging for users with cognitive or visual disabilities. Magnification users may not even realize rotated text exists if it falls outside their viewport.
+    <strong>What needs to change</strong>: All text should be horizontal (0° rotation) unless rotation is essential for the content (e.g., Y-axis labels on charts). Rotated text must also be available in a readable orientation.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select rotated text.
+    2. Reset the rotation to 0° (horizontal).
+    3. If rotation is essential (chart labels), ensure the same information is available in a non-rotated form.
     
-    All text should be horizontal (0° rotation) unless rotation is essential for the content (e.g., Y-axis labels on charts). Rotated text must also be available in a readable orientation.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Avoid using rotated text boxes.
+    2. For table headers, use horizontal text instead of vertical.
+    3. If vertical text is needed for design, provide the same information in a horizontal caption.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select rotated text frames and set rotation to 0°.
+    2. If rotation is necessary for design, include a non-rotated alternative.
     
-      1. Use Edit PDF to select rotated text.
-      2. Reset the rotation to 0° (horizontal).
-      3. If rotation is essential (chart labels), ensure the same information is available in a non-rotated form.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Avoid using rotated text boxes.
-      2. For table headers, use horizontal text instead of vertical.
-      3. If vertical text is needed for design, provide the same information in a horizontal caption.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select rotated text frames and set rotation to 0°.
-      2. If rotation is necessary for design, include a non-rotated alternative.
-    
-    Before
-    
-    Rotated text
+    <strong>Rotated text</strong>:
+    ```
     Text: 'Amount ($)' at 90° rotation (vertical)
     
     Screen reader: may read correctly, but magnified view only shows a few characters at a time vertically.
+    ```
     
-    After
-    
-    Horizontal text
+    <strong>Horizontal text</strong>:
+    ```
     Text: 'Amount ($)' at 0° rotation (horizontal)
     
     Readable at all magnification levels.
+    ```
     
     Rotated text is most often found in chart axes and table headers. Consider abbreviating headers instead of rotating them.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html">https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html</a>
 
 pdf-remediation-PdfWarnItalicTextOveruse =
-    Why it matters
+    <strong>Why it matters</strong>: Long passages of italic text are significantly harder to read, especially for users with dyslexia or low vision. Italic characters have less distinct letter shapes, reducing recognition speed. Extended italic runs slow reading for all users.
     
-    Long passages of italic text are significantly harder to read, especially for users with dyslexia or low vision. Italic characters have less distinct letter shapes, reducing recognition speed. Extended italic runs slow reading for all users.
+    <strong>What needs to change</strong>: Keep italic text to short phrases (6 words or fewer). Never use italics for emphasis in body text — use bold instead. Reserve italics for conventional uses: titles of works, foreign phrases, technical terms.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select long italic passages.
+    2. Change the font style from Italic to Regular.
+    3. If emphasis is needed, use Bold instead.
     
-    Keep italic text to short phrases (6 words or fewer). Never use italics for emphasis in body text — use bold instead. Reserve italics for conventional uses: titles of works, foreign phrases, technical terms.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the long italic passages.
+    2. Remove italic formatting (Ctrl+I / Cmd+I).
+    3. For emphasis, use Bold instead.
+    4. Reserve italics for titles of works, foreign phrases, and short annotations.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Update character styles to use Regular weight instead of Italic for long passages.
+    2. Create an 'Emphasis' character style using Bold rather than Italic.
     
-      1. Use Edit PDF to select long italic passages.
-      2. Change the font style from Italic to Regular.
-      3. If emphasis is needed, use Bold instead.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the long italic passages.
-      2. Remove italic formatting (Ctrl+I / Cmd+I).
-      3. For emphasis, use Bold instead.
-      4. Reserve italics for titles of works, foreign phrases, and short annotations.
-    
-    How to fix in Adobe InDesign
-    
-      1. Update character styles to use Regular weight instead of Italic for long passages.
-      2. Create an 'Emphasis' character style using Bold rather than Italic.
-    
-    Before
-    
-    Long italic passage
+    <strong>Long italic passage</strong>:
+    ```
     Style: Italic for 45 words
     'Thank you for your generous donation to CNIB. Your support helps us
      deliver essential programs and services to Canadians who are blind
      or partially sighted across the country...'
     
     Readers with dyslexia: significantly reduced reading speed and comprehension.
+    ```
     
-    After
-    
-    Italic limited to short phrases
+    <strong>Italic limited to short phrases</strong>:
+    ```
     Style: Regular for body, italic only for emphasis
     'Thank you for your generous donation to CNIB. Your support helps us
      deliver *essential* programs and services...'
     
     Italic used for one word only — much easier to read.
+    ```
     
     The threshold is approximately 6 words. Beyond that, italic becomes a readability barrier rather than a visual distinction.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html">https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html</a>
 
 pdf-remediation-PdfWarnLineHeightInsufficient =
-    Why it matters
+    <strong>Why it matters</strong>: Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next. Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
     
-    Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next. Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
+    <strong>What needs to change</strong>: Line height (leading) should be at least 1.5 times the font size. For example, 12pt text should have at least 18pt line spacing. WCAG 1.4.12 specifies 1.5× as the minimum for comfortable reading.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select text with tight line spacing.
+    2. In the Format panel, increase the Leading value.
+    3. For 12pt text, set leading to at least 18pt (1.5× the font size).
+    4. Note: Editing leading in Acrobat can cause text reflow — prefer fixing in the source document.
     
-    Line height (leading) should be at least 1.5 times the font size. For example, 12pt text should have at least 18pt line spacing. WCAG 1.4.12 specifies 1.5× as the minimum for comfortable reading.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the text with tight spacing.
+    2. Go to Home > Paragraph > Line Spacing (or Format > Paragraph).
+    3. Set Line spacing to 'Multiple' with a value of 1.5 (for 1.5× spacing).
+    4. Update your paragraph styles to enforce this minimum.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the text frame.
+    2. In the Character panel, set Leading to at least 1.5× the font size.
+    3. Example: for 12pt text, set leading to 18pt or use Auto leading at 150%.
+    4. Update paragraph styles to enforce the minimum leading.
     
-      1. Use Edit PDF to select text with tight line spacing.
-      2. In the Format panel, increase the Leading value.
-      3. For 12pt text, set leading to at least 18pt (1.5× the font size).
-      4. Note: Editing leading in Acrobat can cause text reflow — prefer fixing in the source document.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the text with tight spacing.
-      2. Go to Home > Paragraph > Line Spacing (or Format > Paragraph).
-      3. Set Line spacing to 'Multiple' with a value of 1.5 (for 1.5× spacing).
-      4. Update your paragraph styles to enforce this minimum.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the text frame.
-      2. In the Character panel, set Leading to at least 1.5× the font size.
-      3. Example: for 12pt text, set leading to 18pt or use Auto leading at 150%.
-      4. Update paragraph styles to enforce the minimum leading.
-    
-    Before
-    
-    Tight line spacing
+    <strong>Tight line spacing</strong>:
+    ```
     Font: 12pt, Leading: 13pt (1.08× ratio)
     
     Lines appear crowded; readers lose their place
     when moving from one line to the next.
+    ```
     
-    After
-    
-    Comfortable line spacing
+    <strong>Comfortable line spacing</strong>:
+    ```
     Font: 12pt, Leading: 18pt (1.5× ratio)
     
     Clear separation between lines; easy to track
     from line to line.
+    ```
     
     1.5× is the WCAG minimum. For optimal readability, 1.5×–2.0× is recommended. Going above 2.0× can make text feel disconnected.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html">https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html</a>
 
 pdf-remediation-PdfErrLineHeightInsufficient =
-    Why it matters
+    <strong>Why it matters</strong>: Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next. Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
     
-    Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next. Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
+    <strong>What needs to change</strong>: Line height (leading) should be at least 1.5 times the font size. For example, 12pt text should have at least 18pt line spacing. WCAG 1.4.12 specifies 1.5× as the minimum for comfortable reading.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select text with tight line spacing.
+    2. In the Format panel, increase the Leading value.
+    3. For 12pt text, set leading to at least 18pt (1.5× the font size).
+    4. Note: Editing leading in Acrobat can cause text reflow — prefer fixing in the source document.
     
-    Line height (leading) should be at least 1.5 times the font size. For example, 12pt text should have at least 18pt line spacing. WCAG 1.4.12 specifies 1.5× as the minimum for comfortable reading.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the text with tight spacing.
+    2. Go to Home > Paragraph > Line Spacing (or Format > Paragraph).
+    3. Set Line spacing to 'Multiple' with a value of 1.5 (for 1.5× spacing).
+    4. Update your paragraph styles to enforce this minimum.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the text frame.
+    2. In the Character panel, set Leading to at least 1.5× the font size.
+    3. Example: for 12pt text, set leading to 18pt or use Auto leading at 150%.
+    4. Update paragraph styles to enforce the minimum leading.
     
-      1. Use Edit PDF to select text with tight line spacing.
-      2. In the Format panel, increase the Leading value.
-      3. For 12pt text, set leading to at least 18pt (1.5× the font size).
-      4. Note: Editing leading in Acrobat can cause text reflow — prefer fixing in the source document.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the text with tight spacing.
-      2. Go to Home > Paragraph > Line Spacing (or Format > Paragraph).
-      3. Set Line spacing to 'Multiple' with a value of 1.5 (for 1.5× spacing).
-      4. Update your paragraph styles to enforce this minimum.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the text frame.
-      2. In the Character panel, set Leading to at least 1.5× the font size.
-      3. Example: for 12pt text, set leading to 18pt or use Auto leading at 150%.
-      4. Update paragraph styles to enforce the minimum leading.
-    
-    Before
-    
-    Tight line spacing
+    <strong>Tight line spacing</strong>:
+    ```
     Font: 12pt, Leading: 13pt (1.08× ratio)
     
     Lines appear crowded; readers lose their place
     when moving from one line to the next.
+    ```
     
-    After
-    
-    Comfortable line spacing
+    <strong>Comfortable line spacing</strong>:
+    ```
     Font: 12pt, Leading: 18pt (1.5× ratio)
     
     Clear separation between lines; easy to track
     from line to line.
+    ```
     
     1.5× is the WCAG minimum. For optimal readability, 1.5×–2.0× is recommended. Going above 2.0× can make text feel disconnected.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html">https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html</a>
 
 pdf-remediation-PdfWarnTextAlignmentNonOptimal =
-    Why it matters
+    <strong>Why it matters</strong>: Justified text creates uneven word spacing — 'rivers of white space' — that disrupts reading flow. Centered text makes the left edge unpredictable, so magnification users lose their position at the start of each line. Left-aligned text provides a consistent left edge that readers can anchor to.
     
-    Justified text creates uneven word spacing — 'rivers of white space' — that disrupts reading flow. Centered text makes the left edge unpredictable, so magnification users lose their position at the start of each line. Left-aligned text provides a consistent left edge that readers can anchor to.
+    <strong>What needs to change</strong>: Body text should be left-aligned (ragged right). Avoid justified alignment for body text. Centered text is acceptable for short elements like headings and titles only.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit PDF to select justified text.
+    2. Change alignment to left-aligned in the Format panel.
     
-    Body text should be left-aligned (ragged right). Avoid justified alignment for body text. Centered text is acceptable for short elements like headings and titles only.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the justified text.
+    2. Change alignment to Left (Ctrl+L / Cmd+L).
+    3. Update your Normal and body text styles to use Left alignment.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Select the text frame or use paragraph styles.
+    2. Change justification to Left Align in the Paragraph panel.
+    3. Update paragraph styles to enforce left alignment for body text.
     
-      1. Use Edit PDF to select justified text.
-      2. Change alignment to left-aligned in the Format panel.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Select the justified text.
-      2. Change alignment to Left (Ctrl+L / Cmd+L).
-      3. Update your Normal and body text styles to use Left alignment.
-    
-    How to fix in Adobe InDesign
-    
-      1. Select the text frame or use paragraph styles.
-      2. Change justification to Left Align in the Paragraph panel.
-      3. Update paragraph styles to enforce left alignment for body text.
-    
-    Before
-    
-    Justified text with rivers of white space
+    <strong>Justified text with rivers of white space</strong>:
+    ```
     Alignment: Justified
     'Thank   you   for   your   generous   donation
      to   CNIB.   Your   support   helps   us   deliver
      essential programs and services.'
     
     Uneven spacing creates visual noise and reading difficulty.
+    ```
     
-    After
-    
-    Left-aligned text
+    <strong>Left-aligned text</strong>:
+    ```
     Alignment: Left
     'Thank you for your generous donation
      to CNIB. Your support helps us deliver
      essential programs and services.'
     
     Consistent left edge, natural word spacing.
+    ```
     
     Justified alignment is a holdover from print typography. For digital documents, left alignment provides the best readability, especially for screen reader and magnification users.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html">https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html</a>
 
 pdf-remediation-PdfErrFontMissingToUnicode =
-    Why it matters
+    <strong>Why it matters</strong>: The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text. Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
     
-    The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text. Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
+    <strong>What needs to change</strong>: Every font that uses non-standard encoding must include a /ToUnicode CMap stream. Standard 14 base fonts (Helvetica, Times-Roman, Courier, etc.) and fonts with standard named encodings (WinAnsiEncoding, MacRomanEncoding) are exempt because their mappings are predefined.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This issue usually requires re-creating the PDF from the source document.
+    2. In Acrobat Pro, use Edit > Preflight > Fix: Embed missing fonts, which sometimes adds ToUnicode.
+    3. For stubborn cases, use Edit > Preflight > Convert to PDF/A, which forces Unicode mappings.
+    4. If the source font lacks Unicode mappings entirely, substitute with a Unicode-capable font.
     
-    Every font that uses non-standard encoding must include a /ToUnicode CMap stream. Standard 14 base fonts (Helvetica, Times-Roman, Courier, etc.) and fonts with standard named encodings (WinAnsiEncoding, MacRomanEncoding) are exempt because their mappings are predefined.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export the document to PDF, ensuring 'Embed fonts' is checked.
+    2. Word normally generates ToUnicode CMaps automatically.
+    3. If using specialty fonts (barcode, symbol), ensure they have proper Unicode mappings.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF, ensuring font embedding is enabled (default).
+    2. InDesign generates ToUnicode CMaps for most fonts.
+    3. For OpenType CID fonts, check that the font has a valid cmap table.
+    4. If issues persist, try converting text to outlines (last resort — loses text accessibility).
     
-      1. This issue usually requires re-creating the PDF from the source document.
-      2. In Acrobat Pro, use Edit > Preflight > Fix: Embed missing fonts, which sometimes adds ToUnicode.
-      3. For stubborn cases, use Edit > Preflight > Convert to PDF/A, which forces Unicode mappings.
-      4. If the source font lacks Unicode mappings entirely, substitute with a Unicode-capable font.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export the document to PDF, ensuring 'Embed fonts' is checked.
-      2. Word normally generates ToUnicode CMaps automatically.
-      3. If using specialty fonts (barcode, symbol), ensure they have proper Unicode mappings.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF, ensuring font embedding is enabled (default).
-      2. InDesign generates ToUnicode CMaps for most fonts.
-      3. For OpenType CID fonts, check that the font has a valid cmap table.
-      4. If issues persist, try converting text to outlines (last resort — loses text accessibility).
-    
-    Before
-    
-    Font missing ToUnicode CMap
+    <strong>Font missing ToUnicode CMap</strong>:
+    ```
     Font: /F1 /Type0
       /BaseFont: /CustomFont
       /ToUnicode: (missing)
     
     Copy-paste result: '□□□□□' or empty string.
     Screen reader: skips text or reads character codes.
+    ```
     
-    After
-    
-    Font with ToUnicode CMap
+    <strong>Font with ToUnicode CMap</strong>:
+    ```
     Font: /F1 /Type0
       /BaseFont: /CustomFont
       /ToUnicode: stream (CMap)
     
     Copy-paste result: correct Unicode text.
     Screen reader: reads text correctly.
+    ```
     
     The ToUnicode CMap is a lookup table that translates internal font character codes to standard Unicode code points. It's the bridge between the PDF's internal encoding and the text that users and assistive technology actually see.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingToUnicode =
-    Why it matters
+    <strong>Why it matters</strong>: The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text. Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
     
-    The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text. Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
+    <strong>What needs to change</strong>: Every font that uses non-standard encoding must include a /ToUnicode CMap stream. Standard 14 base fonts (Helvetica, Times-Roman, Courier, etc.) and fonts with standard named encodings (WinAnsiEncoding, MacRomanEncoding) are exempt because their mappings are predefined.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This issue usually requires re-creating the PDF from the source document.
+    2. In Acrobat Pro, use Edit > Preflight > Fix: Embed missing fonts, which sometimes adds ToUnicode.
+    3. For stubborn cases, use Edit > Preflight > Convert to PDF/A, which forces Unicode mappings.
+    4. If the source font lacks Unicode mappings entirely, substitute with a Unicode-capable font.
     
-    Every font that uses non-standard encoding must include a /ToUnicode CMap stream. Standard 14 base fonts (Helvetica, Times-Roman, Courier, etc.) and fonts with standard named encodings (WinAnsiEncoding, MacRomanEncoding) are exempt because their mappings are predefined.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export the document to PDF, ensuring 'Embed fonts' is checked.
+    2. Word normally generates ToUnicode CMaps automatically.
+    3. If using specialty fonts (barcode, symbol), ensure they have proper Unicode mappings.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF, ensuring font embedding is enabled (default).
+    2. InDesign generates ToUnicode CMaps for most fonts.
+    3. For OpenType CID fonts, check that the font has a valid cmap table.
+    4. If issues persist, try converting text to outlines (last resort — loses text accessibility).
     
-      1. This issue usually requires re-creating the PDF from the source document.
-      2. In Acrobat Pro, use Edit > Preflight > Fix: Embed missing fonts, which sometimes adds ToUnicode.
-      3. For stubborn cases, use Edit > Preflight > Convert to PDF/A, which forces Unicode mappings.
-      4. If the source font lacks Unicode mappings entirely, substitute with a Unicode-capable font.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export the document to PDF, ensuring 'Embed fonts' is checked.
-      2. Word normally generates ToUnicode CMaps automatically.
-      3. If using specialty fonts (barcode, symbol), ensure they have proper Unicode mappings.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF, ensuring font embedding is enabled (default).
-      2. InDesign generates ToUnicode CMaps for most fonts.
-      3. For OpenType CID fonts, check that the font has a valid cmap table.
-      4. If issues persist, try converting text to outlines (last resort — loses text accessibility).
-    
-    Before
-    
-    Font missing ToUnicode CMap
+    <strong>Font missing ToUnicode CMap</strong>:
+    ```
     Font: /F1 /Type0
       /BaseFont: /CustomFont
       /ToUnicode: (missing)
     
     Copy-paste result: '□□□□□' or empty string.
     Screen reader: skips text or reads character codes.
+    ```
     
-    After
-    
-    Font with ToUnicode CMap
+    <strong>Font with ToUnicode CMap</strong>:
+    ```
     Font: /F1 /Type0
       /BaseFont: /CustomFont
       /ToUnicode: stream (CMap)
     
     Copy-paste result: correct Unicode text.
     Screen reader: reads text correctly.
+    ```
     
     The ToUnicode CMap is a lookup table that translates internal font character codes to standard Unicode code points. It's the bridge between the PDF's internal encoding and the text that users and assistive technology actually see.
     
-    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7</a>
 
 pdf-remediation-PdfErrCidFontGidMappingMissing =
-    Why it matters
+    <strong>Why it matters</strong>: CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program. Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
     
-    CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program. Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
+    <strong>What needs to change</strong>: Every CIDFontType2 font with an embedded font program (/FontFile2) must include a /CIDToGIDMap entry, either as /Identity (1:1 mapping) or as a stream containing the explicit CID-to-GID mapping table.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This is typically a font embedding issue that requires re-generating the PDF.
+    2. Use Edit > Preflight > Fix: Embed missing fonts to re-embed with correct mappings.
+    3. If the font was subset-embedded incorrectly, re-export from the source application.
     
-    Every CIDFontType2 font with an embedded font program (/FontFile2) must include a /CIDToGIDMap entry, either as /Identity (1:1 mapping) or as a stream containing the explicit CID-to-GID mapping table.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export the document to PDF — Word generates CIDToGIDMap automatically for CJK fonts.
+    2. Ensure the font is installed correctly on the system before exporting.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF — InDesign handles CID font mappings automatically.
+    2. If using custom CJK fonts, verify they have valid cmap and hmtx tables.
     
-      1. This is typically a font embedding issue that requires re-generating the PDF.
-      2. Use Edit > Preflight > Fix: Embed missing fonts to re-embed with correct mappings.
-      3. If the font was subset-embedded incorrectly, re-export from the source application.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export the document to PDF — Word generates CIDToGIDMap automatically for CJK fonts.
-      2. Ensure the font is installed correctly on the system before exporting.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF — InDesign handles CID font mappings automatically.
-      2. If using custom CJK fonts, verify they have valid cmap and hmtx tables.
-    
-    Before
-    
-    CIDFontType2 missing GID mapping
+    <strong>CIDFontType2 missing GID mapping</strong>:
+    ```
     Font: /CIDFontType2
       /FontFile2: (embedded TrueType)
       /CIDToGIDMap: (missing)
     
     Result: viewer cannot map character IDs to glyphs.
+    ```
     
-    After
-    
-    CIDFontType2 with Identity GID mapping
+    <strong>CIDFontType2 with Identity GID mapping</strong>:
+    ```
     Font: /CIDFontType2
       /FontFile2: (embedded TrueType)
       /CIDToGIDMap: /Identity
     
     Result: CID values map directly to glyph IDs.
+    ```
     
     The /CIDToGIDMap bridges CID (Character ID) values used in the content stream to GID (Glyph ID) values in the TrueType font. /Identity means CID=GID, which is the most common and simplest mapping.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingCidGidMapping =
-    Why it matters
+    <strong>Why it matters</strong>: CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program. Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
     
-    CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program. Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
+    <strong>What needs to change</strong>: Every CIDFontType2 font with an embedded font program (/FontFile2) must include a /CIDToGIDMap entry, either as /Identity (1:1 mapping) or as a stream containing the explicit CID-to-GID mapping table.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This is typically a font embedding issue that requires re-generating the PDF.
+    2. Use Edit > Preflight > Fix: Embed missing fonts to re-embed with correct mappings.
+    3. If the font was subset-embedded incorrectly, re-export from the source application.
     
-    Every CIDFontType2 font with an embedded font program (/FontFile2) must include a /CIDToGIDMap entry, either as /Identity (1:1 mapping) or as a stream containing the explicit CID-to-GID mapping table.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export the document to PDF — Word generates CIDToGIDMap automatically for CJK fonts.
+    2. Ensure the font is installed correctly on the system before exporting.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF — InDesign handles CID font mappings automatically.
+    2. If using custom CJK fonts, verify they have valid cmap and hmtx tables.
     
-      1. This is typically a font embedding issue that requires re-generating the PDF.
-      2. Use Edit > Preflight > Fix: Embed missing fonts to re-embed with correct mappings.
-      3. If the font was subset-embedded incorrectly, re-export from the source application.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export the document to PDF — Word generates CIDToGIDMap automatically for CJK fonts.
-      2. Ensure the font is installed correctly on the system before exporting.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF — InDesign handles CID font mappings automatically.
-      2. If using custom CJK fonts, verify they have valid cmap and hmtx tables.
-    
-    Before
-    
-    CIDFontType2 missing GID mapping
+    <strong>CIDFontType2 missing GID mapping</strong>:
+    ```
     Font: /CIDFontType2
       /FontFile2: (embedded TrueType)
       /CIDToGIDMap: (missing)
     
     Result: viewer cannot map character IDs to glyphs.
+    ```
     
-    After
-    
-    CIDFontType2 with Identity GID mapping
+    <strong>CIDFontType2 with Identity GID mapping</strong>:
+    ```
     Font: /CIDFontType2
       /FontFile2: (embedded TrueType)
       /CIDToGIDMap: /Identity
     
     Result: CID values map directly to glyph IDs.
+    ```
     
     The /CIDToGIDMap bridges CID (Character ID) values used in the content stream to GID (Glyph ID) values in the TrueType font. /Identity means CID=GID, which is the most common and simplest mapping.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
 
 pdf-remediation-PdfErrCmapResourcesInvalid =
-    Why it matters
+    <strong>Why it matters</strong>: Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values. If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
     
-    Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values. If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
+    <strong>What needs to change</strong>: CMap references must either use a predefined standard name (Identity-H, Identity-V, or one of the standard CJK CMaps from ISO 32000) or be embedded directly as a stream object in the PDF. Custom CMap names without embedded data are invalid.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Re-generate the PDF from the source document to embed the CMap correctly.
+    2. Use Edit > Preflight > Convert to PDF/A, which ensures all resources are embedded.
+    3. If using a CJK font, verify the original font includes the referenced CMap.
     
-    CMap references must either use a predefined standard name (Identity-H, Identity-V, or one of the standard CJK CMaps from ISO 32000) or be embedded directly as a stream object in the PDF. Custom CMap names without embedded data are invalid.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export to PDF — Word embeds CMap resources automatically.
+    2. This issue is rare in Word-generated PDFs.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF with all font data embedded.
+    2. For CJK fonts, ensure the Composite Font Manager settings are correct.
+    3. InDesign normally embeds CMap streams for non-standard encodings.
     
-      1. Re-generate the PDF from the source document to embed the CMap correctly.
-      2. Use Edit > Preflight > Convert to PDF/A, which ensures all resources are embedded.
-      3. If using a CJK font, verify the original font includes the referenced CMap.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export to PDF — Word embeds CMap resources automatically.
-      2. This issue is rare in Word-generated PDFs.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF with all font data embedded.
-      2. For CJK fonts, ensure the Composite Font Manager settings are correct.
-      3. InDesign normally embeds CMap streams for non-standard encodings.
-    
-    Before
-    
-    Non-standard CMap not embedded
+    <strong>Non-standard CMap not embedded</strong>:
+    ```
     Font: /Type0
       /Encoding: /CustomCMap-H  ← not predefined, not embedded
     
     Result: viewer cannot decode character codes.
+    ```
     
-    After
-    
-    CMap properly embedded
+    <strong>CMap properly embedded</strong>:
+    ```
     Font: /Type0
       /Encoding: stream (embedded CMap)
       — or —
       /Encoding: /Identity-H  ← predefined standard name
     
     Result: character codes decode correctly.
+    ```
     
     Predefined CMaps (like Identity-H) are built into every PDF viewer, so they don't need to be embedded. Custom CMaps must be embedded as stream objects so the viewer can use them to decode the font's character codes.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingCmapResources =
-    Why it matters
+    <strong>Why it matters</strong>: Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values. If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
     
-    Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values. If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
+    <strong>What needs to change</strong>: CMap references must either use a predefined standard name (Identity-H, Identity-V, or one of the standard CJK CMaps from ISO 32000) or be embedded directly as a stream object in the PDF. Custom CMap names without embedded data are invalid.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Re-generate the PDF from the source document to embed the CMap correctly.
+    2. Use Edit > Preflight > Convert to PDF/A, which ensures all resources are embedded.
+    3. If using a CJK font, verify the original font includes the referenced CMap.
     
-    CMap references must either use a predefined standard name (Identity-H, Identity-V, or one of the standard CJK CMaps from ISO 32000) or be embedded directly as a stream object in the PDF. Custom CMap names without embedded data are invalid.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export to PDF — Word embeds CMap resources automatically.
+    2. This issue is rare in Word-generated PDFs.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF with all font data embedded.
+    2. For CJK fonts, ensure the Composite Font Manager settings are correct.
+    3. InDesign normally embeds CMap streams for non-standard encodings.
     
-      1. Re-generate the PDF from the source document to embed the CMap correctly.
-      2. Use Edit > Preflight > Convert to PDF/A, which ensures all resources are embedded.
-      3. If using a CJK font, verify the original font includes the referenced CMap.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export to PDF — Word embeds CMap resources automatically.
-      2. This issue is rare in Word-generated PDFs.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF with all font data embedded.
-      2. For CJK fonts, ensure the Composite Font Manager settings are correct.
-      3. InDesign normally embeds CMap streams for non-standard encodings.
-    
-    Before
-    
-    Non-standard CMap not embedded
+    <strong>Non-standard CMap not embedded</strong>:
+    ```
     Font: /Type0
       /Encoding: /CustomCMap-H  ← not predefined, not embedded
     
     Result: viewer cannot decode character codes.
+    ```
     
-    After
-    
-    CMap properly embedded
+    <strong>CMap properly embedded</strong>:
+    ```
     Font: /Type0
       /Encoding: stream (embedded CMap)
       — or —
       /Encoding: /Identity-H  ← predefined standard name
     
     Result: character codes decode correctly.
+    ```
     
     Predefined CMaps (like Identity-H) are built into every PDF viewer, so they don't need to be embedded. Custom CMaps must be embedded as stream objects so the viewer can use them to decode the font's character codes.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
 
 pdf-remediation-PdfErrToUnicodeInvalidValues =
-    Why it matters
+    <strong>Why it matters</strong>: ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text. Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
     
-    ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text. Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
+    <strong>What needs to change</strong>: Every character code in the ToUnicode CMap must map to a valid, meaningful Unicode code point. Null characters (U+0000), BOM markers (U+FEFF), and non-characters (U+FFFE) are never valid targets for text content.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Re-generate the PDF from the source document with correct font encoding.
+    2. Use Edit > Preflight > Convert to PDF/A to force valid Unicode mappings.
+    3. If specific characters are affected, check the source font's Unicode coverage.
     
-    Every character code in the ToUnicode CMap must map to a valid, meaningful Unicode code point. Null characters (U+0000), BOM markers (U+FEFF), and non-characters (U+FFFE) are never valid targets for text content.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export to PDF — Word generates valid ToUnicode mappings.
+    2. If using specialty fonts with incomplete Unicode tables, substitute with standard fonts.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF with correct font settings.
+    2. Check the GLYPH panel to verify character mappings.
+    3. Replace any fonts with broken Unicode tables.
     
-      1. Re-generate the PDF from the source document with correct font encoding.
-      2. Use Edit > Preflight > Convert to PDF/A to force valid Unicode mappings.
-      3. If specific characters are affected, check the source font's Unicode coverage.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export to PDF — Word generates valid ToUnicode mappings.
-      2. If using specialty fonts with incomplete Unicode tables, substitute with standard fonts.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF with correct font settings.
-      2. Check the GLYPH panel to verify character mappings.
-      3. Replace any fonts with broken Unicode tables.
-    
-    Before
-    
-    ToUnicode maps to invalid values
+    <strong>ToUnicode maps to invalid values</strong>:
+    ```
     beginbfchar
     <0001> <0000>    ← maps to U+0000 (null)
     <0002> <FFFE>    ← maps to U+FFFE (non-character)
     endbfchar
     
     Result: text extraction produces null bytes or invalid characters.
+    ```
     
-    After
-    
-    ToUnicode maps to valid Unicode
+    <strong>ToUnicode maps to valid Unicode</strong>:
+    ```
     beginbfchar
     <0001> <0041>    ← maps to 'A' (U+0041)
     <0002> <0042>    ← maps to 'B' (U+0042)
     endbfchar
     
     Result: correct text extraction and screen reader output.
+    ```
     
     U+0000, U+FEFF, and U+FFFE are control or non-character code points that have no valid use in text content. They usually indicate a font encoding error or incomplete ToUnicode CMap generation.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingValidUnicode =
-    Why it matters
+    <strong>Why it matters</strong>: ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text. Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
     
-    ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text. Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
+    <strong>What needs to change</strong>: Every character code in the ToUnicode CMap must map to a valid, meaningful Unicode code point. Null characters (U+0000), BOM markers (U+FEFF), and non-characters (U+FFFE) are never valid targets for text content.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Re-generate the PDF from the source document with correct font encoding.
+    2. Use Edit > Preflight > Convert to PDF/A to force valid Unicode mappings.
+    3. If specific characters are affected, check the source font's Unicode coverage.
     
-    Every character code in the ToUnicode CMap must map to a valid, meaningful Unicode code point. Null characters (U+0000), BOM markers (U+FEFF), and non-characters (U+FFFE) are never valid targets for text content.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-export to PDF — Word generates valid ToUnicode mappings.
+    2. If using specialty fonts with incomplete Unicode tables, substitute with standard fonts.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export to PDF with correct font settings.
+    2. Check the GLYPH panel to verify character mappings.
+    3. Replace any fonts with broken Unicode tables.
     
-      1. Re-generate the PDF from the source document with correct font encoding.
-      2. Use Edit > Preflight > Convert to PDF/A to force valid Unicode mappings.
-      3. If specific characters are affected, check the source font's Unicode coverage.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-export to PDF — Word generates valid ToUnicode mappings.
-      2. If using specialty fonts with incomplete Unicode tables, substitute with standard fonts.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export to PDF with correct font settings.
-      2. Check the GLYPH panel to verify character mappings.
-      3. Replace any fonts with broken Unicode tables.
-    
-    Before
-    
-    ToUnicode maps to invalid values
+    <strong>ToUnicode maps to invalid values</strong>:
+    ```
     beginbfchar
     <0001> <0000>    ← maps to U+0000 (null)
     <0002> <FFFE>    ← maps to U+FFFE (non-character)
     endbfchar
     
     Result: text extraction produces null bytes or invalid characters.
+    ```
     
-    After
-    
-    ToUnicode maps to valid Unicode
+    <strong>ToUnicode maps to valid Unicode</strong>:
+    ```
     beginbfchar
     <0001> <0041>    ← maps to 'A' (U+0041)
     <0002> <0042>    ← maps to 'B' (U+0042)
     endbfchar
     
     Result: correct text extraction and screen reader output.
+    ```
     
     U+0000, U+FEFF, and U+FFFE are control or non-character code points that have no valid use in text content. They usually indicate a font encoding error or incomplete ToUnicode CMap generation.
     
-    Learn more: https://pdfa.org/resource/iso-32000-2/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/iso-32000-2/">https://pdfa.org/resource/iso-32000-2/</a>
 
 pdf-remediation-PdfErrFontNotdefReferenced =
-    Why it matters
+    <strong>Why it matters</strong>: When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text. Screen readers skip or misread these characters, losing document content.
     
-    When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text. Screen readers skip or misread these characters, losing document content.
+    <strong>What needs to change</strong>: All characters used in the document must map to actual glyphs, not .notdef.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Preflight to identify fonts with .notdef references. Re-embed fonts or re-export from source with correct font subsetting.
     
-    All characters used in the document must map to actual glyphs, not .notdef.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure all characters are available in the selected fonts. Avoid symbol fonts for text content.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Check font subsetting settings. Use Package to collect all fonts and re-export.
     
-      1. Use Preflight to identify fonts with .notdef references. Re-embed fonts or re-export from source with correct font subsetting.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure all characters are available in the selected fonts. Avoid symbol fonts for text content.
-    
-    How to fix in Adobe InDesign
-    
-      1. Check font subsetting settings. Use Package to collect all fonts and re-export.
-    
-    Before
-    
-    Before: Character mapped to /.notdef
+    <strong>Before: Character mapped to /.notdef</strong>:
+    ```
     Character shows as blank box; cannot be read or searched.
+    ```
     
-    After
-    
-    After: Character mapped to correct glyph
+    <strong>After: Character mapped to correct glyph</strong>:
+    ```
     Character displays and extracts correctly.
+    ```
     
     Every character code must resolve to a valid glyph in the font.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingNotdef =
-    Why it matters
+    <strong>Why it matters</strong>: When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text. Screen readers skip or misread these characters, losing document content.
     
-    When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text. Screen readers skip or misread these characters, losing document content.
+    <strong>What needs to change</strong>: All characters used in the document must map to actual glyphs, not .notdef.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Preflight to identify fonts with .notdef references. Re-embed fonts or re-export from source with correct font subsetting.
     
-    All characters used in the document must map to actual glyphs, not .notdef.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure all characters are available in the selected fonts. Avoid symbol fonts for text content.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Check font subsetting settings. Use Package to collect all fonts and re-export.
     
-      1. Use Preflight to identify fonts with .notdef references. Re-embed fonts or re-export from source with correct font subsetting.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Ensure all characters are available in the selected fonts. Avoid symbol fonts for text content.
-    
-    How to fix in Adobe InDesign
-    
-      1. Check font subsetting settings. Use Package to collect all fonts and re-export.
-    
-    Before
-    
-    Before: Character mapped to /.notdef
+    <strong>Before: Character mapped to /.notdef</strong>:
+    ```
     Character shows as blank box; cannot be read or searched.
+    ```
     
-    After
-    
-    After: Character mapped to correct glyph
+    <strong>After: Character mapped to correct glyph</strong>:
+    ```
     Character displays and extracts correctly.
+    ```
     
     Every character code must resolve to a valid glyph in the font.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrFontGlyphWidthsInconsistent =
-    Why it matters
+    <strong>Why it matters</strong>: If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing. Copy-paste and screen reader output become unreliable.
     
-    If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing. Copy-paste and screen reader output become unreliable.
+    <strong>What needs to change</strong>: Font width arrays must match the declared character range. CID fonts need /W or /DW entries.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Re-embed the font using Preflight fixups or re-export from the source application.
     
-    Font width arrays must match the declared character range. CID fonts need /W or /DW entries.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-save the document and re-export to PDF. Word's PDF export usually produces correct widths.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export with 'Subset fonts when percent of characters used' at appropriate threshold.
     
-      1. Re-embed the font using Preflight fixups or re-export from the source application.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-save the document and re-export to PDF. Word's PDF export usually produces correct widths.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export with 'Subset fonts when percent of characters used' at appropriate threshold.
-    
-    Before
-    
-    Before: Widths array has 90 entries for range 32–255 (224 expected)
+    <strong>Before: Widths array has 90 entries for range 32–255 (224 expected)</strong>:
+    ```
     Characters above index 121 have undefined widths; spacing is wrong.
+    ```
     
-    After
-    
-    After: Widths array has 224 entries matching FirstChar=32 to LastChar=255
+    <strong>After: Widths array has 224 entries matching FirstChar=32 to LastChar=255</strong>:
+    ```
     All characters have correct width definitions.
+    ```
     
     The Widths array must have exactly (LastChar - FirstChar + 1) entries.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingGlyphWidths =
-    Why it matters
+    <strong>Why it matters</strong>: If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing. Copy-paste and screen reader output become unreliable.
     
-    If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing. Copy-paste and screen reader output become unreliable.
+    <strong>What needs to change</strong>: Font width arrays must match the declared character range. CID fonts need /W or /DW entries.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Re-embed the font using Preflight fixups or re-export from the source application.
     
-    Font width arrays must match the declared character range. CID fonts need /W or /DW entries.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Re-save the document and re-export to PDF. Word's PDF export usually produces correct widths.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Re-export with 'Subset fonts when percent of characters used' at appropriate threshold.
     
-      1. Re-embed the font using Preflight fixups or re-export from the source application.
+    <details>
+    <summary>Before / after example</summary>
     
-    How to fix in Microsoft Word
-    
-      1. Re-save the document and re-export to PDF. Word's PDF export usually produces correct widths.
-    
-    How to fix in Adobe InDesign
-    
-      1. Re-export with 'Subset fonts when percent of characters used' at appropriate threshold.
-    
-    Before
-    
-    Before: Widths array has 90 entries for range 32–255 (224 expected)
+    <strong>Before: Widths array has 90 entries for range 32–255 (224 expected)</strong>:
+    ```
     Characters above index 121 have undefined widths; spacing is wrong.
+    ```
     
-    After
-    
-    After: Widths array has 224 entries matching FirstChar=32 to LastChar=255
+    <strong>After: Widths array has 224 entries matching FirstChar=32 to LastChar=255</strong>:
+    ```
     All characters have correct width definitions.
+    ```
     
     The Widths array must have exactly (LastChar - FirstChar + 1) entries.
     
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrNotdefInDifferences =
-    Why it matters
+    <strong>Why it matters</strong>: The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle). If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
     
-    The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle). If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
+    <strong>What needs to change</strong>: The /Differences array in a font encoding must not reference the .notdef glyph name. Every character code in the /Differences array must map to an actual glyph. Matterhorn Protocol check 30-001.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This is a font-level issue from the source application.
+    2. Use Edit > Preflight to identify the font with .notdef references.
+    3. Replace the font with one that has complete glyph coverage for the characters used.
+    4. Re-embed fonts using Preflight > Fix: Embed missing fonts.
     
-    The /Differences array in a font encoding must not reference the .notdef glyph name. Every character code in the /Differences array must map to an actual glyph. Matterhorn Protocol check 30-001.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Replace the problematic font with a font that supports all characters in the document.
+    2. Check for special characters that the current font may not support.
+    3. Use Insert > Symbol to verify character availability in the chosen font.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use the Find Font dialog to identify and replace the problematic font.
+    2. Choose a font with complete glyph coverage for all characters used.
+    3. Check the Glyphs panel to verify character availability.
+    4. Re-export to PDF.
     
-      1. This is a font-level issue from the source application.
-      2. Use Edit > Preflight to identify the font with .notdef references.
-      3. Replace the font with one that has complete glyph coverage for the characters used.
-      4. Re-embed fonts using Preflight > Fix: Embed missing fonts.
-    
-    How to fix in Microsoft Word
-    
-      1. Replace the problematic font with a font that supports all characters in the document.
-      2. Check for special characters that the current font may not support.
-      3. Use Insert > Symbol to verify character availability in the chosen font.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use the Find Font dialog to identify and replace the problematic font.
-      2. Choose a font with complete glyph coverage for all characters used.
-      3. Check the Glyphs panel to verify character availability.
-      4. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingDifferencesNotdef =
-    Why it matters
+    <strong>Why it matters</strong>: The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle). If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
     
-    The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle). If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
+    <strong>What needs to change</strong>: The /Differences array in a font encoding must not reference the .notdef glyph name. Every character code in the /Differences array must map to an actual glyph. Matterhorn Protocol check 30-001.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This is a font-level issue from the source application.
+    2. Use Edit > Preflight to identify the font with .notdef references.
+    3. Replace the font with one that has complete glyph coverage for the characters used.
+    4. Re-embed fonts using Preflight > Fix: Embed missing fonts.
     
-    The /Differences array in a font encoding must not reference the .notdef glyph name. Every character code in the /Differences array must map to an actual glyph. Matterhorn Protocol check 30-001.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Replace the problematic font with a font that supports all characters in the document.
+    2. Check for special characters that the current font may not support.
+    3. Use Insert > Symbol to verify character availability in the chosen font.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use the Find Font dialog to identify and replace the problematic font.
+    2. Choose a font with complete glyph coverage for all characters used.
+    3. Check the Glyphs panel to verify character availability.
+    4. Re-export to PDF.
     
-      1. This is a font-level issue from the source application.
-      2. Use Edit > Preflight to identify the font with .notdef references.
-      3. Replace the font with one that has complete glyph coverage for the characters used.
-      4. Re-embed fonts using Preflight > Fix: Embed missing fonts.
-    
-    How to fix in Microsoft Word
-    
-      1. Replace the problematic font with a font that supports all characters in the document.
-      2. Check for special characters that the current font may not support.
-      3. Use Insert > Symbol to verify character availability in the chosen font.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use the Find Font dialog to identify and replace the problematic font.
-      2. Choose a font with complete glyph coverage for all characters used.
-      3. Check the Glyphs panel to verify character availability.
-      4. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrIdentityCmapMissingToUnicode =
-    Why it matters
+    <strong>Why it matters</strong>: Identity-H and Identity-V CMaps use raw glyph IDs as character codes. Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
     
-    Identity-H and Identity-V CMaps use raw glyph IDs as character codes. Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
+    <strong>What needs to change</strong>: Any font using an Identity-H or Identity-V CMap must include a /ToUnicode CMap stream that maps glyph IDs to Unicode code points. This is critical for text extraction and is required by the Matterhorn Protocol.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit > Preflight > Fix: Embed missing fonts and add ToUnicode maps.
+    2. If Preflight cannot fix it, use Preflight > Convert to PDF/A which forces Unicode mappings.
+    3. For stubborn cases, re-create the PDF from the source document with a different font.
     
-    Any font using an Identity-H or Identity-V CMap must include a /ToUnicode CMap stream that maps glyph IDs to Unicode code points. This is critical for text extraction and is required by the Matterhorn Protocol.
+    <strong>Microsoft Word (source document)</strong>:
+    1. This issue is rare in Word-generated PDFs.
+    2. If it occurs, ensure fonts are standard Unicode-capable fonts (Arial, Calibri, etc.).
+    3. Re-export to PDF with font embedding enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use OpenType fonts which include proper Unicode mappings.
+    2. Avoid legacy CID-keyed fonts without ToUnicode tables.
+    3. Re-export to PDF.
     
-      1. Use Edit > Preflight > Fix: Embed missing fonts and add ToUnicode maps.
-      2. If Preflight cannot fix it, use Preflight > Convert to PDF/A which forces Unicode mappings.
-      3. For stubborn cases, re-create the PDF from the source document with a different font.
-    
-    How to fix in Microsoft Word
-    
-      1. This issue is rare in Word-generated PDFs.
-      2. If it occurs, ensure fonts are standard Unicode-capable fonts (Arial, Calibri, etc.).
-      3. Re-export to PDF with font embedding enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use OpenType fonts which include proper Unicode mappings.
-      2. Avoid legacy CID-keyed fonts without ToUnicode tables.
-      3. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingIdentityCmap =
-    Why it matters
+    <strong>Why it matters</strong>: Identity-H and Identity-V CMaps use raw glyph IDs as character codes. Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
     
-    Identity-H and Identity-V CMaps use raw glyph IDs as character codes. Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
+    <strong>What needs to change</strong>: Any font using an Identity-H or Identity-V CMap must include a /ToUnicode CMap stream that maps glyph IDs to Unicode code points. This is critical for text extraction and is required by the Matterhorn Protocol.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Use Edit > Preflight > Fix: Embed missing fonts and add ToUnicode maps.
+    2. If Preflight cannot fix it, use Preflight > Convert to PDF/A which forces Unicode mappings.
+    3. For stubborn cases, re-create the PDF from the source document with a different font.
     
-    Any font using an Identity-H or Identity-V CMap must include a /ToUnicode CMap stream that maps glyph IDs to Unicode code points. This is critical for text extraction and is required by the Matterhorn Protocol.
+    <strong>Microsoft Word (source document)</strong>:
+    1. This issue is rare in Word-generated PDFs.
+    2. If it occurs, ensure fonts are standard Unicode-capable fonts (Arial, Calibri, etc.).
+    3. Re-export to PDF with font embedding enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use OpenType fonts which include proper Unicode mappings.
+    2. Avoid legacy CID-keyed fonts without ToUnicode tables.
+    3. Re-export to PDF.
     
-      1. Use Edit > Preflight > Fix: Embed missing fonts and add ToUnicode maps.
-      2. If Preflight cannot fix it, use Preflight > Convert to PDF/A which forces Unicode mappings.
-      3. For stubborn cases, re-create the PDF from the source document with a different font.
-    
-    How to fix in Microsoft Word
-    
-      1. This issue is rare in Word-generated PDFs.
-      2. If it occurs, ensure fonts are standard Unicode-capable fonts (Arial, Calibri, etc.).
-      3. Re-export to PDF with font embedding enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use OpenType fonts which include proper Unicode mappings.
-      2. Avoid legacy CID-keyed fonts without ToUnicode tables.
-      3. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrCmapWmodeInconsistent =
-    Why it matters
+    <strong>Why it matters</strong>: The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1). If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
     
-    The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1). If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
+    <strong>What needs to change</strong>: The CMap's WMode must match the writing direction used by the font. Horizontal text must use WMode 0, vertical text (common in CJK) must use WMode 1. Matterhorn Protocol check 30-002.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This is a font-level issue that typically requires re-creating the PDF.
+    2. Identify the font with the WMode mismatch using Edit > Preflight.
+    3. Re-export from the source application with the correct font settings.
+    4. For CJK text, ensure the source application correctly specifies horizontal vs. vertical writing.
     
-    The CMap's WMode must match the writing direction used by the font. Horizontal text must use WMode 0, vertical text (common in CJK) must use WMode 1. Matterhorn Protocol check 30-002.
+    <strong>Microsoft Word (source document)</strong>:
+    1. For CJK text, ensure the correct text direction is set in the paragraph settings.
+    2. Use fonts designed for the intended writing direction.
+    3. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. For vertical CJK text, use a vertical text frame (Type > Type on a Path or vertical frame).
+    2. Ensure CJK fonts with the correct writing mode are selected.
+    3. Re-export to PDF.
     
-      1. This is a font-level issue that typically requires re-creating the PDF.
-      2. Identify the font with the WMode mismatch using Edit > Preflight.
-      3. Re-export from the source application with the correct font settings.
-      4. For CJK text, ensure the source application correctly specifies horizontal vs. vertical writing.
-    
-    How to fix in Microsoft Word
-    
-      1. For CJK text, ensure the correct text direction is set in the paragraph settings.
-      2. Use fonts designed for the intended writing direction.
-      3. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. For vertical CJK text, use a vertical text frame (Type > Type on a Path or vertical frame).
-      2. Ensure CJK fonts with the correct writing mode are selected.
-      3. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingCmapWmode =
-    Why it matters
+    <strong>Why it matters</strong>: The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1). If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
     
-    The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1). If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
+    <strong>What needs to change</strong>: The CMap's WMode must match the writing direction used by the font. Horizontal text must use WMode 0, vertical text (common in CJK) must use WMode 1. Matterhorn Protocol check 30-002.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This is a font-level issue that typically requires re-creating the PDF.
+    2. Identify the font with the WMode mismatch using Edit > Preflight.
+    3. Re-export from the source application with the correct font settings.
+    4. For CJK text, ensure the source application correctly specifies horizontal vs. vertical writing.
     
-    The CMap's WMode must match the writing direction used by the font. Horizontal text must use WMode 0, vertical text (common in CJK) must use WMode 1. Matterhorn Protocol check 30-002.
+    <strong>Microsoft Word (source document)</strong>:
+    1. For CJK text, ensure the correct text direction is set in the paragraph settings.
+    2. Use fonts designed for the intended writing direction.
+    3. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. For vertical CJK text, use a vertical text frame (Type > Type on a Path or vertical frame).
+    2. Ensure CJK fonts with the correct writing mode are selected.
+    3. Re-export to PDF.
     
-      1. This is a font-level issue that typically requires re-creating the PDF.
-      2. Identify the font with the WMode mismatch using Edit > Preflight.
-      3. Re-export from the source application with the correct font settings.
-      4. For CJK text, ensure the source application correctly specifies horizontal vs. vertical writing.
-    
-    How to fix in Microsoft Word
-    
-      1. For CJK text, ensure the correct text direction is set in the paragraph settings.
-      2. Use fonts designed for the intended writing direction.
-      3. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. For vertical CJK text, use a vertical text frame (Type > Type on a Path or vertical frame).
-      2. Ensure CJK fonts with the correct writing mode are selected.
-      3. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrNonSymbolicTrueTypeLatinMapping =
-    Why it matters
+    <strong>Why it matters</strong>: Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs. Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
     
-    Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs. Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
+    <strong>What needs to change</strong>: Non-symbolic TrueType fonts must use a /cmap subtable that maps character codes via a standard encoding (typically Microsoft Unicode or Macintosh Roman). The font must not use symbolic encoding for Latin text. Matterhorn Protocol check 30-001.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This issue originates from the source document's font choice.
+    2. Use Edit > Preflight to identify the problematic font.
+    3. Replace the font with a standard TrueType or OpenType font that has proper Unicode mappings.
+    4. Re-embed the font using Preflight > Fix: Embed missing fonts.
     
-    Non-symbolic TrueType fonts must use a /cmap subtable that maps character codes via a standard encoding (typically Microsoft Unicode or Macintosh Roman). The font must not use symbolic encoding for Latin text. Matterhorn Protocol check 30-001.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Replace the problematic font with a standard system font (Arial, Calibri, Times New Roman).
+    2. Avoid using symbol or decorative fonts for body text.
+    3. Re-export to PDF with font embedding enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Replace the problematic font with a standard OpenType font.
+    2. Use Find/Change > Find Font to locate and replace all instances.
+    3. Re-export to PDF.
     
-      1. This issue originates from the source document's font choice.
-      2. Use Edit > Preflight to identify the problematic font.
-      3. Replace the font with a standard TrueType or OpenType font that has proper Unicode mappings.
-      4. Re-embed the font using Preflight > Fix: Embed missing fonts.
-    
-    How to fix in Microsoft Word
-    
-      1. Replace the problematic font with a standard system font (Arial, Calibri, Times New Roman).
-      2. Avoid using symbol or decorative fonts for body text.
-      3. Re-export to PDF with font embedding enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. Replace the problematic font with a standard OpenType font.
-      2. Use Find/Change > Find Font to locate and replace all instances.
-      3. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingNonSymbolicTrueType =
-    Why it matters
+    <strong>Why it matters</strong>: Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs. Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
     
-    Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs. Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
+    <strong>What needs to change</strong>: Non-symbolic TrueType fonts must use a /cmap subtable that maps character codes via a standard encoding (typically Microsoft Unicode or Macintosh Roman). The font must not use symbolic encoding for Latin text. Matterhorn Protocol check 30-001.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This issue originates from the source document's font choice.
+    2. Use Edit > Preflight to identify the problematic font.
+    3. Replace the font with a standard TrueType or OpenType font that has proper Unicode mappings.
+    4. Re-embed the font using Preflight > Fix: Embed missing fonts.
     
-    Non-symbolic TrueType fonts must use a /cmap subtable that maps character codes via a standard encoding (typically Microsoft Unicode or Macintosh Roman). The font must not use symbolic encoding for Latin text. Matterhorn Protocol check 30-001.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Replace the problematic font with a standard system font (Arial, Calibri, Times New Roman).
+    2. Avoid using symbol or decorative fonts for body text.
+    3. Re-export to PDF with font embedding enabled.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Replace the problematic font with a standard OpenType font.
+    2. Use Find/Change > Find Font to locate and replace all instances.
+    3. Re-export to PDF.
     
-      1. This issue originates from the source document's font choice.
-      2. Use Edit > Preflight to identify the problematic font.
-      3. Replace the font with a standard TrueType or OpenType font that has proper Unicode mappings.
-      4. Re-embed the font using Preflight > Fix: Embed missing fonts.
-    
-    How to fix in Microsoft Word
-    
-      1. Replace the problematic font with a standard system font (Arial, Calibri, Times New Roman).
-      2. Avoid using symbol or decorative fonts for body text.
-      3. Re-export to PDF with font embedding enabled.
-    
-    How to fix in Adobe InDesign
-    
-      1. Replace the problematic font with a standard OpenType font.
-      2. Use Find/Change > Find Font to locate and replace all instances.
-      3. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfInfoFontMetadataMissingEncodingConsistency =
-    Why it matters
+    <strong>Why it matters</strong>: When a font's declared encoding does not match the actual glyph mapping, text extraction produces wrong characters. Screen readers read gibberish, search fails, and copy-paste yields incorrect text — effectively making the content inaccessible.
     
-    When a font's declared encoding does not match the actual glyph mapping, text extraction produces wrong characters. Screen readers read gibberish, search fails, and copy-paste yields incorrect text — effectively making the content inaccessible.
+    <strong>What needs to change</strong>: The font's /Encoding entry must accurately reflect how character codes map to glyphs. For Type 1 and TrueType fonts, the encoding must match the font program's built-in encoding or override it consistently via /Differences. Matterhorn Protocol check 30-002.
     
-    Principle
+    <strong>Adobe Acrobat Pro</strong>:
+    1. This is typically a font embedding issue from the source application.
+    2. Use Edit > Preflight > Fix: Embed missing fonts and fix encoding issues.
+    3. If Preflight cannot fix it, re-create the PDF from the source document using a different font.
+    4. Alternatively, use Preflight > Convert to PDF/A which forces correct encodings.
     
-    The font's /Encoding entry must accurately reflect how character codes map to glyphs. For Type 1 and TrueType fonts, the encoding must match the font program's built-in encoding or override it consistently via /Differences. Matterhorn Protocol check 30-002.
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure you are using standard system fonts (Arial, Calibri, Times New Roman, etc.).
+    2. Avoid specialty or custom-encoded fonts that may not embed correctly.
+    3. Go to File > Options > Save and check 'Embed fonts in the file'.
+    4. Re-export to PDF.
     
-    How to fix in Adobe Acrobat Pro
+    <strong>Adobe InDesign</strong>:
+    1. Use OpenType fonts which have consistent Unicode encoding.
+    2. Avoid PostScript Type 1 fonts with custom encodings.
+    3. If the issue persists, try converting the font to OpenType using a font manager.
+    4. Re-export to PDF.
     
-      1. This is typically a font embedding issue from the source application.
-      2. Use Edit > Preflight > Fix: Embed missing fonts and fix encoding issues.
-      3. If Preflight cannot fix it, re-create the PDF from the source document using a different font.
-      4. Alternatively, use Preflight > Convert to PDF/A which forces correct encodings.
-    
-    How to fix in Microsoft Word
-    
-      1. Ensure you are using standard system fonts (Arial, Calibri, Times New Roman, etc.).
-      2. Avoid specialty or custom-encoded fonts that may not embed correctly.
-      3. Go to File > Options > Save and check 'Embed fonts in the file'.
-      4. Re-export to PDF.
-    
-    How to fix in Adobe InDesign
-    
-      1. Use OpenType fonts which have consistent Unicode encoding.
-      2. Avoid PostScript Type 1 fonts with custom encodings.
-      3. If the issue persists, try converting the font to OpenType using a font manager.
-      4. Re-export to PDF.
-    
-    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
-
-pdf-remediation-PdfWarnEmptyTags =
-    Pourquoi c'est important
-    
-    Une balise vide n'annonce rien tout en imposant un arrêt lors de la navigation par élément. Une personne utilisant un lecteur d'écran ne peut pas distinguer un paragraphe vide d'un paragraphe dont le texte ne lui est pas parvenu.
-    
-    Principe
-    
-    Un élément de structure terminal devrait porter du contenu : texte, contenu balisé, texte de remplacement ou texte réel. Les éléments de regroupement font exception, puisque leur rôle est d'en contenir d'autres.
-    
-    Comment corriger dans Adobe Acrobat Pro
-    
-    Ouvrir le panneau Balises, repérer les balises signalées dans ce rapport et supprimer celles qui ne contiennent rien. Attention aux cellules de tableau : une cellule vide est normale dans un tableau de données et doit être conservée, car la supprimer décale toutes les cellules suivantes de la ligne dans la mauvaise colonne.
-
-pdf-remediation-PdfErrIncorrectNesting =
-    Pourquoi c'est important
-    
-    Un élément imbriqué dans un autre de même type empêche de savoir où un bloc se termine et où le suivant commence. Un élément positionnel hors de son parent obligatoire brise la grille ou la liste qui donne son sens au contenu environnant.
-    
-    Principe
-    
-    Un paragraphe ne doit pas contenir de paragraphe et un titre ne doit pas contenir de titre. TD et TH appartiennent à TR ; TR appartient à Table, THead, TBody ou TFoot ; LI appartient à L ; LBody appartient à LI.
-    
-    Comment corriger dans Adobe Acrobat Pro
-    
-    Ouvrir le panneau Balises et utiliser les références d'éléments du rapport pour repérer chaque violation. Pour un élément imbriqué dans un élément de même type, supprimer la balise interne et laisser ses enfants remonter. Pour une cellule ou une ligne mal placée, la déplacer vers le parent correct plutôt que de la rebaliser : rebaliser change ce qu'est l'élément, alors que le problème est l'endroit où il se trouve.
-
-pdf-remediation-PdfErrArtifactInsideTagged =
-    Pourquoi c'est important
-    
-    Un artéfact désigne un élément que le lecteur peut ignorer. En déclarer un dans du contenu réel supprime du texte ou l'interrompt.
-    
-    Principe
-    
-    Les sections d'artéfact et les sections de contenu balisé ne doivent pas se chevaucher. Un artéfact se place entre des sections balisées, pas à l'intérieur de l'une d'elles.
-    
-    Comment corriger dans Adobe Acrobat Pro
-    
-    Utiliser le panneau Contenu pour repérer l'artéfact sur la page indiquée dans ce rapport et le sortir du conteneur balisé dans lequel il se trouve. Si le contenu marqué est bien décoratif, c'est le conteneur environnant qui a été balisé trop largement.
-
-pdf-remediation-PdfErrTaggedInsideArtifact =
-    Pourquoi c'est important
-    
-    Le contenu situé dans un artéfact n'est jamais annoncé. Le texte est sur la page et inaccessible, sans que rien n'indique au lecteur qu'il a été ignoré.
-    
-    Principe
-    
-    Tout ce dont un lecteur a besoin doit se trouver dans du contenu balisé, et non dans une section déclarée comme artéfact.
-    
-    Comment corriger dans Adobe Acrobat Pro
-    
-    Dans le panneau Contenu, repérer l'artéfact sur la page indiquée dans ce rapport et retirer le marquage d'artéfact du contenu réel qu'il contient, ou déplacer ce contenu à l'extérieur. Vérifier ce que l'artéfact devait couvrir : le plus souvent, un en-tête ou un filet a été marqué trop largement et a englobé le texte voisin.
-
-pdf-remediation-PdfErrUntaggedContent =
-    Pourquoi c'est important
-    
-    Un contenu qui n'est ni balisé ni déclaré comme artéfact est visible sur la page et invisible pour les technologies d'assistance, sans aucune indication de l'omission.
-    
-    Principe
-    
-    Chaque marque sur une page doit être l'une de deux choses : du contenu balisé accessible par l'arbre de structure, ou un artéfact explicitement déclaré comme ignorable.
-    
-    Comment corriger dans Adobe Acrobat Pro
-    
-    Lancer le balisage automatique, puis en examiner le résultat : le balisage automatique classe le contenu mais ne le juge pas. Lorsque le rapport signale des images plutôt que du texte, vérifier si chacune porte du sens : une image significative a besoin d'une balise Figure avec un texte de remplacement, une image décorative doit être marquée comme artéfact. Si chaque page signale une seule image non balisée, le document est une numérisation et nécessite une reconnaissance optique de caractères avant toute autre correction.
-
-pdf-remediation-PdfErrNoTextLayer =
-    Pourquoi c'est important
-    
-    Une numérisation est une photographie d'une page. Un lecteur d'écran n'y trouve rien à lire, et le texte ne peut être ni recherché, ni sélectionné, ni agrandi, ni redimensionné. Les mots ne sont pas dans le fichier en tant que mots.
-    
-    Principe
-    
-    Le texte d'un document doit être présent en tant que texte. La reconnaissance optique de caractères transforme l'image des mots en mots véritables.
-    
-    Comment corriger dans Adobe Acrobat Pro
-    
-    Lancer Numérisation et OCR, puis Reconnaître le texte. Le faire avant tout le reste de ce rapport : toutes les autres anomalies signalées supposent qu'il y ait du texte à baliser, et les corriger d'abord oblige à refaire le travail. Une fois le texte obtenu, vérifier la reconnaissance par rapport à la page : les erreurs d'OCR sont silencieuses, et un mot erroné est pire qu'un mot manquant.
-
-pdf-remediation-PdfWarnUntaggedListsDetected =
-    Rebalisez la suite de paragraphes en liste : encadrez les éléments dans un L, chaque élément dans un LI, puis placez le marqueur dans un Lbl et le texte dans un LBody. Supprimez ensuite les puces ou numéros saisis dans le texte, sinon le marqueur est annoncé deux fois.
-
-pdf-remediation-PdfWarnHeadingSizeHierarchy =
-    Réglez les styles de titre pour que chaque niveau soit visiblement plus petit que celui du dessus, et que tous les titres d'un même niveau aient la même taille. Modifiez la mise en forme, pas les niveaux de balises : c'est la hiérarchie des balises que suivent les technologies d'assistance et elle ne doit pas être altérée pour correspondre à l'apparence.
-
-pdf-remediation-PdfInfoHeadingSizeNoFontData =
-    Aucune action possible. Les données de police n'ont pas pu être recueillies ; relancez l'analyse sur une copie non endommagée ni chiffrée si vous avez besoin de cette vérification.
-
-pdf-remediation-PdfErrAccessibilityPermissionRestricted =
-    Réenregistrez le document en autorisant l'extraction du contenu à des fins d'accessibilité. Dans Acrobat : Propriétés, Sécurité, Permissions — activez « Autoriser l'accès au texte pour les lecteurs d'écran destinés aux malvoyants ». Si le fichier doit rester restreint pour d'autres raisons, cette permission peut être accordée seule.
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfErrPageContentUntagged =
-    Balisez le contenu des pages. Lancez le balisage automatique d'Acrobat sur les pages concernées, puis corrigez le résultat dans le panneau Balises, ou revenez au document source, appliquez de vrais styles et réexportez avec le balisage activé. Les pages qui ne portent que de la décoration doivent être marquées comme artefacts plutôt que laissées sans balise.
+    <strong>Why it matters</strong>: Content that is not tagged in the PDF structure tree is invisible to screen readers. Users who rely on assistive technology will miss untagged text, images, and other content, potentially missing critical information.
+    
+    <strong>What needs to change</strong>: Every piece of meaningful content in the PDF must be associated with a structure tag via Marked Content IDs (MCIDs). Text drawn without BDC/EMC markers is not part of the tagged structure and cannot be read by assistive technology.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and the Content panel side by side.
+    2. In the Content panel, look for items not connected to any tag.
+    3. Select untagged content, right-click, and choose 'Create Tag from Selection'.
+    4. Alternatively, use Accessibility > Add Tags to Document to auto-tag remaining content.
+    5. Verify by running Accessibility > Full Check.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Ensure all content uses proper Word styles and is not in text boxes or floating objects.
+    2. Content in headers/footers, text boxes, and drawing canvases may not export as tagged content.
+    3. Move content into the main document flow where possible.
+    4. Re-export to PDF with 'Create Tagged PDF' option enabled.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Open the Articles panel and ensure all content frames are included.
+    2. Content not in an Article will not be tagged in the exported PDF.
+    3. Use Object > Object Export Options to verify tag mapping for each frame.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Untagged content on page</strong>:
+    ```
+    Page content stream:
+      BT /F1 12 Tf (Tagged text) Tj ET          ← Inside BDC/EMC, tagged
+      BT /F1 10 Tf (Copyright 2025) Tj ET       ← No BDC/EMC, untagged
+    
+    Screen reader: reads 'Tagged text' but skips 'Copyright 2025' entirely.
+    ```
+    
+    <strong>All content tagged</strong>:
+    ```
+    Page content stream:
+      /P <</MCID 0>> BDC
+        BT /F1 12 Tf (Tagged text) Tj ET
+      EMC
+      /Span <</MCID 1>> BDC
+        BT /F1 10 Tf (Copyright 2025) Tj ET
+      EMC
+    
+    Screen reader: reads both 'Tagged text' and 'Copyright 2025'.
+    ```
+    
+    Every text-drawing operation in the content stream must be wrapped in BDC (Begin Marked Content) / EMC (End Marked Content) operators with an MCID that links to a structure element.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF9</a>
 
 pdf-remediation-PdfWarnArtifactSubtypeMissing =
-    Ajoutez un /Subtype au dictionnaire de propriétés de chaque artefact : /Pagination pour les en-têtes, pieds de page et numéros de page, /Layout pour les filets et cadres décoratifs, /Page pour les repères d'impression, /Background pour les filigranes et fonds. La plupart des outils de création le font automatiquement lorsque l'artefact est créé par leur propre fonction d'en-tête ou de pied de page plutôt que dessiné à la main.
+    <strong>Why it matters</strong>: Artifacts are content marked as non-meaningful (headers, footers, decorative elements). PDF/UA-2 requires artifacts to declare their subtype (Pagination, Layout, Page, Background) so assistive technology knows why the content is excluded and can handle edge cases — for instance, pagination artifacts may be announced differently than decorative ones.
+    
+    <strong>What needs to change</strong>: In PDF/UA-2, artifact marked content must include a /Subtype key with a standard value: Pagination (for headers/footers/page numbers), Layout (for decorative rules/spacing), Page (for background), or Background. Unclassified artifacts fail PDF/UA-2 validation.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel (View > Show/Hide > Navigation Panes > Tags).
+    2. Locate artifact elements (shown as <Artifact> in the tag tree).
+    3. Right-click each artifact > Properties > set the Artifact Type (Pagination, Layout, Page, etc.).
+    4. Headers and footers should be Pagination; decorative lines should be Layout.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word marks headers and footers as artifacts automatically during PDF export.
+    2. Ensure repeating content is in the Header/Footer areas, not the document body.
+    3. Decorative elements should be marked as decorative: right-click > Edit Alt Text > 'Mark as decorative'.
+    4. Re-export to PDF.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Place repeating content (page numbers, running heads) on master pages.
+    2. Mark decorative elements as artifacts in the Articles panel.
+    3. Set artifact classification in the export tagging options.
+    4. Re-export with 'Create Tagged PDF' checked.
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfWarnFormulaUnicodePrivateUse =
-    Réintégrez la police avec une table ToUnicode qui associe chaque glyphe à son véritable point de code Unicode — les opérateurs mathématiques, les lettres grecques et les symboles ensemblistes en possèdent tous un. Lorsqu'un glyphe n'a réellement aucun équivalent Unicode, placez sa lecture sur l'élément Formula au moyen de /ActualText afin que le sens subsiste même si le glyphe disparaît.
+    <strong>Why it matters</strong>: Mathematical formulas in PDFs need valid Unicode text extraction so screen readers can announce the formula content. Without proper Unicode mapping, formulas are read as random characters or silence, making mathematical content completely inaccessible.
+    
+    <strong>What needs to change</strong>: Formula structure elements must produce valid Unicode text when extracted. The fonts used in formulas must have correct /ToUnicode mappings for mathematical symbols, or the Formula element must have /ActualText or /Alt providing a text equivalent.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Select the Formula element in the Tags panel.
+    2. Right-click > Properties and add ActualText with the formula in plain text (e.g., 'E = mc²').
+    3. Alternatively, add Alt Text describing the formula's meaning.
+    4. For complex formulas, use MathML in the ActualText if the viewer supports it.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Use Word's Equation Editor (Insert > Equation) for all formulas.
+    2. The Equation Editor produces structured math that exports with Unicode mappings.
+    3. Avoid inserting formulas as images — use the native equation tool.
+    4. Re-export to PDF.
+    
+    <strong>Adobe InDesign</strong>:
+    1. If formulas are placed as images, add Alt Text via Object > Object Export Options > Alt Text.
+    2. For inline equations, use a MathML plugin or equation editor.
+    3. Ensure formula images have descriptive alt text (e.g., 'Equation: E equals m c squared').
+    4. Re-export with 'Create Tagged PDF' checked.
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/resource/the-matterhorn-protocol/">https://pdfa.org/resource/the-matterhorn-protocol/</a>
 
 pdf-remediation-PdfWarnPronunciationHintsMissing =
-    Ajoutez une expansion /E au Span portant l'abréviation — « INCA » se développe en « Institut national canadien pour les aveugles ». Lorsque la prononciation importe plus que l'expansion, ajoutez /Phoneme accompagné de /PhoneticAlphabet précisant la notation employée. L'usage courant est de définir l'expansion une seule fois, à la première occurrence.
+    <strong>Why it matters</strong>: Abbreviations in PDF can have an /E (expansion) attribute that gives the full form (e.g., 'HTML' → 'Hypertext Markup Language'). PDF/UA-2 further recommends phonetic pronunciation hints so screen readers can pronounce abbreviations correctly rather than spelling them out letter-by-letter or guessing pronunciation.
+    
+    <strong>What needs to change</strong>: Abbreviation structure elements should have both an /E attribute (expansion text) and, for PDF/UA-2, a pronunciation hint via /Phoneme or /ActualText. This ensures screen readers can both expand and correctly pronounce abbreviations.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate Span or Abbreviation tags wrapping abbreviated text.
+    2. Right-click > Properties > Tag tab.
+    3. Add the /E attribute with the full expansion text.
+    4. For PDF/UA-2, add /ActualText with the phonetically correct pronunciation.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not natively support abbreviation expansion in PDF export.
+    2. First use of each abbreviation should be written out: 'Hypertext Markup Language (HTML)'.
+    3. After export, add /E attributes to abbreviation tags in Acrobat Pro.
+    
+    <strong>Adobe InDesign</strong>:
+    1. InDesign does not natively support /E attributes for abbreviations.
+    2. Write out abbreviations on first use in the text.
+    3. After export, add /E attributes in Acrobat Pro's Tags panel.
+    
+    <strong>Reference</strong>: <a href="https://pdfa.org/iso-14289-2-pdfua-2/">https://pdfa.org/iso-14289-2-pdfua-2/</a>
 
 pdf-remediation-PdfErrLanguageOfPartsUnmarked =
-    Définissez /Lang sur l'élément de structure qui encadre chaque passage en langue étrangère, avec une étiquette BCP 47 telle que fr-CA ou en-CA. Si le document ne déclare aucune langue, commencez par définir le /Lang du catalogue : c'est la référence à laquelle chaque passage est comparé, et sans elle aucun passage ne peut être repéré comme exception.
+    <strong>Why it matters</strong>: In bilingual documents (e.g., English/French Canadian receipts), text in a secondary language must be marked with its own language attribute. Without this, screen readers pronounce French text with English rules (or vice versa), making it unintelligible.
+    
+    <strong>What needs to change</strong>: Structure elements containing text in a language different from the document's default /Lang must have their own /Lang attribute specifying the correct language code.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel.
+    2. Select the tag containing text in a different language.
+    3. Right-click > Properties.
+    4. Set the Language field to the correct language code (e.g., 'fr' for French).
+    5. Repeat for all sections in a secondary language.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the text in the secondary language.
+    2. Go to Review > Language > Set Proofing Language.
+    3. Choose the correct language and click OK.
+    4. When exported to PDF, Word will apply /Lang attributes to those text spans.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Select the text in the secondary language.
+    2. In the Character panel, change the Language dropdown to the correct language.
+    3. InDesign will apply the language attribute when exporting to tagged PDF.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>French text without language markup</strong>:
+    ```
+    <P> Reçu officiel aux fins de l'impôt
+      /Lang: (not set — inherits 'en' from document)
+    
+    Screen reader: pronounces French words with English rules
+    'Reh-SOO oh-FISH-ee-al ox fins deh lim-POT'
+    ```
+    
+    <strong>French text with correct language markup</strong>:
+    ```
+    <P /Lang (fr)> Reçu officiel aux fins de l'impôt
+    
+    Screen reader: switches to French pronunciation
+    'Reh-SU oh-fee-see-EL oh fan deh lam-POH'
+    ```
+    
+    Even a single sentence in another language should be marked. This is especially important in bilingual Canadian documents where English and French appear on the same page.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF19">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF19</a>
 
 pdf-remediation-PdfWarnComplexTableHeadersMissing =
-    Donnez un /ID à chaque cellule d'en-tête et énumérez les identifiants des en-têtes concernés dans le tableau /Headers de chaque cellule de données. L'éditeur de tableaux d'Acrobat le permet via la boîte de dialogue Propriétés de cellule ; pour les grands tableaux, il est généralement plus rapide de corriger la structure du document source et de le réexporter.
+    <strong>Why it matters</strong>: In complex tables with both column and row headers (or merged cells), the /Scope attribute alone cannot express which headers apply to which data cells. The /Headers attribute on each TD explicitly lists the TH IDs that label it, so screen readers announce the correct headers as users navigate the table.
+    
+    <strong>What needs to change</strong>: For simple tables, /Scope on TH cells is sufficient. For complex tables (those with both column and row headers, multi-level headers, or merged cells), each TD cell must have a /Headers attribute containing an array of /ID values from the relevant TH cells.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the Tags panel and locate the Table structure.
+    2. Give each TH cell a unique ID: right-click > Properties > set the ID attribute.
+    3. For each TD cell, right-click > Properties > add a Headers attribute.
+    4. Set Headers to a space-separated list of TH IDs that label this cell.
+    5. Use the Table Editor (Accessibility > Table Editor) for visual editing.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Word does not generate /Headers attributes automatically.
+    2. If possible, simplify the table to avoid merged cells and multi-level headers.
+    3. For complex tables, fix the /Headers associations in Acrobat after export.
+    
+    <strong>Adobe InDesign</strong>:
+    1. InDesign does not generate /Headers attributes automatically.
+    2. After export, open the PDF in Acrobat and set IDs on TH cells.
+    3. Add /Headers attributes to each TD cell referencing the relevant TH IDs.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Complex table without /Headers</strong>:
+    ```
+    <Table>
+      <TR> <TH/>          <TH>Q1</TH>   <TH>Q2</TH>   </TR>
+      <TR> <TH>Revenue</TH> <TD>$1.2M</TD> <TD>$1.4M</TD> </TR>
+      <TR> <TH>Expenses</TH><TD>$0.8M</TD> <TD>$0.9M</TD> </TR>
+    
+    Screen reader on $1.2M: 'one point two million'
+    (No indication this is Q1 Revenue)
+    ```
+    
+    <strong>Complex table with /Headers</strong>:
+    ```
+    <Table>
+      <TR> <TH/>                  <TH ID='q1'>Q1</TH>    <TH ID='q2'>Q2</TH>   </TR>
+      <TR> <TH ID='rev'>Revenue</TH> <TD Headers='q1 rev'>$1.2M</TD> <TD Headers='q2 rev'>$1.4M</TD> </TR>
+      <TR> <TH ID='exp'>Expenses</TH><TD Headers='q1 exp'>$0.8M</TD> <TD Headers='q2 exp'>$0.9M</TD> </TR>
+    
+    Screen reader on $1.2M: 'Q1, Revenue: one point two million'
+    ```
+    
+    The /Headers attribute on each TD cell explicitly lists which TH cells label it, enabling screen readers to announce both column and row headers when navigating any data cell in a complex table.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6">https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF6</a>
 
 pdf-remediation-PdfErrRequiredFieldsNotVisuallyIndicated =
-    Signalez visiblement chaque champ obligatoire : un astérisque à côté du libellé, ou le mot « obligatoire » dans le libellé lui-même. Si vous utilisez des astérisques, ajoutez une légende en haut du formulaire expliquant leur sens — « Les champs marqués d'un * sont obligatoires ». Conservez également l'indicateur /Ff Required : les deux signaux s'adressent à des publics différents et sont tous deux nécessaires.
+    <strong>Why it matters</strong>: When a form field has the Required flag set programmatically, that information must also be conveyed visually so sighted users know which fields are mandatory. Without a visual indicator (asterisk, '(required)' text, or legend), sighted users may miss required fields and encounter unexpected submission errors.
+    
+    <strong>What needs to change</strong>: Every field with the /Ff Required flag must have a corresponding visual indicator: an asterisk (*) next to the label, the word '(required)' in the label, or a legend on the page (e.g. 'Fields marked with * are required'). The reverse must also be true: fields visually marked as required must have the /Ff Required flag set.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. For each required field, ensure the visual label on the page includes an asterisk (*).
+    2. Add a legend at the top of the form: 'Fields marked with * are required.'
+    3. In Prepare Form, verify each required field has the 'Required' checkbox set.
+    4. Include '(required)' in the field's Tooltip (/TU) as an additional cue.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Add an asterisk (*) to the visible label text next to each required field.
+    2. Add instruction text before the form: 'Fields marked with * are required.'
+    3. After export, verify in Acrobat that the Required flag is set on each field.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Include an asterisk (*) in the label text for each required field.
+    2. Add a text frame before the form stating 'Fields marked with * are required.'
+    3. After export, set the Required property in Acrobat's Prepare Form tool.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Incorrect: Required flag set but no visual indicator</strong>:
+    ```
+    Visual label: 'Email Address'
+    /Ff = 2                << Required flag IS set
+    /TU = 'Email Address'
+    
+    Sighted users see no asterisk or 'required' text — they don't know
+    the field is mandatory until they try to submit the form.
+    ```
+    
+    <strong>Correct: Required flag AND visual indicator present</strong>:
+    ```
+    Visual label: 'Email Address *'
+    Page legend: 'Fields marked with * are required.'
+    /Ff = 2                << Required flag IS set
+    /TU = 'Email Address (required)'
+    
+    Both sighted and screen reader users know the field is required.
+    ```
+    
+    WCAG 3.3.2 requires that instructions and labels are provided for user input. When a field is programmatically required, the visual presentation must also communicate this. A mismatch between visual and semantic required status confuses users regardless of how they access the form.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/general/G184">https://www.w3.org/WAI/WCAG22/Techniques/general/G184</a>
 
 pdf-remediation-PdfWarnRequiredFieldsIndicatorUnverified =
-    Examinez le formulaire et vérifiez que chaque champ obligatoire porte un repère visible. Lorsqu'il en manque un, ajoutez un astérisque ou la mention « obligatoire » au libellé. Lorsqu'un champ paraît obligatoire sans porter l'indicateur /Ff Required, définissez-le afin que les technologies d'assistance le signalent aussi. Relancer l'audit avec l'analyse par IA activée répond à cette question à partir de la page rendue plutôt que des métadonnées.
+    <strong>Why it matters</strong>: When a form field has the Required flag set programmatically, that information must also be conveyed visually so sighted users know which fields are mandatory. Without a visual indicator (asterisk, '(required)' text, or legend), sighted users may miss required fields and encounter unexpected submission errors.
+    
+    <strong>What needs to change</strong>: Every field with the /Ff Required flag must have a corresponding visual indicator: an asterisk (*) next to the label, the word '(required)' in the label, or a legend on the page (e.g. 'Fields marked with * are required'). The reverse must also be true: fields visually marked as required must have the /Ff Required flag set.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. For each required field, ensure the visual label on the page includes an asterisk (*).
+    2. Add a legend at the top of the form: 'Fields marked with * are required.'
+    3. In Prepare Form, verify each required field has the 'Required' checkbox set.
+    4. Include '(required)' in the field's Tooltip (/TU) as an additional cue.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Add an asterisk (*) to the visible label text next to each required field.
+    2. Add instruction text before the form: 'Fields marked with * are required.'
+    3. After export, verify in Acrobat that the Required flag is set on each field.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Include an asterisk (*) in the label text for each required field.
+    2. Add a text frame before the form stating 'Fields marked with * are required.'
+    3. After export, set the Required property in Acrobat's Prepare Form tool.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Incorrect: Required flag set but no visual indicator</strong>:
+    ```
+    Visual label: 'Email Address'
+    /Ff = 2                << Required flag IS set
+    /TU = 'Email Address'
+    
+    Sighted users see no asterisk or 'required' text — they don't know
+    the field is mandatory until they try to submit the form.
+    ```
+    
+    <strong>Correct: Required flag AND visual indicator present</strong>:
+    ```
+    Visual label: 'Email Address *'
+    Page legend: 'Fields marked with * are required.'
+    /Ff = 2                << Required flag IS set
+    /TU = 'Email Address (required)'
+    
+    Both sighted and screen reader users know the field is required.
+    ```
+    
+    WCAG 3.3.2 requires that instructions and labels are provided for user input. When a field is programmatically required, the visual presentation must also communicate this. A mismatch between visual and semantic required status confuses users regardless of how they access the form.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Techniques/general/G184">https://www.w3.org/WAI/WCAG22/Techniques/general/G184</a>
 
 pdf-remediation-PdfErrNonTextContrastBelowMinimum =
-    Assombrissez les bordures des champs jusqu'à atteindre 3:1 par rapport à la page — un gris moyen sur blanc suffit généralement — ou donnez aux champs un fond qui se distingue de la page dans la même proportion. Pour les graphiques et les filets, choisissez des couleurs offrant la même marge de 3:1 par rapport à ce qui se trouve derrière, et ne comptez pas sur un trait très fin pour marquer une limite.
+    <strong>Why it matters</strong>: People with low vision need to see form field boundaries to know where to click or type. WCAG 1.4.11 requires a minimum 3:1 contrast ratio for UI component boundaries (form field borders, button outlines) and meaningful graphical objects (chart bars, icons, divider lines) against their adjacent background color. Light gray borders on a white background may be invisible to users with low vision.
+    
+    <strong>What needs to change</strong>: Ensure all form field borders have at least 3:1 contrast against the page background. For example, on a white background (#FFFFFF), use a border color no lighter than #949494 (4.5:1) or at minimum #767676 (4.56:1). Avoid very light grays like #CCCCCC (1.6:1) or #DDDDDD (1.3:1) which fail the 3:1 threshold. For graphical elements like chart bars and icons, ensure they are visually distinguishable from their background.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the form field properties (double-click or right-click > Properties).
+    2. Go to the Appearance tab.
+    3. Set Border Color to a color with at least 3:1 contrast against the page (e.g., #767676 on white = 4.56:1).
+    4. Set Line Thickness to at least 1pt for visibility.
+    5. For buttons, ensure the button border or background clearly distinguishes it from surrounding content.
+    6. For table borders: In Edit PDF mode, select table border lines and set stroke color to at least 3:1 contrast against the page background.
+    7. For chart elements: Ensure all data bars, pie slices, and icons use fill colors with at least 3:1 contrast against the chart background.
+    8. For divider lines: Select the line and darken it — use at least #767676 on white for 4.5:1+ contrast.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the form control (text box, checkbox, dropdown).
+    2. In Format > Shape Outline, set a visible border color.
+    3. Avoid the default light gray — use a darker shade (at least #767676 on white).
+    4. Ensure buttons have visible borders or contrasting backgrounds.
+    5. For tables: In Table Design, set border colors to at least 3:1 contrast. Avoid very light grid lines.
+    6. For charts: In Chart Design > Change Colors, pick a palette where all data series contrast at 3:1+ against the chart background.
+    7. After exporting to PDF, verify borders are preserved.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Select the form field object.
+    2. In the Stroke panel, set a stroke color with at least 3:1 contrast.
+    3. Set stroke weight to at least 1pt.
+    4. For interactive buttons, ensure the frame or fill contrasts with the page.
+    5. For tables: Select cell borders in Table > Cell Options > Strokes and Fills, use a stroke color with 3:1+ contrast.
+    6. For charts/infographics: Ensure each graphical data element uses a fill color with 3:1+ contrast against adjacent colors.
+    7. Export to PDF and verify form field borders are visible.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Incorrect: Low-contrast field borders</strong>:
+    ```
+    Text field border: #DDDDDD on white (#FFFFFF)
+    Contrast ratio: 1.3:1 (FAIL — below 3:1 minimum)
+    Checkbox: no visible border — indistinguishable from page
+    ```
+    
+    <strong>Correct: Visible field borders</strong>:
+    ```
+    Text field border: #767676 on white (#FFFFFF)
+    Contrast ratio: 4.56:1 (PASS — exceeds 3:1 minimum)
+    Checkbox border: #595959 — 7.0:1 contrast ratio (PASS)
+    ```
+    
+    Form field borders should be dark enough that people with low vision can see where to click or type. The 3:1 minimum ensures fields remain visible even for users with moderate vision loss.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html">https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html</a>
 
 pdf-remediation-PdfWarnNonTextContrastConcern =
-    Passez en revue les éléments signalés et accordez-leur davantage de marge que le minimum : visez nettement au-delà de 3:1 plutôt qu'au seuil. Si le signalement porte sur un élément décoratif dépourvu de sens, aucune modification n'est nécessaire ; confirmez qu'il est bien décoratif au lieu de le supposer.
+    <strong>Why it matters</strong>: People with low vision need to see form field boundaries to know where to click or type. WCAG 1.4.11 requires a minimum 3:1 contrast ratio for UI component boundaries (form field borders, button outlines) and meaningful graphical objects (chart bars, icons, divider lines) against their adjacent background color. Light gray borders on a white background may be invisible to users with low vision.
+    
+    <strong>What needs to change</strong>: Ensure all form field borders have at least 3:1 contrast against the page background. For example, on a white background (#FFFFFF), use a border color no lighter than #949494 (4.5:1) or at minimum #767676 (4.56:1). Avoid very light grays like #CCCCCC (1.6:1) or #DDDDDD (1.3:1) which fail the 3:1 threshold. For graphical elements like chart bars and icons, ensure they are visually distinguishable from their background.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Open the form field properties (double-click or right-click > Properties).
+    2. Go to the Appearance tab.
+    3. Set Border Color to a color with at least 3:1 contrast against the page (e.g., #767676 on white = 4.56:1).
+    4. Set Line Thickness to at least 1pt for visibility.
+    5. For buttons, ensure the button border or background clearly distinguishes it from surrounding content.
+    6. For table borders: In Edit PDF mode, select table border lines and set stroke color to at least 3:1 contrast against the page background.
+    7. For chart elements: Ensure all data bars, pie slices, and icons use fill colors with at least 3:1 contrast against the chart background.
+    8. For divider lines: Select the line and darken it — use at least #767676 on white for 4.5:1+ contrast.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Select the form control (text box, checkbox, dropdown).
+    2. In Format > Shape Outline, set a visible border color.
+    3. Avoid the default light gray — use a darker shade (at least #767676 on white).
+    4. Ensure buttons have visible borders or contrasting backgrounds.
+    5. For tables: In Table Design, set border colors to at least 3:1 contrast. Avoid very light grid lines.
+    6. For charts: In Chart Design > Change Colors, pick a palette where all data series contrast at 3:1+ against the chart background.
+    7. After exporting to PDF, verify borders are preserved.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Select the form field object.
+    2. In the Stroke panel, set a stroke color with at least 3:1 contrast.
+    3. Set stroke weight to at least 1pt.
+    4. For interactive buttons, ensure the frame or fill contrasts with the page.
+    5. For tables: Select cell borders in Table > Cell Options > Strokes and Fills, use a stroke color with 3:1+ contrast.
+    6. For charts/infographics: Ensure each graphical data element uses a fill color with 3:1+ contrast against adjacent colors.
+    7. Export to PDF and verify form field borders are visible.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Incorrect: Low-contrast field borders</strong>:
+    ```
+    Text field border: #DDDDDD on white (#FFFFFF)
+    Contrast ratio: 1.3:1 (FAIL — below 3:1 minimum)
+    Checkbox: no visible border — indistinguishable from page
+    ```
+    
+    <strong>Correct: Visible field borders</strong>:
+    ```
+    Text field border: #767676 on white (#FFFFFF)
+    Contrast ratio: 4.56:1 (PASS — exceeds 3:1 minimum)
+    Checkbox border: #595959 — 7.0:1 contrast ratio (PASS)
+    ```
+    
+    Form field borders should be dark enough that people with low vision can see where to click or type. The 3:1 minimum ensures fields remain visible even for users with moderate vision loss.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html">https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html</a>
 
 pdf-remediation-PdfWarnAltTextInadequate =
     Réécrivez les textes de remplacement signalés pour dire ce que l'image apporte dans son contexte. Décrivez l'information, pas l'illustration : le texte de remplacement d'un graphique doit livrer le constat, non énumérer ses axes. Tenez compte du texte environnant — une image déjà décrite dans le paragraphe voisin n'a besoin que d'une étiquette brève.
@@ -5424,16 +5921,272 @@ pdf-remediation-PdfInfoAltTextAdequacyNotAssessed =
     Relancez l'audit avec l'analyse par IA activée pour faire évaluer les textes de remplacement au regard des images, ou examinez manuellement les figures à l'aide de l'inventaire complet des textes de remplacement de ce rapport.
 
 pdf-remediation-PdfWarnImagesOfTextDetected =
-    Remplacez les images de texte par du vrai texte chaque fois que l'image n'est pas elle-même l'objet du propos : un titre composé en graphique, la capture d'écran d'un tableau, une citation dans un cadre décoratif. Lorsque l'image doit rester, comme un logo ou un schéma dont la disposition porte du sens, reprenez l'intégralité de son texte dans le texte de remplacement afin que rien ne soit perdu.
+    <strong>Why it matters</strong>: Images of text (screenshots of text, stylized text rendered as images, scanned text) cannot be resized, reflowed, or read by screen readers. If the alt text doesn't include the exact text shown in the image, that content is lost to assistive technology users.
+    
+    <strong>What needs to change</strong>: Replace images of text with real text wherever possible. Where images of text are unavoidable (logos, certificates), the alt text must include all text content visible in the image.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Identify images that contain text (check the Images of Text Analysis section).
+    2. If possible, delete the image and replace with real tagged text.
+    3. If the image must stay, update its alt text to include all visible text content.
+    4. Open Tags panel > right-click the Figure tag > Properties > set Alternate Text.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Replace images of text with actual text wherever possible.
+    2. For logos or stylized text that must remain as images, right-click > Edit Alt Text.
+    3. Include all text visible in the image in the alt text description.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Replace text images with live text frames.
+    2. For images that must remain, set comprehensive alt text via Object > Object Export Options.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Image of text without matching alt</strong>:
+    ```
+    Image contains: 'Thank you for your donation of $500.00'
+    Alt text: 'Thank you message'
+    
+    Screen reader: 'Image, Thank you message'
+    (user misses the donation amount)
+    ```
+    
+    <strong>Alt text matches image content</strong>:
+    ```
+    Image contains: 'Thank you for your donation of $500.00'
+    Alt text: 'Thank you for your donation of $500.00'
+    
+    Screen reader: 'Image, Thank you for your donation of $500.00'
+    (full information conveyed)
+    ```
+    
+    The best solution is always to replace images of text with real text. This allows users to resize, reflow, and search the content. Images of text should only be used when the visual presentation is essential (e.g., logos, artistic calligraphy).
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/images-of-text.html">https://www.w3.org/WAI/WCAG22/Understanding/images-of-text.html</a>
 
 pdf-remediation-PdfInfoImagesOfTextNotAssessed =
-    Relancez l'audit avec l'analyse par IA activée pour faire lire les images, ou examinez-les manuellement et vérifiez que le texte qu'elles contiennent figure aussi dans leur texte de remplacement ou dans le texte de la page.
+    <strong>Why it matters</strong>: Images of text (screenshots of text, stylized text rendered as images, scanned text) cannot be resized, reflowed, or read by screen readers. If the alt text doesn't include the exact text shown in the image, that content is lost to assistive technology users.
+    
+    <strong>What needs to change</strong>: Replace images of text with real text wherever possible. Where images of text are unavoidable (logos, certificates), the alt text must include all text content visible in the image.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Identify images that contain text (check the Images of Text Analysis section).
+    2. If possible, delete the image and replace with real tagged text.
+    3. If the image must stay, update its alt text to include all visible text content.
+    4. Open Tags panel > right-click the Figure tag > Properties > set Alternate Text.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Replace images of text with actual text wherever possible.
+    2. For logos or stylized text that must remain as images, right-click > Edit Alt Text.
+    3. Include all text visible in the image in the alt text description.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Replace text images with live text frames.
+    2. For images that must remain, set comprehensive alt text via Object > Object Export Options.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Image of text without matching alt</strong>:
+    ```
+    Image contains: 'Thank you for your donation of $500.00'
+    Alt text: 'Thank you message'
+    
+    Screen reader: 'Image, Thank you message'
+    (user misses the donation amount)
+    ```
+    
+    <strong>Alt text matches image content</strong>:
+    ```
+    Image contains: 'Thank you for your donation of $500.00'
+    Alt text: 'Thank you for your donation of $500.00'
+    
+    Screen reader: 'Image, Thank you for your donation of $500.00'
+    (full information conveyed)
+    ```
+    
+    The best solution is always to replace images of text with real text. This allows users to resize, reflow, and search the content. Images of text should only be used when the visual presentation is essential (e.g., logos, artistic calligraphy).
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/images-of-text.html">https://www.w3.org/WAI/WCAG22/Understanding/images-of-text.html</a>
 
 pdf-remediation-PdfErrColorSoleIndicator =
-    Ajoutez un second signal à côté de la couleur : une étiquette textuelle, une icône, un motif ou une forme. Un texte rouge devient un texte rouge accompagné du mot « Erreur » ; une série de graphique colorée reçoit une étiquette directe ou un motif distinct ; une bordure colorée de champ obligatoire gagne un astérisque. Conservez la couleur — elle aide celles et ceux qui la perçoivent — et complétez-la plutôt que de la remplacer.
+    <strong>Why it matters</strong>: Approximately 8% of men and 0.5% of women have some form of color vision deficiency. When color is the only way information is conveyed — such as red text for errors, green for success, or colored links without underlines — these users cannot perceive the distinction and miss critical information.
+    
+    <strong>What needs to change</strong>: Never use color as the sole means of conveying information, indicating an action, prompting a response, or distinguishing a visual element. Always provide a secondary indicator: text labels, patterns, icons, underlines, bold, or shape differences.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Review the document for places where color alone conveys meaning.
+    2. For error messages: add an icon (✗) or prefix text like 'Error:' alongside red color.
+    3. For links: ensure they are underlined or have another non-color indicator.
+    4. For charts/graphs: add patterns, labels, or data markers in addition to color coding.
+    5. For status indicators: use text labels ('Required', 'Complete') alongside colors.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Review charts and ensure data series use patterns (dashed, dotted) in addition to colors.
+    2. For colored text conveying status, add a text label or icon as well.
+    3. Ensure hyperlinks are underlined, not just colored.
+    4. For tables with color-coded cells, add text labels to each cell.
+    5. Re-export to PDF after making changes.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Audit the design for any place color is the sole information carrier.
+    2. Add text labels, icons, or patterns alongside color-coded elements.
+    3. For infographics: use patterns, textures, or labels within colored regions.
+    4. Ensure links have underlines or other visual indicators beyond color.
+    5. Test by viewing the document in grayscale to identify color-only information.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Color-only information</strong>:
+    ```
+    Required fields are shown in red.
+    Optional fields are shown in black.
+    
+    Name: _________ (red text)
+    Phone: ________ (black text)
+    Email: ________ (red text)
+    
+    A color-blind user cannot tell which fields are required.
+    ```
+    
+    <strong>Color plus text indicator</strong>:
+    ```
+    Required fields are marked with * and shown in red.
+    Optional fields are shown in black.
+    
+    Name*: _________ (red text + asterisk)
+    Phone: _________ (black text)
+    Email*: ________ (red text + asterisk)
+    
+    All users can identify required fields regardless of color perception.
+    ```
+    
+    Adding the asterisk (*) provides a non-color indicator that works for everyone. Other effective techniques include icons, text labels ('Required'), bold text, or patterns. The key is to always have at least two distinguishing features.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html">https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html</a>
 
 pdf-remediation-PdfWarnColorPrimaryIndicator =
-    Renforcez le second signal jusqu'à ce qu'il se suffise à lui-même : une étiquette explicite plutôt qu'implicite, une icône nette plutôt que discrète, un motif visible à la taille de lecture. Un test utile consiste à afficher la page en niveaux de gris et à vérifier que la distinction se lit encore.
+    <strong>Why it matters</strong>: Approximately 8% of men and 0.5% of women have some form of color vision deficiency. When color is the only way information is conveyed — such as red text for errors, green for success, or colored links without underlines — these users cannot perceive the distinction and miss critical information.
+    
+    <strong>What needs to change</strong>: Never use color as the sole means of conveying information, indicating an action, prompting a response, or distinguishing a visual element. Always provide a secondary indicator: text labels, patterns, icons, underlines, bold, or shape differences.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Review the document for places where color alone conveys meaning.
+    2. For error messages: add an icon (✗) or prefix text like 'Error:' alongside red color.
+    3. For links: ensure they are underlined or have another non-color indicator.
+    4. For charts/graphs: add patterns, labels, or data markers in addition to color coding.
+    5. For status indicators: use text labels ('Required', 'Complete') alongside colors.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Review charts and ensure data series use patterns (dashed, dotted) in addition to colors.
+    2. For colored text conveying status, add a text label or icon as well.
+    3. Ensure hyperlinks are underlined, not just colored.
+    4. For tables with color-coded cells, add text labels to each cell.
+    5. Re-export to PDF after making changes.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Audit the design for any place color is the sole information carrier.
+    2. Add text labels, icons, or patterns alongside color-coded elements.
+    3. For infographics: use patterns, textures, or labels within colored regions.
+    4. Ensure links have underlines or other visual indicators beyond color.
+    5. Test by viewing the document in grayscale to identify color-only information.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Color-only information</strong>:
+    ```
+    Required fields are shown in red.
+    Optional fields are shown in black.
+    
+    Name: _________ (red text)
+    Phone: ________ (black text)
+    Email: ________ (red text)
+    
+    A color-blind user cannot tell which fields are required.
+    ```
+    
+    <strong>Color plus text indicator</strong>:
+    ```
+    Required fields are marked with * and shown in red.
+    Optional fields are shown in black.
+    
+    Name*: _________ (red text + asterisk)
+    Phone: _________ (black text)
+    Email*: ________ (red text + asterisk)
+    
+    All users can identify required fields regardless of color perception.
+    ```
+    
+    Adding the asterisk (*) provides a non-color indicator that works for everyone. Other effective techniques include icons, text labels ('Required'), bold text, or patterns. The key is to always have at least two distinguishing features.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html">https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html</a>
 
 pdf-remediation-PdfInfoColorUseNotAssessed =
-    Relancez l'audit avec l'analyse par IA activée pour faire examiner les pages, ou passez le document en revue manuellement en niveaux de gris et vérifiez que chaque distinction se lit encore sans la couleur.
+    <strong>Why it matters</strong>: Approximately 8% of men and 0.5% of women have some form of color vision deficiency. When color is the only way information is conveyed — such as red text for errors, green for success, or colored links without underlines — these users cannot perceive the distinction and miss critical information.
+    
+    <strong>What needs to change</strong>: Never use color as the sole means of conveying information, indicating an action, prompting a response, or distinguishing a visual element. Always provide a secondary indicator: text labels, patterns, icons, underlines, bold, or shape differences.
+    
+    <strong>Adobe Acrobat Pro</strong>:
+    1. Review the document for places where color alone conveys meaning.
+    2. For error messages: add an icon (✗) or prefix text like 'Error:' alongside red color.
+    3. For links: ensure they are underlined or have another non-color indicator.
+    4. For charts/graphs: add patterns, labels, or data markers in addition to color coding.
+    5. For status indicators: use text labels ('Required', 'Complete') alongside colors.
+    
+    <strong>Microsoft Word (source document)</strong>:
+    1. Review charts and ensure data series use patterns (dashed, dotted) in addition to colors.
+    2. For colored text conveying status, add a text label or icon as well.
+    3. Ensure hyperlinks are underlined, not just colored.
+    4. For tables with color-coded cells, add text labels to each cell.
+    5. Re-export to PDF after making changes.
+    
+    <strong>Adobe InDesign</strong>:
+    1. Audit the design for any place color is the sole information carrier.
+    2. Add text labels, icons, or patterns alongside color-coded elements.
+    3. For infographics: use patterns, textures, or labels within colored regions.
+    4. Ensure links have underlines or other visual indicators beyond color.
+    5. Test by viewing the document in grayscale to identify color-only information.
+    
+    <details>
+    <summary>Before / after example</summary>
+    
+    <strong>Color-only information</strong>:
+    ```
+    Required fields are shown in red.
+    Optional fields are shown in black.
+    
+    Name: _________ (red text)
+    Phone: ________ (black text)
+    Email: ________ (red text)
+    
+    A color-blind user cannot tell which fields are required.
+    ```
+    
+    <strong>Color plus text indicator</strong>:
+    ```
+    Required fields are marked with * and shown in red.
+    Optional fields are shown in black.
+    
+    Name*: _________ (red text + asterisk)
+    Phone: _________ (black text)
+    Email*: ________ (red text + asterisk)
+    
+    All users can identify required fields regardless of color perception.
+    ```
+    
+    Adding the asterisk (*) provides a non-color indicator that works for everyone. Other effective techniques include icons, text labels ('Required'), bold text, or patterns. The key is to always have at least two distinguishing features.
+    
+    </details>
+    
+    <strong>Reference</strong>: <a href="https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html">https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html</a>

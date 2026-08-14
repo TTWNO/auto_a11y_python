@@ -877,3 +877,4 @@ pdf-report-nav-metadata = Métadonnées
 pdf-report-chart-donut-alt = { $percent } % des vérifications réussies : { $pass } réussies, { $warn } avertissements, { $fail } échecs.
 pdf-report-chart-col-area = Domaine
 pdf-report-chart-col-total = Total des problèmes
+pdf-report-finding-label = Constat

@@ -403,7 +403,7 @@ def test_the_donut_segments_are_proportional() -> None:
 
     arcs = re.findall(
         r'class="pdf-donut-(?:pass|warn|fail)"[^>]*?'
-        r'stroke-dasharray="([0-9.]+) ([0-9.]+)"',
+        + r'stroke-dasharray="([0-9.]+) ([0-9.]+)"',
         html,
         re.S,
     )

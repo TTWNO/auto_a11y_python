@@ -14,9 +14,11 @@ own language — the subprocess only ever produced English.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from html import unescape
 from functools import lru_cache
 from typing import TYPE_CHECKING, cast
 
+from auto_a11y.pdf.audit.check_areas import AREA_LABELS
 from auto_a11y.pdf.models import (
     AIFinding,
     AuditResult,
@@ -141,10 +143,41 @@ def _attr(value: str) -> str:
     )
 
 
+def _remediation(check: CheckResult) -> str:
+    """The guide entry for a check, as Markdown, or ``""`` if it has none.
+
+    This is pdfMax's own remediation guide — why the finding matters, the
+    principle behind the requirement, and step-by-step fixes for Acrobat,
+    Word and InDesign, with before/after examples. It was ported and
+    translated long before it was rendered: until now the report printed
+    a one-line finding and dropped every word of it.
+
+    ``ftl`` HTML-escapes its return value, which is right for a template
+    but not for text that is itself markup on its way to the report's
+    Markdown renderer. It is unescaped here and sanitised client-side
+    with the rest of the report body.
+    """
+    stable_id = _stable_ids().get((check.name, check.result))
+    if stable_id is None:
+        return ""
+
+    from auto_a11y.pdf.translation.remediation_guide import (
+        STABLE_ID_TO_REMEDIATION_KEY,
+    )
+
+    message_id = STABLE_ID_TO_REMEDIATION_KEY.get(stable_id)
+    if message_id is None:
+        return ""
+    rendered = str(_ftl(message_id))
+    if rendered == message_id:
+        return ""
+    return unescape(rendered)
+
+
 def _verdict_section(
-    verdict: str, checks: Iterable[CheckResult]
-) -> list[str]:
-    """One verdict's checks, each as a collapsible block.
+    verdict: str, checks: Iterable[CheckResult], start_number: int = 1
+) -> tuple[list[str], int]:
+    """One verdict's checks, grouped by area, each as a collapsible block.
 
     Each check is a ``<details>`` carrying ``data-check-name`` and
     ``data-check-result``, transcribed from pdfMax's ``_render_check_item``
@@ -156,31 +189,81 @@ def _verdict_section(
     ``data-check-name`` is the engine's own English name, never the
     translated title: it is an identifier shared with the issue map and
     the viewer, and it cannot change with the reader's language.
+
+    Checks are grouped under the area they concern and numbered
+    continuously across the report, both as pdfMax does — "#14 Table
+    headers defined" is how a reader refers to a finding, and the group
+    heading is what makes a 125-item list navigable.
+
+    Returns the lines and the next number to use.
     """
     listed = list(checks)
     if not listed:
-        return []
+        return [], start_number
 
     lines = [f"## {_ftl(_VERDICT_HEADING[verdict])} ({len(listed)})", ""]
-    for check in listed:
-        lines.append(
-            f'<details data-check-name="{_attr(check.name)}"'
-            + f' data-check-result="{_attr(check.result)}">'
-        )
-        badge = _attr(str(_ftl(_VERDICT_BADGE[check.result])))
-        summary = (
-            f'<summary><span class="check-badge check-badge-'
-            f'{check.result.lower()}">{badge}</span> '
-            f'<strong>{_attr(_check_title(check))}</strong>'
-        )
-        if check.standard:
-            summary += f' &mdash; <small>{_attr(check.standard)}</small>'
-        lines.append(summary + "</summary>")
-        lines.append("")
-        lines.append(_escape(check.details))
-        lines.append("")
-        lines.append("</details>")
-        lines.append("")
+    number = start_number
+
+    for area, in_area in _by_area(listed):
+        if area is not None:
+            lines.append(f"### {_escape(str(_ftl(AREA_LABELS[area])))}")
+            lines.append("")
+        for check in in_area:
+            lines.extend(_check_block(check, number))
+            number += 1
+    return lines, number
+
+
+def _by_area(
+    checks: list[CheckResult],
+) -> list[tuple[str | None, list[CheckResult]]]:
+    """Checks grouped by area, in the order the areas first appear.
+
+    A check with no area — which the completeness test says should not
+    happen — is grouped under ``None`` and rendered without a heading
+    rather than dropped.
+    """
+    from auto_a11y.pdf.audit.check_areas import area_for
+
+    grouped: dict[str | None, list[CheckResult]] = {}
+    for check in checks:
+        grouped.setdefault(area_for(check.name), []).append(check)
+    # Unheaded checks last, so a gap in the map cannot displace a group.
+    return sorted(grouped.items(), key=lambda item: (item[0] is None, item[0] or ""))
+
+
+def _check_block(check: CheckResult, number: int) -> list[str]:
+    """One check: the summary line, the finding, and how to fix it."""
+    lines = [
+        f'<details data-check-name="{_attr(check.name)}"'
+        + f' data-check-result="{_attr(check.result)}">'
+    ]
+    badge = _attr(str(_ftl(_VERDICT_BADGE[check.result])))
+    summary = (
+        f'<summary><span class="check-badge check-badge-'
+        f'{check.result.lower()}">{badge}</span> '
+        f'<strong>#{number} {_attr(_check_title(check))}</strong>'
+    )
+    if check.standard:
+        summary += f' &mdash; <small>{_attr(check.standard)}</small>'
+    lines.append(summary + "</summary>")
+    lines.append("")
+    lines.append(
+        f"<strong>{_attr(str(_ftl('pdf-report-finding-label')))}</strong>: "
+        + _escape(check.details)
+    )
+    lines.append("")
+
+    # A passing check has nothing to remediate, and one that did not apply
+    # has nothing to say at all.
+    if check.result not in ("PASS", "NA"):
+        guide = _remediation(check)
+        if guide:
+            lines.append(guide)
+            lines.append("")
+
+    lines.append("</details>")
+    lines.append("")
     return lines
 
 
@@ -264,8 +347,12 @@ def render_audit_markdown(result: AuditResult) -> str:
     for check in result.check_results:
         by_verdict.setdefault(check.result, []).append(check)
 
+    number = 1
     for verdict in _VERDICT_ORDER:
-        lines.extend(_verdict_section(verdict, by_verdict.get(verdict, [])))
+        section, number = _verdict_section(
+            verdict, by_verdict.get(verdict, []), number
+        )
+        lines.extend(section)
 
     return "\n".join(lines).rstrip() + "\n"
 

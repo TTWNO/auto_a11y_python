@@ -2,12 +2,17 @@
 # Build Auto A11y desktop app for Windows (x86_64)
 # Creates an NSIS installer in electron/dist/
 #
-# STATUS: prep-only skeleton. The ffmpeg/ffprobe + mongod + Chromium bundling
-# is complete and correct. The portable-Python + WeasyPrint-native-deps story
-# on Windows is NOT solved here (see TODO_WINDOWS markers) — Windows uses a
-# different native-GTK stack than the macOS (brew) / Linux (apt) builds.
-# This script is NOT run in CI. Run it manually under Git Bash / WSL on a
-# Windows host (or a windows-latest runner) once the TODOs are resolved.
+# STATUS: runs to completion on a Windows host. Run it from Git Bash on
+# Windows — a VM is fine — not from macOS or Linux: steps 2 and 5 execute
+# the bundled python.exe, and electron-builder\'s NSIS target needs a
+# Windows host or wine.
+#
+# Cross-building from macOS is close to possible: 135 of the 136 pinned
+# requirements publish win_amd64 wheels, so pip can populate
+# site-packages with --platform win_amd64 --only-binary=:all: without
+# running python.exe. What stops it is Playwright\'s installer and
+# electron-builder. Not worth the complexity while a Windows VM exists,
+# and a build nobody has launched on Windows is a guess anyway.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -23,8 +28,16 @@ MONGO_VERSION="7.0.17"
 # (not "latest") and capture its real SHA-256 on the build host via
 #   curl -L <url> | sha256sum
 # The build FAILS on mismatch. The zip ships bin/ffmpeg.exe + bin/ffprobe.exe.
-FFMPEG_WIN_TAG="REPLACE_WITH_DATED_BTBN_TAG"   # e.g. autobuild-2026-05-01-12-31
-FFMPEG_WIN_SHA256="REPLACE_WITH_REAL_SHA256"
+FFMPEG_WIN_TAG="autobuild-2026-08-13-17-03"
+FFMPEG_WIN_ASSET="ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-7.1.zip"
+FFMPEG_WIN_SHA256="dcaee93310ba85b9e52b343f518e39b8e72c2799a5bcb6d35b1c0127e885fe65"
+
+# GTK3 runtime for WeasyPrint. Windows has no system cairo/pango, and
+# WeasyPrint loads both through ctypes off PATH — so the runtime ships
+# with the app and electron/process-manager.js prepends its bin to PATH.
+# gvsbuild is the build the WeasyPrint docs point Windows users at.
+GTK_VERSION="2026.8.0"
+GTK_SHA256="9be43d9029749062d2637070c856e73f8a1327a72259d08326b38155c139ecdc"
 
 echo "=== Auto A11y Windows Build ==="
 echo "Project: $PROJECT_DIR"
@@ -32,7 +45,7 @@ echo "Build staging: $BUILD_DIR"
 
 # Clean previous build
 rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR"/{python,app,mongodb/bin,chromium,ffmpeg/bin}
+mkdir -p "$BUILD_DIR"/{python,app,mongodb/bin,chromium,ffmpeg/bin,gtk}
 
 # -------------------------------------------------------
 # 1. Download portable Python (Windows MSVC standalone)
@@ -48,9 +61,8 @@ fi
 echo "Extracting Python..."
 tar -xzf "$PYTHON_ARCHIVE" -C "$BUILD_DIR/python" --strip-components=1
 # On the windows-msvc standalone build the interpreter is python/python.exe
-# (no bin/ dir). electron/process-manager.js currently resolves the Unix
-# layout (python/bin/python3.12); the Windows path resolution is a separate
-# follow-up — see TODO_WINDOWS_PYTHON below.
+# with no bin/ directory at all. electron/process-manager.js resolves that
+# layout when process.platform is win32; keep the two in step.
 PORTABLE_PYTHON="$BUILD_DIR/python/python.exe"
 echo "Python extracted: $PORTABLE_PYTHON"
 
@@ -59,25 +71,40 @@ echo "Python extracted: $PORTABLE_PYTHON"
 # -------------------------------------------------------
 echo ""
 echo "--- Step 2: Install pip dependencies ---"
-# TODO_WINDOWS_PYTHON: running python.exe from a Linux/WSL build host needs
-# either a Windows runner or wine. On a real windows-latest runner this is:
-#   "$PORTABLE_PYTHON" -m pip install --upgrade pip
-#   "$PORTABLE_PYTHON" -m pip install -r "$PROJECT_DIR/requirements.txt"
-# torch + pyannote.audio + deepgram-sdk all ship Windows wheels, so the audio
-# pipeline deps install cleanly; WeasyPrint's native GTK stack is the open
-# problem (see Step 3).
-echo "TODO_WINDOWS_PYTHON: pip install step is a no-op skeleton; wire on a Windows runner."
+"$PORTABLE_PYTHON" -m pip install --upgrade pip
+"$PORTABLE_PYTHON" -m pip install -r "$PROJECT_DIR/requirements.txt"
+echo "pip dependencies installed."
 
 # -------------------------------------------------------
 # 3. WeasyPrint native dependencies (GTK)
 # -------------------------------------------------------
 echo ""
 echo "--- Step 3: WeasyPrint native dependencies ---"
-# TODO_WINDOWS_WEASYPRINT: macOS uses brew (cairo/pango/gdk-pixbuf), Linux uses
-# apt + bundled .so. Windows needs the GTK3 runtime bundled alongside the app
-# (e.g. the gvsbuild artifacts) and on PATH for WeasyPrint. Out of scope for
-# the ffmpeg-bundling sub-project; tracked as a Windows-build follow-up.
-echo "TODO_WINDOWS_WEASYPRINT: GTK runtime bundling not yet implemented."
+GTK_URL="https://github.com/wingtk/gvsbuild/releases/download/${GTK_VERSION}/GTK3_Gvsbuild_${GTK_VERSION}_x64.zip"
+GTK_ARCHIVE="$BUILD_DIR/gtk3.zip"
+if [ ! -f "$GTK_ARCHIVE" ]; then
+    echo "Downloading GTK3 runtime (gvsbuild $GTK_VERSION)..."
+    curl -L -o "$GTK_ARCHIVE" "$GTK_URL"
+fi
+_gtk_actual="$(sha256sum "$GTK_ARCHIVE" | cut -d" " -f1)"
+if [ "$_gtk_actual" != "$GTK_SHA256" ]; then
+    echo "ERROR: GTK3 runtime SHA-256 mismatch." >&2
+    echo "  expected: $GTK_SHA256" >&2
+    echo "  actual:   $_gtk_actual" >&2
+    exit 1
+fi
+unzip -q -o "$GTK_ARCHIVE" -d "$BUILD_DIR/gtk"
+# The zip carries bin/ lib/ share/ at its root; cairo and pango live in
+# bin/ alongside their dependencies.
+[ -d "$BUILD_DIR/gtk/bin" ] \
+    || { echo "ERROR: GTK3 archive has no bin/ directory after extraction" >&2; exit 1; }
+# gvsbuild uses MSVC naming — cairo-2.dll, not libcairo-2.dll. Both are
+# accepted so a future rename does not fail the build for no reason.
+ls "$BUILD_DIR/gtk/bin"/cairo*.dll "$BUILD_DIR/gtk/bin"/libcairo*.dll >/dev/null 2>&1 \
+    || { echo "ERROR: no cairo DLL in the GTK runtime — WeasyPrint fails at import, not at render" >&2; exit 1; }
+ls "$BUILD_DIR/gtk/bin"/pango*.dll "$BUILD_DIR/gtk/bin"/libpango*.dll >/dev/null 2>&1 \
+    || { echo "ERROR: no pango DLL in the GTK runtime" >&2; exit 1; }
+echo "GTK3 runtime staged at $BUILD_DIR/gtk/"
 
 # -------------------------------------------------------
 # 4. Download MongoDB
@@ -101,8 +128,13 @@ echo "mongod extracted: $BUILD_DIR/mongodb/bin/mongod.exe"
 echo ""
 echo "--- Step 4b: ffmpeg + ffprobe (windows static) ---"
 FFMPEG_ZIP="$BUILD_DIR/ffmpeg-win.zip"
-FFMPEG_URL="https://github.com/BtbN/FFmpeg-Builds/releases/download/${FFMPEG_WIN_TAG}/ffmpeg-master-latest-win64-gpl.zip"
-curl -L -o "$FFMPEG_ZIP" "$FFMPEG_URL"
+# The asset name is pinned alongside the tag: a dated BtbN release
+# carries several builds, and "master-latest" is a moving target whose
+# bytes would never match a recorded hash.
+FFMPEG_URL="https://github.com/BtbN/FFmpeg-Builds/releases/download/${FFMPEG_WIN_TAG}/${FFMPEG_WIN_ASSET}"
+if [ ! -f "$FFMPEG_ZIP" ]; then
+    curl -L -o "$FFMPEG_ZIP" "$FFMPEG_URL"
+fi
 FFMPEG_ACTUAL_SHA="$(sha256sum "$FFMPEG_ZIP" | awk '{print $1}')"
 if [ "$FFMPEG_ACTUAL_SHA" != "$FFMPEG_WIN_SHA256" ]; then
     echo "ERROR: ffmpeg SHA-256 mismatch" >&2
@@ -125,10 +157,9 @@ echo "ffmpeg + ffprobe staged at $BUILD_DIR/ffmpeg/bin/"
 # -------------------------------------------------------
 echo ""
 echo "--- Step 5: Playwright Chromium ---"
-# TODO_WINDOWS_PYTHON: needs the Windows python.exe to run playwright install.
-# On a Windows runner:
-#   PLAYWRIGHT_BROWSERS_PATH="$BUILD_DIR/chromium" "$PORTABLE_PYTHON" -m playwright install chromium chromium-headless-shell
-echo "TODO_WINDOWS_PYTHON: playwright install step is a no-op skeleton."
+PLAYWRIGHT_BROWSERS_PATH="$BUILD_DIR/chromium" \
+    "$PORTABLE_PYTHON" -m playwright install chromium chromium-headless-shell
+echo "Chromium staged at $BUILD_DIR/chromium/"
 
 # -------------------------------------------------------
 # 6. Copy application source
@@ -183,7 +214,8 @@ cat > "$ELECTRON_DIR/build-config.json" <<BUILDCFG
     { "from": "$BUILD_DIR/app", "to": "app" },
     { "from": "$BUILD_DIR/mongodb", "to": "mongodb" },
     { "from": "$BUILD_DIR/chromium", "to": "chromium" },
-    { "from": "$BUILD_DIR/ffmpeg", "to": "ffmpeg" }
+    { "from": "$BUILD_DIR/ffmpeg", "to": "ffmpeg" },
+    { "from": "$BUILD_DIR/gtk", "to": "gtk" }
   ],
   "win": {
     "target": "nsis"

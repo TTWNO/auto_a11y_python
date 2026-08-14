@@ -759,6 +759,39 @@ position and therefore no box. Roughly half the elements in a tagged document
 are positioned today; an element→rectangle source covering figures and images
 is what would close the rest.
 
+## Windows builds
+
+`build/build-windows.sh` runs to completion **on a Windows host** — a Parallels
+VM is fine. Run it from Git Bash there, not from macOS: two of its steps execute
+the bundled `python.exe`, and electron-builder's NSIS target needs Windows or
+wine.
+
+Cross-building from macOS is nearly possible — 135 of the 136 pinned
+requirements publish `win_amd64` wheels, so pip can populate site-packages with
+`--platform win_amd64 --only-binary=:all:` without ever running `python.exe`.
+Playwright's installer and electron-builder are what stop it. Not worth the
+complexity while a VM exists, and an installer nobody has launched on Windows is
+a guess.
+
+Three things differ from the macOS build and are easy to get wrong:
+
+- **The interpreter is `python\python.exe`**, with no `bin\` directory —
+  python-build-standalone's windows-msvc archive is laid out differently.
+  `electron/process-manager.js` `getPaths()` branches on `process.platform`;
+  keep it in step with the script.
+- **WeasyPrint needs the GTK3 runtime bundled.** Windows has no system cairo or
+  pango, and WeasyPrint loads both through ctypes off `PATH`. The build stages
+  gvsbuild's GTK3 bundle into `gtk/` and the process manager prepends
+  `gtk/bin` to the Flask process's `PATH`. Without it WeasyPrint fails at
+  *import*, so every report route 500s rather than one render failing.
+- **gvsbuild uses MSVC DLL naming** — `cairo-2.dll`, not `libcairo-2.dll`. The
+  build asserts cairo and pango are present after extraction, because the
+  failure otherwise surfaces on a user's machine.
+
+Downloads are pinned by tag *and* asset name, and verified by SHA-256. BtbN
+publishes several builds per dated release and `master-latest` is a moving
+target, so a tag alone does not identify bytes.
+
 ## Common Gotchas
 
 1. **Port Conflict:** macOS AirPlay Receiver uses 5000 → We use 5001

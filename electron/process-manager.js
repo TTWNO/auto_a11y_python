@@ -33,15 +33,35 @@ class ProcessManager {
   getPaths() {
     const resourcesPath = process.resourcesPath || path.join(__dirname, '..');
     const projectRoot = path.join(__dirname, '..');
+    const isWindows = process.platform === 'win32';
+
+    /* The Windows layouts differ in two ways that are easy to miss.
+     * python-build-standalone's windows-msvc archive puts the
+     * interpreter at python\python.exe with no bin\ directory at all,
+     * and every bundled executable carries a .exe suffix. Resolving the
+     * Unix layout on Windows fails at launch, having reported nothing
+     * more useful than a missing file. */
+    const exe = isWindows ? '.exe' : '';
+    const python = isWindows
+      ? path.join(resourcesPath, 'python', 'python.exe')
+      : path.join(resourcesPath, 'python', 'bin', 'python3.12');
+
     return {
-      mongod: path.join(resourcesPath, 'mongodb', 'bin', 'mongod'),
+      mongod: path.join(resourcesPath, 'mongodb', 'bin', `mongod${exe}`),
+      /* macOS only: a shell wrapper that sets DYLD_LIBRARY_PATH before
+       * exec'ing the interpreter. Windows finds its DLLs on PATH. */
       pythonWrapper: path.join(resourcesPath, 'python', 'bin', 'python3.12-wrapper'),
-      python: path.join(resourcesPath, 'python', 'bin', 'python3.12'),
-      pythonDev: path.join(projectRoot, '.venv', 'bin', 'python'),
+      python,
+      pythonDev: isWindows
+        ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
+        : path.join(projectRoot, '.venv', 'bin', 'python'),
       appDir: path.join(resourcesPath, 'app'),
       appDirDev: projectRoot,
       chromium: path.join(resourcesPath, 'chromium'),
       ffmpegBin: path.join(resourcesPath, 'ffmpeg', 'bin'),
+      /* WeasyPrint loads cairo/pango through ctypes, which searches
+       * PATH on Windows. The GTK3 runtime ships beside the app. */
+      gtkBin: isWindows ? path.join(resourcesPath, 'gtk', 'bin') : null,
     };
   }
 
@@ -330,9 +350,18 @@ class ProcessManager {
 
     // Prepend the bundled ffmpeg/ffprobe dir so the audio pipeline's
     // detect_ffmpeg() (shutil.which) resolves the bundled binary first.
+    const pathSep = process.platform === 'win32' ? ';' : ':';
     if (fs.existsSync(paths.ffmpegBin)) {
-      const sep = process.platform === 'win32' ? ';' : ':';
-      env.PATH = paths.ffmpegBin + sep + (env.PATH || process.env.PATH || '');
+      env.PATH = paths.ffmpegBin + pathSep + (env.PATH || process.env.PATH || '');
+    }
+
+    // WeasyPrint reaches cairo and pango through ctypes, which resolves
+    // them from PATH on Windows — the macOS build does the equivalent
+    // with DYLD_LIBRARY_PATH in its python wrapper. Without this the
+    // reports that use WeasyPrint fail at import, not at render.
+    if (paths.gtkBin && fs.existsSync(paths.gtkBin)) {
+      env.PATH = paths.gtkBin + pathSep + (env.PATH || process.env.PATH || '');
+      log.info('Prepended bundled GTK runtime for WeasyPrint:', paths.gtkBin);
     }
 
     // Determine python path: wrapper (macOS) → bundled → project venv → system

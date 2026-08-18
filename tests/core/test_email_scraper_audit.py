@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from typing import Any, Awaitable, Protocol, cast
 from unittest.mock import MagicMock, patch
-from urllib.robotparser import RobotFileParser
 
 import pytest
 
@@ -120,6 +119,11 @@ def _make_engine() -> ScrapingEngine:
     """Build a ScrapingEngine without touching Database / BrowserManager."""
     engine = ScrapingEngine.__new__(ScrapingEngine)
     engine.robots_cache = {}
+    # The robots fetch presents the crawler's user agent; a bare __new__ has no
+    # attributes, and the resulting AttributeError would be swallowed by
+    # _can_fetch's allow-on-error guard, quietly turning every case below into a
+    # pass.
+    setattr(engine, "_user_agent", "TestCrawler/1.0")
     return engine
 
 
@@ -139,19 +143,35 @@ _ROBOTS_DISALLOW = "User-agent: *\nDisallow: /private/\n"
 _ROBOTS_ALLOW_ALL = "User-agent: *\nDisallow:\n"
 
 
-def _fake_read_factory(robots_body: str) -> Any:
-    """Return a fake RobotFileParser.read that loads the given robots body."""
+def _serving(robots_body: str) -> Any:
+    """Patch urlopen to serve the given robots.txt body.
 
-    def fake_read(self: RobotFileParser) -> None:
-        self.parse(robots_body.splitlines())
+    The seam is urlopen rather than ``RobotFileParser.read``: the crawler does
+    its own fetch so it can send its own User-Agent and treat a 4xx as "no
+    rules retrieved" instead of "crawl nothing". See
+    ``tests/core/test_robots_fetch.py``.
+    """
 
-    return fake_read
+    class _Response:
+        def read(self, _amount: int | None = None) -> bytes:
+            return robots_body.encode()
+
+        def __enter__(self) -> _Response:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    def fake_urlopen(*_a: object, **_k: object) -> _Response:
+        return _Response()
+
+    return patch("urllib.request.urlopen", fake_urlopen)
 
 
 @pytest.mark.asyncio
 async def test_disallowed_path_blocked_when_robots_fetched() -> None:
     engine = _make_engine()
-    with patch.object(RobotFileParser, "read", _fake_read_factory(_ROBOTS_DISALLOW)):
+    with _serving(_ROBOTS_DISALLOW):
         allowed = await _can_fetch(engine)("https://example.com/private/secret")
     assert allowed is False
 
@@ -159,7 +179,7 @@ async def test_disallowed_path_blocked_when_robots_fetched() -> None:
 @pytest.mark.asyncio
 async def test_allowed_path_permitted_when_robots_fetched() -> None:
     engine = _make_engine()
-    with patch.object(RobotFileParser, "read", _fake_read_factory(_ROBOTS_DISALLOW)):
+    with _serving(_ROBOTS_DISALLOW):
         allowed = await _can_fetch(engine)("https://example.com/public/page")
     assert allowed is True
 
@@ -168,10 +188,10 @@ async def test_allowed_path_permitted_when_robots_fetched() -> None:
 async def test_robots_fetch_failure_defaults_to_allow() -> None:
     engine = _make_engine()
 
-    def boom(self: RobotFileParser) -> None:
+    def boom(*_a: object, **_k: object) -> None:
         raise OSError("network down")
 
-    with patch.object(RobotFileParser, "read", boom):
+    with patch("urllib.request.urlopen", boom):
         allowed = await _can_fetch(engine)("https://example.com/anything")
     assert allowed is True
 
@@ -181,7 +201,7 @@ async def test_robots_parsed_off_event_loop() -> None:
     # The blocking robots fetch must run via asyncio.to_thread so it does not
     # block the event loop.
     engine = _make_engine()
-    with patch.object(RobotFileParser, "read", _fake_read_factory(_ROBOTS_ALLOW_ALL)):
+    with _serving(_ROBOTS_ALLOW_ALL):
         with patch(
             "auto_a11y.core.scraper.asyncio.to_thread",
             wraps=__import__("asyncio").to_thread,

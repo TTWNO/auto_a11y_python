@@ -57,6 +57,27 @@ def _ensure_playwright_browsers_path() -> None:
 WaitUntilType = Literal['commit', 'domcontentloaded', 'load', 'networkidle']
 SelectorStateType = Literal['attached', 'detached', 'hidden', 'visible']
 
+# The identity the crawler presents. Every request made on a site's behalf —
+# page navigations and the robots.txt fetch alike — must send this, so the site
+# sees one client. Asking for robots.txt as ``Python-urllib`` while fetching
+# pages as Chrome is both inconsistent (the rules that apply are the ones for
+# the UA you present) and, behind a WAF, a way to get the robots fetch rejected
+# on a site that is otherwise perfectly crawlable.
+DEFAULT_USER_AGENT = (
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
+    '(KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
+)
+
+
+def resolve_user_agent(config: dict[str, Any], user_agent: str | None = None) -> str:
+    """Resolve the user agent for a browser config, in precedence order."""
+    return (
+        user_agent
+        or config.get('user_agent')
+        or config.get('USER_AGENT')
+        or DEFAULT_USER_AGENT
+    )
+
 
 class BrowserManager:
     """
@@ -279,12 +300,7 @@ class BrowserManager:
             'width': self.config.get('viewport_width', self.config.get('BROWSER_VIEWPORT_WIDTH', 1920)),
             'height': self.config.get('viewport_height', self.config.get('BROWSER_VIEWPORT_HEIGHT', 1080))
         }
-        resolved_user_agent = (
-            user_agent
-            or self.config.get('user_agent')
-            or self.config.get('USER_AGENT')
-            or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
-        )
+        resolved_user_agent = resolve_user_agent(self.config, user_agent)
 
         # Build keyword arguments explicitly for type safety
         # Allow service workers in interactive mode: SPAs depend on them for routing,

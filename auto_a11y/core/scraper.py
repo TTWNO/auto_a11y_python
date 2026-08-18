@@ -96,7 +96,7 @@ DOCUMENT_EXTENSIONS: dict[str, str] = {
 }
 
 
-def _document_extension(path: str) -> str | None:
+def document_extension(path: str) -> str | None:
     """Return the document extension this path ends with, or None."""
     lowered = path.lower()
     for ext in DOCUMENT_EXTENSIONS:
@@ -105,7 +105,7 @@ def _document_extension(path: str) -> str | None:
     return None
 
 
-def _is_internal_host(netloc: str, base_domain: str, include_subdomains: bool) -> bool:
+def is_internal_host(netloc: str, base_domain: str, include_subdomains: bool) -> bool:
     """Whether a host counts as part of the site being audited."""
     if netloc == base_domain:
         return True
@@ -1092,12 +1092,12 @@ class ScrapingEngine:
                 # documents the site sends people to, and whether they are hosted
                 # by the site or not is exactly the distinction is_internal
                 # records. Crawling is unaffected — a document is never queued.
-                doc_ext = _document_extension(parsed.path)
+                doc_ext = document_extension(parsed.path)
                 if doc_ext is not None:
                     document_refs.append({
                         'url': normalized,
                         'mime_type': DOCUMENT_EXTENSIONS[doc_ext],
-                        'is_internal': _is_internal_host(
+                        'is_internal': is_internal_host(
                             parsed.netloc, base_domain,
                             website.scraping_config.include_subdomains,
                         ),

@@ -7,6 +7,8 @@ import asyncio
 import logging
 from typing import Any, Literal, Protocol, TYPE_CHECKING, cast
 from collections.abc import Callable, Coroutine
+import urllib.error
+import urllib.request
 from urllib.parse import urlparse, urljoin, urlunparse
 from urllib.robotparser import RobotFileParser
 from datetime import datetime
@@ -65,7 +67,7 @@ from auto_a11y.models.page import Page, PageStatus
 from auto_a11y.models.website import Website
 from auto_a11y.models.discovery_run import DiscoveryRun, DiscoveryStatus
 from auto_a11y.core.database import Database
-from auto_a11y.core.browser_manager import BrowserManager
+from auto_a11y.core.browser_manager import BrowserManager, resolve_user_agent
 
 if TYPE_CHECKING:
     from auto_a11y.core.scraping_job import ScrapingJob
@@ -96,7 +98,7 @@ DOCUMENT_EXTENSIONS: dict[str, str] = {
 }
 
 
-def _document_extension(path: str) -> str | None:
+def document_extension(path: str) -> str | None:
     """Return the document extension this path ends with, or None."""
     lowered = path.lower()
     for ext in DOCUMENT_EXTENSIONS:
@@ -105,7 +107,7 @@ def _document_extension(path: str) -> str | None:
     return None
 
 
-def _is_internal_host(netloc: str, base_domain: str, include_subdomains: bool) -> bool:
+def is_internal_host(netloc: str, base_domain: str, include_subdomains: bool) -> bool:
     """Whether a host counts as part of the site being audited."""
     if netloc == base_domain:
         return True
@@ -122,6 +124,12 @@ _EXPECTED_SKIP_REASON_PREFIXES = (
     "Redirected to external domain",
     "Redirected outside base path",
 )
+
+# robots.txt fetch bounds. The timeout keeps one unresponsive origin from
+# stalling a crawl; the size cap is the limit RFC 9309 s2.5 allows a crawler to
+# impose on how much of the file it parses.
+ROBOTS_FETCH_TIMEOUT_SECONDS: int = 15
+ROBOTS_MAX_BYTES: int = 512 * 1024
 
 # SPA click-discovery constants
 MAX_CLICK_CANDIDATES_PER_PAGE: int = 50
@@ -193,6 +201,10 @@ class ScrapingEngine:
         """
         self.db = database
         self.browser_manager = BrowserManager(browser_config)
+        # Resolved once, from the same config the browser contexts use, so the
+        # robots.txt fetch identifies itself as the client that will do the
+        # crawling.
+        self._user_agent: str = resolve_user_agent(browser_config)
         self.discovered_urls: set[str] = set()
         self.queued_urls: set[str] = set()
         self.robots_cache: dict[str, RobotFileParser] = {}
@@ -1092,12 +1104,12 @@ class ScrapingEngine:
                 # documents the site sends people to, and whether they are hosted
                 # by the site or not is exactly the distinction is_internal
                 # records. Crawling is unaffected — a document is never queued.
-                doc_ext = _document_extension(parsed.path)
+                doc_ext = document_extension(parsed.path)
                 if doc_ext is not None:
                     document_refs.append({
                         'url': normalized,
                         'mime_type': DOCUMENT_EXTENSIONS[doc_ext],
-                        'is_internal': _is_internal_host(
+                        'is_internal': is_internal_host(
                             parsed.netloc, base_domain,
                             website.scraping_config.include_subdomains,
                         ),
@@ -1842,6 +1854,60 @@ class ScrapingEngine:
             logger.debug(f"Failed to normalize URL {url}: {e}")
             return None
     
+    def _fetch_robots(self, robots_url: str) -> RobotFileParser:
+        """
+        Fetch and parse one origin's robots.txt. Never raises.
+
+        Deliberately does not use ``RobotFileParser.read()``. That method
+        fetches with urllib's default ``Python-urllib/3.x`` User-Agent, which
+        WAFs routinely reject, and then swallows the resulting ``HTTPError``
+        internally and sets ``disallow_all`` for 401/403 -- so the caller sees
+        no error, and every URL on the site reads as robots-blocked. A site
+        whose robots.txt permits crawling then discovers zero pages, silently.
+        Two things prevent that here:
+
+        * The request carries the crawler's own User-Agent, the same one the
+          browser sends, so the site is asked as the client that will actually
+          visit it and there is nothing anomalous to reject.
+        * A 4xx response means "no rules were retrieved", not "crawl nothing"
+          (RFC 9309 s2.3.1.3: on an unavailable status a crawler MAY access any
+          resource). Only rules that were actually served restrict the crawl.
+
+        A 5xx or network failure also allows, preserving this crawler's
+        existing behaviour; RFC 9309 permits assuming disallow there, but
+        flipping it would reintroduce the same silent zero-page outcome for a
+        transient blip.
+        """
+        rp = RobotFileParser()
+        rp.set_url(robots_url)
+
+        def allow_everything(reason: str) -> RobotFileParser:
+            logger.warning(
+                f"robots.txt at {robots_url} {reason} -- proceeding with no crawl restrictions from it"
+            )
+            rp.parse(['User-agent: *', 'Disallow:'])
+            return rp
+
+        request = urllib.request.Request(
+            robots_url, headers={'User-Agent': self._user_agent}
+        )
+        try:
+            with urllib.request.urlopen(
+                request, timeout=ROBOTS_FETCH_TIMEOUT_SECONDS
+            ) as response:
+                # RFC 9309 s2.5 lets crawlers cap the parsed size; anything past
+                # the cap is ignored rather than read into memory.
+                raw: bytes = response.read(ROBOTS_MAX_BYTES)
+        except urllib.error.HTTPError as http_error:
+            return allow_everything(f"returned HTTP {http_error.code}")
+        except Exception as fetch_error:
+            return allow_everything(f"could not be fetched ({fetch_error})")
+
+        # robots.txt is UTF-8 by spec; a file that isn't must still parse rather
+        # than raise, so undecodable bytes are replaced instead of fatal.
+        rp.parse(raw.decode('utf-8', errors='replace').splitlines())
+        return rp
+
     async def _can_fetch(self, url: str) -> bool:
         """
         Check if URL can be fetched according to robots.txt
@@ -1858,22 +1924,15 @@ class ScrapingEngine:
 
             # Fetch and parse the live robots.txt per-origin, caching the result.
             if robots_url not in self.robots_cache:
-                rp = RobotFileParser()
-                rp.set_url(robots_url)
-                try:
-                    # robots fetch is blocking I/O -- run it off the event loop
-                    # so it does not stall concurrent discovery work.
-                    await asyncio.to_thread(rp.read)
-                except Exception as fetch_error:
-                    # Standard behaviour: if robots.txt cannot be fetched,
-                    # default to allowing everything.
-                    logger.debug(
-                        f"Could not fetch robots.txt at {robots_url}: {fetch_error} -- defaulting to allow"
-                    )
-                    rp.parse(['User-agent: *', 'Disallow:'])
-                self.robots_cache[robots_url] = rp
+                # robots fetch is blocking I/O -- run it off the event loop
+                # so it does not stall concurrent discovery work.
+                self.robots_cache[robots_url] = await asyncio.to_thread(
+                    self._fetch_robots, robots_url
+                )
 
-            # Check if URL is fetchable
+            # Check if URL is fetchable. '*' selects the wildcard group, which is
+            # the group a general-purpose crawler falls under -- the browser UA
+            # identifies the client, not a robots.txt product token.
             return self.robots_cache[robots_url].can_fetch('*', url)
 
         except Exception as e:

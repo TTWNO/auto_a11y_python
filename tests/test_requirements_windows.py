@@ -36,8 +36,10 @@ _HANDLED_SEPARATELY = {
 #: Nothing needs these on macOS or Linux, which is why adding them to
 #: requirements.txt would be wrong.
 _WINDOWS_ONLY = {
-    "tzdata": "Windows has no system IANA database; zoneinfo falls back "
-              "to this. Required by tzlocal and pandas.",
+    "tzdata": (
+        "Windows has no system IANA database; zoneinfo falls back "
+        + "to this. Required by tzlocal and pandas."
+    ),
     "win32-setctime": "loguru imports it unguarded under os.name == 'nt'.",
 }
 

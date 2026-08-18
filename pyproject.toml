@@ -119,6 +119,25 @@ exclude = [
     # fixture_generation/ — enumerated subdirs (pdf/ will opt in when it lands)
     "fixture_generation/by_touchpoint/",
     # scripts/ — enumerated scripts (port_pdfmax_remediation_guide.py will opt in when it lands)
+    #
+    # NOTE: mypy and pyright select files with allow-lists (`files` / `include`)
+    # while ty selects with this exclude-list, so a NEW script under scripts/ is
+    # out of scope for the first two and in scope for ty until it is added here.
+    # That drift is what put the entries below out of step: they were added to
+    # the repo without a matching line here, and ty then failed on imports no
+    # other checker was asked to resolve. A script added to scripts/ must be
+    # listed here unless it is also added to mypy's `files` and pyright's
+    # `include`. Gitignore-style "!" negation does NOT work as a re-include in
+    # this list -- a blanket "scripts/" entry silently stops ty checking the
+    # opted-in scripts too, verified against ty 0.0.31.
+    "scripts/export_user_guide.py",
+    "scripts/fetch_audio_fixtures.py",
+    "scripts/generate_test_appendix.py",
+    "scripts/lo_build_toc.py",
+    "scripts/lo_docx_to_pdf.py",
+    "scripts/make_logo_dark_safe.py",
+    "scripts/migrate_remove_recording_page_fields.py",
+    "scripts/regenerate_inline_issue_ids.py",
     "scripts/apply_what_generic.py",
     "scripts/apply_what_generic_v2.py",
     "scripts/apply_what_generic_v3.py",

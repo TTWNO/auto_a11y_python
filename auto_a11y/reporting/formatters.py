@@ -12,7 +12,8 @@ import sys
 import tempfile
 import os
 import warnings
-from typing import IO, Any, TextIO
+from collections.abc import Iterable, Mapping
+from typing import IO, Any, TextIO, cast
 from typing_extensions import override
 from datetime import datetime
 from pathlib import Path
@@ -1592,8 +1593,14 @@ class HTMLFormatter(BaseFormatter):
         explicit = s.get('title')
         if explicit:
             return self._esc(explicit)
-        scope = s.get('project') or s.get('website') or {}
-        name = scope.get('name') if isinstance(scope, dict) else None
+        # The summary dicts are dict[str, Any], so a field read off one is
+        # untyped, and the bare `or {}` fallback adds a dict with unknown key and
+        # value types. Declaring the local and casting after the existing runtime
+        # guard gives the rest of the method concrete types; nothing changes at
+        # runtime, since casts are erased and the isinstance check is unchanged.
+        scope_raw: object = s.get('project') or s.get('website') or {}
+        scope = cast(dict[str, object], scope_raw) if isinstance(scope_raw, dict) else None
+        name = scope.get('name') if scope is not None else None
         if name:
             return f'{self._esc(name)} — {self._t("accessibility_report")}'
         return self._t('accessibility_report')
@@ -1601,12 +1608,16 @@ class HTMLFormatter(BaseFormatter):
     def _render_report_header(self, s: dict[str, Any]) -> str:
         generated = datetime.now().strftime('%Y-%m-%d %H:%M')
         subtitle_parts: list[str] = []
-        project = s.get('project')
-        if isinstance(project, dict) and project.get('name'):
-            subtitle_parts.append(f'{self._t("project")}: {self._esc(project["name"])}')
-        website = s.get('website')
-        if isinstance(website, dict) and website.get('name'):
-            subtitle_parts.append(f'{self._t("website")}: {self._esc(website["name"])}')
+        project_raw: object = s.get('project')
+        if isinstance(project_raw, dict):
+            project = cast(dict[str, object], project_raw)
+            if project.get('name'):
+                subtitle_parts.append(f'{self._t("project")}: {self._esc(project["name"])}')
+        website_raw: object = s.get('website')
+        if isinstance(website_raw, dict):
+            website = cast(dict[str, object], website_raw)
+            if website.get('name'):
+                subtitle_parts.append(f'{self._t("website")}: {self._esc(website["name"])}')
         subtitle = ' · '.join(subtitle_parts)
         return (
             f'<header><h1>{self._report_title(s)}</h1>\n'
@@ -1624,10 +1635,14 @@ class HTMLFormatter(BaseFormatter):
 
     @staticmethod
     def _average_page_score(s: dict[str, Any]) -> float | None:
-        raw = s.get('page_scores') or []
+        raw = cast('Iterable[object]', s.get('page_scores') or [])
         values: list[float] = []
         for entry in raw:
-            score = entry[1] if isinstance(entry, (tuple, list)) and len(entry) > 1 else None
+            seq = (
+                cast('tuple[object, ...] | list[object]', entry)
+                if isinstance(entry, (tuple, list)) else None
+            )
+            score = seq[1] if seq is not None and len(seq) > 1 else None
             if isinstance(score, (int, float)):
                 values.append(float(score))
         if not values:
@@ -1736,7 +1751,7 @@ class HTMLFormatter(BaseFormatter):
         return out
 
     def _render_touchpoint_chart(self, s: dict[str, Any]) -> str:
-        counts_raw = s.get('touchpoint_counts') or {}
+        counts_raw = cast('Mapping[str, int]', s.get('touchpoint_counts') or {})
         counts: list[tuple[str, int]] = sorted(
             ((str(k), int(v)) for k, v in counts_raw.items() if int(v) > 0),
             key=lambda kv: kv[1], reverse=True
@@ -1750,7 +1765,7 @@ class HTMLFormatter(BaseFormatter):
         )
 
     def _render_impact_chart(self, s: dict[str, Any]) -> str:
-        counts_raw = s.get('impact_counts') or {}
+        counts_raw = cast('Mapping[str, int]', s.get('impact_counts') or {})
         impact_colours = {'high': '#922b21', 'medium': '#7d6608', 'low': '#2c3e50'}
         rows: list[tuple[str, int, str]] = []
         for impact in ('high', 'medium', 'low'):
@@ -1765,7 +1780,7 @@ class HTMLFormatter(BaseFormatter):
         )
 
     def _render_top_issues(self, s: dict[str, Any]) -> str:
-        top_raw = s.get('top_issue_codes') or {}
+        top_raw = cast('Mapping[str, int]', s.get('top_issue_codes') or {})
         items: list[tuple[str, int]] = sorted(
             ((str(k), int(v)) for k, v in dict(top_raw).items()),
             key=lambda kv: kv[1], reverse=True
@@ -1785,7 +1800,7 @@ class HTMLFormatter(BaseFormatter):
 
     def _render_recommendations(self, s: dict[str, Any]) -> str:
         recs: list[str] = []
-        impact_raw = s.get('impact_counts') or {}
+        impact_raw = cast('Mapping[str, int]', s.get('impact_counts') or {})
         high_count = int(impact_raw.get('high', 0) or 0)
         violations = int(s.get('total_violations', 0) or 0)
         warnings_count = int(s.get('total_warnings', 0) or 0)
@@ -1795,7 +1810,7 @@ class HTMLFormatter(BaseFormatter):
         else:
             if high_count > 0:
                 recs.append(self._t('rec_high_impact').format(count=high_count))
-            counts_raw = s.get('touchpoint_counts') or {}
+            counts_raw = cast('Mapping[str, int]', s.get('touchpoint_counts') or {})
             top_tp = sorted(
                 ((str(k), int(v)) for k, v in counts_raw.items() if int(v) > 0),
                 key=lambda kv: kv[1], reverse=True

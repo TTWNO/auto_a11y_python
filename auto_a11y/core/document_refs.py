@@ -17,8 +17,8 @@ from urllib.parse import urlparse
 
 from auto_a11y.core.scraper import (
     DOCUMENT_EXTENSIONS,
-    document_extension,
-    is_internal_host,
+    _document_extension,
+    _is_internal_host,
 )
 from auto_a11y.models import DocumentReference
 
@@ -64,7 +64,7 @@ def record_document_references(
         parsed = urlparse(url)
         if parsed.scheme not in ('http', 'https'):
             continue
-        ext = document_extension(parsed.path)
+        ext = _document_extension(parsed.path)
         if ext is None:
             continue
         seen.add(url)
@@ -77,7 +77,7 @@ def record_document_references(
                     document_url=url,
                     referring_page_url=referring_page_url,
                     mime_type=DOCUMENT_EXTENSIONS[ext],
-                    is_internal=is_internal_host(
+                    is_internal=_is_internal_host(
                         parsed.netloc, base_domain, include_subdomains
                     ),
                     link_text=link_text,

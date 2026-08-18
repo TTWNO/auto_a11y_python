@@ -107,11 +107,26 @@ def document_extension(path: str) -> str | None:
     return None
 
 
+def _canonical_host(netloc: str) -> str:
+    """Reduce a host to the form used for same-site comparison.
+
+    Lowercased, and with a leading ``www.`` removed: ``www.example.com`` and
+    ``example.com`` are one site, and nearly every site redirects between them.
+    Comparing them literally is how a crawl of a site registered under the host
+    it redirects *away* from ends at its first page, reporting the site's own
+    domain as external.
+    """
+    host = netloc.lower()
+    return host[4:] if host.startswith('www.') else host
+
+
 def is_internal_host(netloc: str, base_domain: str, include_subdomains: bool) -> bool:
     """Whether a host counts as part of the site being audited."""
-    if netloc == base_domain:
+    host = _canonical_host(netloc)
+    base = _canonical_host(base_domain)
+    if host == base:
         return True
-    return bool(include_subdomains and netloc.endswith(f'.{base_domain}'))
+    return bool(include_subdomains and host.endswith(f'.{base}'))
 
 
 
@@ -882,26 +897,29 @@ class ScrapingEngine:
                     # Log all redirects for debugging
                     logger.info(f"Page redirected: {url} -> {final_url}")
                     
-                    if final_domain and final_domain != base_domain:
-                        # Check if it's a subdomain of our base domain
-                        if not final_domain.endswith(f'.{base_domain}'):
-                            logger.warning(f"SKIPPING: Redirected to external domain {final_domain} from {url}")
-                            # Create a failed page record
-                            failed_page = Page(
-                                website_id=website.id,
-                                url=url,
-                                title=f"Failed: External redirect",
-                                discovered_from=website.url if depth == 0 else None,
-                                depth=depth,
-                                status=PageStatus.DISCOVERY_FAILED,
-                                error_reason=f"Redirected to external domain: {final_domain}"
-                            )
-                            return failed_page
-                        else:
-                            logger.debug(f"Redirect to subdomain accepted: {final_domain}")
-                    
-                    # Also check if redirected outside base path
-                    if base_path and final_domain == base_domain:
+                    # A redirect to a subdomain has always been accepted here
+                    # whatever include_subdomains says, so that stays True.
+                    if final_domain and not is_internal_host(
+                        final_domain, base_domain, include_subdomains=True
+                    ):
+                        logger.warning(f"SKIPPING: Redirected to external domain {final_domain} from {url}")
+                        # Create a failed page record
+                        failed_page = Page(
+                            website_id=website.id,
+                            url=url,
+                            title=f"Failed: External redirect",
+                            discovered_from=website.url if depth == 0 else None,
+                            depth=depth,
+                            status=PageStatus.DISCOVERY_FAILED,
+                            error_reason=f"Redirected to external domain: {final_domain}"
+                        )
+                        return failed_page
+
+                    # Also check if redirected outside base path. Scoped to the
+                    # same host only (not subdomains), as before.
+                    if base_path and is_internal_host(
+                        final_domain, base_domain, include_subdomains=False
+                    ):
                         final_path = final_parsed.path
                         if not final_path.startswith(base_path + '/') and final_path != base_path:
                             logger.warning(f"SKIPPING: Redirected outside base path from {url} to {final_url}")
@@ -1120,13 +1138,13 @@ class ScrapingEngine:
 
                 # Check if we should follow this link
                 if not website.scraping_config.follow_external:
-                    # Only follow links on same domain
-                    if parsed.netloc != base_domain:
-                        # Check subdomains if configured
-                        if not (website.scraping_config.include_subdomains and
-                               parsed.netloc.endswith(f'.{base_domain}')):
-                            logger.warning(f"Skipping link (external domain): {normalized}")
-                            continue
+                    # Only follow links on the same site (subdomains if configured)
+                    if not is_internal_host(
+                        parsed.netloc, base_domain,
+                        website.scraping_config.include_subdomains,
+                    ):
+                        logger.warning(f"Skipping link (external domain): {normalized}")
+                        continue
 
                     # If the base URL has a path component, ensure links stay within that path
                     if base_path:
@@ -1440,10 +1458,11 @@ class ScrapingEngine:
         parsed = urlparse(normalized)
 
         if not website.scraping_config.follow_external:
-            if parsed.netloc != base_domain:
-                if not (website.scraping_config.include_subdomains
-                        and parsed.netloc.endswith(f".{base_domain}")):
-                    return None
+            if not is_internal_host(
+                parsed.netloc, base_domain,
+                website.scraping_config.include_subdomains,
+            ):
+                return None
             if base_path:
                 if (not parsed.path.startswith(base_path + "/")
                         and parsed.path != base_path):
